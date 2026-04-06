@@ -128,24 +128,22 @@ export const useAppStore = create<AppState>()(
       
         // Save to Supabase
         const { data, error } = await supabase
-          .from('assessments')
-          .insert({
-            user_id: supabaseUser.id,
-            assessment_type: input.assessmentType,
-            overall_score: input.overallScore,
-            building_block_scores: input.buildingBlockScores,
-            pillar_scores: input.pillarScores,
-            life_stage: input.lifeStage,
-            insights: input.insights,
-            priorities: input.priorities,
-            milestones_completed: input.milestonesCompleted,
-            next_milestones: input.nextMilestones,
-          
-            // 👇 NEW
-            report: input.report ?? null,
-          })
-          .select()
-          .single();
+        .from('assessments')
+        .insert({
+          user_id: supabaseUser.id,
+          assessment_type: input.assessmentType,
+          overall_score: input.overallScore,
+          building_block_scores: input.buildingBlockScores,
+          pillar_scores: input.pillarScores,
+          life_stage: input.lifeStage,
+          insights: input.insights,
+          priorities: input.priorities,
+          milestones_completed: input.milestonesCompleted,
+          next_milestones: input.nextMilestones,
+          report: input.report ?? null,
+        })
+        .select()
+        .single();
       
         if (error) {
           console.error('Supabase save error:', error);
