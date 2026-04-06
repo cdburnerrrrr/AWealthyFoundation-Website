@@ -602,9 +602,9 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                   </div>
                 </div>
 
-                <button onClick={() => navigate('/assessment/detailed')} className="w-full py-3 bg-copper-600 text-white font-semibold rounded-xl hover:bg-copper-700 transition-colors">
-                  Retake Assessment
-                </button>
+                <button onClick={() => navigate('/assessment/comprehensive')} className="w-full py-3 bg-copper-600 text-white font-semibold rounded-xl hover:bg-copper-700 transition-colors">
+  Retake Assessment
+</button>
               </div>
 
               <div className="lg:col-span-8 space-y-6">
@@ -792,7 +792,13 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                   </div>
                   <p className="text-sm text-gray-600">Revisit your detailed report, full breakdown, and tailored recommendations.</p>
                 </button>
-                <button onClick={() => navigate('/assessment/detailed')} className="rounded-2xl border border-[#d7e3f0] bg-[#fff8ef] p-5 text-left hover:bg-white transition-colors">
+                <button onClick={() => navigate('/assessment/comprehensive')} className="rounded-2xl border border-[#d7e3f0] bg-[#fff8ef] p-5 text-left hover:bg-white transition-colors">
+  <div className="flex items-center gap-3 mb-3">
+    <ArrowRight className="w-5 h-5 text-copper-600" />
+    <div className="font-semibold text-navy-900">Retake Assessment</div>
+  </div>
+  <p className="text-sm text-gray-600">Run the assessment again after progress or when your situation changes.</p>
+</button>
                   <div className="flex items-center gap-3 mb-3">
                     <ArrowRight className="w-5 h-5 text-copper-600" />
                     <div className="font-semibold text-navy-900">Retake Assessment</div>
