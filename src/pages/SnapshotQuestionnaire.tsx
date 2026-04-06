@@ -83,7 +83,7 @@ export default function SnapshotQuestionnaire() {
     const updated = { ...responses, [key]: value };
     const filtered = getSnapshotQuestions(updated) as Question[];
 
-    setResponses(prev => ({ ...prev, [key]: value }));
+    setResponses(updated);
     setVisibleQuestions(filtered);
 
     if (currentStep >= filtered.length) {
@@ -367,14 +367,23 @@ export default function SnapshotQuestionnaire() {
       value={responses[currentQuestion.key] ?? ''}
       onChange={(e) => handleNumberChange(currentQuestion, e.target.value)}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' && canProceed()) {
-          e.preventDefault();
+        if (e.key !== 'Enter') return;
 
-          if (currentStep === totalSteps - 1) {
-            submitAssessment();
-          } else {
-            nextStep();
-          }
+        const rawValue = e.currentTarget.value;
+        const hasValue =
+          rawValue !== '' &&
+          rawValue !== undefined &&
+          rawValue !== null &&
+          !Number.isNaN(Number(rawValue));
+
+        if (!hasValue) return;
+
+        e.preventDefault();
+
+        if (currentStep === totalSteps - 1) {
+          submitAssessment();
+        } else {
+          nextStep();
         }
       }}
       className="w-full p-4 text-lg border-2 border-gray-200 rounded-xl focus:border-copper-500 focus:outline-none"
