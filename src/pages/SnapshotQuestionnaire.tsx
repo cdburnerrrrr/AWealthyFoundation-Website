@@ -83,7 +83,7 @@ export default function SnapshotQuestionnaire() {
     const updated = { ...responses, [key]: value };
     const filtered = getSnapshotQuestions(updated) as Question[];
 
-    setResponses(updated);
+    setResponses(prev => ({ ...prev, [key]: value }));
     setVisibleQuestions(filtered);
 
     if (currentStep >= filtered.length) {
