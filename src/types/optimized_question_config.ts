@@ -1,3 +1,5 @@
+import { evaluateAllConditions, type Question } from './assessment';
+
 export type AssessmentMode = 'snapshot' | 'detailed';
 export type QuestionPriority = 'core' | 'conditional' | 'defer';
 
