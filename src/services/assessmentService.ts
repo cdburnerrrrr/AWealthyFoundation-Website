@@ -32,5 +32,8 @@ export async function loadAssessmentsFromSupabase() {
     priorities: item.priorities ?? [],
     milestonesCompleted: item.milestones_completed ?? [],
     nextMilestones: item.next_milestones ?? [],
+
+    report: item.report
+    
   }));
 }

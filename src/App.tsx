@@ -83,7 +83,13 @@ function App() {
       setAssessmentHistory(assessments);
 
       if (assessments.length > 0) {
-        setCurrentAssessment(buildCurrentAssessmentFromHistoryItem(assessments[0]));
+        if (assessments[0]?.report) {
+          // ✅ Use full saved report (best case)
+          setCurrentAssessment(assessments[0].report);
+        } else {
+          // ⚠️ Fallback for older assessments
+          setCurrentAssessment(buildCurrentAssessmentFromHistoryItem(assessments[0]));
+        }
       } else {
         setCurrentAssessment(null);
       }

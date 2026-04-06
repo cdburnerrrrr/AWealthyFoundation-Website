@@ -125,7 +125,7 @@ export const useAppStore = create<AppState>()(
         // Save to Supabase
         const { data, error } = await supabase
           .from('assessments')
-          .insert({
+          insert({
             user_id: supabaseUser.id,
             assessment_type: input.assessmentType,
             overall_score: input.overallScore,
@@ -136,6 +136,9 @@ export const useAppStore = create<AppState>()(
             priorities: input.priorities,
             milestones_completed: input.milestonesCompleted,
             next_milestones: input.nextMilestones,
+          
+            // 👇 NEW
+            report: get().currentAssessment,
           })
           .select()
           .single();
