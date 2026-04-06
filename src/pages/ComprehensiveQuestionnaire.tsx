@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ChevronLeft,
@@ -18,15 +18,13 @@ import {
   Info,
 } from 'lucide-react';
 import {
-  DETAILED_ASSESSMENT_QUESTIONS,
   generateReport,
   BUILDING_BLOCK_LABELS,
-  getVisibleQuestions,
   getMilestonesForStage,
   type BuildingBlockKey,
   type Question,
 } from '../types/assessment';
-
+import { getDetailedQuestions } from '../types/optimized_question_config';
 import { useAppStore } from '../store/appStore';
 
 const SECTION_ICONS: Record<string, React.ElementType> = {
@@ -37,6 +35,7 @@ const SECTION_ICONS: Record<string, React.ElementType> = {
   protection: Shield,
   investing: TrendingUp,
   vision: Eye,
+  context: Users,
 };
 
 const SECTIONS = [
@@ -48,22 +47,26 @@ const SECTIONS = [
   { id: 'investing', label: 'Investing', icon: TrendingUp },
   { id: 'vision', label: 'Vision', icon: Eye },
   { id: 'context', label: 'About You', icon: Users },
-];
+] as const;
 
 type ResponseValue = string | string[] | number;
+
+function getSectionLabel(section?: Question['section']) {
+  if (!section) return '';
+  if (section === 'context') return 'About You';
+  return BUILDING_BLOCK_LABELS[section as BuildingBlockKey] ?? 'Assessment';
+}
 
 export default function ComprehensiveQuestionnaire() {
   const navigate = useNavigate();
   const { isAuthenticated, saveAssessment, setCurrentAssessment } = useAppStore();
 
-  const questions = DETAILED_ASSESSMENT_QUESTIONS;
-
   const [currentStep, setCurrentStep] = useState(0);
   const [infoOpen, setInfoOpen] = useState(false);
   const [hasSeenInfo, setHasSeenInfo] = useState(false);
   const [responses, setResponses] = useState<Record<string, ResponseValue>>({});
-  const [visibleQuestions, setVisibleQuestions] = useState(() =>
-    getVisibleQuestions(questions, {})
+  const [visibleQuestions, setVisibleQuestions] = useState<Question[]>(() =>
+    getDetailedQuestions({}) as Question[]
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [calculatorOpen, setCalculatorOpen] = useState(false);
@@ -79,8 +82,16 @@ export default function ComprehensiveQuestionnaire() {
     setInfoOpen(false);
   }, [currentQuestion?.key]);
 
-  const currentSection =
-    SECTIONS.find((section) => section.id === currentQuestion?.section) || SECTIONS[0];
+  useEffect(() => {
+    if (currentStep > 0 && currentStep >= visibleQuestions.length) {
+      setCurrentStep(Math.max(0, visibleQuestions.length - 1));
+    }
+  }, [currentStep, visibleQuestions.length]);
+
+  const currentSection = useMemo(
+    () => SECTIONS.find((section) => section.id === currentQuestion?.section) || SECTIONS[0],
+    [currentQuestion?.section]
+  );
 
   const shouldAutoAdvance = (question: Question) => {
     return question.type === 'single' || question.type === 'scale';
@@ -110,12 +121,17 @@ export default function ComprehensiveQuestionnaire() {
     }
   };
 
+  const refreshVisibleQuestions = (nextResponses: Record<string, ResponseValue>) => {
+    const filtered = getDetailedQuestions(nextResponses) as Question[];
+    setVisibleQuestions(filtered);
+    return filtered;
+  };
+
   const updateResponses = (key: string, value: ResponseValue) => {
     const updated = { ...responses, [key]: value };
-    const filtered = getVisibleQuestions(questions, updated);
+    const filtered = refreshVisibleQuestions(updated);
 
     setResponses(updated);
-    setVisibleQuestions(filtered);
 
     if (currentStep >= filtered.length) {
       setCurrentStep(Math.max(0, filtered.length - 1));
@@ -134,7 +150,7 @@ export default function ComprehensiveQuestionnaire() {
     if (!currentQuestion) return;
 
     try {
-      const evaluated = Function('"use strict"; return (' + calculatorValue + ')')();
+      const evaluated = Function(`"use strict"; return (${calculatorValue})`)();
       const numValue = Number(evaluated);
 
       if (!Number.isNaN(numValue) && Number.isFinite(numValue)) {
@@ -225,9 +241,6 @@ export default function ComprehensiveQuestionnaire() {
 
     try {
       const report = generateReport(responses, 'detailed');
-      console.log('SETTING CURRENT ASSESSMENT');
-      console.log('REPORT GENERATED', report);
-
       setCurrentAssessment(report);
 
       if (isAuthenticated) {
@@ -257,7 +270,6 @@ export default function ComprehensiveQuestionnaire() {
       }
 
       navigate('/results');
-      console.log('NAVIGATING TO RESULTS');
     } catch (error) {
       console.error('Error submitting assessment:', error);
       alert('There was a problem saving your report. Please try again.');
@@ -265,6 +277,26 @@ export default function ComprehensiveQuestionnaire() {
       setIsSubmitting(false);
     }
   };
+
+  if (!currentQuestion) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 max-w-lg w-full text-center">
+          <h1 className="text-2xl font-bold text-navy-900 mb-3">Detailed Assessment</h1>
+          <p className="text-gray-600 mb-6">
+            We could not load the assessment questions right now. Please go back and try again.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="px-5 py-3 rounded-xl bg-copper-600 text-white font-semibold hover:bg-copper-700"
+          >
+            Back to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -276,9 +308,7 @@ export default function ComprehensiveQuestionnaire() {
               className="flex items-center gap-2 hover:opacity-80"
             >
               <Home className="w-8 h-8 text-copper-600" />
-              <span className="font-serif font-bold text-navy-900">
-                A Wealthy Foundation
-              </span>
+              <span className="font-serif font-bold text-navy-900">A Wealthy Foundation</span>
             </button>
 
             <div className="flex items-center gap-2">
@@ -296,9 +326,7 @@ export default function ComprehensiveQuestionnaire() {
       <div className="bg-white border-b border-gray-100 py-3">
         <div className="max-w-4xl mx-auto px-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-navy-700">
-              Detailed Assessment
-            </span>
+            <span className="text-sm font-medium text-navy-700">Detailed Assessment</span>
             <span className="text-sm text-gray-500">
               {currentStep + 1} of {totalSteps}
             </span>
@@ -315,7 +343,7 @@ export default function ComprehensiveQuestionnaire() {
             {SECTIONS.map((section, idx) => {
               const Icon = section.icon;
               const currentSectionIndex = SECTIONS.findIndex(
-                (s) => s.id === currentSection.id
+                (candidate) => candidate.id === currentSection.id
               );
               const isActive = currentSection.id === section.id;
               const isComplete = idx < currentSectionIndex;
@@ -343,237 +371,226 @@ export default function ComprehensiveQuestionnaire() {
 
       <main className="flex-1 py-6">
         <div className="max-w-2xl mx-auto px-4">
-          {currentQuestion && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 md:p-6 min-h-[68vh] flex flex-col justify-between">
-              <div>
-                {currentQuestion.section && (
-                  <div className="flex items-center gap-2 mb-4">
-                    {(() => {
-                      const Icon = SECTION_ICONS[currentQuestion.section];
-                      return Icon ? <Icon className="w-4 h-4 text-copper-600" /> : null;
-                    })()}
-                    <span className="text-xs font-medium text-copper-600 uppercase tracking-wide">
-                      {BUILDING_BLOCK_LABELS[currentQuestion.section as BuildingBlockKey]}
-                    </span>
-                  </div>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 md:p-6 min-h-[68vh] flex flex-col justify-between">
+            <div>
+              {currentQuestion.section && (
+                <div className="flex items-center gap-2 mb-4">
+                  {(() => {
+                    const Icon = SECTION_ICONS[currentQuestion.section];
+                    return Icon ? <Icon className="w-4 h-4 text-copper-600" /> : null;
+                  })()}
+                  <span className="text-xs font-medium text-copper-600 uppercase tracking-wide">
+                    {getSectionLabel(currentQuestion.section)}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex items-start gap-3 mb-5">
+                <h2 className="text-xl md:text-2xl font-bold text-navy-900 leading-tight flex-1">
+                  {currentQuestion.question}
+                </h2>
+
+                {currentQuestion.helperText && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInfoOpen(true);
+                      setHasSeenInfo(true);
+                    }}
+                    className="mt-1 flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-500 hover:border-copper-400 hover:text-copper-600 transition-colors"
+                    title="More info"
+                    aria-label="More info"
+                  >
+                    <Info className="w-4 h-4" />
+                  </button>
                 )}
+              </div>
 
-<div className="flex items-start gap-3 mb-5">
-  <h2 className="text-xl md:text-2xl font-bold text-navy-900 leading-tight flex-1">
-    {currentQuestion.question}
-  </h2>
+              {currentQuestion.type === 'single' && currentQuestion.options && (
+                <div className="space-y-2">
+                  {currentQuestion.options.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => handleResponse(currentQuestion, option.value)}
+                      className={`w-full p-3 text-left text-[15px] rounded-xl border-2 transition-all ${
+                        responses[currentQuestion.key] === option.value
+                          ? 'border-copper-500 bg-copper-50 text-navy-900'
+                          : 'border-gray-200 hover:border-copper-300 text-navy-700'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
 
-  {currentQuestion.helperText && (
-    <button
-      type="button"
-      onClick={() => {
-        setInfoOpen(true);
-        setHasSeenInfo(true);
-      }}
-      className="mt-1 flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-500 hover:border-copper-400 hover:text-copper-600 transition-colors"
-      title="More info"
-      aria-label="More info"
-    >
-      <Info className="w-4 h-4" />
-    </button>
-  )}
-</div>
+              {currentQuestion.type === 'multiple' && currentQuestion.options && (
+                <div className="space-y-2">
+                  {currentQuestion.options.map((option) => {
+                    const selected = Array.isArray(responses[currentQuestion.key])
+                      ? (responses[currentQuestion.key] as string[]).includes(option.value)
+                      : false;
 
-  
-                {currentQuestion.type === 'single' && currentQuestion.options && (
-                  <div className="space-y-2">
-                    {currentQuestion.options.map((option) => (
+                    return (
                       <button
                         key={option.value}
                         type="button"
-                        onClick={() => handleResponse(currentQuestion, option.value)}
-                        className={`w-full p-3 text-left text-[15px] rounded-xl border-2 transition-all ${
-                          responses[currentQuestion.key] === option.value
+                        onClick={() => handleMultipleToggle(currentQuestion, option.value)}
+                        className={`w-full p-3 text-left text-[15px] rounded-xl border-2 transition-all flex items-center gap-3 ${
+                          selected
                             ? 'border-copper-500 bg-copper-50 text-navy-900'
                             : 'border-gray-200 hover:border-copper-300 text-navy-700'
                         }`}
                       >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {currentQuestion.type === 'multiple' && currentQuestion.options && (
-                  <div className="space-y-2">
-                    {currentQuestion.options.map((option) => {
-                      const selected = Array.isArray(responses[currentQuestion.key])
-                        ? (responses[currentQuestion.key] as string[]).includes(option.value)
-                        : false;
-
-                      return (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() => handleMultipleToggle(currentQuestion, option.value)}
-                          className={`w-full p-3 text-left text-[15px] rounded-xl border-2 transition-all flex items-center gap-3 ${
-                            selected
-                              ? 'border-copper-500 bg-copper-50 text-navy-900'
-                              : 'border-gray-200 hover:border-copper-300 text-navy-700'
+                        <div
+                          className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                            selected ? 'border-copper-500 bg-copper-500' : 'border-gray-300'
                           }`}
                         >
-                          <div
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                              selected
-                                ? 'border-copper-500 bg-copper-500'
-                                : 'border-gray-300'
-                            }`}
-                          >
-                            {selected && <CheckCircle className="w-3 h-3 text-white" />}
-                          </div>
-                          {option.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {currentQuestion.type === 'number' && (
-                  <div>
-                  
-
-                    <div className="relative">
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        placeholder={currentQuestion.placeholder}
-                        value={responses[currentQuestion.key] ?? ''}
-                        onChange={(e) =>
-                          handleNumberChange(currentQuestion, e.target.value)
-                        }
-                        onKeyDown={(e) => handleNumberKeyDown(e, currentQuestion)}
-                        className="w-full p-3 text-lg border-2 border-gray-200 rounded-xl focus:border-copper-500 focus:outline-none pr-12"
-                      />
-
-
-                      <button
-                        type="button"
-                        onClick={openCalculator}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-copper-600 transition-colors"
-                        title="Use calculator"
-                      >
-                        <Calculator className="w-5 h-5" />
+                          {selected && <CheckCircle className="w-3 h-3 text-white" />}
+                        </div>
+                        {option.label}
                       </button>
-                    </div>
-                  </div>
-                )}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
 
-              <div className="flex items-center justify-between mt-6 pt-5 border-t border-gray-100">
+              {currentQuestion.type === 'number' && (
+                <div>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      placeholder={currentQuestion.placeholder}
+                      value={responses[currentQuestion.key] ?? ''}
+                      onChange={(e) => handleNumberChange(currentQuestion, e.target.value)}
+                      onKeyDown={(e) => handleNumberKeyDown(e, currentQuestion)}
+                      className="w-full p-3 text-lg border-2 border-gray-200 rounded-xl focus:border-copper-500 focus:outline-none pr-12"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={openCalculator}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-copper-600 transition-colors"
+                      title="Use calculator"
+                    >
+                      <Calculator className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between mt-6 pt-5 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={prevStep}
+                disabled={currentStep === 0}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium ${
+                  currentStep === 0
+                    ? 'text-gray-300 cursor-not-allowed'
+                    : 'text-navy-700 hover:bg-gray-100'
+                }`}
+              >
+                <ChevronLeft className="w-5 h-5" />
+                Back
+              </button>
+
+              {currentStep === totalSteps - 1 ? (
                 <button
+                  ref={nextButtonRef}
                   type="button"
-                  onClick={prevStep}
-                  disabled={currentStep === 0}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium ${
-                    currentStep === 0
-                      ? 'text-gray-300 cursor-not-allowed'
-                      : 'text-navy-700 hover:bg-gray-100'
+                  onClick={submitAssessment}
+                  disabled={isSubmitting || !canProceed()}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-bold ${
+                    canProceed()
+                      ? 'bg-copper-600 text-white hover:bg-copper-700'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                   }`}
                 >
-                  <ChevronLeft className="w-5 h-5" />
-                  Back
+                  {isSubmitting ? 'Generating Report...' : 'See My Detailed Report'}
+                  <ArrowRight className="w-5 h-5" />
                 </button>
-
-                {currentStep === totalSteps - 1 ? (
-                  <button
-                    ref={nextButtonRef}
-                    type="button"
-                    onClick={submitAssessment}
-                    disabled={isSubmitting || !canProceed()}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-lg font-bold ${
-                      canProceed()
-                        ? 'bg-copper-600 text-white hover:bg-copper-700'
-                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    }`}
-                  >
-                    {isSubmitting ? 'Generating Report...' : 'See My Detailed Report'}
-                    <ArrowRight className="w-5 h-5" />
-                  </button>
-                ) : (
-                  <button
-                    ref={nextButtonRef}
-                    type="button"
-                    onClick={nextStep}
-                    disabled={!canProceed()}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-lg font-bold ${
-                      canProceed()
-                        ? 'bg-copper-600 text-white hover:bg-copper-700'
-                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    }`}
-                  >
-                    Next
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-                )}
-              </div>
+              ) : (
+                <button
+                  ref={nextButtonRef}
+                  type="button"
+                  onClick={nextStep}
+                  disabled={!canProceed()}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-bold ${
+                    canProceed()
+                      ? 'bg-copper-600 text-white hover:bg-copper-700'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  Next
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </main>
+
       {infoOpen && currentQuestion?.helperText && (
-  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-    <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl">
-      <div className="flex items-center justify-between mb-4">
-      <h3 className="text-lg font-bold text-navy-900">
-  {currentQuestion.key === 'threeMonthReview'
-    ? 'What is a 3-Month Spending Review?'
-    : currentQuestion.question}
-</h3>
-<button
-  type="button"
-  onClick={() => {
-    setInfoOpen(true);
-    setHasSeenInfo(true);
-  }}
-  className={`mt-1 flex h-9 w-9 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-500 hover:border-copper-500 hover:text-copper-600 hover:bg-copper-50 transition-all duration-200 group ${
-    !hasSeenInfo ? 'animate-pulse' : ''
-  }`}
-  title="More info"
-  aria-label="More info"
->
-  <Info className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-</button>
-      </div>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-navy-900">
+                {currentQuestion.key === 'threeMonthReview'
+                  ? 'What is a 3-Month Spending Review?'
+                  : currentQuestion.question}
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setInfoOpen(false);
+                  setHasSeenInfo(true);
+                }}
+                className={`mt-1 flex h-9 w-9 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-500 hover:border-copper-500 hover:text-copper-600 hover:bg-copper-50 transition-all duration-200 group ${
+                  !hasSeenInfo ? 'animate-pulse' : ''
+                }`}
+                title="Close info"
+                aria-label="Close info"
+              >
+                <X className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+              </button>
+            </div>
 
-      <p className="text-gray-700 leading-7">
-        {currentQuestion.helperText}
-      </p>
+            <p className="text-gray-700 leading-7">{currentQuestion.helperText}</p>
 
-      {currentQuestion.key === 'threeMonthReview' && (
-        <div className="mt-4 space-y-3 text-gray-700 leading-7">
-          <p>
-            A 3-month spending review means looking back at the last 3 months of
-            your bank and card transactions to see exactly where your money has
-            been going.
-          </p>
-          <p>
-            You are not trying to judge yourself. You are trying to get clear.
-          </p>
-          <ul className="space-y-2 pl-5 list-disc">
-            <li>spot money leaks</li>
-            <li>see patterns you may have missed</li>
-            <li>understand what is actually happening, not just what you think is happening</li>
-          </ul>
+            {currentQuestion.key === 'threeMonthReview' && (
+              <div className="mt-4 space-y-3 text-gray-700 leading-7">
+                <p>
+                  A 3-month spending review means looking back at the last 3 months of your bank
+                  and card transactions to see exactly where your money has been going.
+                </p>
+                <p>You are not trying to judge yourself. You are trying to get clear.</p>
+                <ul className="space-y-2 pl-5 list-disc">
+                  <li>spot money leaks</li>
+                  <li>see patterns you may have missed</li>
+                  <li>
+                    understand what is actually happening, not just what you think is happening
+                  </li>
+                </ul>
+              </div>
+            )}
+
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setInfoOpen(false)}
+                className="px-5 py-2.5 bg-copper-600 text-white rounded-xl font-semibold hover:bg-copper-700"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
-      <div className="mt-6 flex justify-end">
-        <button
-          type="button"
-          onClick={() => setInfoOpen(false)}
-          className="px-5 py-2.5 bg-copper-600 text-white rounded-xl font-semibold hover:bg-copper-700"
-        >
-          Got it
-        </button>
-      </div>
-    </div>
-  </div>
-)}
       {calculatorOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm">

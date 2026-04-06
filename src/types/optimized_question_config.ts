@@ -1,0 +1,906 @@
+export type AssessmentMode = 'snapshot' | 'detailed';
+export type QuestionPriority = 'core' | 'conditional' | 'defer';
+
+export type QuestionTag = {
+  modes?: AssessmentMode[];
+  priority?: QuestionPriority;
+  askIf?: (answers: Record<string, any>) => boolean;
+};
+
+// Add this to your existing Question interface:
+// tags?: QuestionTag;
+
+export const QUESTION_STRATEGY = {
+  snapshotCore: [
+    'ageRange',
+    'relationshipStatus',
+    'housingStatus',
+    'monthlyTakeHomeIncome',
+    'incomeConsistency',
+    'incomeGrowthPotential',
+    'monthlyHousingCost',
+    'monthlyUtilities',
+    'housingPressure',
+    'overspendingFrequency',
+    'moneyLeaks',
+    'totalLiquidSavings',
+    'emergencyAccess',
+    'savingConsistency',
+    'vehicleDebt',
+    'otherDebt',
+    'monthlyDebtPayments',
+    'debtManageability',
+    'debtPaydownStrategy',
+    'healthInsurance',
+    'investingStatus',
+    'employerMatch',
+    'financialDirection',
+    'primaryFinancialPriority',
+    'financialConfidence',
+  ],
+  detailedOnly: [
+    'monthlyChildcareCost',
+    'childcarePressure',
+    'carLoanBalance',
+    'leasePayment',
+    'mortgageBalance',
+    'homeValue',
+    'mortgageImpact',
+    'creditCardBehavior',
+    'incomeInterruptionCoverage',
+    'lifeInsurance',
+    'propertyCoverage',
+    'autoCoverage',
+    'investmentAccounts',
+    'investmentConfidence',
+    'totalInvestments',
+    'savingsAutomation',
+  ],
+  remove: ['dependents', 'incomeProtection', 'housingDebt'],
+  defer: [
+    'incomeGrowth',
+    'incomeSources',
+    'spendingAwareness',
+    'spendingTracking',
+    'lifestyleInflation',
+    'threeMonthReview',
+    'financialTimeHorizon',
+    'lifeGoal',
+  ],
+} as const;
+
+export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
+  // ROUTING / CONTEXT
+  {
+    key: 'ageRange',
+    question: 'What is your age range?',
+    type: 'single',
+    section: 'vision',
+    required: true,
+    options: [
+      { value: 'under_25', label: 'Under 25' },
+      { value: '25_34', label: '25-34' },
+      { value: '35_44', label: '35-44' },
+      { value: '45_54', label: '45-54' },
+      { value: '55_plus', label: '55+' },
+    ],
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+  {
+    key: 'relationshipStatus',
+    question: 'What best describes your household?',
+    type: 'single',
+    section: 'vision',
+    required: true,
+    options: [
+      { value: 'single', label: 'Single' },
+      { value: 'single_with_dependents', label: 'Single with dependents' },
+      { value: 'partnered', label: 'Partnered / married' },
+      { value: 'partnered_with_dependents', label: 'Partnered / married with dependents' },
+    ],
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+  {
+    key: 'housingStatus',
+    question: 'What is your housing situation?',
+    type: 'single',
+    section: 'spending',
+    required: true,
+    options: [
+      { value: 'living_with_family', label: 'Living with family' },
+      { value: 'rent', label: 'Renting' },
+      { value: 'own_with_mortgage', label: 'Own with a mortgage' },
+      { value: 'own_outright', label: 'Own outright' },
+    ],
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+
+  // INCOME
+  {
+    key: 'monthlyTakeHomeIncome',
+    question: 'About how much take-home pay hits your bank each month?',
+    type: 'number',
+    section: 'income',
+    required: true,
+    placeholder: 'e.g. 5000',
+    helperText: 'Use take-home pay, not gross income.',
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+  {
+    key: 'incomeConsistency',
+    question: 'How consistent is your income?',
+    type: 'single',
+    section: 'income',
+    required: true,
+    options: [
+      { value: 'very_consistent', label: 'Very consistent' },
+      { value: 'mostly_consistent', label: 'Mostly consistent' },
+      { value: 'variable', label: 'Variable' },
+      { value: 'highly_unpredictable', label: 'Highly unpredictable' },
+    ],
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+  {
+    key: 'incomeGrowthPotential',
+    question: 'What is your income growth potential from here?',
+    type: 'single',
+    section: 'income',
+    required: true,
+    options: [
+      { value: 'high', label: 'High' },
+      { value: 'moderate', label: 'Moderate' },
+      { value: 'limited', label: 'Limited' },
+      { value: 'none', label: 'None / unsure' },
+    ],
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+  {
+    key: 'incomeGrowth',
+    question: 'How has your income changed over the last year?',
+    type: 'single',
+    section: 'income',
+    required: false,
+    options: [
+      { value: 'increased_significantly', label: 'Increased significantly' },
+      { value: 'increased_moderately', label: 'Increased moderately' },
+      { value: 'stable', label: 'Stayed about the same' },
+      { value: 'decreased', label: 'Decreased' },
+    ],
+    tags: { modes: ['detailed'], priority: 'defer' },
+  },
+  {
+    key: 'incomeSources',
+    question: 'How many income sources do you have?',
+    type: 'single',
+    section: 'income',
+    required: false,
+    options: [
+      { value: 'one', label: 'One' },
+      { value: 'two', label: 'Two' },
+      { value: 'three_or_more', label: 'Three or more' },
+    ],
+    tags: { modes: ['detailed'], priority: 'defer' },
+  },
+
+  // SPENDING / FIXED COSTS
+  {
+    key: 'monthlyHousingCost',
+    question: 'What is your monthly housing cost right now?',
+    type: 'number',
+    section: 'spending',
+    required: true,
+    placeholder: 'e.g. 1400',
+    helperText:
+      'If you rent, use your monthly rent. If you own, use your monthly mortgage or house payment.',
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+  {
+    key: 'monthlyUtilities',
+    question: 'About how much do you spend on utilities each month?',
+    type: 'number',
+    section: 'spending',
+    required: true,
+    placeholder: 'e.g. 250',
+    helperText:
+      'Include utilities like electric, gas, water, trash, and internet if possible.',
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+  {
+    key: 'housingPressure',
+    question: 'How heavy do your housing and utility costs feel in your monthly budget?',
+    type: 'single',
+    section: 'spending',
+    required: true,
+    options: [
+      { value: 'very_manageable', label: 'Very manageable' },
+      { value: 'manageable', label: 'Manageable' },
+      { value: 'a_bit_tight', label: 'A bit tight' },
+      { value: 'tight', label: 'Tight' },
+      { value: 'stressful', label: 'Stressful' },
+    ],
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+  {
+    key: 'monthlyChildcareCost',
+    question: 'About how much do you spend on childcare each month?',
+    type: 'number',
+    section: 'spending',
+    required: true,
+    placeholder: 'e.g. 600',
+    conditions: [
+      {
+        key: 'relationshipStatus',
+        operator: 'in',
+        value: ['single_with_dependents', 'partnered_with_dependents'],
+      },
+    ],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) =>
+        ['single_with_dependents', 'partnered_with_dependents'].includes(a.relationshipStatus),
+    },
+  },
+  {
+    key: 'childcarePressure',
+    question: 'How much pressure does childcare cost put on your monthly budget?',
+    type: 'single',
+    section: 'spending',
+    required: true,
+    conditions: [
+      {
+        key: 'relationshipStatus',
+        operator: 'in',
+        value: ['single_with_dependents', 'partnered_with_dependents'],
+      },
+    ],
+    options: [
+      { value: 'none', label: 'Very little' },
+      { value: 'some', label: 'Some' },
+      { value: 'meaningful', label: 'Meaningful' },
+      { value: 'heavy', label: 'Heavy' },
+      { value: 'very_heavy', label: 'Very heavy' },
+    ],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) =>
+        ['single_with_dependents', 'partnered_with_dependents'].includes(a.relationshipStatus),
+    },
+  },
+  {
+    key: 'overspendingFrequency',
+    question: 'How often do you overspend?',
+    type: 'single',
+    section: 'spending',
+    required: true,
+    options: [
+      { value: 'rarely', label: 'Rarely' },
+      { value: 'sometimes', label: 'Sometimes' },
+      { value: 'often', label: 'Often' },
+      { value: 'almost_always', label: 'Almost always' },
+    ],
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+  {
+    key: 'moneyLeaks',
+    question:
+      'Do you think you have money leaks like subscriptions, impulse spending, or frequent convenience purchases?',
+    type: 'single',
+    section: 'spending',
+    required: true,
+    options: [
+      { value: 'none', label: 'No, not really' },
+      { value: 'a_few', label: 'A few' },
+      { value: 'several', label: 'Several' },
+      { value: 'a_lot', label: 'A lot' },
+    ],
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+  {
+    key: 'spendingAwareness',
+    question: 'How clear are you on where your money actually goes each month?',
+    type: 'single',
+    section: 'spending',
+    required: false,
+    options: [
+      { value: 'track_everything', label: 'I track it closely and know the details' },
+      { value: 'good_general_idea', label: 'I have a good general idea' },
+      { value: 'not_really_sure', label: 'I am not really sure' },
+      { value: 'no_idea', label: 'I do not have a clear picture' },
+    ],
+    tags: { modes: ['detailed'], priority: 'defer' },
+  },
+  {
+    key: 'lifestyleInflation',
+    question: 'When your income goes up, what usually happens?',
+    type: 'single',
+    section: 'spending',
+    required: false,
+    options: [
+      { value: 'save_or_invest_most', label: 'I save or invest most of it' },
+      { value: 'split_it', label: 'I split it between lifestyle and savings' },
+      { value: 'spend_most', label: 'I usually spend most of it' },
+    ],
+    tags: { modes: ['detailed'], priority: 'defer' },
+  },
+  {
+    key: 'threeMonthReview',
+    question: 'Have you done a 3-month spending review recently?',
+    helperText:
+      'This means reviewing the last 3 months of bank and card transactions to see exactly where your money is going.',
+    type: 'single',
+    section: 'spending',
+    required: false,
+    options: [
+      { value: 'yes', label: 'Yes' },
+      { value: 'no', label: 'No' },
+    ],
+    tags: { modes: ['detailed'], priority: 'defer' },
+  },
+
+  // SAVING
+  {
+    key: 'totalLiquidSavings',
+    question:
+      'How much do you have in total liquid savings across checking, savings, and high-yield savings?',
+    type: 'single',
+    section: 'saving',
+    required: true,
+    options: [
+      { value: '100000_plus', label: '$100,000+' },
+      { value: '50000_100000', label: '$50,000-$100,000' },
+      { value: '30000_50000', label: '$30,000-$50,000' },
+      { value: '15000_30000', label: '$15,000-$30,000' },
+      { value: '5000_15000', label: '$5,000-$15,000' },
+      { value: '1000_5000', label: '$1,000-$5,000' },
+      { value: 'under_1000', label: 'Under $1,000' },
+    ],
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+  {
+    key: 'emergencyAccess',
+    question:
+      'If something unexpected happened, how much of your cash is truly available for emergencies?',
+    type: 'single',
+    section: 'saving',
+    required: true,
+    options: [
+      { value: 'all', label: 'All of it' },
+      { value: 'most', label: 'Most of it' },
+      { value: 'some', label: 'Some of it' },
+      { value: 'very_little', label: 'Very little of it' },
+    ],
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+  {
+    key: 'savingConsistency',
+    question: 'Are you currently saving money each month?',
+    type: 'single',
+    section: 'saving',
+    required: true,
+    options: [
+      { value: 'yes_consistently', label: 'Yes, consistently' },
+      { value: 'yes_irregularly', label: 'Yes, but irregularly' },
+      { value: 'not_currently', label: 'Not currently' },
+    ],
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+  {
+    key: 'savingsAutomation',
+    question: 'How is your saving set up?',
+    type: 'single',
+    section: 'saving',
+    required: true,
+    options: [
+      { value: 'fully_automated', label: 'Fully automated' },
+      { value: 'partially_automated', label: 'Partially automated' },
+      { value: 'manual', label: 'Manual transfers' },
+      { value: 'not_saving', label: 'Not saving right now' },
+    ],
+    tags: { modes: ['detailed'], priority: 'conditional' },
+  },
+
+  // DEBT
+  {
+    key: 'vehicleDebt',
+    question: 'What is your vehicle situation?',
+    type: 'single',
+    section: 'debt',
+    required: true,
+    options: [
+      { value: 'own_outright', label: 'Own outright (no loan)' },
+      { value: 'car_loan', label: 'Have a car loan' },
+      { value: 'car_lease', label: 'Lease a vehicle' },
+      { value: 'no_vehicle', label: 'No vehicle / not applicable' },
+    ],
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+  {
+    key: 'carLoanBalance',
+    question: 'What is your approximate car loan balance?',
+    type: 'single',
+    section: 'debt',
+    required: true,
+    options: [
+      { value: 'under_5000', label: 'Under $5,000' },
+      { value: '5000_15000', label: '$5,000-$15,000' },
+      { value: '15000_30000', label: '$15,000-$30,000' },
+      { value: '30000_plus', label: '$30,000+' },
+    ],
+    conditions: [{ key: 'vehicleDebt', operator: 'equals', value: 'car_loan' }],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => a.vehicleDebt === 'car_loan',
+    },
+  },
+  {
+    key: 'leasePayment',
+    question: 'About how much is your monthly lease payment?',
+    type: 'single',
+    section: 'debt',
+    required: true,
+    conditions: [{ key: 'vehicleDebt', operator: 'equals', value: 'car_lease' }],
+    options: [
+      { value: 'under_250', label: 'Under $250' },
+      { value: '250_450', label: '$250-$450' },
+      { value: '450_650', label: '$450-$650' },
+      { value: '650_plus', label: '$650+' },
+    ],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => a.vehicleDebt === 'car_lease',
+    },
+  },
+  {
+    key: 'otherDebt',
+    question: 'Which of the following debts do you currently have?',
+    type: 'multiple',
+    section: 'debt',
+    required: true,
+    options: [
+      { value: 'credit_card', label: 'Credit card debt' },
+      { value: 'student_loan', label: 'Student loans' },
+      { value: 'personal_loan', label: 'Personal loans' },
+      { value: 'bnpl', label: 'Buy now, pay later' },
+      { value: 'payday', label: 'Payday / cash advance debt' },
+      { value: 'medical', label: 'Medical debt' },
+      { value: 'none', label: 'None of these' },
+    ],
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+  {
+    key: 'monthlyDebtPayments',
+    question: 'About how much are your monthly non-mortgage debt payments total?',
+    type: 'single',
+    section: 'debt',
+    required: true,
+    options: [
+      { value: 'none', label: 'None' },
+      { value: 'under_200', label: 'Under $200' },
+      { value: '200_500', label: '$200-$500' },
+      { value: '500_1000', label: '$500-$1,000' },
+      { value: '1000_plus', label: '$1,000+' },
+    ],
+    conditions: [
+      {
+        operator: 'custom',
+        fn: (r) =>
+          r.vehicleDebt === 'car_loan' ||
+          r.vehicleDebt === 'car_lease' ||
+          (Array.isArray(r.otherDebt) && !r.otherDebt.includes('none')),
+      },
+    ],
+    tags: {
+      modes: ['snapshot', 'detailed'],
+      priority: 'core',
+      askIf: (a) =>
+        a.vehicleDebt === 'car_loan' ||
+        a.vehicleDebt === 'car_lease' ||
+        (Array.isArray(a.otherDebt) && !a.otherDebt.includes('none')),
+    },
+  },
+  {
+    key: 'debtManageability',
+    question: 'How manageable does your debt feel right now?',
+    type: 'single',
+    section: 'debt',
+    required: true,
+    options: [
+      { value: 'very_manageable', label: 'Very manageable' },
+      { value: 'manageable', label: 'Manageable' },
+      { value: 'a_bit_heavy', label: 'A bit heavy' },
+      { value: 'heavy', label: 'Heavy' },
+      { value: 'overwhelming', label: 'Overwhelming' },
+    ],
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+  {
+    key: 'debtPaydownStrategy',
+    question: 'Are you using any debt paydown strategy right now?',
+    type: 'single',
+    section: 'debt',
+    required: true,
+    options: [
+      { value: 'avalanche', label: 'Avalanche (highest interest first)' },
+      { value: 'snowball', label: 'Snowball (smallest balance first)' },
+      { value: 'general_extra', label: 'Paying extra where I can' },
+      { value: 'minimums_only', label: 'Mostly minimums only' },
+      { value: 'no_strategy', label: 'No real strategy' },
+    ],
+    conditions: [
+      {
+        operator: 'custom',
+        fn: (r) =>
+          r.vehicleDebt === 'car_loan' ||
+          r.vehicleDebt === 'car_lease' ||
+          (Array.isArray(r.otherDebt) && !r.otherDebt.includes('none')),
+      },
+    ],
+    tags: {
+      modes: ['snapshot', 'detailed'],
+      priority: 'core',
+      askIf: (a) =>
+        a.vehicleDebt === 'car_loan' ||
+        a.vehicleDebt === 'car_lease' ||
+        (Array.isArray(a.otherDebt) && !a.otherDebt.includes('none')),
+    },
+  },
+  {
+    key: 'creditCardBehavior',
+    question: 'Which best describes your credit card behavior?',
+    type: 'single',
+    section: 'debt',
+    required: true,
+    conditions: [{ key: 'otherDebt', operator: 'includes', value: 'credit_card' }],
+    options: [
+      { value: 'pay_in_full', label: 'I pay cards off in full monthly' },
+      { value: 'small_balance', label: 'I usually carry a small balance' },
+      { value: 'revolving_balance', label: 'I regularly carry a balance' },
+      { value: 'behind', label: 'I am struggling to keep up' },
+    ],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => Array.isArray(a.otherDebt) && a.otherDebt.includes('credit_card'),
+    },
+  },
+
+  // HOMEOWNER DETAIL
+  {
+    key: 'mortgageBalance',
+    question: 'What is your approximate mortgage balance?',
+    type: 'number',
+    section: 'debt',
+    required: true,
+    placeholder: 'e.g. 185000',
+    conditions: [{ key: 'housingStatus', operator: 'equals', value: 'own_with_mortgage' }],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => a.housingStatus === 'own_with_mortgage',
+    },
+  },
+  {
+    key: 'homeValue',
+    question: 'What is your home worth today?',
+    type: 'number',
+    section: 'spending',
+    required: true,
+    placeholder: 'e.g. 260000',
+    helperText: 'A Zillow estimate or best reasonable estimate is fine.',
+    conditions: [{ key: 'housingStatus', operator: 'equals', value: 'own_with_mortgage' }],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => a.housingStatus === 'own_with_mortgage',
+    },
+  },
+  {
+    key: 'mortgageImpact',
+    question: 'How does your mortgage affect your overall financial progress right now?',
+    type: 'single',
+    section: 'spending',
+    required: true,
+    conditions: [{ key: 'housingStatus', operator: 'equals', value: 'own_with_mortgage' }],
+    options: [
+      { value: 'very_manageable', label: 'Very manageable' },
+      { value: 'manageable', label: 'Manageable' },
+      { value: 'slows_me_down', label: 'It slows me down some' },
+      { value: 'major_pressure', label: 'It is a major source of pressure' },
+    ],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => a.housingStatus === 'own_with_mortgage',
+    },
+  },
+
+  // PROTECTION
+  {
+    key: 'incomeInterruptionCoverage',
+    question: 'If your income stopped for a while, how prepared would you be?',
+    type: 'single',
+    section: 'protection',
+    required: true,
+    options: [
+      { value: 'very_prepared', label: 'Very prepared' },
+      { value: 'somewhat_prepared', label: 'Somewhat prepared' },
+      { value: 'not_prepared', label: 'Not prepared' },
+    ],
+    tags: { modes: ['detailed'], priority: 'conditional' },
+  },
+  {
+    key: 'healthInsurance',
+    question: 'Do you have health insurance coverage?',
+    type: 'single',
+    section: 'protection',
+    required: true,
+    options: [
+      { value: 'good_coverage', label: 'Yes, solid coverage' },
+      { value: 'basic_coverage', label: 'Yes, basic coverage' },
+      { value: 'limited_coverage', label: 'Limited coverage' },
+      { value: 'none', label: 'No coverage' },
+    ],
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+  {
+    key: 'lifeInsurance',
+    question: 'Do you have life insurance coverage?',
+    type: 'single',
+    section: 'protection',
+    required: true,
+    conditions: [
+      {
+        key: 'relationshipStatus',
+        operator: 'in',
+        value: ['single_with_dependents', 'partnered_with_dependents'],
+      },
+    ],
+    options: [
+      { value: 'enough', label: 'Yes, enough coverage' },
+      { value: 'some', label: 'Some, but probably not enough' },
+      { value: 'none', label: 'No life insurance' },
+    ],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) =>
+        ['single_with_dependents', 'partnered_with_dependents'].includes(a.relationshipStatus),
+    },
+  },
+  {
+    key: 'propertyCoverage',
+    question: 'How would you describe your home or renter coverage?',
+    type: 'single',
+    section: 'protection',
+    required: true,
+    conditions: [{ key: 'housingStatus', operator: 'not_equals', value: 'living_with_family' }],
+    options: [
+      { value: 'solid', label: 'Solid coverage' },
+      { value: 'basic', label: 'Basic coverage' },
+      { value: 'minimal', label: 'Minimal / unsure' },
+      { value: 'none', label: 'No coverage' },
+    ],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => a.housingStatus !== 'living_with_family',
+    },
+  },
+  {
+    key: 'autoCoverage',
+    question: 'How would you describe your auto insurance coverage?',
+    type: 'single',
+    section: 'protection',
+    required: true,
+    conditions: [{ key: 'vehicleDebt', operator: 'not_equals', value: 'no_vehicle' }],
+    options: [
+      { value: 'full', label: 'Full coverage' },
+      { value: 'basic', label: 'Basic but reasonable' },
+      { value: 'minimal', label: 'Minimal' },
+      { value: 'minimum', label: 'State minimum only' },
+      { value: 'do_not_drive', label: 'Do not drive / not applicable' },
+    ],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => a.vehicleDebt !== 'no_vehicle',
+    },
+  },
+
+  // INVESTING
+  {
+    key: 'investingStatus',
+    question: 'Are you currently investing for the future?',
+    type: 'single',
+    section: 'investing',
+    required: true,
+    options: [
+      { value: 'yes_consistently', label: 'Yes, consistently' },
+      { value: 'yes_irregularly', label: 'Yes, irregularly' },
+      { value: 'not_yet', label: 'Not yet' },
+    ],
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+  {
+    key: 'employerMatch',
+    question:
+      'Does your employer offer a retirement match, and are you contributing enough to get it?',
+    type: 'single',
+    section: 'investing',
+    required: true,
+    options: [
+      { value: 'maximizing_match', label: 'Yes, and I am getting the full match' },
+      { value: 'have_match_not_maxing', label: 'Yes, but I am not getting the full match' },
+      { value: 'have_match_not_contributing', label: 'Yes, but I am not contributing right now' },
+      { value: 'no_match_or_no_access', label: 'No match or no workplace plan access' },
+    ],
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+  {
+    key: 'investmentAccounts',
+    question: 'Which investment accounts do you currently have?',
+    type: 'multiple',
+    section: 'investing',
+    required: true,
+    conditions: [
+      { key: 'investingStatus', operator: 'in', value: ['yes_consistently', 'yes_irregularly'] },
+    ],
+    options: [
+      { value: '401k', label: '401(k) / workplace plan' },
+      { value: 'roth_ira', label: 'Roth IRA' },
+      { value: 'traditional_ira', label: 'Traditional IRA' },
+      { value: 'brokerage', label: 'Taxable brokerage account' },
+      { value: 'hsa', label: 'HSA invested for the future' },
+      { value: 'none', label: 'None yet' },
+    ],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
+    },
+  },
+  {
+    key: 'investmentConfidence',
+    question: 'How confident do you feel about your investing decisions?',
+    type: 'single',
+    section: 'investing',
+    required: true,
+    conditions: [
+      { key: 'investingStatus', operator: 'in', value: ['yes_consistently', 'yes_irregularly'] },
+    ],
+    options: [
+      { value: 'very_confident', label: 'Very confident' },
+      { value: 'somewhat_confident', label: 'Somewhat confident' },
+      { value: 'not_confident', label: 'Not confident' },
+    ],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
+    },
+  },
+  {
+    key: 'totalInvestments',
+    question: 'About how much do you have invested in total?',
+    type: 'single',
+    section: 'investing',
+    required: true,
+    conditions: [
+      { key: 'investingStatus', operator: 'in', value: ['yes_consistently', 'yes_irregularly'] },
+    ],
+    options: [
+      { value: '500000_plus', label: '$500,000+' },
+      { value: '250000_500000', label: '$250,000-$500,000' },
+      { value: '100000_250000', label: '$100,000-$250,000' },
+      { value: '50000_100000', label: '$50,000-$100,000' },
+      { value: '20000_50000', label: '$20,000-$50,000' },
+      { value: 'under_20000', label: 'Under $20,000' },
+    ],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
+    },
+  },
+
+  // VISION
+  {
+    key: 'financialDirection',
+    question: 'How clear is your financial direction right now?',
+    type: 'single',
+    section: 'vision',
+    required: true,
+    options: [
+      { value: 'very_clear', label: 'Very clear' },
+      { value: 'fairly_clear', label: 'Fairly clear' },
+      { value: 'unclear', label: 'Unclear' },
+      { value: 'very_unclear', label: 'Very unclear' },
+    ],
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+  {
+    key: 'primaryFinancialPriority',
+    question: 'What is your biggest financial priority right now?',
+    type: 'single',
+    section: 'vision',
+    required: true,
+    options: [
+      { value: 'stability', label: 'Create more stability and breathing room' },
+      { value: 'debt', label: 'Pay down debt faster' },
+      { value: 'saving', label: 'Build savings' },
+      { value: 'investing', label: 'Grow wealth / retirement progress' },
+      { value: 'clarity', label: 'Get organized and clear on the plan' },
+    ],
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+  {
+    key: 'financialConfidence',
+    question: 'How confident do you feel about your financial position overall?',
+    type: 'single',
+    section: 'vision',
+    required: true,
+    options: [
+      { value: 'very_confident', label: 'Very confident' },
+      { value: 'somewhat_confident', label: 'Somewhat confident' },
+      { value: 'not_confident', label: 'Not very confident' },
+      { value: 'overwhelmed', label: 'Overwhelmed / behind' },
+    ],
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+  {
+    key: 'financialTimeHorizon',
+    question: 'When are you most hoping to see major progress?',
+    type: 'single',
+    section: 'vision',
+    required: false,
+    options: [
+      { value: '0_2_years', label: 'Within 0-2 years' },
+      { value: '3_5_years', label: 'Within 3-5 years' },
+      { value: '5_10_years', label: 'Within 5-10 years' },
+      { value: '10_plus_years', label: '10+ years out' },
+    ],
+    tags: { modes: ['detailed'], priority: 'defer' },
+  },
+  {
+    key: 'lifeGoal',
+    question: 'What long-term outcome matters most to you?',
+    type: 'single',
+    section: 'vision',
+    required: false,
+    options: [
+      { value: 'retirement_security', label: 'Retirement security' },
+      { value: 'financial_freedom', label: 'Financial freedom / more options' },
+      { value: 'family_security', label: 'Family security' },
+      { value: 'home', label: 'Housing / home progress' },
+      { value: 'peace_of_mind', label: 'Peace of mind' },
+    ],
+    tags: { modes: ['detailed'], priority: 'defer' },
+  },
+];
+
+export function getVisibleQuestionsByMode(
+  questions: Question[],
+  responses: Record<string, any>,
+  mode: AssessmentMode = 'detailed'
+): Question[] {
+  return questions.filter((q) => {
+    const passesConditions = evaluateAllConditions(q.conditions || [], responses);
+    const passesMode = !q.tags?.modes || q.tags.modes.includes(mode);
+    const passesTagRule = q.tags?.askIf ? q.tags.askIf(responses) : true;
+    const notDeferred = q.tags?.priority !== 'defer';
+
+    return passesConditions && passesMode && passesTagRule && notDeferred;
+  });
+}
+
+export function getSnapshotQuestions(responses: Record<string, any> = {}) {
+  return getVisibleQuestionsByMode(OPTIMIZED_ASSESSMENT_QUESTIONS, responses, 'snapshot');
+}
+
+export function getDetailedQuestions(responses: Record<string, any> = {}) {
+  return getVisibleQuestionsByMode(OPTIMIZED_ASSESSMENT_QUESTIONS, responses, 'detailed');
+}

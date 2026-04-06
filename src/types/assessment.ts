@@ -161,7 +161,13 @@ export interface DetailedReport {
   nextStep: string;
   signals: UserSignals;
   metrics: FinancialMetrics;
+  structuralWarnings: {
+    type: string;
+    severity: 'medium' | 'high';
+    message: string;
+  }[];
 }
+
 
 export interface FinancialMetrics {
   debtToIncomeRatio?: number;
@@ -178,6 +184,7 @@ export interface FinancialMetrics {
   monthlyChildcareCost?: number;
   monthlyFixedCosts?: number;
 }
+
 
 export interface UserSignals {
   highHousingBurden: boolean;
@@ -199,12 +206,29 @@ export interface UserSignals {
   noClearGoals: boolean;
   carriesCreditCardBalance: boolean;
   debtFeelsHeavy: boolean;
+  incomeConstraintTriggered: boolean;
+  variableIncomeWithLowBuffer: boolean;
+  limitedMonthlyMargin: boolean;
   housingRatio: number;
   obligationPressure: number;
   debtPaymentRatio: number;
 }
 
+
 export type PillarReasons = Record<PillarKey, string[]>;
+
+export type AssessmentRoute = {
+  stage: LifeStage;
+  isRenter: boolean;
+  isHomeowner: boolean;
+  hasMortgage: boolean;
+  hasDependents: boolean;
+  hasConsumerDebt: boolean;
+  hasInvestments: boolean;
+  needsRetirementFocus: boolean;
+  hasVariableIncome: boolean;
+};
+
 
 export type ConditionOperator =
   | 'equals'
@@ -232,7 +256,10 @@ export interface Question {
   section?: BuildingBlockKey | 'context';
   required?: boolean;
   conditions?: QuestionCondition[];
+  stage?: Array<LifeStage | 'all'>;
+  askIf?: (responses: Record<string, any>, route: AssessmentRoute) => boolean;
 }
+
 
 function clamp(value: number, min = 0, max = 100) {
   return Math.max(min, Math.min(max, value));
@@ -299,6 +326,90 @@ function hasDependents(a: Record<string, any>) {
   return ['single_with_dependents', 'partnered_with_dependents'].includes(a.relationshipStatus);
 }
 
+function hasConsumerDebt(a: Record<string, any>) {
+  return hasVehicleDebt(a) || hasOtherDebt(a);
+}
+
+export function deriveAssessmentRoute(
+  answers: Record<string, any>
+): AssessmentRoute {
+  const stage = determineLifeStage({
+    investingActivity:
+      answers.investingStatus === 'yes_consistently' ||
+      answers.investingStatus === 'yes_irregularly',
+    answers,
+  });
+
+  const ageRange = answers.ageRange;
+  const hasInvestments =
+    answers.investingStatus === 'yes_consistently' ||
+    answers.investingStatus === 'yes_irregularly';
+
+  return {
+    stage,
+    isRenter: answers.housingStatus === 'rent',
+    isHomeowner:
+      answers.housingStatus === 'own_with_mortgage' ||
+      answers.housingStatus === 'own_outright',
+    hasMortgage:
+      answers.housingStatus === 'own_with_mortgage' ||
+      answers.housingDebt === 'yes',
+    hasDependents: hasDependents(answers),
+    hasConsumerDebt: hasConsumerDebt(answers),
+    hasInvestments,
+    needsRetirementFocus:
+      stage === 'growth' ||
+      stage === 'catch_up' ||
+      ageRange === '45_54' ||
+      ageRange === '55_plus',
+    hasVariableIncome:
+      answers.incomeConsistency === 'variable' ||
+      answers.incomeConsistency === 'highly_unpredictable',
+  };
+}
+
+export function determineIncomeConstraint(
+  answers: Record<string, any>,
+  signals?: UserSignals
+) {
+  const derivedSignals = signals ?? deriveSignals(answers);
+  const incomeConsistency = answers.incomeConsistency;
+  const housingPressure = answers.housingPressure;
+  const debtManageability = answers.debtManageability;
+
+  const unstableIncome =
+    incomeConsistency === 'variable' || incomeConsistency === 'highly_unpredictable';
+  const housingFeelsHeavy =
+    housingPressure === 'tight' || housingPressure === 'stressful';
+  const debtFeelsHeavy =
+    debtManageability === 'tight' ||
+    debtManageability === 'struggling' ||
+    debtManageability === 'overwhelming';
+
+  const limitedMonthlyMargin =
+    derivedSignals.highObligationPressure ||
+    derivedSignals.veryHighObligationPressure ||
+    derivedSignals.highHousingBurden;
+
+  const variableIncomeWithLowBuffer =
+    unstableIncome &&
+    (derivedSignals.lowEmergencyFund || derivedSignals.noEmergencyFund);
+
+  const triggered =
+    (limitedMonthlyMargin && (housingFeelsHeavy || debtFeelsHeavy)) ||
+    variableIncomeWithLowBuffer ||
+    (derivedSignals.highHousingBurden && derivedSignals.noEmergencyFund);
+
+  return {
+    triggered,
+    unstableIncome,
+    housingFeelsHeavy,
+    debtFeelsHeavy,
+    limitedMonthlyMargin,
+    variableIncomeWithLowBuffer,
+  };
+}
+
 export function evaluateCondition(
   condition: QuestionCondition,
   responses: Record<string, any>
@@ -339,8 +450,59 @@ export function getVisibleQuestions(
   questions: Question[],
   responses: Record<string, any>
 ): Question[] {
-  return questions.filter((q) => evaluateAllConditions(q.conditions || [], responses));
+  const route = deriveAssessmentRoute(responses);
+
+  return questions.filter((q) => {
+    const base = evaluateAllConditions(q.conditions || [], responses);
+    if (!base) return false;
+
+    const stageAllowed =
+      !q.stage ||
+      q.stage.includes('all') ||
+      q.stage.includes(route.stage);
+
+    const askIfAllowed = q.askIf ? q.askIf(responses, route) : true;
+
+    if (!stageAllowed || !askIfAllowed) return false;
+
+    switch (q.key) {
+      case 'monthlyChildcareCost':
+      case 'childcarePressure':
+      case 'lifeInsurance':
+        return route.hasDependents;
+
+      case 'mortgageBalance':
+      case 'homeValue':
+      case 'mortgagePayment':
+      case 'mortgageImpact':
+        return route.hasMortgage;
+
+      case 'carLoanBalance':
+        return responses.vehicleDebt === 'car_loan';
+
+      case 'leasePayment':
+        return responses.vehicleDebt === 'car_lease';
+
+      case 'monthlyDebtPayments':
+      case 'debtManageability':
+      case 'debtPaydownStrategy':
+      case 'creditCardBehavior':
+        return route.hasConsumerDebt;
+
+      case 'employerMatch':
+        return route.needsRetirementFocus || route.hasInvestments;
+
+      case 'investmentAccounts':
+      case 'investmentConfidence':
+      case 'totalInvestments':
+        return route.hasInvestments;
+
+      default:
+        return true;
+    }
+  });
 }
+
 
 export function sanitizeResponses(
   questions: Question[],
@@ -1137,7 +1299,7 @@ export function deriveSignals(answers: Record<string, any>): UserSignals {
   const debtPaymentRatio = monthlyIncome > 0 ? obligation.debt / monthlyIncome : 0;
   const emergencyFundMonths = getEmergencyFundMonthsEstimate(answers);
 
-  return {
+  const preliminary: UserSignals = {
     highHousingBurden: housingRatio >= 0.4,
     highObligationPressure: obligation.ratio >= 0.55,
     veryHighObligationPressure: obligation.ratio >= 0.7,
@@ -1164,20 +1326,36 @@ export function deriveSignals(answers: Record<string, any>): UserSignals {
       answers.employerMatch === 'have_match_not_contributing' ||
       answers.employerMatch === 'have_match_not_maxing',
     noClearGoals:
-      answers.financialDirection === 'stuck' ||
-      answers.financialDirection === 'no_goals' ||
-      answers.financialTimeHorizon === 'not_sure',
+      answers.financialDirection === 'figuring_it_out' ||
+      answers.financialDirection === 'goals_no_plan',
     carriesCreditCardBalance:
-      answers.creditCardBehavior === 'usually' || answers.creditCardBehavior === 'always_carry_balance',
+      answers.creditCardBehavior === 'sometimes' ||
+      answers.creditCardBehavior === 'usually' ||
+      answers.creditCardBehavior === 'always_carry_balance',
     debtFeelsHeavy:
       answers.debtManageability === 'tight' ||
       answers.debtManageability === 'struggling' ||
-      answers.debtManageability === 'overwhelming',
+      answers.debtManageability === 'overwhelming' ||
+      answers.mortgageImpact === 'holds_me_back' ||
+      answers.mortgageImpact === 'major_pressure',
+    incomeConstraintTriggered: false,
+    variableIncomeWithLowBuffer: false,
+    limitedMonthlyMargin: false,
     housingRatio,
     obligationPressure: obligation.ratio,
     debtPaymentRatio,
   };
+
+  const incomeConstraint = determineIncomeConstraint(answers, preliminary);
+
+  return {
+    ...preliminary,
+    incomeConstraintTriggered: incomeConstraint.triggered,
+    variableIncomeWithLowBuffer: incomeConstraint.variableIncomeWithLowBuffer,
+    limitedMonthlyMargin: incomeConstraint.limitedMonthlyMargin,
+  };
 }
+
 
 function dedupeReasons(reasons: string[]): string[] {
   return Array.from(new Set(reasons));
@@ -1343,7 +1521,8 @@ export function calculateAllFinancialMetrics(answers: Record<string, any>): Fina
 // SCORING
 // =====================================================
 
-function scoreIncome(a: Record<string, any>) {
+function scoreIncome(a: Record<string, any>, signals?: UserSignals) {
+  const derivedSignals = signals ?? deriveSignals(a);
   let s = 0;
   const income = toNumber(a.monthlyTakeHomeIncome);
 
@@ -1407,10 +1586,15 @@ function scoreIncome(a: Record<string, any>) {
       break;
   }
 
+  if (derivedSignals.variableIncomeWithLowBuffer) s -= 10;
+  if (derivedSignals.incomeConstraintTriggered) s -= 8;
+  if (derivedSignals.limitedMonthlyMargin) s -= 5;
+
   return clamp(Math.round(s));
 }
 
-function scoreSpending(a: Record<string, any>) {
+function scoreSpending(a: Record<string, any>, signals?: UserSignals) {
+  const derivedSignals = signals ?? deriveSignals(a);
   let s = 0;
   const income = toNumber(a.monthlyTakeHomeIncome);
   const fixedCosts =
@@ -1483,10 +1667,16 @@ function scoreSpending(a: Record<string, any>) {
     else s -= 22;
   }
 
+  if (derivedSignals.highHousingBurden) s -= 8;
+  if (derivedSignals.veryHighObligationPressure) s -= 10;
+  else if (derivedSignals.highObligationPressure) s -= 6;
+  if (derivedSignals.incomeConstraintTriggered) s -= 6;
+
   return clamp(Math.round(s));
 }
 
-function scoreSaving(a: Record<string, any>) {
+function scoreSaving(a: Record<string, any>, signals?: UserSignals) {
+  const derivedSignals = signals ?? deriveSignals(a);
   let s = 0;
 
   const savingsMap: Record<string, number> = {
@@ -1517,6 +1707,11 @@ function scoreSaving(a: Record<string, any>) {
   else if (a.savingsConfidence === 'somewhat_confident') s += 8;
 
   if (a.housingPressure === 'stressful' || a.childcarePressure === 'very_heavy') s -= 5;
+
+  if (derivedSignals.noEmergencyFund) s -= 12;
+  else if (derivedSignals.lowEmergencyFund) s -= 6;
+  if (derivedSignals.inconsistentSaving) s -= 6;
+  if (derivedSignals.variableIncomeWithLowBuffer) s -= 6;
 
   return clamp(Math.round(s));
 }
@@ -1688,7 +1883,8 @@ function scoreProtection(a: Record<string, any>) {
   return clamp(Math.round(s));
 }
 
-function scoreInvesting(a: Record<string, any>) {
+function scoreInvesting(a: Record<string, any>, signals?: UserSignals) {
+  const derivedSignals = signals ?? deriveSignals(a);
   let s = 0;
 
   if (a.investingStatus === 'yes_consistently') s += 30;
@@ -1720,6 +1916,9 @@ function scoreInvesting(a: Record<string, any>) {
 
   if (a.investmentConfidence === 'very_confident') s += 5;
   else if (a.investmentConfidence === 'somewhat_confident') s += 3;
+
+  if (derivedSignals.lowRetirementContribution) s -= 8;
+  if (derivedSignals.incomeConstraintTriggered && a.investingStatus === 'not_yet') s -= 4;
 
   return clamp(Math.round(s));
 }
@@ -1754,15 +1953,16 @@ export function calculateBuildingBlockScores(
 ) {
   const derivedSignals = signals ?? deriveSignals(a);
 
-  return {
-    income: scoreIncome(a),
-    spending: scoreSpending(a),
-    saving: scoreSaving(a),
-    debt: scoreDebt(a, derivedSignals),
-    protection: scoreProtection(a),
-    investing: scoreInvesting(a),
-    vision: scoreVision(a),
-  };
+return {
+  income: scoreIncome(a, derivedSignals),
+  spending: scoreSpending(a, derivedSignals),
+  saving: scoreSaving(a, derivedSignals),
+  debt: scoreDebt(a, derivedSignals),
+  protection: scoreProtection(a),
+  investing: scoreInvesting(a, derivedSignals),
+  vision: scoreVision(a),
+};
+
 }
 
 export function calculateEnhancedBuildingBlockScores(
@@ -1938,9 +2138,17 @@ function getInsights(
   const equity = metrics.homeEquity ?? 0;
   const fixedCostRatio = metrics.fixedCostPressureRatio ?? 0;
 
+  const incomeConstraint = determineIncomeConstraint(answers, signals);
+
   if (signals.highObligationPressure) {
     insights.push(
       'A large share of your take-home income is already committed to fixed costs. That pressure is likely reducing your flexibility before the month really begins.'
+    );
+  }
+
+  if (incomeConstraint.triggered) {
+    insights.push(
+      'Your current pressure appears to be driven more by limited monthly margin than by small day-to-day mistakes. That usually points to an income, housing, or debt-load issue more than a simple budgeting issue.'
     );
   }
 
@@ -2069,7 +2277,15 @@ function buildSummary(
   }
 
   if (score >= 40) {
+    if (signals.incomeConstraintTriggered) {
+      return `Your Foundation Score is ${score}, which puts you in the "${scoreBand}" range. Your foundation has some meaningful strengths, but real pressure appears to be coming from limited monthly margin, not just execution. Improving ${PILLAR_LABELS[weakest]} first should make the whole system feel more stable.`;
+    }
+
     return `Your Foundation Score is ${score}, which puts you in the "${scoreBand}" range. Your foundation has some meaningful strengths, but a few gaps are creating unnecessary pressure. Improving ${PILLAR_LABELS[weakest]} first should make the whole system feel more stable.`;
+  }
+
+  if (signals.incomeConstraintTriggered) {
+    return `Your Foundation Score is ${score}, placing you in the "${scoreBand}" range. Right now, your finances may feel heavier than they need to, and much of that pressure appears to be structural rather than just behavioral. The good news is that you do not need to fix everything at once. Starting with ${PILLAR_LABELS[weakest]} should create the clearest path toward stability and momentum.`;
   }
 
   return `Your Foundation Score is ${score}, placing you in the "${scoreBand}" range. Right now, your finances may feel heavier than they need to. The good news is that you do not need to fix everything at once. Starting with ${PILLAR_LABELS[weakest]} should create the clearest path toward stability and momentum.`;
@@ -2082,6 +2298,10 @@ function buildNextStep(
   signals: UserSignals
 ) {
   const weakest = getBiggestOpportunity(pillars, answers, signals);
+
+  if (signals.incomeConstraintTriggered) {
+    return 'Your best next move is to create breathing room before chasing optimization. Focus first on the biggest lever available to you: increasing income, reducing a major fixed cost, or restructuring the debt load that is crowding out progress.';
+  }
 
   if ((metrics.fixedCostPressureRatio ?? 0) >= 50 && hasMortgage(answers) && !hasVehicleDebt(answers) && !hasOtherDebt(answers)) {
     return 'Your best next move is to review your housing picture in one place: monthly housing cost, utilities, remaining mortgage balance, home value, and what that payment may be crowding out elsewhere. This looks more like a fixed-cost pressure issue than a debt payoff issue.';
@@ -2604,8 +2824,8 @@ export function generateReport(
   console.log('METRICS:', metrics);
   const structuralWarnings = getStructuralWarnings({
     income: metrics.monthlyIncome ?? 0,
-    housing: metrics.monthlyHousing ?? 0,
-    totalExpenses: metrics.monthlyExpenses ?? 0,
+    housing: metrics.monthlyHousingCost ?? 0,
+    totalExpenses: metrics.monthlyFixedCosts ?? 0,
     debtPayments: metrics.monthlyDebtPayments ?? 0,
   });
   const pillarReasons = getPillarReasons(sanitizedAnswers, signals);
