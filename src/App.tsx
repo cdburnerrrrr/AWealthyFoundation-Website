@@ -35,6 +35,47 @@ function App() {
 
   const [authChecked, setAuthChecked] = useState(false);
 
+  function buildCurrentAssessmentFromHistoryItem(item: any) {
+    if (!item) return null;
+
+    const pillarScores = item.pillarScores ?? {};
+    const priorities = item.priorities ?? [];
+    const insights = item.insights ?? [];
+
+    const weakestPillar =
+      Object.entries(pillarScores).length > 0
+        ? (Object.entries(pillarScores).sort((a: any, b: any) => a[1] - b[1])[0]?.[0] ?? null)
+        : null;
+
+    const summary =
+      item.overallScore >= 80
+        ? 'Your foundation looks strong. The focus now is optimization and consistency.'
+        : item.overallScore >= 60
+          ? 'You have momentum, but a few weaker areas are still holding you back.'
+          : item.overallScore >= 40
+            ? 'You have some good pieces in place, but several gaps are still creating drag.'
+            : 'Your foundation needs reinforcement before growth becomes the priority.';
+
+    const nextStep =
+      weakestPillar
+        ? `Start with ${weakestPillar}. One focused improvement here should have the biggest ripple effect.`
+        : 'Choose one next step and make progress this week.';
+
+    return {
+      id: item.id,
+      createdAt: item.createdAt,
+      foundationScore: item.overallScore,
+      scoreBand: '',
+      pillars: pillarScores,
+      pillarScores,
+      insights,
+      priorities,
+      topFocusAreas: priorities,
+      summary,
+      nextStep,
+    };
+  }
+
   async function hydrateAssessments() {
     try {
       const assessments = await loadAssessmentsFromSupabase();
@@ -42,13 +83,7 @@ function App() {
       setAssessmentHistory(assessments);
 
       if (assessments.length > 0) {
-        setCurrentAssessment({
-          foundationScore: assessments[0].overallScore,
-          scoreBand: '',
-          pillars: assessments[0].pillarScores,
-          insights: assessments[0].insights,
-          topFocusAreas: assessments[0].priorities,
-        });
+        setCurrentAssessment(buildCurrentAssessmentFromHistoryItem(assessments[0]));
       } else {
         setCurrentAssessment(null);
       }
@@ -60,7 +95,7 @@ function App() {
   }
 
   useEffect(() => {
-    checkAuth();
+    void checkAuth();
 
     const {
       data: { subscription },
