@@ -213,9 +213,8 @@ export default function SnapshotQuestionnaire() {
           setShowResults(false);
           setReportData(null);
           setResponses({});
-          setVisibleQuestions(getSnapshotQuestions({}) as Question[]);
           setCurrentStep(0);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          setVisibleQuestions(getSnapshotQuestions({}) as Question[]);
         }}
       />
     );
@@ -360,17 +359,28 @@ export default function SnapshotQuestionnaire() {
               </div>
             )}
 
-            {currentQuestion.type === 'number' && (
-              <div>
-                <input
-                  type="number"
-                  placeholder={currentQuestion.placeholder}
-                  value={(responses[currentQuestion.key] as number) || ''}
-                  onChange={(e) => handleNumberChange(currentQuestion, e.target.value)}
-                  className="w-full p-4 text-lg border-2 border-gray-200 rounded-xl focus:border-copper-500 focus:outline-none"
-                />
-              </div>
-            )}
+{currentQuestion.type === 'number' && (
+  <div>
+    <input
+      type="number"
+      placeholder={currentQuestion.placeholder}
+      value={responses[currentQuestion.key] ?? ''}
+      onChange={(e) => handleNumberChange(currentQuestion, e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' && canProceed()) {
+          e.preventDefault();
+
+          if (currentStep === totalSteps - 1) {
+            submitAssessment();
+          } else {
+            nextStep();
+          }
+        }
+      }}
+      className="w-full p-4 text-lg border-2 border-gray-200 rounded-xl focus:border-copper-500 focus:outline-none"
+    />
+  </div>
+)}
 
             <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-100">
               <button
