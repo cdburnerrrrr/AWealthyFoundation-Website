@@ -325,6 +325,11 @@ export default function SnapshotQuestionnaire() {
 
       <main className="flex-1 py-8 md:py-10">
         <div className="max-w-3xl mx-auto px-4">
+
+        <div className="bg-red-500 text-white p-2 text-center font-bold mb-4 rounded-xl">
+      NEW SNAPSHOT FILE TEST
+    </div>
+    
           <div className="rounded-[28px] border border-[#d8e2ec] bg-white shadow-[0_12px_40px_rgba(15,23,42,0.06)] overflow-hidden">
             <div className="bg-gradient-to-r from-navy-900 to-[#23486f] px-6 md:px-8 py-5 text-white">
               <div className="flex items-start justify-between gap-4">
