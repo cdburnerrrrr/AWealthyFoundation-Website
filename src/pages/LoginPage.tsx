@@ -47,6 +47,7 @@ export default function LoginPage() {
           email,
           password,
           options: {
+            emailRedirectTo: window.location.origin, // 👈 ADD THIS LINE
             data: {
               name: name.trim(),
             },
