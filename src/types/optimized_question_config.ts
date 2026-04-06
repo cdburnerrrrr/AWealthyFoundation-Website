@@ -892,10 +892,14 @@ export function getVisibleQuestionsByMode(
   return questions.filter((q) => {
     const passesConditions = evaluateAllConditions(q.conditions || [], responses);
     const passesMode = !q.tags?.modes || q.tags.modes.includes(mode);
-    const passesTagRule = q.tags?.askIf ? q.tags.askIf(responses) : true;
-    const notDeferred = q.tags?.priority !== 'defer';
+    const passesAskIf = !q.tags?.askIf || q.tags.askIf(responses);
 
-    return passesConditions && passesMode && passesTagRule && notDeferred;
+    const passesPriority =
+      mode === 'snapshot'
+        ? q.tags?.priority === 'core' || q.tags?.priority === 'conditional'
+        : true;
+
+    return passesConditions && passesMode && passesAskIf && passesPriority;
   });
 }
 
