@@ -247,6 +247,7 @@ export default function ComprehensiveQuestionnaire() {
           actionPlan: report.actionPlan,
           summary: report.summary,
           nextStep: report.nextStep,
+          report,
           milestonesCompleted,
           nextMilestones: getMilestonesForStage(report.lifeStage)
             .filter((m) => !milestonesCompleted.includes(m.id))
@@ -259,6 +260,7 @@ export default function ComprehensiveQuestionnaire() {
       console.log('NAVIGATING TO RESULTS');
     } catch (error) {
       console.error('Error submitting assessment:', error);
+      alert('There was a problem saving your report. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

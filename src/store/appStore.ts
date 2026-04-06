@@ -40,6 +40,10 @@ interface SaveAssessmentInput {
   priorities?: string[];
   milestonesCompleted?: string[];
   nextMilestones?: string[];
+  report?: any;
+  summary?: string;
+  nextStep?: string;
+  actionPlan?: any;
 }
 
 interface AppState {
@@ -125,7 +129,7 @@ export const useAppStore = create<AppState>()(
         // Save to Supabase
         const { data, error } = await supabase
           .from('assessments')
-          insert({
+          .insert({
             user_id: supabaseUser.id,
             assessment_type: input.assessmentType,
             overall_score: input.overallScore,
@@ -138,7 +142,7 @@ export const useAppStore = create<AppState>()(
             next_milestones: input.nextMilestones,
           
             // 👇 NEW
-            report: get().currentAssessment,
+            report: input.report ?? null,
           })
           .select()
           .single();
