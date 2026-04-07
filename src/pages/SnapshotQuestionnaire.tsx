@@ -307,14 +307,17 @@ export default function SnapshotQuestionnaire() {
       </header>
 
       <div className="bg-white/80 border-b border-gray-200">
-        <div className="max-w-3xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-2 text-sm">
-            <span className="font-medium text-navy-700">Personalized Financial Snapshot</span>
-            <span className="text-gray-500">
-              Step {currentStep + 1} of {totalSteps}
-            </span>
-          </div>
-          <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden">
+      <div className="max-w-3xl mx-auto px-4 py-2">
+        <div className="flex items-center justify-between mb-1 text-sm">
+  <span className="font-medium text-navy-700 truncate">
+    Personalized Financial Snapshot
+  </span>
+
+  <span className="text-gray-500 whitespace-nowrap">
+    {currentStep + 1}/{totalSteps}
+  </span>
+</div>
+<div className="h-2 bg-gray-200 rounded-full overflow-hidden">
             <div
               className="h-full bg-copper-500 transition-all duration-300"
               style={{ width: `${progress}%` }}
