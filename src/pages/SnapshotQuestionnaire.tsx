@@ -42,6 +42,12 @@ const SECTION_ICONS: Record<string, React.ElementType> = {
 
 type ResponseValue = string | string[] | number;
 
+type FreeReportResultsProps = {
+  reportData: any;
+  onUpgrade: () => void;
+  onRetake: () => void;
+};
+
 function getSectionLabel(section?: Question['section']) {
   if (!section) return '';
   if (section === 'context') return 'About You';
@@ -273,17 +279,17 @@ export default function SnapshotQuestionnaire() {
       <header className="sticky top-0 z-50 border-b border-navy-900/10 bg-white/90 backdrop-blur">
         <div className="max-w-5xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
-          <button onClick={() => navigate('/')} className="flex items-center gap-3 hover:opacity-90">
-  <img src={logoImage} alt="A Wealthy Foundation" className="w-8 h-8" />
-  <div className="flex items-center gap-3 min-w-0">
-    <div className="font-serif font-bold text-navy-900 leading-none whitespace-nowrap">
-      A Wealthy Foundation
-    </div>
-    <div className="text-sm text-gray-500 whitespace-nowrap hidden sm:block">
-      Snapshot
-    </div>
-  </div>
-</button>
+            <button onClick={() => navigate('/')} className="flex items-center gap-3 hover:opacity-90">
+              <img src={logoImage} alt="A Wealthy Foundation" className="w-8 h-8" />
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="font-serif font-bold text-navy-900 leading-none whitespace-nowrap">
+                  A Wealthy Foundation
+                </div>
+                <div className="text-sm text-gray-500 whitespace-nowrap hidden sm:block">
+                  Snapshot
+                </div>
+              </div>
+            </button>
 
             <div className="hidden sm:flex items-center gap-3 text-sm">
               <div className="inline-flex items-center gap-2 rounded-full bg-copper-50 px-3 py-1.5 text-copper-700 border border-copper-100">
@@ -311,43 +317,27 @@ export default function SnapshotQuestionnaire() {
       </header>
 
       <div className="bg-white/80 border-b border-gray-200">
-      <div className="max-w-3xl mx-auto px-4 py-2">
-        <div className="flex items-center justify-between mb-1 text-sm">
-  <span className="font-medium text-navy-700 truncate">
-    Personalized Financial Snapshot
-  </span>
+        <div className="max-w-3xl mx-auto px-4 py-2">
+          <div className="flex items-center justify-between mb-1 text-sm">
+            <span className="font-medium text-navy-700 truncate">
+              Personalized Financial Snapshot
+            </span>
+            <span className="text-gray-500 whitespace-nowrap">
+              {currentStep + 1}/{totalSteps}
+            </span>
+          </div>
 
-  <span className="text-gray-500 whitespace-nowrap">
-    {currentStep + 1}/{totalSteps}
-  </span>
-</div>
-<div className="bg-white/80 border-b border-gray-200">
-  <div className="max-w-3xl mx-auto px-4 py-2">
-    <div className="flex items-center justify-between mb-1 text-sm">
-      <span className="font-medium text-navy-700 truncate">
-        Personalized Financial Snapshot
-      </span>
-      <span className="text-gray-500 whitespace-nowrap">
-        {currentStep + 1}/{totalSteps}
-      </span>
-    </div>
+          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-copper-500 transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+      </div>
 
-    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-      <div
-        className="h-full bg-copper-500 transition-all duration-300"
-        style={{ width: `${progress}%` }}
-      />
-    </div>
-  </div>
-</div>
-
-<main className="flex-1 py-5 md:py-6">
+      <main className="flex-1 py-5 md:py-6">
         <div className="max-w-3xl mx-auto px-4">
-
-        <div className="bg-red-500 text-white p-2 text-center font-bold mb-4 rounded-xl">
-      NEW SNAPSHOT FILE TEST
-    </div>
-    
           <div className="rounded-[28px] border border-[#d8e2ec] bg-white shadow-[0_12px_40px_rgba(15,23,42,0.06)] overflow-hidden">
             <div className="bg-gradient-to-r from-navy-900 to-[#23486f] px-6 md:px-8 py-5 text-white">
               <div className="flex items-start justify-between gap-4">
@@ -548,11 +538,7 @@ function FreeReportResults({
   reportData,
   onUpgrade,
   onRetake,
-}: {
-  reportData: any;
-  onUpgrade: () => void;
-  onRetake: () => void;
-}) {
+}: FreeReportResultsProps) {
   const navigate = useNavigate();
   const { isAuthenticated } = useAppStore();
 
