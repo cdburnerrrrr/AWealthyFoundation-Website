@@ -273,13 +273,17 @@ export default function SnapshotQuestionnaire() {
       <header className="sticky top-0 z-50 border-b border-navy-900/10 bg-white/90 backdrop-blur">
         <div className="max-w-5xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
-            <button onClick={() => navigate('/')} className="flex items-center gap-3 hover:opacity-90">
-              <img src={logoImage} alt="A Wealthy Foundation" className="w-9 h-9" />
-              <div className="text-left">
-                <div className="font-serif font-bold text-navy-900 leading-none">A Wealthy Foundation</div>
-                <div className="text-xs text-gray-500">Financial Snapshot</div>
-              </div>
-            </button>
+          <button onClick={() => navigate('/')} className="flex items-center gap-3 hover:opacity-90">
+  <img src={logoImage} alt="A Wealthy Foundation" className="w-8 h-8" />
+  <div className="flex items-center gap-3 min-w-0">
+    <div className="font-serif font-bold text-navy-900 leading-none whitespace-nowrap">
+      A Wealthy Foundation
+    </div>
+    <div className="text-sm text-gray-500 whitespace-nowrap hidden sm:block">
+      Snapshot
+    </div>
+  </div>
+</button>
 
             <div className="hidden sm:flex items-center gap-3 text-sm">
               <div className="inline-flex items-center gap-2 rounded-full bg-copper-50 px-3 py-1.5 text-copper-700 border border-copper-100">
@@ -317,16 +321,27 @@ export default function SnapshotQuestionnaire() {
     {currentStep + 1}/{totalSteps}
   </span>
 </div>
-<div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-copper-500 transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
-      </div>
+<div className="bg-white/80 border-b border-gray-200">
+  <div className="max-w-3xl mx-auto px-4 py-2">
+    <div className="flex items-center justify-between mb-1 text-sm">
+      <span className="font-medium text-navy-700 truncate">
+        Personalized Financial Snapshot
+      </span>
+      <span className="text-gray-500 whitespace-nowrap">
+        {currentStep + 1}/{totalSteps}
+      </span>
+    </div>
 
-      <main className="flex-1 py-8 md:py-10">
+    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+      <div
+        className="h-full bg-copper-500 transition-all duration-300"
+        style={{ width: `${progress}%` }}
+      />
+    </div>
+  </div>
+</div>
+
+<main className="flex-1 py-5 md:py-6">
         <div className="max-w-3xl mx-auto px-4">
 
         <div className="bg-red-500 text-white p-2 text-center font-bold mb-4 rounded-xl">
