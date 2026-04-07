@@ -344,98 +344,127 @@ export default function SnapshotQuestionnaire() {
                 </div>
               )}
 
-              {currentQuestion.type === 'single' && currentQuestion.options && (
-                <div className="space-y-3">
-                  {currentQuestion.options.map((option) => (
-                    <button
-                      key={option.value}
-                      onClick={() => handleResponse(currentQuestion, option.value)}
-                      className={`group w-full px-4 py-3 text-left rounded-2xl border transition-all ${
-                        responses[currentQuestion.key] === option.value
-                          ? 'border-copper-500 bg-copper-50 shadow-[0_4px_16px_rgba(194,120,58,0.14)] text-navy-900 ring-2 ring-copper-100'
-                          : 'border-slate-200 bg-slate-50/40 hover:border-copper-400 hover:bg-copper-50 text-navy-700'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-base font-medium">{option.label}</span>
-                        <span
-                          className={`w-5 h-5 rounded-full border-2 transition-all ${
-                            responses[currentQuestion.key] === option.value
-                              ? 'border-copper-500 bg-copper-500 shadow-[inset_0_0_0_4px_white]'
-                              : 'border-gray-300 group-hover:border-copper-300'
-                          }`}
-                        />
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
+{currentQuestion.type === 'single' && currentQuestion.options && (
+  <div className="space-y-3">
+    {currentQuestion.options.map((option) => {
+      const selected = responses[currentQuestion.key] === option.value;
 
-              {currentQuestion.type === 'multiple' && currentQuestion.options && (
-                <div className="space-y-3">
-                  {currentQuestion.options.map((option) => {
-                    const selected = Array.isArray(responses[currentQuestion.key])
-                      ? (responses[currentQuestion.key] as string[]).includes(option.value)
-                      : false;
+      return (
+        <button
+          key={option.value}
+          onClick={() => handleResponse(currentQuestion, option.value)}
+          className={`group relative w-full overflow-hidden rounded-2xl border px-4 py-3.5 text-left transition-all duration-200 ${
+            selected
+              ? 'border-copper-500 bg-copper-50 ring-2 ring-copper-100 shadow-[0_8px_24px_rgba(194,120,58,0.14)]'
+              : 'border-slate-200 bg-white hover:border-copper-300 hover:bg-[#fffaf5] hover:shadow-[0_6px_18px_rgba(15,23,42,0.08)]'
+          }`}
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <div
+                className={`text-base font-medium transition-colors ${
+                  selected ? 'text-navy-900' : 'text-navy-800'
+                }`}
+              >
+                {option.label}
+              </div>
+            </div>
 
-                    return (
-                      <button
-                        key={option.value}
-                        onClick={() => handleMultipleToggle(currentQuestion, option.value)}
-                        className={`w-full px-4 py-3 text-left rounded-2xl border transition-all flex items-center gap-3 ${
-                          selected
-                            ? 'border-copper-500 bg-copper-50 shadow-[0_4px_16px_rgba(194,120,58,0.14)] text-navy-900 ring-2 ring-copper-100'
-                            : 'border-slate-200 bg-slate-50/40 hover:border-copper-400 hover:bg-copper-50 text-navy-700'
-                        }`}
-                      >
-                        <div
-                          className={`w-5 h-5 rounded-md border-2 flex items-center justify-center ${
-                            selected ? 'border-copper-500 bg-copper-500' : 'border-gray-300 bg-white'
-                          }`}
-                        >
-                          {selected && <CheckCircle className="w-3 h-3 text-white" />}
-                        </div>
-                        <span className="text-base font-medium">{option.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+            <div
+              className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all ${
+                selected
+                  ? 'border-copper-500 bg-copper-500 shadow-[inset_0_0_0_4px_white]'
+                  : 'border-slate-300 bg-white group-hover:border-copper-300'
+              }`}
+            />
+          </div>
+        </button>
+      );
+    })}
+  </div>
+)}
 
-              {currentQuestion.type === 'number' && (
-                <div>
-                  <input
-                    type="number"
-                    placeholder={currentQuestion.placeholder}
-                    value={responses[currentQuestion.key] ?? ''}
-                    onChange={(e) => handleNumberChange(currentQuestion, e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key !== 'Enter') return;
+{currentQuestion.type === 'multiple' && currentQuestion.options && (
+  <div className="space-y-3">
+    {currentQuestion.options.map((option) => {
+      const selected = Array.isArray(responses[currentQuestion.key])
+        ? (responses[currentQuestion.key] as string[]).includes(option.value)
+        : false;
 
-                      const rawValue = e.currentTarget.value;
-                      const hasValue =
-                        rawValue !== '' &&
-                        rawValue !== undefined &&
-                        rawValue !== null &&
-                        !Number.isNaN(Number(rawValue));
+      return (
+        <button
+          key={option.value}
+          onClick={() => handleMultipleToggle(currentQuestion, option.value)}
+          className={`group relative w-full overflow-hidden rounded-2xl border px-4 py-3.5 text-left transition-all duration-200 ${
+            selected
+              ? 'border-copper-500 bg-copper-50 ring-2 ring-copper-100 shadow-[0_8px_24px_rgba(194,120,58,0.14)]'
+              : 'border-slate-200 bg-white hover:border-copper-300 hover:bg-[#fffaf5] hover:shadow-[0_6px_18px_rgba(15,23,42,0.08)]'
+          }`}
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <div
+                className={`text-base font-medium transition-colors ${
+                  selected ? 'text-navy-900' : 'text-navy-800'
+                }`}
+              >
+                {option.label}
+              </div>
+            </div>
 
-                      if (!hasValue) return;
+            <div
+              className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md border-2 transition-all ${
+                selected
+                  ? 'border-copper-500 bg-copper-500'
+                  : 'border-slate-300 bg-white group-hover:border-copper-300'
+              }`}
+            >
+              {selected && <CheckCircle className="h-3.5 w-3.5 text-white" />}
+            </div>
+          </div>
+        </button>
+      );
+    })}
+  </div>
+)}
 
-                      e.preventDefault();
+{currentQuestion.type === 'number' && (
+  <div className="space-y-3">
+    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3.5 shadow-[0_6px_18px_rgba(15,23,42,0.04)] transition-all focus-within:border-copper-400 focus-within:ring-2 focus-within:ring-copper-100">
+      <input
+        type="number"
+        placeholder={currentQuestion.placeholder}
+        value={responses[currentQuestion.key] ?? ''}
+        onChange={(e) => handleNumberChange(currentQuestion, e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key !== 'Enter') return;
 
-                      if (currentStep === totalSteps - 1) {
-                        submitAssessment();
-                      } else {
-                        nextStep();
-                      }
-                    }}
-                    className="w-full p-4 text-lg border-2 border-gray-200 rounded-2xl focus:border-copper-500 focus:outline-none focus:ring-4 focus:ring-copper-100 transition-all"
-                  />
-                  <p className="text-xs text-gray-500 mt-2">
-                    Enter a number and press Enter to continue.
-                  </p>
-                </div>
-              )}
+          const rawValue = e.currentTarget.value;
+          const hasValue =
+            rawValue !== '' &&
+            rawValue !== undefined &&
+            rawValue !== null &&
+            !Number.isNaN(Number(rawValue));
+
+          if (!hasValue) return;
+
+          e.preventDefault();
+
+          if (currentStep === totalSteps - 1) {
+            submitAssessment();
+          } else {
+            nextStep();
+          }
+        }}
+        className="w-full bg-transparent text-lg font-medium text-navy-900 placeholder:text-slate-400 focus:outline-none"
+      />
+    </div>
+
+    <p className="text-xs text-copper-600/90">
+      Enter a number and press Enter to continue.
+    </p>
+  </div>
+)}
 
               <div className="flex items-center justify-between mt-4 pt-0.5">
                 <button
