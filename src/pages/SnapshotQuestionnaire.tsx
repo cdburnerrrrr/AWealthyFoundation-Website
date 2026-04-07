@@ -278,35 +278,63 @@ export default function SnapshotQuestionnaire() {
     <div className="min-h-screen bg-[linear-gradient(180deg,#f7fafc_0%,#eef4f8_100%)] flex flex-col">
       <header className="sticky top-0 z-50 border-b border-navy-900/10 bg-white/90 backdrop-blur">
         <div className="max-w-5xl mx-auto px-4">
-        <div className="flex items-center justify-between h-12">
+          <div className="flex items-center justify-between h-14">
             <button onClick={() => navigate('/')} className="flex items-center gap-3 hover:opacity-90">
               <img src={logoImage} alt="A Wealthy Foundation" className="w-8 h-8" />
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="font-serif font-bold text-navy-900 leading-none whitespace-nowrap">
-                  A Wealthy Foundation
-                </div>
-                <div className="text-xs text-gray-500 whitespace-nowrap hidden sm:block">
-  Snapshot
-</div>
+              <div className="font-serif font-bold text-navy-900 leading-none whitespace-nowrap">
+                A Wealthy Foundation
               </div>
             </button>
+            <div className="hidden sm:block" />
+          </div>
+        </div>
+      </header>
 
-            <div className="hidden sm:flex items-center gap-3 text-sm">
-              <div className="inline-flex items-center gap-2 rounded-full bg-copper-50 px-3 py-1.5 text-copper-700 border border-copper-100">
+      <div className="bg-white/80 border-b border-gray-200">
+        <div className="max-w-6xl mx-auto px-4 py-2">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 min-w-0 shrink-0">
+              <img src={logoImage} alt="A Wealthy Foundation" className="w-7 h-7" />
+              <div className="font-serif font-bold text-navy-900 whitespace-nowrap">
+                A Wealthy Foundation
+              </div>
+            </div>
+
+            <div className="flex-1 min-w-[220px]">
+              <div className="flex items-center justify-between mb-1 text-xs">
+                <span className="font-medium text-navy-700 truncate">
+                  Personalized Financial Snapshot
+                </span>
+                <span className="text-gray-500 whitespace-nowrap">
+                  {currentStep + 1}/{totalSteps}
+                </span>
+              </div>
+
+              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-copper-500 transition-all duration-300"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="hidden md:flex items-center gap-3 shrink-0">
+              <div className="inline-flex items-center gap-2 rounded-full bg-copper-50 px-3 py-1.5 text-copper-700 border border-copper-100 text-sm">
                 <Sparkles className="w-4 h-4" />
                 Quick assessment
               </div>
+
               {isAuthenticated ? (
                 <button
                   onClick={() => navigate('/my-foundation')}
-                  className="text-sm text-copper-600 font-medium"
+                  className="text-sm text-copper-600 font-medium whitespace-nowrap"
                 >
                   Dashboard
                 </button>
               ) : (
                 <button
                   onClick={() => navigate('/login')}
-                  className="text-sm text-navy-600 font-medium"
+                  className="text-sm text-navy-600 font-medium whitespace-nowrap"
                 >
                   Login
                 </button>
@@ -314,33 +342,12 @@ export default function SnapshotQuestionnaire() {
             </div>
           </div>
         </div>
-      </header>
-
-      <div className="bg-white/80 border-b border-gray-200">
-      <div className="max-w-3xl mx-auto px-4 py-1.5">
-      <div className="flex items-center justify-between mb-1 text-xs">
-            <span className="font-medium text-navy-700 truncate">
-              Personalized Financial Snapshot
-            </span>
-            <span className="text-gray-500 whitespace-nowrap">
-              {currentStep + 1}/{totalSteps}
-            </span>
-          </div>
-
-          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-copper-500 transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
       </div>
 
-      <main className="flex-1 py-3 md:py-4">
+      <main className="flex-1 py-4 md:py-4">
         <div className="max-w-3xl mx-auto px-4">
           <div className="rounded-[28px] border border-[#d8e2ec] bg-white shadow-[0_12px_40px_rgba(15,23,42,0.06)] overflow-hidden">
-          <div className="bg-gradient-to-r from-navy-900 to-[#23486f] px-5 md:px-6 py-4 text-white">
-
+            <div className="bg-gradient-to-r from-navy-900 to-[#23486f] px-5 md:px-6 py-4 text-white">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2 text-copper-200 text-xs uppercase tracking-[0.18em] font-semibold mb-2">
@@ -358,7 +365,7 @@ export default function SnapshotQuestionnaire() {
                   </p>
                 </div>
 
-                <div className="hidden md:flex items-center justify-center w-10 h-10 rounded-xl  bg-white/10 border border-white/10 text-lg font-bold text-white">
+                <div className="hidden md:flex items-center justify-center w-10 h-10 rounded-xl bg-white/10 border border-white/10 text-lg font-bold text-white">
                   {currentStep + 1}
                 </div>
               </div>
@@ -366,7 +373,7 @@ export default function SnapshotQuestionnaire() {
 
             <div className="px-5 md:px-6 py-5 md:py-6">
               {currentQuestion.helperText && (
-                <div className="mb-6 rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm text-slate-600">
+                <div className="mb-4 rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm text-slate-600">
                   {currentQuestion.helperText}
                 </div>
               )}
@@ -384,7 +391,7 @@ export default function SnapshotQuestionnaire() {
                       }`}
                     >
                       <div className="flex items-center justify-between gap-3">
-                      <span className="text-base">{option.label}</span>
+                        <span className="text-base">{option.label}</span>
                         <span
                           className={`w-5 h-5 rounded-full border-2 transition-all ${
                             responses[currentQuestion.key] === option.value
@@ -422,7 +429,7 @@ export default function SnapshotQuestionnaire() {
                         >
                           {selected && <CheckCircle className="w-3 h-3 text-white" />}
                         </div>
-                        <span className="text-base md:text-lg">{option.label}</span>
+                        <span className="text-base">{option.label}</span>
                       </button>
                     );
                   })}
@@ -456,19 +463,19 @@ export default function SnapshotQuestionnaire() {
                         nextStep();
                       }
                     }}
-                    className="w-full p-5 text-lg border-2 border-gray-200 rounded-2xl focus:border-copper-500 focus:outline-none focus:ring-4 focus:ring-copper-100 transition-all"
+                    className="w-full p-4 text-lg border-2 border-gray-200 rounded-xl focus:border-copper-500 focus:outline-none focus:ring-4 focus:ring-copper-100 transition-all"
                   />
-                  <p className="text-xs text-gray-500 mt-3">
+                  <p className="text-xs text-gray-500 mt-2">
                     Enter a number and press Enter to continue.
                   </p>
                 </div>
               )}
 
-              <div className="flex items-center justify-between mt-10 pt-6 border-t border-gray-100">
+              <div className="flex items-center justify-between mt-8 pt-5 border-t border-gray-100">
                 <button
                   onClick={prevStep}
                   disabled={currentStep === 0}
-                  className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-colors ${
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-colors ${
                     currentStep === 0
                       ? 'text-gray-300 cursor-not-allowed'
                       : 'text-navy-700 hover:bg-gray-100'
@@ -482,7 +489,7 @@ export default function SnapshotQuestionnaire() {
                   <button
                     onClick={submitAssessment}
                     disabled={isSubmitting || !canProceed()}
-                    className={`inline-flex items-center gap-2 px-6 py-3.5 rounded-xl font-bold transition-all ${
+                    className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${
                       canProceed() && !isSubmitting
                         ? 'bg-copper-600 text-white hover:bg-copper-700 shadow-sm'
                         : 'bg-gray-200 text-gray-400 cursor-not-allowed'
@@ -495,7 +502,7 @@ export default function SnapshotQuestionnaire() {
                   <button
                     onClick={nextStep}
                     disabled={!canProceed()}
-                    className={`inline-flex items-center gap-2 px-6 py-3.5 rounded-xl font-bold transition-all ${
+                    className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${
                       canProceed()
                         ? 'bg-copper-600 text-white hover:bg-copper-700 shadow-sm'
                         : 'bg-gray-200 text-gray-400 cursor-not-allowed'
