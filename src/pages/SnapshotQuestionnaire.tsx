@@ -457,7 +457,7 @@ export default function SnapshotQuestionnaire() {
                     disabled={isSubmitting || !canProceed()}
                     className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all ${
                       canProceed()
-                        ? 'bg-copper-600 text-white hover:bg-copper-700 shadow-sm hover:shadow-md 
+                        ? 'bg-copper-600 text-white hover:bg-copper-700 shadow-sm hover:shadow-md'
                         : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                     }`}
                   >
