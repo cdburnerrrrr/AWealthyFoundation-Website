@@ -276,7 +276,7 @@ export default function SnapshotQuestionnaire() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0f2a44] via-[#132f4c] to-[#1e3a5f] flex flex-col">
-      <div className="bg-white/70 backdrop-blur border-b border-[#e6d5c3]">
+      <div className="bg-navy-900/80 backdrop-blur border-b border-white/10">
         <div className="max-w-6xl mx-auto px-4 py-2">
           <div className="flex items-center gap-4">
             <div className="flex-1 min-w-[220px]">
@@ -457,8 +457,8 @@ export default function SnapshotQuestionnaire() {
                     disabled={isSubmitting || !canProceed()}
                     className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all ${
                       canProceed() && !isSubmitting
-                        ? 'bg-copper-600 text-white hover:bg-copper-700 shadow-sm'
-                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        ? 'bg-copper-600 text-white hover:bg-copper-700 shadow-sm hover:scale-[1.02]'
+                      : 'bg-copper-600/40 text-white/60 cursor-not-allowed'
                     }`}
                   >
                     {isSubmitting ? 'Calculating...' : 'See My Results'}
@@ -470,8 +470,8 @@ export default function SnapshotQuestionnaire() {
                     disabled={!canProceed()}
                     className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all ${
                       canProceed()
-                        ? 'bg-copper-600 text-white hover:bg-copper-700 shadow-sm'
-                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        ? 'bg-copper-600 text-white hover:bg-copper-700 shadow-sm hover:scale-[1.02]'
+                      : 'bg-copper-600/40 text-white/60 cursor-not-allowed'
                     }`}
                   >
                     Next
