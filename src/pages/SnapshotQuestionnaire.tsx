@@ -278,16 +278,16 @@ export default function SnapshotQuestionnaire() {
     <div className="min-h-screen bg-[linear-gradient(180deg,#f7fafc_0%,#eef4f8_100%)] flex flex-col">
       <header className="sticky top-0 z-50 border-b border-navy-900/10 bg-white/90 backdrop-blur">
         <div className="max-w-5xl mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-12">
             <button onClick={() => navigate('/')} className="flex items-center gap-3 hover:opacity-90">
               <img src={logoImage} alt="A Wealthy Foundation" className="w-8 h-8" />
               <div className="flex items-center gap-3 min-w-0">
                 <div className="font-serif font-bold text-navy-900 leading-none whitespace-nowrap">
                   A Wealthy Foundation
                 </div>
-                <div className="text-sm text-gray-500 whitespace-nowrap hidden sm:block">
-                  Snapshot
-                </div>
+                <div className="text-xs text-gray-500 whitespace-nowrap hidden sm:block">
+  Snapshot
+</div>
               </div>
             </button>
 
@@ -317,8 +317,8 @@ export default function SnapshotQuestionnaire() {
       </header>
 
       <div className="bg-white/80 border-b border-gray-200">
-        <div className="max-w-3xl mx-auto px-4 py-2">
-          <div className="flex items-center justify-between mb-1 text-sm">
+      <div className="max-w-3xl mx-auto px-4 py-1.5">
+      <div className="flex items-center justify-between mb-1 text-xs">
             <span className="font-medium text-navy-700 truncate">
               Personalized Financial Snapshot
             </span>
@@ -336,10 +336,11 @@ export default function SnapshotQuestionnaire() {
         </div>
       </div>
 
-      <main className="flex-1 py-5 md:py-6">
+      <main className="flex-1 py-3 md:py-4">
         <div className="max-w-3xl mx-auto px-4">
           <div className="rounded-[28px] border border-[#d8e2ec] bg-white shadow-[0_12px_40px_rgba(15,23,42,0.06)] overflow-hidden">
-            <div className="bg-gradient-to-r from-navy-900 to-[#23486f] px-6 md:px-8 py-5 text-white">
+          <div className="bg-gradient-to-r from-navy-900 to-[#23486f] px-5 md:px-6 py-4 text-white">
+
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2 text-copper-200 text-xs uppercase tracking-[0.18em] font-semibold mb-2">
@@ -349,21 +350,21 @@ export default function SnapshotQuestionnaire() {
                     })()}
                     <span>{sectionLabel}</span>
                   </div>
-                  <h1 className="text-2xl md:text-3xl font-bold leading-tight">
+                  <h1 className="text-xl md:text-2xl font-bold leading-tight">
                     {currentQuestion.question}
                   </h1>
-                  <p className="text-sm text-white/75 mt-2">
+                  <p className="text-xs text-white/75 mt-1">
                     {sectionIntro}
                   </p>
                 </div>
 
-                <div className="hidden md:flex items-center justify-center w-12 h-12 rounded-2xl bg-white/10 border border-white/10 text-lg font-bold text-white">
+                <div className="hidden md:flex items-center justify-center w-10 h-10 rounded-xl  bg-white/10 border border-white/10 text-lg font-bold text-white">
                   {currentStep + 1}
                 </div>
               </div>
             </div>
 
-            <div className="px-6 md:px-8 py-7 md:py-8">
+            <div className="px-5 md:px-6 py-5 md:py-6">
               {currentQuestion.helperText && (
                 <div className="mb-6 rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm text-slate-600">
                   {currentQuestion.helperText}
@@ -376,14 +377,14 @@ export default function SnapshotQuestionnaire() {
                     <button
                       key={option.value}
                       onClick={() => handleResponse(currentQuestion, option.value)}
-                      className={`group w-full p-4 text-left rounded-2xl border-2 transition-all ${
+                      className={`group w-full px-4 py-3 text-left rounded-xl border-2 transition-all ${
                         responses[currentQuestion.key] === option.value
                           ? 'border-copper-500 bg-copper-50 text-navy-900 shadow-sm'
                           : 'border-gray-200 hover:border-copper-300 hover:bg-gray-50 text-navy-700'
                       }`}
                     >
                       <div className="flex items-center justify-between gap-3">
-                        <span className="text-base md:text-lg">{option.label}</span>
+                      <span className="text-base">{option.label}</span>
                         <span
                           className={`w-5 h-5 rounded-full border-2 transition-all ${
                             responses[currentQuestion.key] === option.value
@@ -408,7 +409,7 @@ export default function SnapshotQuestionnaire() {
                       <button
                         key={option.value}
                         onClick={() => handleMultipleToggle(currentQuestion, option.value)}
-                        className={`w-full p-4 text-left rounded-2xl border-2 transition-all flex items-center gap-3 ${
+                        className={`w-full px-4 py-3 text-left rounded-xl border-2 transition-all flex items-center gap-3 ${
                           selected
                             ? 'border-copper-500 bg-copper-50 text-navy-900 shadow-sm'
                             : 'border-gray-200 hover:border-copper-300 hover:bg-gray-50 text-navy-700'
