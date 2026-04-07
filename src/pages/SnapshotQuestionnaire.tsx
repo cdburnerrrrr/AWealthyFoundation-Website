@@ -252,7 +252,7 @@ export default function SnapshotQuestionnaire() {
 
   if (!currentQuestion) {
     return (
-      <div className="min-h-screen bg-[linear-gradient(180deg,#f7fafc_0%,#eef4f8_100%)] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-gradient-to-b from-[#fff8ef] to-[#fdf2e6] flex items-center justify-center px-4">
         <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-8 max-w-lg text-center">
           <img src={logoImage} alt="A Wealthy Foundation" className="w-12 h-12 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-navy-900 mb-3">Snapshot unavailable</h1>
@@ -275,8 +275,8 @@ export default function SnapshotQuestionnaire() {
   const sectionIntro = getSectionIntro(currentQuestion.section);
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f7fafc_0%,#eef4f8_100%)] flex flex-col">
-      <div className="bg-white/80 border-b border-gray-200">
+    <div className="min-h-screen bg-gradient-to-b from-[#fff8ef] to-[#fdf2e6] flex flex-col">
+      <div className="bg-white/70 backdrop-blur border-b border-[#e6d5c3]">
         <div className="max-w-6xl mx-auto px-4 py-2">
           <div className="flex items-center gap-4">
             <div className="flex-1 min-w-[220px]">
