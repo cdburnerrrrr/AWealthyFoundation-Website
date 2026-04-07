@@ -437,48 +437,47 @@ export default function SnapshotQuestionnaire() {
                 </div>
               )}
 
-              <div className="flex items-center justify-between mt-5 pt-1">
-                <button
-                  onClick={prevStep}
-                  disabled={currentStep === 0}
-                  className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl font-medium transition-colors ${
-                    currentStep === 0
-                      ? 'text-white/30 cursor-not-allowed'
-                      : 'text-copper-600 hover:bg-copper-50'
-                  }`}
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                  Back
-                </button>
+<div className="flex items-center justify-between mt-6">
 
-                {currentStep === totalSteps - 1 ? (
-                  <button
-                    onClick={submitAssessment}
-                    disabled={isSubmitting || !canProceed()}
-                    className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all ${
-                      canProceed()
-                        ? 'bg-copper-600 text-white hover:bg-copper-700 shadow-sm hover:shadow-md'
-                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    }`}
-                  >
-                    {isSubmitting ? 'Calculating...' : 'See My Results'}
-                    <ArrowRight className="w-5 h-5" />
-                  </button>
-                ) : (
-                  <button
-                    onClick={nextStep}
-                    disabled={!canProceed()}
-                    className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all ${
-                      canProceed()
-                        ? 'bg-copper-600 text-white hover:bg-copper-700 shadow-sm hover:shadow-md'
-                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    }`}
-                  >
-                    Next
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-                )}
-              </div>
+{/* BACK BUTTON */}
+<button
+  onClick={prevStep}
+  disabled={currentStep === 0}
+  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-white/70 hover:text-white transition-all disabled:opacity-40"
+>
+  <ChevronLeft className="w-5 h-5" />
+  Back
+</button>
+
+{/* NEXT / SUBMIT BUTTON */}
+{currentStep === totalSteps - 1 ? (
+  <button
+    onClick={submitAssessment}
+    disabled={isSubmitting || !canProceed()}
+    className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all ${
+      canProceed() && !isSubmitting
+        ? 'bg-copper-600 text-white hover:bg-copper-700 shadow-sm hover:shadow-md animate-[pulse_1.2s_ease-in-out_1]'
+        : 'bg-navy-800/90 text-white/50 cursor-not-allowed disabled:opacity-80'
+    }`}
+  >
+    {isSubmitting ? 'Calculating...' : 'See My Results'}
+    <ArrowRight className="w-5 h-5" />
+  </button>
+) : (
+  <button
+    onClick={nextStep}
+    disabled={!canProceed()}
+    className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all ${
+      canProceed()
+        ? 'bg-copper-600 text-white hover:bg-copper-700 shadow-sm hover:shadow-md animate-[pulse_1.2s_ease-in-out_1]'
+        : 'bg-navy-800/90 text-white/50 cursor-not-allowed disabled:opacity-80'
+    }`}
+  >
+    Next
+    <ChevronRight className="w-5 h-5" />
+  </button>
+)}
+</div>
             </div>
           </div>
         </div>
