@@ -275,7 +275,7 @@ export default function SnapshotQuestionnaire() {
   const sectionIntro = getSectionIntro(currentQuestion.section);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#fff8ef] to-[#fdf2e6] flex flex-col">
+    <div className="min-h-screen bg-gradient-to-b from-[#0f2a44] via-[#132f4c] to-[#1e3a5f] flex flex-col">
       <div className="bg-white/70 backdrop-blur border-b border-[#e6d5c3]">
         <div className="max-w-6xl mx-auto px-4 py-2">
           <div className="flex items-center gap-4">
@@ -539,14 +539,14 @@ function FreeReportResults({
           </div>
 
           <div className="space-y-4 mb-6">
-            <h3 className="font-bold text-navy-900">Your 7 Pillars</h3>
+          <h3 className="font-bold text-copper-300">Your 7 Pillars</h3>
             {Object.entries(reportData.pillarScores).map(([pillar, score]: [string, number]) => (
               <div key={pillar}>
                 <div className="flex justify-between text-sm mb-1">
                   <span className="font-medium text-navy-700">
                     {PILLAR_LABELS[pillar as PillarKey]}
                   </span>
-                  <span className="text-gray-600">{score}</span>
+                  <span className="text-copper-300">{score}</span>
                 </div>
                 <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
                   <div
