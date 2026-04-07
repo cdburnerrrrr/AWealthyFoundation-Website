@@ -558,24 +558,24 @@ function FreeReportResults({
       <main className="max-w-3xl mx-auto px-4 py-8">
         <div className="bg-gradient-to-b from-[#0f2a44] via-[#132f4c] to-[#1e3a5f]">
           <div className="text-center mb-6">
-            <div className="inline-flex items-center justify-center w-32 h-32 rounded-full bg-copper-100 mb-4 shadow-inner">
-              <span className="text-4xl font-bold text-copper-600">{reportData.foundationScore}</span>
-            </div>
+          <div className="inline-flex items-center justify-center w-32 h-32 rounded-full bg-gradient-to-br from-[#ffd6a3] to-[#c2783a] mb-4 shadow-[0_14px_40px_rgba(194,120,58,0.35)] border border-white/20">
+  <span className="text-4xl font-bold text-white drop-shadow-sm">{reportData.foundationScore}</span>
+</div>
             <h2 className={`text-2xl font-bold ${getScoreBand(reportData.foundationScore).color}`}>
               {getScoreBand(reportData.foundationScore).label}
             </h2>
-            <p className="text-gray-600 mt-2">{LIFE_STAGE_LABELS[reportData.lifeStage]} Stage</p>
+            <p className="text-copper-300 mt-2 font-medium">{LIFE_STAGE_LABELS[reportData.lifeStage]} Stage</p>
           </div>
 
           <div className="space-y-4 mb-6">
-            <h3 className="font-bold text-navy-900">Your 7 Pillars</h3>
+          <h3 className="font-bold text-copper-300">Your 7 Pillars</h3>
             {Object.entries(reportData.pillarScores).map(([pillar, score]: [string, number]) => (
               <div key={pillar}>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="font-medium text-navy-700">
+                <span className="font-medium text-copper-300">
                     {PILLAR_LABELS[pillar as PillarKey]}
                   </span>
-                  <span className="text-gray-600">{score}</span>
+                  <span className="text-copper-300">{score}</span>
                 </div>
                 <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
                   <div
@@ -638,7 +638,7 @@ function FreeReportResults({
         </div>
 
         <div className="flex justify-center gap-4 mt-6">
-          <button onClick={onRetake} className="text-navy-700 font-medium hover:text-copper-600">
+        <button onClick={onRetake} className="text-white font-medium hover:text-copper-300 transition-colors">
             Retake Assessment
           </button>
           {isAuthenticated && (
