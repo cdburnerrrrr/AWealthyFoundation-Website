@@ -595,30 +595,30 @@ export default function ResultsPage() {
 
       <main className="max-w-6xl mx-auto px-4 py-8 md:py-10">
         <section className="grid lg:grid-cols-[1.2fr_0.8fr] gap-6 mb-6">
-          <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6 md:p-8">
+          <div className="bg-gradient-to-br from-[#17385a] to-[#21456d] rounded-3xl border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.35)] p-6 md:p-8">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-copper-50 text-copper-700 text-sm font-semibold mb-5">
               <Sparkles className="w-4 h-4" />
               Your Foundation Report
             </div>
 
-            <h1 className="text-3xl md:text-5xl font-bold text-navy-900 leading-tight mb-3">
+            <h1 className="text-3xl md:text-5xl font-bold text-white leading-tight mb-3">
               {buildExecutiveHeadline(score)}
             </h1>
 
-            <p className="text-base md:text-lg text-gray-600 max-w-3xl mb-6">
+            <p className="text-base md:text-lg text-white/80 max-w-3xl mb-6">
               {getBandNarrative(score)}
             </p>
 
             <div className="grid sm:grid-cols-3 gap-4">
-              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
                 <div className="text-sm text-white/70 mb-2">Foundation Score</div>
-                <div className="text-5xl font-bold text-white">{score}</div>
+                <div className="inline-flex items-center justify-center w-28 h-28 rounded-full bg-gradient-to-br from-[#ffd6a3] to-[#c2783a] shadow-[0_14px_40px_rgba(194,120,58,0.35)] border border-white/20 text-5xl font-bold text-white">{score}</div>
                 <div className={`mt-3 inline-flex px-3 py-1 rounded-full text-sm font-semibold ${scoreBand.bg} ${scoreBand.color}`}>
                   {scoreBand.label}
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
                 <div className="text-sm text-white/70 mb-2">Top Strength</div>
                 <div className="text-2xl font-bold text-white">
                   {strongest[0] ? formatPillarName(strongest[0][0]) : '—'}
@@ -628,7 +628,7 @@ export default function ResultsPage() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
                 <div className="text-sm text-white/70 mb-2">Debt Pressure</div>
                 <div className="text-2xl font-bold text-white">{debtPressure}</div>
                 <div className="mt-2 text-sm text-white/70">
