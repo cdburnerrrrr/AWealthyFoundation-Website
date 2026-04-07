@@ -282,7 +282,7 @@ export default function SnapshotQuestionnaire() {
             <div className="flex-1 min-w-[220px]">
               <div className="flex items-center justify-between mb-1 text-xs">
                 <span className="font-medium text-navy-700 truncate">
-                  Personalized Financial Snapshot
+                  Your progress
                 </span>
                 <span className="text-gray-500 whitespace-nowrap">
                   {currentStep + 1}/{totalSteps}
@@ -319,31 +319,25 @@ export default function SnapshotQuestionnaire() {
       <main className="flex-1 py-4 md:py-4">
         <div className="max-w-3xl mx-auto px-4">
           <div className="rounded-[28px] border border-[#d8e2ec] bg-white shadow-[0_12px_40px_rgba(15,23,42,0.06)] overflow-hidden">
-            <div className="bg-gradient-to-r from-navy-900 to-[#23486f] px-5 md:px-6 py-4 text-white">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-2 text-copper-200 text-xs uppercase tracking-[0.18em] font-semibold mb-2">
-                    {currentQuestion.section && (() => {
-                      const Icon = SECTION_ICONS[currentQuestion.section];
-                      return Icon ? <Icon className="w-4 h-4" /> : null;
-                    })()}
-                    <span>{sectionLabel}</span>
-                  </div>
-                  <h1 className="text-xl md:text-2xl font-bold leading-tight">
-                    {currentQuestion.question}
-                  </h1>
-                  <p className="text-xs text-white/75 mt-1">
-                    {sectionIntro}
-                  </p>
-                </div>
-
-                <div className="hidden md:flex items-center justify-center w-10 h-10 rounded-xl bg-white/10 border border-white/10 text-lg font-bold text-white">
-                  {currentStep + 1}
-                </div>
+            <div className="px-5 md:px-6 pt-5 pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2 text-copper-700 text-xs uppercase tracking-[0.18em] font-semibold mb-2">
+                {currentQuestion.section && (() => {
+                  const Icon = SECTION_ICONS[currentQuestion.section];
+                  return Icon ? <Icon className="w-4 h-4" /> : null;
+                })()}
+                <span>{sectionLabel}</span>
               </div>
+
+              <h1 className="text-xl md:text-[1.7rem] font-bold leading-tight text-navy-900">
+                {currentQuestion.question}
+              </h1>
+
+              <p className="text-sm text-copper-600/90 mt-2">
+                {sectionIntro}
+              </p>
             </div>
 
-            <div className="px-5 md:px-6 py-5 md:py-6">
+            <div className="px-5 md:px-6 py-5">
               {currentQuestion.helperText && (
                 <div className="mb-4 rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm text-slate-600">
                   {currentQuestion.helperText}
@@ -356,14 +350,14 @@ export default function SnapshotQuestionnaire() {
                     <button
                       key={option.value}
                       onClick={() => handleResponse(currentQuestion, option.value)}
-                      className={`group w-full px-4 py-3 text-left rounded-xl border-2 transition-all ${
+                      className={`group w-full px-4 py-3 text-left rounded-2xl border transition-all ${
                         responses[currentQuestion.key] === option.value
-                          ? 'border-copper-500 bg-copper-50 text-navy-900 shadow-sm'
-                          : 'border-gray-200 hover:border-copper-300 hover:bg-gray-50 text-navy-700'
+                          ? 'border-copper-500 bg-white shadow-[0_4px_16px_rgba(194,120,58,0.12)] text-navy-900 ring-2 ring-copper-100'
+                          : 'border-slate-200 bg-slate-50/40 hover:border-copper-300 hover:bg-white text-navy-700'
                       }`}
                     >
                       <div className="flex items-center justify-between gap-3">
-                        <span className="text-base">{option.label}</span>
+                        <span className="text-base font-medium">{option.label}</span>
                         <span
                           className={`w-5 h-5 rounded-full border-2 transition-all ${
                             responses[currentQuestion.key] === option.value
@@ -388,20 +382,20 @@ export default function SnapshotQuestionnaire() {
                       <button
                         key={option.value}
                         onClick={() => handleMultipleToggle(currentQuestion, option.value)}
-                        className={`w-full px-4 py-3 text-left rounded-xl border-2 transition-all flex items-center gap-3 ${
+                        className={`w-full px-4 py-3 text-left rounded-2xl border transition-all flex items-center gap-3 ${
                           selected
-                            ? 'border-copper-500 bg-copper-50 text-navy-900 shadow-sm'
-                            : 'border-gray-200 hover:border-copper-300 hover:bg-gray-50 text-navy-700'
+                            ? 'border-copper-500 bg-white shadow-[0_4px_16px_rgba(194,120,58,0.12)] text-navy-900 ring-2 ring-copper-100'
+                            : 'border-slate-200 bg-slate-50/40 hover:border-copper-300 hover:bg-white text-navy-700'
                         }`}
                       >
                         <div
                           className={`w-5 h-5 rounded-md border-2 flex items-center justify-center ${
-                            selected ? 'border-copper-500 bg-copper-500' : 'border-gray-300'
+                            selected ? 'border-copper-500 bg-copper-500' : 'border-gray-300 bg-white'
                           }`}
                         >
                           {selected && <CheckCircle className="w-3 h-3 text-white" />}
                         </div>
-                        <span className="text-base">{option.label}</span>
+                        <span className="text-base font-medium">{option.label}</span>
                       </button>
                     );
                   })}
@@ -435,7 +429,7 @@ export default function SnapshotQuestionnaire() {
                         nextStep();
                       }
                     }}
-                    className="w-full p-4 text-lg border-2 border-gray-200 rounded-xl focus:border-copper-500 focus:outline-none focus:ring-4 focus:ring-copper-100 transition-all"
+                    className="w-full p-4 text-lg border-2 border-gray-200 rounded-2xl focus:border-copper-500 focus:outline-none focus:ring-4 focus:ring-copper-100 transition-all"
                   />
                   <p className="text-xs text-gray-500 mt-2">
                     Enter a number and press Enter to continue.
@@ -443,11 +437,11 @@ export default function SnapshotQuestionnaire() {
                 </div>
               )}
 
-              <div className="flex items-center justify-between mt-8 pt-5 border-t border-gray-100">
+              <div className="flex items-center justify-between mt-5 pt-1">
                 <button
                   onClick={prevStep}
                   disabled={currentStep === 0}
-                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-colors ${
+                  className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl font-medium transition-colors ${
                     currentStep === 0
                       ? 'text-gray-300 cursor-not-allowed'
                       : 'text-navy-700 hover:bg-gray-100'
@@ -461,7 +455,7 @@ export default function SnapshotQuestionnaire() {
                   <button
                     onClick={submitAssessment}
                     disabled={isSubmitting || !canProceed()}
-                    className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${
+                    className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all ${
                       canProceed() && !isSubmitting
                         ? 'bg-copper-600 text-white hover:bg-copper-700 shadow-sm'
                         : 'bg-gray-200 text-gray-400 cursor-not-allowed'
@@ -474,7 +468,7 @@ export default function SnapshotQuestionnaire() {
                   <button
                     onClick={nextStep}
                     disabled={!canProceed()}
-                    className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${
+                    className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all ${
                       canProceed()
                         ? 'bg-copper-600 text-white hover:bg-copper-700 shadow-sm'
                         : 'bg-gray-200 text-gray-400 cursor-not-allowed'
