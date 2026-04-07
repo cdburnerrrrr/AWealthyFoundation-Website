@@ -252,7 +252,7 @@ export default function SnapshotQuestionnaire() {
 
   if (!currentQuestion) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#fff8ef] to-[#fdf2e6] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-gradient-to-b from-[#0f2a44] via-[#132f4c] to-[#1e3a5f] flex items-center justify-center px-4">
         <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-8 max-w-lg text-center">
           <img src={logoImage} alt="A Wealthy Foundation" className="w-12 h-12 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-navy-900 mb-3">Snapshot unavailable</h1>
@@ -275,8 +275,8 @@ export default function SnapshotQuestionnaire() {
   const sectionIntro = getSectionIntro(currentQuestion.section);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#fff8ef] to-[#fdf2e6] flex flex-col">
-      <div className="bg-white/70 backdrop-blur border-b border-[#e6d5c3]">
+    <div className="min-h-screen bg-gradient-to-b from-[#0f2a44] via-[#132f4c] to-[#1e3a5f] flex flex-col">
+      <div className="bg-white/10 backdrop-blur border-b border-white/10">
         <div className="max-w-6xl mx-auto px-4 py-2">
           <div className="flex items-center gap-4">
             <div className="flex-1 min-w-[220px]">
@@ -284,12 +284,12 @@ export default function SnapshotQuestionnaire() {
                 <span className="font-medium text-navy-700 truncate">
                   Your progress
                 </span>
-                <span className="text-gray-500 whitespace-nowrap">
+                <span className="text-white/70 whitespace-nowrap">
                   {currentStep + 1}/{totalSteps}
                 </span>
               </div>
 
-              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div className="h-2 bg-white/20 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-copper-500 transition-all duration-300"
                   style={{ width: `${progress}%` }}
@@ -318,7 +318,7 @@ export default function SnapshotQuestionnaire() {
 
       <main className="flex-1 py-4 md:py-4">
         <div className="max-w-3xl mx-auto px-4">
-          <div className="rounded-[28px] border border-[#d8e2ec] bg-white shadow-[0_12px_40px_rgba(15,23,42,0.06)] overflow-hidden">
+        <div className="rounded-[28px] border border-white/10 bg-white shadow-[0_25px_70px_rgba(0,0,0,0.45)] overflow-hidden">
             <div className="px-5 md:px-6 pt-5 pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2 text-copper-700 text-xs uppercase tracking-[0.18em] font-semibold mb-2">
                 {currentQuestion.section && (() => {
@@ -517,7 +517,7 @@ function FreeReportResults({
   const { isAuthenticated } = useAppStore();
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f7fafc_0%,#eef4f8_100%)]">
+    <div className="min-h-screen bg-gradient-to-b from-[#0f2a44] via-[#132f4c] to-[#1e3a5f]">
       <header className="bg-navy-900 text-white py-10 border-b border-white/10">
         <div className="max-w-3xl mx-auto px-4 text-center">
           <img src={logoImage} alt="A Wealthy Foundation" className="w-12 h-12 mx-auto mb-4" />
@@ -527,7 +527,7 @@ function FreeReportResults({
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-8 mb-6">
+        <div className="bg-gradient-to-b from-[#0f2a44] via-[#132f4c] to-[#1e3a5f]">
           <div className="text-center mb-6">
             <div className="inline-flex items-center justify-center w-32 h-32 rounded-full bg-copper-100 mb-4 shadow-inner">
               <span className="text-4xl font-bold text-copper-600">{reportData.foundationScore}</span>
@@ -535,18 +535,18 @@ function FreeReportResults({
             <h2 className={`text-2xl font-bold ${getScoreBand(reportData.foundationScore).color}`}>
               {getScoreBand(reportData.foundationScore).label}
             </h2>
-            <p className="text-gray-600 mt-2">{LIFE_STAGE_LABELS[reportData.lifeStage]} Stage</p>
+            <p className="text-white/80 mt-2">{LIFE_STAGE_LABELS[reportData.lifeStage]} Stage</p>
           </div>
 
           <div className="space-y-4 mb-6">
-            <h3 className="font-bold text-navy-900">Your 7 Pillars</h3>
+            <h3 className="font-bold text-white">Your 7 Pillars</h3>
             {Object.entries(reportData.pillarScores).map(([pillar, score]: [string, number]) => (
               <div key={pillar}>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="font-medium text-navy-700">
+                  <span className="font-medium text-white/90">
                     {PILLAR_LABELS[pillar as PillarKey]}
                   </span>
-                  <span className="text-gray-600">{score}</span>
+                  <span className="text-white/70">{score}</span>
                 </div>
                 <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
                   <div
