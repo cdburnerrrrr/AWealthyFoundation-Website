@@ -498,6 +498,8 @@ export default function ResultsPage() {
   const warnings = result?.structuralWarnings || [];
   const metrics = result?.metrics;
   const scoreBand = useMemo(() => getScoreBand(result?.foundationScore ?? 0), [result]);
+  const adjustedScoreColor =
+    scoreBand.label === 'Needs Attention' ? 'text-copper-300' : scoreBand.color;
   const pillarScores = result?.pillarScores ?? result?.pillars ?? {};
 
   const pillarEntries = useMemo(() => {
@@ -612,8 +614,8 @@ export default function ResultsPage() {
             <div className="grid sm:grid-cols-3 gap-4">
               <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
                 <div className="text-sm text-white/70 mb-2">Foundation Score</div>
-                <div className="inline-flex items-center justify-center w-28 h-28 rounded-full bg-gradient-to-br from-[#ffd6a3] to-[#c2783a] shadow-[0_14px_40px_rgba(194,120,58,0.35)] border border-white/20 text-5xl font-bold text-white">{score}</div>
-                <div className={`mt-3 inline-flex px-3 py-1 rounded-full text-sm font-semibold ${scoreBand.bg} ${scoreBand.color}`}>
+                <div className="inline-flex items-center justify-center w-28 h-28 rounded-full bg-gradient-to-br from-[#ffcf9e] to-[#b87333] shadow-[0_20px_60px_rgba(194,120,58,0.45)] border border-white/30 text-5xl font-bold text-white">{score}</div>
+                <div className={`mt-3 inline-flex px-3 py-1 rounded-full text-sm font-semibold ${scoreBand.bg} ${adjustedScoreColor}`}>
                   {scoreBand.label}
                 </div>
               </div>
@@ -657,7 +659,7 @@ export default function ResultsPage() {
 
         {warnings.length > 0 && (
           <section className="mb-6">
-            <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6 md:p-8">
+            <div className="bg-white/95 backdrop-blur rounded-3xl border border-white/10 shadow-sm p-6 md:p-8">
               <div className="flex items-center gap-2 mb-5">
                 <Sparkles className="w-5 h-5 text-copper-600" />
                 <h2 className="text-2xl font-bold text-navy-900">Foundation Stress Test</h2>
@@ -673,7 +675,7 @@ export default function ResultsPage() {
                       className={`rounded-2xl border p-5 ${tone.card}`}
                     >
                       <div className="flex items-start justify-between gap-4 mb-3">
-                        <div className="text-lg font-bold text-navy-900">
+                        <div className="text-lg font-bold text-white/90">
                           {getWarningTitle(warning.type)}
                         </div>
                         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${tone.badge}`}>
@@ -697,7 +699,7 @@ export default function ResultsPage() {
         )}
 
         <section className="grid lg:grid-cols-[0.95fr_1.05fr] gap-6 mb-6">
-          <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6 md:p-8">
+          <div className="bg-white/95 backdrop-blur rounded-3xl border border-white/10 shadow-sm p-6 md:p-8">
             <div className="flex items-center gap-2 mb-5">
               <Target className="w-5 h-5 text-copper-600" />
               <h2 className="text-2xl font-bold text-navy-900">Priority Opportunities</h2>
@@ -720,7 +722,7 @@ export default function ResultsPage() {
                       <div className="text-lg font-bold text-navy-900">
                         {formatPillarName(pillar)}
                       </div>
-                      <div className="text-sm text-gray-500">Score: {pillarScore}/100</div>
+                      <div className="text-sm text-copper-300">Score: {pillarScore}/100</div>
                     </div>
 
                     <div className="flex items-center gap-2">
