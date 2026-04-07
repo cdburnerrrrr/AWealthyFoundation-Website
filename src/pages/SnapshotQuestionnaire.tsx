@@ -252,7 +252,7 @@ export default function SnapshotQuestionnaire() {
 
   if (!currentQuestion) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#0f2a44] via-[#132f4c] to-[#1e3a5f] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-gradient-to-b from-[#fff8ef] to-[#fdf2e6] flex items-center justify-center px-4">
         <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-8 max-w-lg text-center">
           <img src={logoImage} alt="A Wealthy Foundation" className="w-12 h-12 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-navy-900 mb-3">Snapshot unavailable</h1>
@@ -275,21 +275,21 @@ export default function SnapshotQuestionnaire() {
   const sectionIntro = getSectionIntro(currentQuestion.section);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0f2a44] via-[#132f4c] to-[#1e3a5f] flex flex-col">
-      <div className="bg-[#0f2a44]/60 backdrop-blur border-b border-white/10">
+    <div className="min-h-screen bg-gradient-to-b from-[#fff8ef] to-[#fdf2e6] flex flex-col">
+      <div className="bg-white/70 backdrop-blur border-b border-[#e6d5c3]">
         <div className="max-w-6xl mx-auto px-4 py-2">
           <div className="flex items-center gap-4">
             <div className="flex-1 min-w-[220px]">
               <div className="flex items-center justify-between mb-1 text-xs">
-                <span className="font-semibold text-white/85 truncate">
+                <span className="font-medium text-navy-700 truncate">
                   Your progress
                 </span>
-                <span className="text-white/80 whitespace-nowrap">
+                <span className="text-gray-500 whitespace-nowrap">
                   {currentStep + 1}/{totalSteps}
                 </span>
               </div>
 
-              <div className="h-2 bg-white/30 rounded-full overflow-hidden">
+              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-copper-500 transition-all duration-300"
                   style={{ width: `${progress}%` }}
@@ -316,7 +316,7 @@ export default function SnapshotQuestionnaire() {
         </div>
       </div>
 
-      <main className="py-3 md:py-3">
+      <main className="flex-1 py-4 md:py-4">
         <div className="max-w-3xl mx-auto px-4">
         <div className="rounded-[28px] border border-white/10 bg-white shadow-[0_25px_70px_rgba(0,0,0,0.45)] overflow-hidden">
             <div className="px-5 md:px-6 pt-5 pb-3 border-b border-slate-100">
@@ -344,136 +344,107 @@ export default function SnapshotQuestionnaire() {
                 </div>
               )}
 
-{currentQuestion.type === 'single' && currentQuestion.options && (
-  <div className="space-y-3">
-    {currentQuestion.options.map((option) => {
-      const selected = responses[currentQuestion.key] === option.value;
+              {currentQuestion.type === 'single' && currentQuestion.options && (
+                <div className="space-y-3">
+                  {currentQuestion.options.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => handleResponse(currentQuestion, option.value)}
+                      className={`group w-full px-4 py-3 text-left rounded-2xl border transition-all ${
+                        responses[currentQuestion.key] === option.value
+                          ? 'border-copper-500 bg-white shadow-[0_4px_16px_rgba(194,120,58,0.12)] text-navy-900 ring-2 ring-copper-100'
+                          : 'border-slate-200 bg-slate-50/40 hover:border-copper-300 hover:bg-white text-navy-700'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-base font-medium">{option.label}</span>
+                        <span
+                          className={`w-5 h-5 rounded-full border-2 transition-all ${
+                            responses[currentQuestion.key] === option.value
+                              ? 'border-copper-500 bg-copper-500 shadow-[inset_0_0_0_4px_white]'
+                              : 'border-gray-300 group-hover:border-copper-300'
+                          }`}
+                        />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
 
-      return (
-        <button
-          key={option.value}
-          onClick={() => handleResponse(currentQuestion, option.value)}
-          className={`group relative w-full overflow-hidden rounded-2xl border px-4 py-3.5 text-left transition-all duration-200 ${
-            selected
-              ? 'border-copper-500 bg-copper-50 ring-2 ring-copper-100 shadow-[0_8px_24px_rgba(194,120,58,0.14)]'
-              : 'border-slate-200 bg-white hover:border-copper-300 hover:bg-[#fffaf5] hover:shadow-[0_6px_18px_rgba(15,23,42,0.08)]'
-          }`}
-        >
-          <div className="flex items-center justify-between gap-4">
-            <div className="min-w-0">
-              <div
-                className={`text-base font-medium transition-colors ${
-                  selected ? 'text-navy-900' : 'text-navy-800'
-                }`}
-              >
-                {option.label}
-              </div>
-            </div>
+              {currentQuestion.type === 'multiple' && currentQuestion.options && (
+                <div className="space-y-3">
+                  {currentQuestion.options.map((option) => {
+                    const selected = Array.isArray(responses[currentQuestion.key])
+                      ? (responses[currentQuestion.key] as string[]).includes(option.value)
+                      : false;
 
-            <div
-              className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all ${
-                selected
-                  ? 'border-copper-500 bg-copper-500 shadow-[inset_0_0_0_4px_white]'
-                  : 'border-slate-300 bg-white group-hover:border-copper-300'
-              }`}
-            />
-          </div>
-        </button>
-      );
-    })}
-  </div>
-)}
+                    return (
+                      <button
+                        key={option.value}
+                        onClick={() => handleMultipleToggle(currentQuestion, option.value)}
+                        className={`w-full px-4 py-3 text-left rounded-2xl border transition-all flex items-center gap-3 ${
+                          selected
+                            ? 'border-copper-500 bg-white shadow-[0_4px_16px_rgba(194,120,58,0.12)] text-navy-900 ring-2 ring-copper-100'
+                            : 'border-slate-200 bg-slate-50/40 hover:border-copper-300 hover:bg-white text-navy-700'
+                        }`}
+                      >
+                        <div
+                          className={`w-5 h-5 rounded-md border-2 flex items-center justify-center ${
+                            selected ? 'border-copper-500 bg-copper-500' : 'border-gray-300 bg-white'
+                          }`}
+                        >
+                          {selected && <CheckCircle className="w-3 h-3 text-white" />}
+                        </div>
+                        <span className="text-base font-medium">{option.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
-{currentQuestion.type === 'multiple' && currentQuestion.options && (
-  <div className="space-y-3">
-    {currentQuestion.options.map((option) => {
-      const selected = Array.isArray(responses[currentQuestion.key])
-        ? (responses[currentQuestion.key] as string[]).includes(option.value)
-        : false;
+              {currentQuestion.type === 'number' && (
+                <div>
+                  <input
+                    type="number"
+                    placeholder={currentQuestion.placeholder}
+                    value={responses[currentQuestion.key] ?? ''}
+                    onChange={(e) => handleNumberChange(currentQuestion, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter') return;
 
-      return (
-        <button
-          key={option.value}
-          onClick={() => handleMultipleToggle(currentQuestion, option.value)}
-          className={`group relative w-full overflow-hidden rounded-2xl border px-4 py-3.5 text-left transition-all duration-200 ${
-            selected
-              ? 'border-copper-500 bg-copper-50 ring-2 ring-copper-100 shadow-[0_8px_24px_rgba(194,120,58,0.14)]'
-              : 'border-slate-200 bg-white hover:border-copper-300 hover:bg-[#fffaf5] hover:shadow-[0_6px_18px_rgba(15,23,42,0.08)]'
-          }`}
-        >
-          <div className="flex items-center justify-between gap-4">
-            <div className="min-w-0">
-              <div
-                className={`text-base font-medium transition-colors ${
-                  selected ? 'text-navy-900' : 'text-navy-800'
-                }`}
-              >
-                {option.label}
-              </div>
-            </div>
+                      const rawValue = e.currentTarget.value;
+                      const hasValue =
+                        rawValue !== '' &&
+                        rawValue !== undefined &&
+                        rawValue !== null &&
+                        !Number.isNaN(Number(rawValue));
 
-            <div
-              className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md border-2 transition-all ${
-                selected
-                  ? 'border-copper-500 bg-copper-500'
-                  : 'border-slate-300 bg-white group-hover:border-copper-300'
-              }`}
-            >
-              {selected && <CheckCircle className="h-3.5 w-3.5 text-white" />}
-            </div>
-          </div>
-        </button>
-      );
-    })}
-  </div>
-)}
+                      if (!hasValue) return;
 
-{currentQuestion.type === 'number' && (
-  <div className="space-y-3">
-    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3.5 shadow-[0_6px_18px_rgba(15,23,42,0.04)] transition-all focus-within:border-copper-400 focus-within:ring-2 focus-within:ring-copper-100">
-      <input
-        type="number"
-        placeholder={currentQuestion.placeholder}
-        value={responses[currentQuestion.key] ?? ''}
-        onChange={(e) => handleNumberChange(currentQuestion, e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key !== 'Enter') return;
+                      e.preventDefault();
 
-          const rawValue = e.currentTarget.value;
-          const hasValue =
-            rawValue !== '' &&
-            rawValue !== undefined &&
-            rawValue !== null &&
-            !Number.isNaN(Number(rawValue));
+                      if (currentStep === totalSteps - 1) {
+                        submitAssessment();
+                      } else {
+                        nextStep();
+                      }
+                    }}
+                    className="w-full p-4 text-lg border-2 border-gray-200 rounded-2xl focus:border-copper-500 focus:outline-none focus:ring-4 focus:ring-copper-100 transition-all"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Enter a number and press Enter to continue.
+                  </p>
+                </div>
+              )}
 
-          if (!hasValue) return;
-
-          e.preventDefault();
-
-          if (currentStep === totalSteps - 1) {
-            submitAssessment();
-          } else {
-            nextStep();
-          }
-        }}
-        className="w-full bg-transparent text-lg font-medium text-navy-900 placeholder:text-slate-400 focus:outline-none"
-      />
-    </div>
-
-    <p className="text-xs text-copper-600/90">
-      Enter a number and press Enter to continue.
-    </p>
-  </div>
-)}
-
-              <div className="flex items-center justify-between mt-4 pt-0.5">
+              <div className="flex items-center justify-between mt-5 pt-1">
                 <button
                   onClick={prevStep}
                   disabled={currentStep === 0}
                   className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl font-medium transition-colors ${
                     currentStep === 0
-                      ? 'text-slate-300 cursor-not-allowed'
-                      : 'text-copper-600 hover:bg-copper-50 hover:text-copper-700'
+                      ? 'text-gray-300 cursor-not-allowed'
+                      : 'text-navy-700 hover:bg-gray-100'
                   }`}
                 >
                   <ChevronLeft className="w-5 h-5" />
@@ -486,8 +457,8 @@ export default function SnapshotQuestionnaire() {
                     disabled={isSubmitting || !canProceed()}
                     className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all ${
                       canProceed() && !isSubmitting
-                        ? 'bg-copper-600 text-white hover:bg-copper-700 shadow-sm hover:shadow-md animate-[pulse_1.2s_ease-in-out_1]'
-                        : 'bg-navy-700 text-white/60 cursor-not-allowed disabled:opacity-80'
+                        ? 'bg-copper-600 text-white hover:bg-copper-700 shadow-sm'
+                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                     }`}
                   >
                     {isSubmitting ? 'Calculating...' : 'See My Results'}
@@ -499,8 +470,8 @@ export default function SnapshotQuestionnaire() {
                     disabled={!canProceed()}
                     className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all ${
                       canProceed()
-                        ? 'bg-copper-600 text-white hover:bg-copper-700 shadow-sm hover:shadow-md animate-[pulse_1.2s_ease-in-out_1]'
-                        : 'bg-navy-700 text-white/60 cursor-not-allowed disabled:opacity-80'
+                        ? 'bg-copper-600 text-white hover:bg-copper-700 shadow-sm'
+                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                     }`}
                   >
                     Next
@@ -514,7 +485,7 @@ export default function SnapshotQuestionnaire() {
       </main>
 
       {previewReport && (
-        <div className="fixed bottom-2 left-0 right-0 px-4 pointer-events-none">
+        <div className="fixed bottom-4 left-0 right-0 px-4 pointer-events-none">
           <div className="max-w-3xl mx-auto rounded-2xl border border-[#d8e2ec] bg-white/95 backdrop-blur shadow-lg p-4 pointer-events-auto">
             <div className="flex items-center justify-between gap-4">
               <div className="text-sm text-gray-600">
@@ -558,24 +529,24 @@ function FreeReportResults({
       <main className="max-w-3xl mx-auto px-4 py-8">
         <div className="bg-gradient-to-b from-[#0f2a44] via-[#132f4c] to-[#1e3a5f]">
           <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-32 h-32 rounded-full bg-gradient-to-br from-[#ffd6a3] to-[#c2783a] mb-4 shadow-[0_14px_40px_rgba(194,120,58,0.35)] border border-white/20">
-  <span className="text-4xl font-bold text-white drop-shadow-sm">{reportData.foundationScore}</span>
-</div>
-            <h2 className={`text-2xl font-bold ${getScoreBand(reportData.foundationScore).color}`}>
+            <div className="inline-flex items-center justify-center w-32 h-32 rounded-full bg-copper-100 mb-4 shadow-inner">
+              <span className="text-4xl font-bold text-copper-600">{reportData.foundationScore}</span>
+            </div>
+            <h2 className={`text-2xl font-bold ${getScoreBand(reportData.foundationScore).color === 'text-red-600' ? 'text-copper-300' : getScoreBand(reportData.foundationScore).color === 'text-amber-600' ? 'text-copper-300' : getScoreBand(reportData.foundationScore).color}`}>
               {getScoreBand(reportData.foundationScore).label}
             </h2>
-            <p className="text-copper-300 mt-2 font-medium">{LIFE_STAGE_LABELS[reportData.lifeStage]} Stage</p>
+            <p className="text-gray-600 mt-2">{LIFE_STAGE_LABELS[reportData.lifeStage]} Stage</p>
           </div>
 
           <div className="space-y-4 mb-6">
-          <h3 className="font-bold text-copper-300">Your 7 Pillars</h3>
+            <h3 className="font-bold text-navy-900">Your 7 Pillars</h3>
             {Object.entries(reportData.pillarScores).map(([pillar, score]: [string, number]) => (
               <div key={pillar}>
                 <div className="flex justify-between text-sm mb-1">
-                <span className="font-medium text-copper-300">
+                  <span className="font-medium text-navy-700">
                     {PILLAR_LABELS[pillar as PillarKey]}
                   </span>
-                  <span className="text-copper-300">{score}</span>
+                  <span className="text-gray-600">{score}</span>
                 </div>
                 <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
                   <div
@@ -590,7 +561,7 @@ function FreeReportResults({
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="bg-white/95 backdrop-blur rounded-3xl shadow-sm border border-white/10 p-6 mb-6">
           <h3 className="font-bold text-navy-900 mb-4 flex items-center gap-2">
             <Target className="w-5 h-5 text-copper-600" />
             Your Key Insights
@@ -605,7 +576,7 @@ function FreeReportResults({
           </ul>
         </div>
 
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="bg-white/95 backdrop-blur rounded-3xl shadow-sm border border-white/10 p-6 mb-6">
           <h3 className="font-bold text-navy-900 mb-4 flex items-center gap-2">
             <Star className="w-5 h-5 text-copper-600" />
             Your Top Priorities
@@ -622,8 +593,8 @@ function FreeReportResults({
           </ul>
         </div>
 
-        <div className="bg-gradient-to-br from-navy-900 to-navy-800 rounded-3xl p-6 text-white text-center">
-          <h3 className="text-xl font-bold mb-2">Want your full financial diagnostic?</h3>
+        <div className="bg-gradient-to-br from-navy-900 to-navy-800 rounded-3xl p-6 text-white text-center border border-copper-500/60 shadow-[0_10px_30px_rgba(194,120,58,0.15)]">
+          <h3 className="text-xl font-bold mb-2">See exactly how to improve your score</h3>
           <p className="text-navy-200 mb-4">
             Upgrade to the Detailed Assessment for a deeper breakdown, more personalized
             recommendations, and a stronger action plan.
@@ -637,8 +608,8 @@ function FreeReportResults({
           </button>
         </div>
 
-        <div className="flex justify-center gap-4 mt-6">
-        <button onClick={onRetake} className="text-white font-medium hover:text-copper-300 transition-colors">
+        <div className="flex justify-center gap-4 mt-6 pt-4 border-t border-white/10">
+          <button onClick={onRetake} className="text-navy-700 font-medium hover:text-copper-600">
             Retake Assessment
           </button>
           {isAuthenticated && (
