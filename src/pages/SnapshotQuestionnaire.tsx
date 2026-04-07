@@ -543,7 +543,7 @@ function FreeReportResults({
             {Object.entries(reportData.pillarScores).map(([pillar, score]: [string, number]) => (
               <div key={pillar}>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="font-medium text-navy-700">
+                <span className="font-medium text-white/90">
                     {PILLAR_LABELS[pillar as PillarKey]}
                   </span>
                   <span className="text-copper-300">{score}</span>
@@ -609,13 +609,16 @@ function FreeReportResults({
         </div>
 
         <div className="flex justify-center gap-4 mt-6 pt-4 border-t border-white/10">
-          <button onClick={onRetake} className="text-navy-700 font-medium hover:text-copper-600">
+          <button
+            onClick={onRetake}
+            className="text-white/60 font-medium hover:text-white transition-colors"
+          >
             Retake Assessment
           </button>
           {isAuthenticated && (
             <button
               onClick={() => navigate('/my-foundation')}
-              className="text-copper-600 font-medium hover:text-copper-700"
+              className="text-copper-600 font-medium hover:text-copper-300 transition-colors"
             >
               Go to Dashboard
             </button>
