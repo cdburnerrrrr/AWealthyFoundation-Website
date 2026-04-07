@@ -529,13 +529,17 @@ function FreeReportResults({
       <main className="max-w-3xl mx-auto px-4 py-8">
         <div className="bg-gradient-to-b from-[#0f2a44] via-[#132f4c] to-[#1e3a5f]">
           <div className="text-center mb-6">
-            <div className="inline-flex items-center justify-center w-32 h-32 rounded-full bg-copper-100 mb-4 shadow-inner">
-              <span className="text-4xl font-bold text-copper-600">{reportData.foundationScore}</span>
-            </div>
+          <div className="inline-flex items-center justify-center w-32 h-32 rounded-full bg-gradient-to-br from-[#ffcf9e] to-[#b87333] shadow-[0_20px_60px_rgba(194,120,58,0.45)] border border-white/30 mb-4">
+  <span className="text-4xl font-bold text-white">
+    {reportData.foundationScore}
+  </span>
+</div>
             <h2 className={`text-2xl font-bold ${getScoreBand(reportData.foundationScore).color === 'text-red-600' ? 'text-copper-300' : getScoreBand(reportData.foundationScore).color === 'text-amber-600' ? 'text-copper-300' : getScoreBand(reportData.foundationScore).color}`}>
               {getScoreBand(reportData.foundationScore).label}
             </h2>
-            <p className="text-gray-600 mt-2">{LIFE_STAGE_LABELS[reportData.lifeStage]} Stage</p>
+            <p className="text-copper-200 mt-2 font-medium">
+  {LIFE_STAGE_LABELS[reportData.lifeStage]} Stage
+</p>
           </div>
 
           <div className="space-y-4 mb-6">
