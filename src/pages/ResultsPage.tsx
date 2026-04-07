@@ -572,7 +572,7 @@ export default function ResultsPage() {
   const debtPressure = formatDebtPressure(Number(pillarScores?.debt || 0));
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#faf7f2] via-white to-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-[#0f2a44] via-[#132f4c] to-[#1e3a5f]">
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <button
@@ -611,27 +611,27 @@ export default function ResultsPage() {
 
             <div className="grid sm:grid-cols-3 gap-4">
               <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
-                <div className="text-sm text-gray-500 mb-2">Foundation Score</div>
-                <div className="text-5xl font-bold text-navy-900">{score}</div>
+                <div className="text-sm text-white/70 mb-2">Foundation Score</div>
+                <div className="text-5xl font-bold text-white">{score}</div>
                 <div className={`mt-3 inline-flex px-3 py-1 rounded-full text-sm font-semibold ${scoreBand.bg} ${scoreBand.color}`}>
                   {scoreBand.label}
                 </div>
               </div>
 
               <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
-                <div className="text-sm text-gray-500 mb-2">Top Strength</div>
-                <div className="text-2xl font-bold text-navy-900">
+                <div className="text-sm text-white/70 mb-2">Top Strength</div>
+                <div className="text-2xl font-bold text-white">
                   {strongest[0] ? formatPillarName(strongest[0][0]) : '—'}
                 </div>
-                <div className="mt-2 text-sm text-gray-600">
+                <div className="mt-2 text-sm text-white/70">
                   {strongest[0] ? `${strongest[0][1]}/100` : 'No data'}
                 </div>
               </div>
 
               <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
-                <div className="text-sm text-gray-500 mb-2">Debt Pressure</div>
-                <div className="text-2xl font-bold text-navy-900">{debtPressure}</div>
-                <div className="mt-2 text-sm text-gray-600">
+                <div className="text-sm text-white/70 mb-2">Debt Pressure</div>
+                <div className="text-2xl font-bold text-white">{debtPressure}</div>
+                <div className="mt-2 text-sm text-white/70">
                   Lower debt pressure generally means more flexibility.
                 </div>
               </div>
