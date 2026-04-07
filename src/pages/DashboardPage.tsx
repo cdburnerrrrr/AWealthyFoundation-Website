@@ -791,30 +791,34 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                     <div className="font-semibold text-navy-900">View Full Report</div>
                   </div>
                   <p className="text-sm text-gray-600">Revisit your detailed report, full breakdown, and tailored recommendations.</p>
-                </button>
-                <button onClick={() => navigate('/assessment/comprehensive')} className="rounded-2xl border border-[#d7e3f0] bg-[#fff8ef] p-5 text-left hover:bg-white transition-colors">
+                  <button
+  onClick={() => navigate('/assessment/comprehensive')}
+  className="rounded-2xl border border-[#d7e3f0] bg-[#fff8ef] p-5 text-left hover:bg-white transition-colors"
+>
   <div className="flex items-center gap-3 mb-3">
     <ArrowRight className="w-5 h-5 text-copper-600" />
     <div className="font-semibold text-navy-900">Retake Assessment</div>
   </div>
-  <p className="text-sm text-gray-600">Run the assessment again after progress or when your situation changes.</p>
+  <p className="text-sm text-gray-600">
+    Run the assessment again after progress or when your situation changes.
+  </p>
 </button>
-                  <div className="flex items-center gap-3 mb-3">
-                    <ArrowRight className="w-5 h-5 text-copper-600" />
-                    <div className="font-semibold text-navy-900">Retake Assessment</div>
-                  </div>
-                  <p className="text-sm text-gray-600">Run the assessment again after progress or when your situation changes.</p>
-                </button>
-                <button onClick={() => navigate('/trusted-experts')} className="rounded-2xl border border-[#d7e3f0] bg-[#eef8ff] p-5 text-left hover:bg-white transition-colors">
-                  <div className="flex items-center gap-3 mb-3">
-                    <Users className="w-5 h-5 text-copper-600" />
-                    <div className="font-semibold text-navy-900">Optional Expert Help</div>
-                  </div>
-                  <p className="text-sm text-gray-600">See the categories of trusted professionals that may help you move faster.</p>
-                </button>
-              </div>
-            </div>
 
+<button
+  onClick={() => navigate('/trusted-experts')}
+  className="rounded-2xl border border-[#d7e3f0] bg-[#eef8ff] p-5 text-left hover:bg-white transition-colors"
+>
+  <div className="flex items-center gap-3 mb-3">
+    <Users className="w-5 h-5 text-copper-600" />
+    <div className="font-semibold text-navy-900">Optional Expert Help</div>
+  </div>
+  <p className="text-sm text-gray-600">
+    See the categories of trusted professionals that may help you move faster.
+  </p>
+</button>
+                
+              </div>
+          
             {trustedExperts.length > 0 && (
               <div className="bg-white border border-[#d7e3f0] rounded-3xl p-6 shadow-sm mb-8">
                 <div className="flex items-center gap-2 mb-2">
