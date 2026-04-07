@@ -276,15 +276,15 @@ export default function SnapshotQuestionnaire() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0f2a44] via-[#132f4c] to-[#1e3a5f] flex flex-col">
-      <div className="bg-white/10 backdrop-blur border-b border-white/10">
+      <div className="bg-[#0f2a44]/80 backdrop-blur border-b border-white/10">
         <div className="max-w-6xl mx-auto px-4 py-2">
           <div className="flex items-center gap-4">
             <div className="flex-1 min-w-[220px]">
               <div className="flex items-center justify-between mb-1 text-xs">
-                <span className="font-medium text-navy-700 truncate">
+                <span className="font-medium text-white truncate">
                   Your progress
                 </span>
-                <span className="text-white/70 whitespace-nowrap">
+                <span className="text-white/80 whitespace-nowrap">
                   {currentStep + 1}/{totalSteps}
                 </span>
               </div>
@@ -443,8 +443,8 @@ export default function SnapshotQuestionnaire() {
                   disabled={currentStep === 0}
                   className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl font-medium transition-colors ${
                     currentStep === 0
-                      ? 'text-gray-300 cursor-not-allowed'
-                      : 'text-navy-700 hover:bg-gray-100'
+                      ? 'text-white/30 cursor-not-allowed'
+                      : 'text-copper-600 hover:bg-copper-50'
                   }`}
                 >
                   <ChevronLeft className="w-5 h-5" />
@@ -456,8 +456,8 @@ export default function SnapshotQuestionnaire() {
                     onClick={submitAssessment}
                     disabled={isSubmitting || !canProceed()}
                     className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all ${
-                      canProceed() && !isSubmitting
-                        ? 'bg-copper-600 text-white hover:bg-copper-700 shadow-sm'
+                      canProceed()
+                        ? 'bg-copper-600 text-white hover:bg-copper-700 shadow-sm hover:shadow-md 
                         : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                     }`}
                   >
@@ -470,7 +470,7 @@ export default function SnapshotQuestionnaire() {
                     disabled={!canProceed()}
                     className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all ${
                       canProceed()
-                        ? 'bg-copper-600 text-white hover:bg-copper-700 shadow-sm'
+                        ? 'bg-copper-600 text-white hover:bg-copper-700 shadow-sm hover:shadow-md'
                         : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                     }`}
                   >
