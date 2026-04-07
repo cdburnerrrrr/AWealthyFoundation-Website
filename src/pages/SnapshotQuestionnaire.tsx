@@ -280,14 +280,14 @@ export default function SnapshotQuestionnaire() {
         <div className="max-w-6xl mx-auto px-4 py-2">
           <div className="flex items-center gap-4">
             <div className="flex-1 min-w-[220px]">
-              <div className="flex items-center justify-between mb-1 text-xs">
-                <span className="font-medium text-navy-700 truncate">
-                  Your progress
-                </span>
-                <span className="text-gray-500 whitespace-nowrap">
-                  {currentStep + 1}/{totalSteps}
-                </span>
-              </div>
+            <div className="flex items-center justify-between mb-1 text-xs">
+            <span className="font-semibold text-white/90 tracking-wide uppercase text-[11px]">
+    Your progress
+  </span>
+  <span className="text-white/70 whitespace-nowrap">
+    {currentStep + 1}/{totalSteps}
+  </span>
+</div>
 
               <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                 <div
