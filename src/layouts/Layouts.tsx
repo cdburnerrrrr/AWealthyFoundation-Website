@@ -2,6 +2,7 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import UserMenu from '../components/UserMenu';
+import logoImage from '../assets/house-icon.png';
 
 export default function Layout() {
   const location = useLocation();
@@ -33,10 +34,17 @@ export default function Layout() {
             <div className="flex items-center gap-8">
               <Link
                 to="/"
-                className="text-lg font-bold tracking-tight text-navy-700 transition hover:text-copper-600"
+                className="flex items-center gap-3 text-navy-700 transition hover:text-copper-600"
                 onClick={closeMenu}
               >
-                A Wealthy Foundation
+                <img
+                  src={logoImage}
+                  alt="A Wealthy Foundation"
+                  className="h-9 w-auto shrink-0"
+                />
+                <span className="text-lg font-bold tracking-tight">
+                  A Wealthy Foundation
+                </span>
               </Link>
 
               <nav className="hidden md:flex items-center gap-6">

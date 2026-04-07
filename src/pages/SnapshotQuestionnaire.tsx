@@ -276,30 +276,9 @@ export default function SnapshotQuestionnaire() {
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#f7fafc_0%,#eef4f8_100%)] flex flex-col">
-      <header className="sticky top-0 z-50 border-b border-navy-900/10 bg-white/90 backdrop-blur">
-        <div className="max-w-5xl mx-auto px-4">
-          <div className="flex items-center justify-between h-14">
-            <button onClick={() => navigate('/')} className="flex items-center gap-3 hover:opacity-90">
-              <img src={logoImage} alt="A Wealthy Foundation" className="w-8 h-8" />
-              <div className="font-serif font-bold text-navy-900 leading-none whitespace-nowrap">
-                A Wealthy Foundation
-              </div>
-            </button>
-            <div className="hidden sm:block" />
-          </div>
-        </div>
-      </header>
-
       <div className="bg-white/80 border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-4 py-2">
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 min-w-0 shrink-0">
-              <img src={logoImage} alt="A Wealthy Foundation" className="w-7 h-7" />
-              <div className="font-serif font-bold text-navy-900 whitespace-nowrap">
-                A Wealthy Foundation
-              </div>
-            </div>
-
             <div className="flex-1 min-w-[220px]">
               <div className="flex items-center justify-between mb-1 text-xs">
                 <span className="font-medium text-navy-700 truncate">
@@ -324,19 +303,12 @@ export default function SnapshotQuestionnaire() {
                 Quick assessment
               </div>
 
-              {isAuthenticated ? (
+              {isAuthenticated && (
                 <button
                   onClick={() => navigate('/my-foundation')}
                   className="text-sm text-copper-600 font-medium whitespace-nowrap"
                 >
                   Dashboard
-                </button>
-              ) : (
-                <button
-                  onClick={() => navigate('/login')}
-                  className="text-sm text-navy-600 font-medium whitespace-nowrap"
-                >
-                  Login
                 </button>
               )}
             </div>
