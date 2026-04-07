@@ -252,7 +252,7 @@ export default function SnapshotQuestionnaire() {
 
   if (!currentQuestion) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#0f2a44] via-[#132f4c] to-[#1e3a5f] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-gradient-to-b from-[#fff8ef] to-[#fdf2e6] flex items-center justify-center px-4">
         <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-8 max-w-lg text-center">
           <img src={logoImage} alt="A Wealthy Foundation" className="w-12 h-12 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-navy-900 mb-3">Snapshot unavailable</h1>
@@ -275,21 +275,21 @@ export default function SnapshotQuestionnaire() {
   const sectionIntro = getSectionIntro(currentQuestion.section);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0f2a44] via-[#132f4c] to-[#1e3a5f] flex flex-col">
-      <div className="bg-[#0f2a44]/80 backdrop-blur border-b border-white/10">
+    <div className="min-h-screen bg-gradient-to-b from-[#fff8ef] to-[#fdf2e6] flex flex-col">
+      <div className="bg-white/70 backdrop-blur border-b border-[#e6d5c3]">
         <div className="max-w-6xl mx-auto px-4 py-2">
           <div className="flex items-center gap-4">
             <div className="flex-1 min-w-[220px]">
               <div className="flex items-center justify-between mb-1 text-xs">
-                <span className="font-medium text-white truncate">
+                <span className="font-semibold text-white/85 truncate">
                   Your progress
                 </span>
-                <span className="text-white/80 whitespace-nowrap">
+                <span className="text-gray-500 whitespace-nowrap">
                   {currentStep + 1}/{totalSteps}
                 </span>
               </div>
 
-              <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-copper-500 transition-all duration-300"
                   style={{ width: `${progress}%` }}
@@ -316,7 +316,7 @@ export default function SnapshotQuestionnaire() {
         </div>
       </div>
 
-      <main className="flex-1 py-4 md:py-4">
+      <main className="py-3 md:py-3">
         <div className="max-w-3xl mx-auto px-4">
         <div className="rounded-[28px] border border-white/10 bg-white shadow-[0_25px_70px_rgba(0,0,0,0.45)] overflow-hidden">
             <div className="px-5 md:px-6 pt-5 pb-3 border-b border-slate-100">
@@ -352,8 +352,8 @@ export default function SnapshotQuestionnaire() {
                       onClick={() => handleResponse(currentQuestion, option.value)}
                       className={`group w-full px-4 py-3 text-left rounded-2xl border transition-all ${
                         responses[currentQuestion.key] === option.value
-                          ? 'border-copper-500 bg-white shadow-[0_4px_16px_rgba(194,120,58,0.12)] text-navy-900 ring-2 ring-copper-100'
-                          : 'border-slate-200 bg-slate-50/40 hover:border-copper-300 hover:bg-white text-navy-700'
+                          ? 'border-copper-500 bg-copper-50 shadow-[0_4px_16px_rgba(194,120,58,0.14)] text-navy-900 ring-2 ring-copper-100'
+                          : 'border-slate-200 bg-slate-50/40 hover:border-copper-400 hover:bg-copper-50 text-navy-700'
                       }`}
                     >
                       <div className="flex items-center justify-between gap-3">
@@ -384,8 +384,8 @@ export default function SnapshotQuestionnaire() {
                         onClick={() => handleMultipleToggle(currentQuestion, option.value)}
                         className={`w-full px-4 py-3 text-left rounded-2xl border transition-all flex items-center gap-3 ${
                           selected
-                            ? 'border-copper-500 bg-white shadow-[0_4px_16px_rgba(194,120,58,0.12)] text-navy-900 ring-2 ring-copper-100'
-                            : 'border-slate-200 bg-slate-50/40 hover:border-copper-300 hover:bg-white text-navy-700'
+                            ? 'border-copper-500 bg-copper-50 shadow-[0_4px_16px_rgba(194,120,58,0.14)] text-navy-900 ring-2 ring-copper-100'
+                            : 'border-slate-200 bg-slate-50/40 hover:border-copper-400 hover:bg-copper-50 text-navy-700'
                         }`}
                       >
                         <div
@@ -437,54 +437,55 @@ export default function SnapshotQuestionnaire() {
                 </div>
               )}
 
-<div className="flex items-center justify-between mt-6">
+              <div className="flex items-center justify-between mt-4 pt-0.5">
+                <button
+                  onClick={prevStep}
+                  disabled={currentStep === 0}
+                  className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl font-medium transition-colors ${
+                    currentStep === 0
+                      ? 'text-slate-300 cursor-not-allowed'
+                      : 'text-copper-600 hover:bg-copper-50 hover:text-copper-700'
+                  }`}
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                  Back
+                </button>
 
-{/* BACK BUTTON */}
-<button
-  onClick={prevStep}
-  disabled={currentStep === 0}
-  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-white/70 hover:text-white transition-all disabled:opacity-40"
->
-  <ChevronLeft className="w-5 h-5" />
-  Back
-</button>
-
-{/* NEXT / SUBMIT BUTTON */}
-{currentStep === totalSteps - 1 ? (
-  <button
-    onClick={submitAssessment}
-    disabled={isSubmitting || !canProceed()}
-    className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all ${
-      canProceed() && !isSubmitting
-        ? 'bg-copper-600 text-white hover:bg-copper-700 shadow-sm hover:shadow-md animate-[pulse_1.2s_ease-in-out_1]'
-        : 'bg-navy-800/90 text-white/50 cursor-not-allowed disabled:opacity-80'
-    }`}
-  >
-    {isSubmitting ? 'Calculating...' : 'See My Results'}
-    <ArrowRight className="w-5 h-5" />
-  </button>
-) : (
-  <button
-    onClick={nextStep}
-    disabled={!canProceed()}
-    className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all ${
-      canProceed()
-        ? 'bg-copper-600 text-white hover:bg-copper-700 shadow-sm hover:shadow-md animate-[pulse_1.2s_ease-in-out_1]'
-        : 'bg-navy-800/90 text-white/50 cursor-not-allowed disabled:opacity-80'
-    }`}
-  >
-    Next
-    <ChevronRight className="w-5 h-5" />
-  </button>
-)}
-</div>
+                {currentStep === totalSteps - 1 ? (
+                  <button
+                    onClick={submitAssessment}
+                    disabled={isSubmitting || !canProceed()}
+                    className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all ${
+                      canProceed() && !isSubmitting
+                        ? 'bg-copper-600 text-white hover:bg-copper-700 shadow-sm hover:shadow-md animate-[pulse_1.2s_ease-in-out_1]'
+                        : 'bg-navy-700 text-white/60 cursor-not-allowed disabled:opacity-80'
+                    }`}
+                  >
+                    {isSubmitting ? 'Calculating...' : 'See My Results'}
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={nextStep}
+                    disabled={!canProceed()}
+                    className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all ${
+                      canProceed()
+                        ? 'bg-copper-600 text-white hover:bg-copper-700 shadow-sm hover:shadow-md animate-[pulse_1.2s_ease-in-out_1]'
+                        : 'bg-navy-700 text-white/60 cursor-not-allowed disabled:opacity-80'
+                    }`}
+                  >
+                    Next
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </main>
 
       {previewReport && (
-        <div className="fixed bottom-4 left-0 right-0 px-4 pointer-events-none">
+        <div className="fixed bottom-2 left-0 right-0 px-4 pointer-events-none">
           <div className="max-w-3xl mx-auto rounded-2xl border border-[#d8e2ec] bg-white/95 backdrop-blur shadow-lg p-4 pointer-events-auto">
             <div className="flex items-center justify-between gap-4">
               <div className="text-sm text-gray-600">
@@ -534,18 +535,18 @@ function FreeReportResults({
             <h2 className={`text-2xl font-bold ${getScoreBand(reportData.foundationScore).color}`}>
               {getScoreBand(reportData.foundationScore).label}
             </h2>
-            <p className="text-white/80 mt-2">{LIFE_STAGE_LABELS[reportData.lifeStage]} Stage</p>
+            <p className="text-gray-600 mt-2">{LIFE_STAGE_LABELS[reportData.lifeStage]} Stage</p>
           </div>
 
           <div className="space-y-4 mb-6">
-            <h3 className="font-bold text-white">Your 7 Pillars</h3>
+            <h3 className="font-bold text-navy-900">Your 7 Pillars</h3>
             {Object.entries(reportData.pillarScores).map(([pillar, score]: [string, number]) => (
               <div key={pillar}>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="font-medium text-white/90">
+                  <span className="font-medium text-navy-700">
                     {PILLAR_LABELS[pillar as PillarKey]}
                   </span>
-                  <span className="text-white/70">{score}</span>
+                  <span className="text-gray-600">{score}</span>
                 </div>
                 <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
                   <div
