@@ -1768,43 +1768,82 @@ function scoreSpending(
   return clamp(Math.round(s));
 }
 
-function scoreSaving(a: Record<string, any>, signals?: UserSignals,  mode: ScoringMode = 'detailed') {
+function scoreSaving(
+  a: Record<string, any>,
+  signals?: UserSignals,
+  mode: ScoringMode = 'detailed'
+) {
   const derivedSignals = signals ?? deriveSignals(a);
+
+  if (mode === 'snapshot') {
+    let s = 50;
+    const months = getEmergencyFundMonthsEstimate(a);
+
+    if (months >= 6) s += 20;
+    else if (months >= 3) s += 12;
+    else if (months >= 1) s += 5;
+    else if (months === 0) s -= 10;
+
+    switch (a.emergencyAccess) {
+      case 'all':
+        s += 10;
+        break;
+      case 'most':
+        s += 6;
+        break;
+      case 'some':
+        s += 1;
+        break;
+      case 'very_little':
+        s -= 8;
+        break;
+    }
+
+    switch (a.savingConsistency) {
+      case 'yes_consistently':
+        s += 20;
+        break;
+      case 'yes_irregularly':
+        s += 8;
+        break;
+      case 'not_currently':
+        s -= 15;
+        break;
+    }
+
+    if (derivedSignals.noEmergencyFund) s -= 6;
+    else if (derivedSignals.lowEmergencyFund) s -= 3;
+
+    return clamp(Math.round(s));
+  }
+
   let s = 0;
 
-  const savingsMap: Record<string, number> = {
-    '100000_plus': 30,
-    '50000_100000': 26,
-    '30000_50000': 22,
-    '15000_30000': 18,
-    '5000_15000': 12,
-    '1000_5000': 6,
-    'under_1000': 2,
-  };
+  const months = getEmergencyFundMonthsEstimate(a);
+  if (months >= 6) s += 35;
+  else if (months >= 3) s += 25;
+  else if (months >= 1) s += 15;
+  else if (months > 0) s += 8;
 
-  s += savingsMap[a.totalLiquidSavings] || 0;
+  if (a.emergencyAccess === 'all') s += 12;
+  else if (a.emergencyAccess === 'most') s += 8;
+  else if (a.emergencyAccess === 'some') s += 4;
 
-  if (a.emergencyAccess === 'all') s += 20;
-  else if (a.emergencyAccess === 'most') s += 15;
-  else if (a.emergencyAccess === 'some') s += 8;
-  else if (a.emergencyAccess === 'very_little') s += 2;
+  if (a.savingConsistency === 'yes_consistently') s += 18;
+  else if (a.savingConsistency === 'yes_irregularly') s += 10;
 
-  if (a.savingConsistency === 'yes_consistently') s += 20;
-  else if (a.savingConsistency === 'yes_irregularly') s += 12;
+  if (a.savingsAutomation === 'fully_automated') s += 12;
+  else if (a.savingsAutomation === 'partially_automated') s += 8;
+  else if (a.savingsAutomation === 'manual') s += 3;
 
-  if (a.savingsAutomation === 'fully_automated') s += 15;
-  else if (a.savingsAutomation === 'partially_automated') s += 10;
-  else if (a.savingsAutomation === 'manual') s += 5;
+  if (a.savingsConfidence === 'very_confident') s += 8;
+  else if (a.savingsConfidence === 'somewhat_confident') s += 4;
 
-  if (a.savingsConfidence === 'very_confident') s += 15;
-  else if (a.savingsConfidence === 'somewhat_confident') s += 8;
+  if (derivedSignals.noEmergencyFund) s -= 15;
+  else if (derivedSignals.lowEmergencyFund) s -= 8;
 
-  if (a.housingPressure === 'stressful' || a.childcarePressure === 'very_heavy') s -= 5;
-
-  if (derivedSignals.noEmergencyFund) s -= 12;
-  else if (derivedSignals.lowEmergencyFund) s -= 6;
-  if (derivedSignals.inconsistentSaving) s -= 6;
-  if (derivedSignals.variableIncomeWithLowBuffer) s -= 6;
+  if (derivedSignals.inconsistentSaving) s -= 10;
+  if (derivedSignals.variableIncomeWithLowBuffer) s -= 8;
 
   return clamp(Math.round(s));
 }
@@ -2026,8 +2065,48 @@ function scoreProtection(a: Record<string, any>, mode: ScoringMode = 'detailed')
   return clamp(Math.round(s));
 }
 
-function scoreInvesting(a: Record<string, any>, signals?: UserSignals, mode: ScoringMode = 'detailed') {
+function scoreInvesting(
+  a: Record<string, any>,
+  signals?: UserSignals,
+  mode: ScoringMode = 'detailed'
+) {
   const derivedSignals = signals ?? deriveSignals(a);
+
+  if (mode === 'snapshot') {
+    let s = 45;
+
+    switch (a.investingStatus) {
+      case 'yes_consistently':
+        s += 25;
+        break;
+      case 'yes_irregularly':
+        s += 12;
+        break;
+      case 'not_yet':
+        s -= 8;
+        break;
+    }
+
+    switch (a.employerMatch) {
+      case 'maximizing_match':
+        s += 12;
+        break;
+      case 'have_match_not_maxing':
+        s += 7;
+        break;
+      case 'no_match':
+      case 'not_sure':
+      case 'not_applicable':
+        break;
+    }
+
+    if (derivedSignals.incomeConstraintTriggered && a.investingStatus === 'not_yet') {
+      s -= 4;
+    }
+
+    return clamp(Math.round(s));
+  }
+
   let s = 0;
 
   if (a.investingStatus === 'yes_consistently') s += 30;
@@ -2153,7 +2232,7 @@ export function calculateBuildingBlockScores(
     investing: scoreInvesting(a, derivedSignals, mode),
     vision: scoreVision(a, mode),
   };
-
+}
 export function calculateEnhancedBuildingBlockScores(
   answers: Record<string, any>,
   signals?: UserSignals,
@@ -2295,28 +2374,60 @@ export function getPillarScoreLabel(score: number): {
 
 function getTopFocusAreas(
   pillars: Record<PillarKey, number>,
-  answers: Record<string, any>,
-  signals: UserSignals,
-  mode: ScoringMode = 'detailed'
+  answers: Record<string, any>
 ) {
-  const biggest = getBiggestOpportunity(pillars, answers, mode === 'snapshot' ? undefined : signals);
+  const priorities: string[] = [];
 
-  const textMap: Record<PillarKey, string> = {
-    debt: 'Reduce financial pressure and free up flexibility by improving the debt area that is creating the most strain right now.',
-    spending: 'Improve spending clarity and reduce money leaks so more cash can flow toward real priorities.',
-    saving: 'Build a stronger emergency buffer and make saving more automatic.',
-    investing: 'Strengthen long-term investing consistency so today’s income becomes future wealth.',
-    protection: 'Close protection gaps before a setback has the chance to undo progress.',
-    income: 'Increase income stability and future earning capacity where possible.',
-    vision: 'Clarify the destination so your money decisions support a clear direction.',
-  };
+  if (answers.primaryFinancialPriority === 'build_savings') {
+    priorities.push('Build a stronger emergency buffer so unexpected expenses stop disrupting progress.');
+  }
 
-  const ordered = Object.entries(pillars)
-    .sort((a, b) => a[1] - b[1])
-    .map(([pillar]) => pillar as PillarKey);
+  if (answers.primaryFinancialPriority === 'grow_investing') {
+    priorities.push('Increase investing consistency so more of your income turns into long-term growth.');
+  }
 
-  const focus = [biggest, ...ordered.filter((pillar) => pillar !== biggest)].slice(0, 3);
-  return focus.map((pillar) => textMap[pillar]);
+  if (answers.primaryFinancialPriority === 'get_out_of_debt') {
+    priorities.push('Reduce debt pressure to create more breathing room and flexibility.');
+  }
+
+  if (answers.overspendingFrequency === 'often' || answers.overspendingFrequency === 'almost_always') {
+    priorities.push('Reduce overspending so more cash can flow toward the goals that matter most.');
+  }
+
+  if (answers.moneyLeaks === 'several' || answers.moneyLeaks === 'a_lot') {
+    priorities.push('Tighten up money leaks like impulse spending, subscriptions, and convenience purchases.');
+  }
+
+  if (answers.savingConsistency === 'not_currently') {
+    priorities.push('Start a consistent saving habit, even if the amount is small at first.');
+  }
+
+  if (answers.investingStatus === 'not_yet') {
+    priorities.push('Begin investing at a manageable level so your money starts working for you over time.');
+  }
+
+  if (priorities.length < 3) {
+    const weakest = Object.entries(pillars)
+      .sort((a, b) => a[1] - b[1])[0]?.[0] as PillarKey | undefined;
+
+    if (weakest === 'spending') {
+      priorities.push('Improve spending clarity so your money aligns more closely with your priorities.');
+    } else if (weakest === 'saving') {
+      priorities.push('Strengthen your savings foundation to create more stability and flexibility.');
+    } else if (weakest === 'investing') {
+      priorities.push('Build investing consistency to support long-term growth.');
+    } else if (weakest === 'income') {
+      priorities.push('Increase income stability and future earning capacity where possible.');
+    } else if (weakest === 'protection') {
+      priorities.push('Close key protection gaps so one setback does not undo your progress.');
+    } else if (weakest === 'vision') {
+      priorities.push('Clarify your financial direction so your decisions support a real destination.');
+    } else if (weakest === 'debt') {
+      priorities.push('Reduce debt pressure to free up more monthly cash flow and flexibility.');
+    }
+  }
+
+  return [...new Set(priorities)].slice(0, 3);
 }
 
 function getInsights(
@@ -2828,7 +2939,8 @@ function buildActionPlan(
   answers: Record<string, any>,
   metrics: FinancialMetrics,
   nextStep: string,
-  signals: UserSignals
+  signals: UserSignals,
+  mode: ScoringMode = 'detailed'
 ): ActionPlan {
   const ordered = Object.entries(pillars)
     .sort((a, b) => a[1] - b[1])
@@ -3009,36 +3121,39 @@ export function generateReport(
   _type: AssessmentType = 'detailed'
 ): DetailedReport {
   const mode: ScoringMode = _type === 'free' ? 'snapshot' : 'detailed';
-  const isSnapshot = _type === 'free';
 
-const workingAnswers = sanitizeResponses(
-  DETAILED_ASSESSMENT_QUESTIONS,
-  answers
-);
+  const sanitizedAnswers = sanitizeResponses(
+    DETAILED_ASSESSMENT_QUESTIONS,
+    answers
+  );
 
-const workingAnswers = isSnapshot
-  ? filterSnapshotAnswers(workingAnswers)
-  : workingAnswers;
-
-const mode: ScoringMode = isSnapshot ? 'snapshot' : 'detailed';
-  const workingAnswers = mode === 'snapshot'
-    ? filterSnapshotAnswers(workingAnswers)
-    : workingAnswers;
+  const workingAnswers =
+    mode === 'snapshot'
+      ? filterSnapshotAnswers(sanitizedAnswers)
+      : sanitizedAnswers;
 
   const signals = deriveSignals(workingAnswers, mode);
-  const buildingBlockScores = calculateEnhancedBuildingBlockScores(workingAnswers, signals, mode);
+  const buildingBlockScores = calculateEnhancedBuildingBlockScores(
+    workingAnswers,
+    signals,
+    mode
+  );
   const pillarScores = calculatePillarScores(buildingBlockScores);
   const foundationScore = calculateFoundationScore(pillarScores);
   const scoreBand = getScoreBand(foundationScore).label;
   const metrics = calculateAllFinancialMetrics(workingAnswers);
+
   console.log('METRICS:', metrics);
+
   const structuralWarnings = getStructuralWarnings({
     income: metrics.monthlyIncome ?? 0,
     housing: metrics.monthlyHousingCost ?? 0,
     totalExpenses: metrics.monthlyFixedCosts ?? 0,
     debtPayments: metrics.monthlyDebtPayments ?? 0,
   });
+
   const pillarReasons = getPillarReasons(workingAnswers, signals, mode);
+
   const biggestOpportunity = getBiggestOpportunity(
     pillarScores,
     workingAnswers,
@@ -3053,11 +3168,31 @@ const mode: ScoringMode = isSnapshot ? 'snapshot' : 'detailed';
     answers: workingAnswers,
   });
 
-  const priorities = getTopFocusAreas(pillarScores, workingAnswers, signals, mode);
+  const priorities = getTopFocusAreas(pillarScores, workingAnswers);
   const insights = getInsights(pillarScores, workingAnswers, metrics, signals, mode);
-  const summary = buildSummary(foundationScore, scoreBand, pillarScores, workingAnswers, signals, mode);
-  const nextStep = buildNextStep(pillarScores, workingAnswers, metrics, signals, mode);
-  const actionPlan = buildActionPlan(pillarScores, workingAnswers, metrics, nextStep, signals);
+  const summary = buildSummary(
+    foundationScore,
+    scoreBand,
+    pillarScores,
+    workingAnswers,
+    signals,
+    mode
+  );
+  const nextStep = buildNextStep(
+    pillarScores,
+    workingAnswers,
+    metrics,
+    signals,
+    mode
+  );
+  const actionPlan = buildActionPlan(
+    pillarScores,
+    workingAnswers,
+    metrics,
+    nextStep,
+    signals,
+    mode
+  );
 
   return {
     foundationScore,
