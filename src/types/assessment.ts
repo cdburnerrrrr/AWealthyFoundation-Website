@@ -1751,7 +1751,7 @@ function scoreSaving(
   const derivedSignals = signals ?? deriveSignals(a, mode);
 
   if (mode === 'snapshot') {
-    let s = 40;
+    let s = 35;
 
     if (hasAnswer(a, 'totalLiquidSavings')) {
       const months = getEmergencyFundMonthsEstimate(a);
