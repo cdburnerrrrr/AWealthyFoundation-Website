@@ -279,6 +279,47 @@ function safeArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
 }
 
+const SNAPSHOT_QUESTION_KEYS = new Set([
+  'ageRange',
+  'relationshipStatus',
+  'housingStatus',
+  'monthlyTakeHomeIncome',
+  'incomeConsistency',
+  'incomeGrowthPotential',
+  'monthlyHousingCost',
+  'monthlyUtilities',
+  'housingPressure',
+  'overspendingFrequency',
+  'moneyLeaks',
+  'totalLiquidSavings',
+  'emergencyAccess',
+  'savingConsistency',
+  'vehicleDebt',
+  'otherDebt',
+  'monthlyDebtPayments',
+  'debtManageability',
+  'debtPaydownStrategy',
+  'healthInsurance',
+  'investingStatus',
+  'employerMatch',
+  'financialDirection',
+  'primaryFinancialPriority',
+  'financialConfidence',
+]);
+
+type ScoringMode = 'snapshot' | 'detailed';
+
+function filterSnapshotAnswers(answers: Record<string, any>): Record<string, any> {
+  return Object.fromEntries(
+    Object.entries(answers).filter(([key]) => SNAPSHOT_QUESTION_KEYS.has(key))
+  );
+}
+
+function hasAnswer(answers: Record<string, any>, key: string): boolean {
+  const value = answers[key];
+  return value !== undefined && value !== null && value !== '';
+}
+
 function midpointRangeMap(map: Record<string, number>, value: string | undefined): number {
   if (!value) return 0;
   return map[value] ?? 0;
@@ -1291,18 +1332,30 @@ export const FREE_ASSESSMENT_QUESTIONS = DETAILED_ASSESSMENT_QUESTIONS;
 // SIGNALS / REASONS
 // =====================================================
 
-export function deriveSignals(answers: Record<string, any>): UserSignals {
+export function deriveSignals(
+  answers: Record<string, any>,
+  mode: ScoringMode = 'detailed'
+): UserSignals {
+  const isSnapshot = mode === 'snapshot';
   const debts = safeArray(answers.otherDebt);
   const monthlyIncome = toNumber(answers.monthlyTakeHomeIncome);
   const obligation = calculateObligationPressure(answers);
-  const housingRatio = monthlyIncome > 0 ? obligation.housing / monthlyIncome : 0;
-  const debtPaymentRatio = monthlyIncome > 0 ? obligation.debt / monthlyIncome : 0;
-  const emergencyFundMonths = getEmergencyFundMonthsEstimate(answers);
+  const hasHousingInputs = hasAnswer(answers, 'monthlyTakeHomeIncome') && hasAnswer(answers, 'monthlyHousingCost');
+  const hasDebtPaymentInput = hasAnswer(answers, 'monthlyTakeHomeIncome') && hasAnswer(answers, 'monthlyDebtPayments');
+  const housingRatio = hasHousingInputs && monthlyIncome > 0 ? obligation.housing / monthlyIncome : 0;
+  const debtPaymentRatio = hasDebtPaymentInput && monthlyIncome > 0 ? obligation.debt / monthlyIncome : 0;
+  const emergencyFundMonths = hasAnswer(answers, 'totalLiquidSavings') ? getEmergencyFundMonthsEstimate(answers) : 0;
+  const hasEmergencyFundAnswer = hasAnswer(answers, 'totalLiquidSavings');
+  const hasSavingConsistencyAnswer = hasAnswer(answers, 'savingConsistency') || hasAnswer(answers, 'savingsAutomation');
+  const hasGoalClarityAnswer = hasAnswer(answers, 'financialDirection');
+  const hasDebtStrategyAnswer = hasAnswer(answers, 'debtPaydownStrategy');
+  const hasCreditBehaviorAnswer = hasAnswer(answers, 'creditCardBehavior');
+  const hasDebtManageabilityAnswer = hasAnswer(answers, 'debtManageability') || hasAnswer(answers, 'mortgageImpact');
 
   const preliminary: UserSignals = {
-    highHousingBurden: housingRatio >= 0.4,
-    highObligationPressure: obligation.ratio >= 0.55,
-    veryHighObligationPressure: obligation.ratio >= 0.7,
+    highHousingBurden: hasHousingInputs ? housingRatio >= 0.4 : false,
+    highObligationPressure: hasHousingInputs ? obligation.ratio >= 0.55 : false,
+    veryHighObligationPressure: hasHousingInputs ? obligation.ratio >= 0.7 : false,
     hasCreditCardDebt: debts.includes('credit_cards'),
     hasBnplDebt: debts.includes('bnpl'),
     hasPaydayDebt: debts.includes('payday') || debts.includes('rent_to_own'),
@@ -1311,38 +1364,46 @@ export function deriveSignals(answers: Record<string, any>): UserSignals {
     hasVehicleDebt: hasVehicleDebt(answers),
     hasMortgage: hasMortgage(answers),
     hasNoDebtPlan:
-      answers.debtPaydownStrategy === 'no_strategy' ||
-      answers.debtPaydownStrategy === 'minimums_only',
-    minimumsOnly: answers.debtPaydownStrategy === 'minimums_only',
-    lowEmergencyFund: emergencyFundMonths < 3,
-    noEmergencyFund: emergencyFundMonths < 1,
+      hasDebtStrategyAnswer &&
+      (answers.debtPaydownStrategy === 'no_strategy' ||
+        answers.debtPaydownStrategy === 'minimums_only'),
+    minimumsOnly: hasDebtStrategyAnswer && answers.debtPaydownStrategy === 'minimums_only',
+    lowEmergencyFund: hasEmergencyFundAnswer ? emergencyFundMonths < 3 : false,
+    noEmergencyFund: hasEmergencyFundAnswer ? emergencyFundMonths < 1 : false,
     inconsistentSaving:
-      answers.savingConsistency === 'yes_irregularly' ||
-      answers.savingConsistency === 'not_currently' ||
-      answers.savingsAutomation === 'manual' ||
-      answers.savingsAutomation === 'not_saving',
+      hasSavingConsistencyAnswer &&
+      (answers.savingConsistency === 'yes_irregularly' ||
+        answers.savingConsistency === 'not_currently' ||
+        answers.savingsAutomation === 'manual' ||
+        answers.savingsAutomation === 'not_saving'),
     lowRetirementContribution:
-      answers.investingStatus !== 'yes_consistently' ||
-      answers.employerMatch === 'have_match_not_contributing' ||
-      answers.employerMatch === 'have_match_not_maxing',
+      hasAnswer(answers, 'investingStatus') &&
+      (answers.investingStatus !== 'yes_consistently' ||
+        answers.employerMatch === 'have_match_not_contributing' ||
+        answers.employerMatch === 'have_match_not_maxing'),
     noClearGoals:
-      answers.financialDirection === 'figuring_it_out' ||
-      answers.financialDirection === 'goals_no_plan',
+      hasGoalClarityAnswer &&
+      (answers.financialDirection === 'figuring_it_out' ||
+        answers.financialDirection === 'goals_no_plan' ||
+        answers.financialDirection === 'unclear' ||
+        answers.financialDirection === 'very_unclear'),
     carriesCreditCardBalance:
-      answers.creditCardBehavior === 'sometimes' ||
-      answers.creditCardBehavior === 'usually' ||
-      answers.creditCardBehavior === 'always_carry_balance',
+      hasCreditBehaviorAnswer &&
+      (answers.creditCardBehavior === 'sometimes' ||
+        answers.creditCardBehavior === 'usually' ||
+        answers.creditCardBehavior === 'always_carry_balance'),
     debtFeelsHeavy:
-      answers.debtManageability === 'tight' ||
-      answers.debtManageability === 'struggling' ||
-      answers.debtManageability === 'overwhelming' ||
-      answers.mortgageImpact === 'holds_me_back' ||
-      answers.mortgageImpact === 'major_pressure',
+      hasDebtManageabilityAnswer &&
+      (answers.debtManageability === 'tight' ||
+        answers.debtManageability === 'struggling' ||
+        answers.debtManageability === 'overwhelming' ||
+        answers.mortgageImpact === 'holds_me_back' ||
+        answers.mortgageImpact === 'major_pressure'),
     incomeConstraintTriggered: false,
     variableIncomeWithLowBuffer: false,
     limitedMonthlyMargin: false,
     housingRatio,
-    obligationPressure: obligation.ratio,
+    obligationPressure: hasHousingInputs ? obligation.ratio : 0,
     debtPaymentRatio,
   };
 
@@ -1350,7 +1411,12 @@ export function deriveSignals(answers: Record<string, any>): UserSignals {
 
   return {
     ...preliminary,
-    incomeConstraintTriggered: incomeConstraint.triggered,
+    incomeConstraintTriggered: isSnapshot
+      ? incomeConstraint.triggered &&
+        (preliminary.highObligationPressure ||
+          preliminary.veryHighObligationPressure ||
+          preliminary.highHousingBurden)
+      : incomeConstraint.triggered,
     variableIncomeWithLowBuffer: incomeConstraint.variableIncomeWithLowBuffer,
     limitedMonthlyMargin: incomeConstraint.limitedMonthlyMargin,
   };
@@ -1363,8 +1429,10 @@ function dedupeReasons(reasons: string[]): string[] {
 
 export function getPillarReasons(
   answers: Record<string, any>,
-  signals: UserSignals
+  signals: UserSignals,
+  mode: ScoringMode = 'detailed'
 ): PillarReasons {
+  const isSnapshot = mode === 'snapshot';
   const reasons: PillarReasons = {
     income: [],
     spending: [],
@@ -1388,13 +1456,13 @@ export function getPillarReasons(
   if (signals.hasCreditCardDebt) reasons.debt.push('Credit card debt present');
   if (signals.hasBnplDebt) reasons.debt.push('BNPL debt present');
   if (signals.hasPaydayDebt) reasons.debt.push('High-cost short-term debt present');
-  if (signals.carriesCreditCardBalance) reasons.debt.push('You are carrying credit card balances month to month');
+  if (!isSnapshot && signals.carriesCreditCardBalance) reasons.debt.push('You are carrying credit card balances month to month');
   if (signals.hasNoDebtPlan) reasons.debt.push('No clear payoff strategy selected');
   if (signals.minimumsOnly) reasons.debt.push('Mostly making minimum payments');
   if (signals.debtFeelsHeavy) reasons.debt.push('Your debt load currently feels tight or overwhelming');
 
-  if (answers.threeMonthReview === 'no') reasons.spending.push('No recent 3-month spending review completed');
-  if (answers.spendingTracking === 'no') reasons.spending.push('You are not actively tracking spending right now');
+  if (!isSnapshot && answers.threeMonthReview === 'no') reasons.spending.push('No recent 3-month spending review completed');
+  if (!isSnapshot && answers.spendingTracking === 'no') reasons.spending.push('You are not actively tracking spending right now');
   if (answers.moneyLeaks === 'several' || answers.moneyLeaks === 'a_lot') reasons.spending.push('Money leaks are likely reducing flexibility');
 
   if (signals.lowEmergencyFund) reasons.saving.push('Emergency fund is below a healthy cushion');
@@ -1410,25 +1478,25 @@ export function getPillarReasons(
   if (answers.incomeConsistency === 'variable' || answers.incomeConsistency === 'highly_unpredictable') {
     reasons.income.push('Income consistency is creating uncertainty');
   }
-  if (answers.incomeGrowth === 'decreased') reasons.income.push('Income has declined over the last year');
+  if (!isSnapshot && answers.incomeGrowth === 'decreased') reasons.income.push('Income has declined over the last year');
   if (answers.incomeGrowthPotential === 'limited' || answers.incomeGrowthPotential === 'none') {
     reasons.income.push('Income growth potential appears limited right now');
   }
 
-  if (answers.healthInsurance === 'no_coverage' || answers.healthInsurance === 'none') {
-    reasons.protection.push('Health coverage gap present');
+  if (['no_coverage', 'none', 'limited_coverage'].includes(answers.healthInsurance)) {
+    reasons.protection.push('Health coverage gap or limitation present');
   }
-  if (hasDependents(answers) && ['none', 'some'].includes(answers.lifeInsurance)) {
+  if (!isSnapshot && hasDependents(answers) && ['none', 'some'].includes(answers.lifeInsurance)) {
     reasons.protection.push('Life insurance may not fully protect dependents');
   }
 
-  if (signals.noClearGoals) reasons.vision.push('No clearly defined financial goals were identified');
-  if (answers.financialConfidence === 'uncertain' || answers.financialConfidence === 'overwhelmed') {
+  if (signals.noClearGoals) reasons.vision.push('Financial direction is not very clear yet');
+  if (['uncertain', 'overwhelmed', 'not_confident'].includes(answers.financialConfidence)) {
     reasons.vision.push('Financial direction still feels uncertain');
   }
 
   (Object.keys(reasons) as PillarKey[]).forEach((key) => {
-    reasons[key] = dedupeReasons(reasons[key]);
+    reasons[key] = dedupeReasons(reasons[key]).slice(0, 3);
   });
 
   return reasons;
@@ -1593,51 +1661,8 @@ function scoreIncome(a: Record<string, any>, signals?: UserSignals) {
   return clamp(Math.round(s));
 }
 
-function scoreSpending(
-  a: Record<string, any>,
-  signals?: UserSignals,
-  mode: ScoringMode = 'detailed'
-) {
-  const derivedSignals = signals ?? deriveSignals(a, mode);
-
-  if (mode === 'snapshot') {
-    let s = 50;
-
-    switch (a.housingPressure) {
-      case 'very_manageable':
-        s += 15;
-        break;
-      case 'manageable':
-        s += 10;
-        break;
-      case 'a_bit_tight':
-        s += 2;
-        break;
-      case 'tight':
-        s -= 10;
-        break;
-      case 'stressful':
-        s -= 20;
-        break;
-    }
-
-    if (a.overspendingFrequency === 'rarely') s += 15;
-    else if (a.overspendingFrequency === 'sometimes') s += 5;
-    else if (a.overspendingFrequency === 'often') s -= 10;
-    else if (a.overspendingFrequency === 'almost_always') s -= 20;
-
-    if (a.moneyLeaks === 'none') s += 10;
-    else if (a.moneyLeaks === 'a_few') s += 5;
-    else if (a.moneyLeaks === 'several') s -= 5;
-    else if (a.moneyLeaks === 'a_lot') s -= 15;
-
-    if (derivedSignals.highHousingBurden) s -= 8;
-    if (derivedSignals.highObligationPressure) s -= 8;
-    if (derivedSignals.veryHighObligationPressure) s -= 6;
-
-    return clamp(Math.round(s));
-  }
-
+function scoreSpending(a: Record<string, any>, signals?: UserSignals) {
+  const derivedSignals = signals ?? deriveSignals(a);
   let s = 0;
   const income = toNumber(a.monthlyTakeHomeIncome);
   const fixedCosts =
@@ -1726,28 +1751,47 @@ function scoreSaving(
   const derivedSignals = signals ?? deriveSignals(a, mode);
 
   if (mode === 'snapshot') {
-    let s = 50;
+    let s = 35;
 
-    const months = getEmergencyFundMonthsEstimate(a);
+    if (hasAnswer(a, 'totalLiquidSavings')) {
+      const months = getEmergencyFundMonthsEstimate(a);
+      if (months >= 6) s += 30;
+      else if (months >= 3) s += 22;
+      else if (months >= 1) s += 12;
+      else s -= 8;
+    }
 
-    if (months >= 6) s += 20;
-    else if (months >= 3) s += 12;
-    else if (months >= 1) s += 5;
-    else if (months === 0) s -= 10;
+    switch (a.emergencyAccess) {
+      case 'all':
+        s += 12;
+        break;
+      case 'most':
+        s += 8;
+        break;
+      case 'some':
+        s += 2;
+        break;
+      case 'very_little':
+        s -= 8;
+        break;
+    }
 
-    if (a.emergencyAccess === 'all') s += 10;
-    else if (a.emergencyAccess === 'most') s += 6;
-    else if (a.emergencyAccess === 'some') s += 1;
-    else if (a.emergencyAccess === 'very_little') s -= 8;
+    switch (a.savingConsistency) {
+      case 'yes_consistently':
+        s += 20;
+        break;
+      case 'yes_irregularly':
+        s += 10;
+        break;
+      case 'not_currently':
+        s -= 12;
+        break;
+    }
 
-    if (a.savingConsistency === 'yes_consistently') s += 20;
-    else if (a.savingConsistency === 'yes_irregularly') s += 8;
-    else if (a.savingConsistency === 'not_currently') s -= 15;
+    if (derivedSignals.noEmergencyFund) s -= 5;
+    else if (derivedSignals.lowEmergencyFund) s -= 2;
 
-    if (derivedSignals.noEmergencyFund) s -= 6;
-    else if (derivedSignals.lowEmergencyFund) s -= 3;
-
-    return clamp(Math.round(s));
+    return clamp(Math.round(s), 5, 100);
   }
 
   let s = 0;
@@ -1874,7 +1918,57 @@ function calculateObligationPressure(a: Record<string, any>) {
 }
 
 
-function scoreProtection(a: Record<string, any>) {
+function scoreProtection(a: Record<string, any>, mode: ScoringMode = 'detailed') {
+  if (mode === 'snapshot') {
+    let s = 50;
+
+    switch (a.healthInsurance) {
+      case 'good_coverage':
+      case 'excellent':
+      case 'employer':
+      case 'private':
+      case 'government':
+      case 'through_spouse':
+        s += 20;
+        break;
+      case 'basic_coverage':
+        s += 10;
+        break;
+      case 'limited_coverage':
+        s -= 8;
+        break;
+      case 'none':
+      case 'no_coverage':
+        s -= 22;
+        break;
+    }
+
+    switch (a.emergencyAccess) {
+      case 'all':
+        s += 15;
+        break;
+      case 'most':
+        s += 10;
+        break;
+      case 'some':
+        s += 4;
+        break;
+      case 'very_little':
+        s -= 8;
+        break;
+    }
+
+    if (hasAnswer(a, 'totalLiquidSavings')) {
+      const months = getEmergencyFundMonthsEstimate(a);
+      if (months >= 6) s += 12;
+      else if (months >= 3) s += 8;
+      else if (months >= 1) s += 2;
+      else s -= 10;
+    }
+
+    return clamp(Math.round(s));
+  }
+
   let s = 0;
 
   switch (a.incomeInterruptionCoverage) {
@@ -1892,8 +1986,8 @@ function scoreProtection(a: Record<string, any>) {
       break;
   }
 
-  if (['employer', 'private', 'government', 'through_spouse', 'excellent'].includes(a.healthInsurance)) {
-    s += 15;
+  if (['employer', 'private', 'government', 'through_spouse', 'excellent', 'good_coverage', 'basic_coverage'].includes(a.healthInsurance)) {
+    s += a.healthInsurance === 'basic_coverage' ? 10 : 15;
   }
 
   if (['6_plus_months', '3_6_months'].includes(a.incomeInterruptionCoverage)) {
@@ -1956,14 +2050,14 @@ function scoreInvesting(
   const derivedSignals = signals ?? deriveSignals(a, mode);
 
   if (mode === 'snapshot') {
-    let s = 45;
+    let s = 30;
 
     switch (a.investingStatus) {
       case 'yes_consistently':
-        s += 25;
+        s += 35;
         break;
       case 'yes_irregularly':
-        s += 12;
+        s += 20;
         break;
       case 'not_yet':
         s -= 8;
@@ -1975,24 +2069,21 @@ function scoreInvesting(
         s += 12;
         break;
       case 'have_match_not_maxing':
-        s += 7;
+      case 'yes':
+        s += 8;
         break;
-      case 'have_match_not_contributing':
       case 'no_match':
       case 'not_sure':
       case 'not_applicable':
-      case 'yes':
       case 'no':
         break;
     }
-
-    if (a.employerMatch === 'yes') s += 10;
 
     if (derivedSignals.incomeConstraintTriggered && a.investingStatus === 'not_yet') {
       s -= 4;
     }
 
-    return clamp(Math.round(s));
+    return clamp(Math.round(s), 5, 100);
   }
 
   let s = 0;
@@ -2033,7 +2124,54 @@ function scoreInvesting(
   return clamp(Math.round(s));
 }
 
-function scoreVision(a: Record<string, any>) {
+function scoreVision(a: Record<string, any>, mode: ScoringMode = 'detailed') {
+  if (mode === 'snapshot') {
+    let s = 50;
+
+    switch (a.financialDirection) {
+      case 'very_clear':
+      case 'clear_plan':
+        s += 20;
+        break;
+      case 'fairly_clear':
+      case 'goals_no_plan':
+      case 'somewhat_clear':
+        s += 10;
+        break;
+      case 'unclear':
+      case 'figuring_it_out':
+        s -= 8;
+        break;
+      case 'very_unclear':
+        s -= 15;
+        break;
+    }
+
+    switch (a.financialConfidence) {
+      case 'very_confident':
+        s += 12;
+        break;
+      case 'somewhat_confident':
+        s += 6;
+        break;
+      case 'not_confident':
+        s -= 6;
+        break;
+      case 'overwhelmed':
+        s -= 12;
+        break;
+      case 'uncertain':
+        s -= 4;
+        break;
+    }
+
+    if (hasAnswer(a, 'primaryFinancialPriority')) {
+      s += 5;
+    }
+
+    return clamp(Math.round(s));
+  }
+
   let s = 0;
 
   if (a.financialDirection === 'clear_plan') s += 30;
@@ -2064,14 +2202,20 @@ export function calculateBuildingBlockScores(
 ) {
   const derivedSignals = signals ?? deriveSignals(a, mode);
 
+  const spending = scoreSpending(a, derivedSignals, mode);
+  const saving = scoreSaving(a, derivedSignals, mode);
+  const investing = scoreInvesting(a, derivedSignals, mode);
+  const protection = scoreProtection(a, mode);
+  const vision = scoreVision(a, mode);
+
   return {
     income: scoreIncome(a, derivedSignals),
-    spending: scoreSpending(a, derivedSignals, mode),
-    saving: scoreSaving(a, derivedSignals, mode),
+    spending: mode === 'snapshot' ? clamp(spending, 5, 100) : spending,
+    saving: mode === 'snapshot' ? clamp(saving, 5, 100) : saving,
     debt: scoreDebt(a, derivedSignals),
-    protection: scoreProtection(a, mode),
-    investing: scoreInvesting(a, derivedSignals, mode),
-    vision: scoreVision(a, mode),
+    protection,
+    investing: mode === 'snapshot' ? clamp(investing, 5, 100) : investing,
+    vision,
   };
 }
 
@@ -2216,67 +2360,36 @@ export function getPillarScoreLabel(score: number): {
 
 function getTopFocusAreas(
   pillars: Record<PillarKey, number>,
-  answers: Record<string, any>
+  answers: Record<string, any>,
+  signals: UserSignals,
+  mode: ScoringMode = 'detailed'
 ) {
-  const priorities: string[] = [];
+  const biggest = getBiggestOpportunity(pillars, answers, mode === 'snapshot' ? undefined : signals);
 
-  if (answers.primaryFinancialPriority === 'build_savings') {
-    priorities.push('Build a stronger emergency buffer so unexpected expenses stop disrupting progress.');
-  }
+  const textMap: Record<PillarKey, string> = {
+    debt: 'Reduce financial pressure and free up flexibility by improving the debt area that is creating the most strain right now.',
+    spending: 'Improve spending clarity and reduce money leaks so more cash can flow toward real priorities.',
+    saving: 'Build a stronger emergency buffer and make saving more automatic.',
+    investing: 'Strengthen long-term investing consistency so today’s income becomes future wealth.',
+    protection: 'Close protection gaps before a setback has the chance to undo progress.',
+    income: 'Increase income stability and future earning capacity where possible.',
+    vision: 'Clarify the destination so your money decisions support a clear direction.',
+  };
 
-  if (answers.primaryFinancialPriority === 'grow_investing') {
-    priorities.push('Increase investing consistency so more of your income turns into long-term growth.');
-  }
+  const ordered = Object.entries(pillars)
+    .sort((a, b) => a[1] - b[1])
+    .map(([pillar]) => pillar as PillarKey);
 
-  if (answers.primaryFinancialPriority === 'get_out_of_debt') {
-    priorities.push('Reduce debt pressure to create more breathing room and flexibility.');
-  }
-
-  if (answers.overspendingFrequency === 'often' || answers.overspendingFrequency === 'almost_always') {
-    priorities.push('Reduce overspending so more cash can flow toward the goals that matter most.');
-  }
-
-  if (answers.moneyLeaks === 'several' || answers.moneyLeaks === 'a_lot') {
-    priorities.push('Tighten up money leaks like impulse spending, subscriptions, and convenience purchases.');
-  }
-
-  if (answers.savingConsistency === 'not_currently') {
-    priorities.push('Start a consistent saving habit, even if the amount is small at first.');
-  }
-
-  if (answers.investingStatus === 'not_yet') {
-    priorities.push('Begin investing at a manageable level so your money starts working for you over time.');
-  }
-
-  if (priorities.length < 3) {
-    const weakest = Object.entries(pillars)
-      .sort((a, b) => a[1] - b[1])[0]?.[0] as PillarKey | undefined;
-
-    if (weakest === 'spending') {
-      priorities.push('Improve spending clarity so your money aligns more closely with your priorities.');
-    } else if (weakest === 'saving') {
-      priorities.push('Strengthen your savings foundation to create more stability and flexibility.');
-    } else if (weakest === 'investing') {
-      priorities.push('Build investing consistency to support long-term growth.');
-    } else if (weakest === 'income') {
-      priorities.push('Increase income stability and future earning capacity where possible.');
-    } else if (weakest === 'protection') {
-      priorities.push('Close key protection gaps so one setback does not undo your progress.');
-    } else if (weakest === 'vision') {
-      priorities.push('Clarify your financial direction so your decisions support a real destination.');
-    } else if (weakest === 'debt') {
-      priorities.push('Reduce debt pressure to free up more monthly cash flow and flexibility.');
-    }
-  }
-
-  return [...new Set(priorities)].slice(0, 3);
+  const focus = [biggest, ...ordered.filter((pillar) => pillar !== biggest)].slice(0, 3);
+  return focus.map((pillar) => textMap[pillar]);
 }
 
 function getInsights(
   pillars: Record<PillarKey, number>,
   answers: Record<string, any>,
   metrics: FinancialMetrics,
-  signals: UserSignals
+  signals: UserSignals,
+  mode: ScoringMode = 'detailed'
 ) {
   const insights: string[] = [];
   const equity = metrics.homeEquity ?? 0;
@@ -2314,7 +2427,7 @@ function getInsights(
     );
   }
 
-  if (signals.noClearGoals) {
+  if (signals.noClearGoals && hasAnswer(answers, 'financialDirection')) {
     insights.push(
       'Your financial direction appears less defined than it could be. Greater clarity would likely improve the quality of your next few money decisions.'
     );
@@ -2326,7 +2439,7 @@ function getInsights(
     );
   }
 
-  if (pillars.spending < 60 && answers.threeMonthReview === 'no') {
+  if (mode !== 'snapshot' && pillars.spending < 60 && answers.threeMonthReview === 'no') {
     insights.push(
       'Your biggest near-term opportunity may be clarity. A 3-month spending review could quickly uncover hidden leaks and create margin without requiring a dramatic lifestyle change.'
     );
@@ -2344,7 +2457,7 @@ function getInsights(
     );
   }
 
-  if (hasDependents(answers) && ['heavy', 'very_heavy'].includes(answers.childcarePressure)) {
+  if (mode !== 'snapshot' && hasDependents(answers) && ['heavy', 'very_heavy'].includes(answers.childcarePressure)) {
     insights.push(
       'Childcare appears to be one of the real pressure points in your monthly budget. That does not mean you are doing something wrong — it means your plan needs to account for a heavy fixed expense load.'
     );
@@ -2356,7 +2469,7 @@ function getInsights(
     );
   }
 
-  if (hasMortgage(answers) && equity > 0) {
+  if (mode !== 'snapshot' && hasMortgage(answers) && equity > 0) {
     if (['holds_me_back', 'major_pressure'].includes(answers.mortgageImpact)) {
       insights.push(
         `You appear to have roughly $${Math.round(equity).toLocaleString()} in home equity, but the monthly mortgage still feels like a drag on progress. That suggests your issue is less about the house being a bad asset and more about cash-flow pressure in the current season.`
@@ -2368,13 +2481,13 @@ function getInsights(
     }
   }
 
-  if (signals.carriesCreditCardBalance) {
+  if (mode !== 'snapshot' && signals.carriesCreditCardBalance) {
     insights.push(
       'Carrying credit card balances is likely increasing friction in the background. Improving that one habit could create a surprisingly fast lift to your overall foundation.'
     );
   }
 
-  if (pillars.protection < 60 && pillars.saving >= 60) {
+  if (pillars.protection < 60 && pillars.saving >= 60 && (mode !== 'snapshot' || hasAnswer(answers, 'healthInsurance'))) {
     insights.push(
       'You have done meaningful work building reserves, but protection gaps could still expose that progress. Strong savings and weak protection often create a false sense of security.'
     );
@@ -2406,10 +2519,11 @@ function buildSummary(
   scoreBand: string,
   pillars: Record<PillarKey, number>,
   answers: Record<string, any>,
-  signals: UserSignals
+  signals: UserSignals,
+  mode: ScoringMode = 'detailed'
 ) {
   const sorted = Object.entries(pillars).sort((a, b) => a[1] - b[1]);
-  const weakest = getBiggestOpportunity(pillars, answers, signals);
+  const weakest = getBiggestOpportunity(pillars, answers, mode === 'snapshot' ? undefined : signals);
   const strongest = sorted[sorted.length - 1][0] as PillarKey;
 
   if (score >= 80) {
@@ -2439,9 +2553,10 @@ function buildNextStep(
   pillars: Record<PillarKey, number>,
   answers: Record<string, any>,
   metrics: FinancialMetrics,
-  signals: UserSignals
+  signals: UserSignals,
+  mode: ScoringMode = 'detailed'
 ) {
-  const weakest = getBiggestOpportunity(pillars, answers, signals);
+  const weakest = getBiggestOpportunity(pillars, answers, mode === 'snapshot' ? undefined : signals);
 
   if (signals.incomeConstraintTriggered) {
     return 'Your best next move is to create breathing room before chasing optimization. Focus first on the biggest lever available to you: increasing income, reducing a major fixed cost, or restructuring the debt load that is crowding out progress.';
@@ -2451,7 +2566,7 @@ function buildNextStep(
     return 'Your best next move is to review your housing picture in one place: monthly housing cost, utilities, remaining mortgage balance, home value, and what that payment may be crowding out elsewhere. This looks more like a fixed-cost pressure issue than a debt payoff issue.';
   }
 
-  if (weakest === 'spending' && answers.threeMonthReview === 'no') {
+  if (mode !== 'snapshot' && weakest === 'spending' && answers.threeMonthReview === 'no') {
     return 'Your best next move is a 3-Month Clarity Review. Once you can clearly see where your money is going, better decisions become much easier.';
   }
 
@@ -2778,8 +2893,7 @@ function buildActionPlan(
   answers: Record<string, any>,
   metrics: FinancialMetrics,
   nextStep: string,
-  signals: UserSignals,
-  mode: ScoringMode = 'detailed'
+  signals: UserSignals
 ): ActionPlan {
   const ordered = Object.entries(pillars)
     .sort((a, b) => a[1] - b[1])
@@ -2961,18 +3075,25 @@ export function generateReport(
 ): DetailedReport {
   const mode: ScoringMode = _type === 'free' ? 'snapshot' : 'detailed';
   const sanitizedAnswers = sanitizeResponses(DETAILED_ASSESSMENT_QUESTIONS, answers);
-  const workingAnswers = mode === 'snapshot'
-    ? filterSnapshotAnswers(sanitizedAnswers)
-    : sanitizedAnswers;
+  const workingAnswers =
+    mode === 'snapshot'
+      ? filterSnapshotAnswers(sanitizedAnswers)
+      : sanitizedAnswers;
 
   const signals = deriveSignals(workingAnswers, mode);
-  const buildingBlockScores = calculateEnhancedBuildingBlockScores(workingAnswers, signals, mode);
+  const buildingBlockScores = calculateEnhancedBuildingBlockScores(
+    workingAnswers,
+    signals,
+    mode
+  );
   const pillarScores = calculatePillarScores(buildingBlockScores);
   const foundationScore = calculateFoundationScore(pillarScores);
   const scoreBand = getScoreBand(foundationScore).label;
   const metrics = calculateAllFinancialMetrics(workingAnswers);
 
   console.log('METRICS:', metrics);
+  console.log('SNAPSHOT MODE:', mode);
+  console.log('BUILDING BLOCK SCORES:', buildingBlockScores);
 
   const structuralWarnings = getStructuralWarnings({
     income: metrics.monthlyIncome ?? 0,
@@ -2998,9 +3119,29 @@ export function generateReport(
 
   const priorities = getTopFocusAreas(pillarScores, workingAnswers);
   const insights = getInsights(pillarScores, workingAnswers, metrics, signals, mode);
-  const summary = buildSummary(foundationScore, scoreBand, pillarScores, workingAnswers, signals, mode);
-  const nextStep = buildNextStep(pillarScores, workingAnswers, metrics, signals, mode);
-  const actionPlan = buildActionPlan(pillarScores, workingAnswers, metrics, nextStep, signals, mode);
+  const summary = buildSummary(
+    foundationScore,
+    scoreBand,
+    pillarScores,
+    workingAnswers,
+    signals,
+    mode
+  );
+  const nextStep = buildNextStep(
+    pillarScores,
+    workingAnswers,
+    metrics,
+    signals,
+    mode
+  );
+  const actionPlan = buildActionPlan(
+    pillarScores,
+    workingAnswers,
+    metrics,
+    nextStep,
+    signals,
+    mode
+  );
 
   return {
     foundationScore,
