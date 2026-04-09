@@ -1751,14 +1751,14 @@ function scoreSaving(
   const derivedSignals = signals ?? deriveSignals(a, mode);
 
   if (mode === 'snapshot') {
-    let s = 35;
+    let s = 40;
 
     if (hasAnswer(a, 'totalLiquidSavings')) {
       const months = getEmergencyFundMonthsEstimate(a);
-      if (months >= 6) s += 30;
+      if (months >= 6) s += 25;
       else if (months >= 3) s += 22;
       else if (months >= 1) s += 12;
-      else s -= 8;
+      else s -= 4;
     }
 
     switch (a.emergencyAccess) {
@@ -1806,7 +1806,7 @@ function scoreSaving(
   else if (a.emergencyAccess === 'most') s += 8;
   else if (a.emergencyAccess === 'some') s += 4;
 
-  if (a.savingConsistency === 'yes_consistently') s += 18;
+  if (a.savingConsistency === 'yes_consistently') s += 20;
   else if (a.savingConsistency === 'yes_irregularly') s += 10;
 
   if (a.savingsAutomation === 'fully_automated') s += 12;
@@ -2050,17 +2050,17 @@ function scoreInvesting(
   const derivedSignals = signals ?? deriveSignals(a, mode);
 
   if (mode === 'snapshot') {
-    let s = 30;
+    let s = 38;
 
     switch (a.investingStatus) {
       case 'yes_consistently':
-        s += 35;
+        s += 28;
         break;
       case 'yes_irregularly':
-        s += 20;
+        s += 16;
         break;
       case 'not_yet':
-        s -= 8;
+        s -= 3;
         break;
     }
 
@@ -2070,7 +2070,7 @@ function scoreInvesting(
         break;
       case 'have_match_not_maxing':
       case 'yes':
-        s += 8;
+        s += 7;
         break;
       case 'no_match':
       case 'not_sure':
@@ -2080,10 +2080,10 @@ function scoreInvesting(
     }
 
     if (derivedSignals.incomeConstraintTriggered && a.investingStatus === 'not_yet') {
-      s -= 4;
+      s -= 3;
     }
 
-    return clamp(Math.round(s), 5, 100);
+    return clamp(Math.round(s), 10, 100);
   }
 
   let s = 0;
