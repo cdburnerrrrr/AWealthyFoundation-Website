@@ -1661,8 +1661,71 @@ function scoreIncome(a: Record<string, any>, signals?: UserSignals) {
   return clamp(Math.round(s));
 }
 
-function scoreSpending(a: Record<string, any>, signals?: UserSignals) {
-  const derivedSignals = signals ?? deriveSignals(a);
+function scoreSpending(
+  a: Record<string, any>,
+  signals?: UserSignals,
+  mode: ScoringMode = 'detailed'
+) {
+  const derivedSignals = signals ?? deriveSignals(a, mode);
+
+  if (mode === 'snapshot') {
+    let s = 35;
+
+    switch (a.housingPressure) {
+      case 'very_manageable':
+        s += 12;
+        break;
+      case 'manageable':
+        s += 8;
+        break;
+      case 'a_bit_tight':
+        s += 2;
+        break;
+      case 'tight':
+        s -= 6;
+        break;
+      case 'stressful':
+        s -= 10;
+        break;
+    }
+
+    switch (a.overspendingFrequency) {
+      case 'rarely':
+        s += 12;
+        break;
+      case 'sometimes':
+        s += 5;
+        break;
+      case 'often':
+        s -= 6;
+        break;
+      case 'almost_always':
+        s -= 10;
+        break;
+    }
+
+    switch (a.moneyLeaks) {
+      case 'none':
+        s += 8;
+        break;
+      case 'a_few':
+        s += 4;
+        break;
+      case 'several':
+        s -= 5;
+        break;
+      case 'a_lot':
+        s -= 8;
+        break;
+    }
+
+    if (derivedSignals.highHousingBurden) s -= 4;
+    if (derivedSignals.highObligationPressure) s -= 4;
+    if (derivedSignals.veryHighObligationPressure) s -= 3;
+
+    return clamp(Math.round(s), 5, 100);
+  }
+
   let s = 0;
   const income = toNumber(a.monthlyTakeHomeIncome);
   const fixedCosts =
