@@ -662,8 +662,8 @@ function LockedPreview({
         <p className="text-gray-600 leading-7 mb-5">{description}</p>
 
         <div className="relative">
-          <div className="pointer-events-none select-none opacity-65">{children}</div>
-          <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center rounded-2xl">
+          <div className="pointer-events-none select-none opacity-80">{children}</div>
+          <div className="absolute inset-0 bg-white/45 backdrop-blur-[1px] flex items-center justify-center rounded-2xl">
             <div className="text-center px-6">
               <div className="text-navy-900 font-semibold mb-2">
                 Visible preview. Full interaction is locked.
@@ -1487,48 +1487,126 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                       )}
                     </div>
                   ) : (
-                    <LockedPreview
-                      title="What-If Calculator"
-                      description="See how more income, lower housing, or less debt could change your monthly structure before you make the move."
-                      upgradeLabel={currentPlan === 'free' ? 'Unlock with Standard' : 'Unlock with Premium'}
-                      onUpgrade={() => {
-                        void trackLockedFeature('what_if_calculator', 'dashboard');
-                        void trackUpgradeClick(
-                          currentPlan === 'free' ? 'standard' : 'premium',
-                          'what_if_calculator',
-                          'dashboard'
-                        );
-                        navigate('/pricing');
-                      }}
-                    >
-                      <div className="grid sm:grid-cols-3 gap-3 mb-5">
-                        <div className="rounded-xl border border-[#d7e3f0] px-4 py-3 bg-[#f8fbff] text-gray-500">
-                          $500 extra income
-                        </div>
-                        <div className="rounded-xl border border-[#d7e3f0] px-4 py-3 bg-[#f8fbff] text-gray-500">
-                          $300 lower housing
-                        </div>
-                        <div className="rounded-xl border border-[#d7e3f0] px-4 py-3 bg-[#f8fbff] text-gray-500">
-                          $0 lower debt
-                        </div>
-                      </div>
-
-                      <div className="grid sm:grid-cols-2 gap-4">
-                        <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-4">
-                          <div className="text-sm text-gray-500 mb-1">
-                            Adjusted fixed cost load
-                          </div>
-                          <div className="text-2xl font-bold text-navy-900">—</div>
+                    <div className="rounded-3xl border border-[#d7e3f0] bg-white shadow-sm overflow-hidden">
+                      <div className="p-6 md:p-8">
+                        <div className="flex items-center gap-2 mb-3">
+                          <AlertCircle className="w-5 h-5 text-copper-600" />
+                          <h3 className="text-2xl font-bold text-navy-900">
+                            What-If Calculator
+                          </h3>
                         </div>
 
-                        <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-4">
-                          <div className="text-sm text-gray-500 mb-1">
-                            Adjusted monthly breathing room
+                        <p className="text-gray-600 leading-7 mb-5">
+                          See how more income, lower housing, or less debt could change your monthly structure before you make the move.
+                        </p>
+
+                        {snapshot && scenarioResult ? (
+                          <>
+                            <div className="grid sm:grid-cols-3 gap-3 mb-5">
+                              <label className="block">
+                                <div className="text-sm text-gray-500 mb-2">
+                                  Extra income / mo
+                                </div>
+                                <input
+                                  type="number"
+                                  value={whatIf.income}
+                                  disabled
+                                  className="w-full rounded-xl border border-[#d7e3f0] bg-[#f8fbff] px-4 py-2.5 text-gray-500"
+                                />
+                              </label>
+
+                              <label className="block">
+                                <div className="text-sm text-gray-500 mb-2">
+                                  Lower housing / mo
+                                </div>
+                                <input
+                                  type="number"
+                                  value={whatIf.housing}
+                                  disabled
+                                  className="w-full rounded-xl border border-[#d7e3f0] bg-[#f8fbff] px-4 py-2.5 text-gray-500"
+                                />
+                              </label>
+
+                              <label className="block">
+                                <div className="text-sm text-gray-500 mb-2">
+                                  Lower debt / mo
+                                </div>
+                                <input
+                                  type="number"
+                                  value={whatIf.debt}
+                                  disabled
+                                  className="w-full rounded-xl border border-[#d7e3f0] bg-[#f8fbff] px-4 py-2.5 text-gray-500"
+                                />
+                              </label>
+                            </div>
+
+                            <div className="grid sm:grid-cols-2 gap-4 mb-5">
+                              <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-4">
+                                <div className="text-sm text-gray-500 mb-1">
+                                  Adjusted fixed cost load
+                                </div>
+                                <div className="text-2xl font-bold text-navy-900">
+                                  {formatPercent(scenarioResult.adjustedLoad)}
+                                </div>
+                              </div>
+
+                              <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-4">
+                                <div className="text-sm text-gray-500 mb-1">
+                                  Adjusted monthly breathing room
+                                </div>
+                                <div
+                                  className={`text-2xl font-bold ${getMarginTone(
+                                    scenarioResult.adjustedMargin
+                                  )}`}
+                                >
+                                  {formatCurrency(scenarioResult.adjustedMargin)}
+                                </div>
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="grid sm:grid-cols-2 gap-4 mb-5">
+                            <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-4">
+                              <div className="text-sm text-gray-500 mb-1">
+                                Adjusted fixed cost load
+                              </div>
+                              <div className="text-2xl font-bold text-navy-900">—</div>
+                            </div>
+
+                            <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-4">
+                              <div className="text-sm text-gray-500 mb-1">
+                                Adjusted monthly breathing room
+                              </div>
+                              <div className="text-2xl font-bold text-navy-900">—</div>
+                            </div>
                           </div>
-                          <div className="text-2xl font-bold text-navy-900">—</div>
+                        )}
+
+                        <div className="rounded-2xl border border-copper-200 bg-copper-50/40 p-5">
+                          <div className="font-semibold text-navy-900 mb-2">
+                            Try your own numbers with {currentPlan === 'free' ? 'Foundation Assessment' : 'Foundation Roadmap'}.
+                          </div>
+                          <p className="text-sm text-gray-700 leading-6 mb-4">
+                            This preview shows what the calculator does. Unlock it to test your own numbers and see how structural changes could affect your monthly breathing room.
+                          </p>
+                          <button
+                            onClick={() => {
+                              void trackLockedFeature('what_if_calculator', 'dashboard');
+                              void trackUpgradeClick(
+                                currentPlan === 'free' ? 'standard' : 'premium',
+                                'what_if_calculator',
+                                'dashboard'
+                              );
+                              navigate('/pricing');
+                            }}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-copper-600 text-white font-semibold hover:bg-copper-700"
+                          >
+                            {currentPlan === 'free' ? 'Unlock with Standard' : 'Unlock with Premium'}
+                            <ArrowRight className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
-                    </LockedPreview>
+                    </div>
                   )}
 
                   <div className="bg-white rounded-3xl border border-[#d7e3f0] shadow-sm p-6 md:p-8">

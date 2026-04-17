@@ -329,10 +329,11 @@ function ProgressHeader({
 type TransitionCardProps = {
   sectionKey: string;
   onContinue: () => void;
+  onBack: () => void;
   isFirst: boolean;
 };
 
-function TransitionCard({ sectionKey, onContinue, isFirst }: TransitionCardProps) {
+function TransitionCard({ sectionKey, onContinue, onBack, isFirst }: TransitionCardProps) {
   const meta = SECTION_META[sectionKey] ?? SECTION_META.foundation;
 
   return (
@@ -351,14 +352,25 @@ function TransitionCard({ sectionKey, onContinue, isFirst }: TransitionCardProps
         {meta.transitionBody}
       </p>
 
-      <button
-        type="button"
-        onClick={onContinue}
-        className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-bold text-slate-900 hover:bg-slate-100 transition"
-      >
-        Continue
-        <ArrowRight className="h-4 w-4" />
-      </button>
+      <div className="mt-8 flex items-center justify-between border-t border-white/15 pt-6">
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/15 transition"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Back
+        </button>
+
+        <button
+          type="button"
+          onClick={onContinue}
+          className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-bold text-slate-900 hover:bg-slate-100 transition"
+        >
+          Continue
+          <ArrowRight className="h-4 w-4" />
+        </button>
+      </div>
     </div>
   );
 }
@@ -974,6 +986,7 @@ export default function ComprehensiveQuestionnaire() {
             <TransitionCard
               sectionKey={currentSectionKey}
               isFirst={currentStep === 0}
+              onBack={goBack}
               onContinue={() => {
                 setMode('question');
                 window.scrollTo({ top: 0, behavior: 'smooth' });

@@ -10,11 +10,32 @@ import {
   Target,
 } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
+import { useUserPlan } from '../hooks/useUserPlan';
 
 type ScoreBand = {
   label: string;
   description: string;
 };
+
+type PlanTier = 'free' | 'standard' | 'premium';
+
+function getPlanBadgeMeta(plan: PlanTier) {
+  if (plan === 'premium') {
+    return {
+      label: 'Foundation Roadmap Plan',
+      className: 'bg-copper-50 text-copper-700 border border-copper-200',
+    };
+  }
+
+  if (plan === 'standard') {
+    return {
+      label: 'Foundation Assessment Plan',
+      className: 'bg-blue-50 text-blue-700 border border-blue-200',
+    };
+  }
+
+  return null;
+}
 
 type SnapshotResult = {
   score?: number;
@@ -185,6 +206,7 @@ function getScoreColor(score: number): string {
 export default function SnapshotResultsPage() {
   const navigate = useNavigate();
   const { currentAssessment, isAuthenticated } = useAppStore();
+  const actualPlan = useUserPlan();
 
   const result = currentAssessment as SnapshotResult | null;
   const score = Math.round(Number(result?.score || result?.foundationScore || 0));
@@ -192,6 +214,7 @@ export default function SnapshotResultsPage() {
   const insights = useMemo(() => getSnapshotInsights(result), [result]);
   const biggestOpportunity = useMemo(() => getBiggestOpportunity(result), [result]);
   const nextMove = useMemo(() => getNextMove(result), [result]);
+  const planBadge = getPlanBadgeMeta(actualPlan);
 
   const handleContinueToFull = () => {
     navigate(
@@ -237,23 +260,22 @@ export default function SnapshotResultsPage() {
             <ArrowLeft className="w-4 h-4" />
             Back to Home
           </button>
-
-          {isAuthenticated ? (
-            <button
-              onClick={() => navigate('/my-foundation')}
-              className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-navy-700 hover:bg-gray-50 transition-colors"
-            >
-              Go to Dashboard
-            </button>
-          ) : null}
         </div>
 
         <section className="grid lg:grid-cols-[1.2fr_0.8fr] gap-6 items-stretch">
           <div className="rounded-[28px] border border-navy-100 bg-white shadow-[0_20px_60px_rgba(15,42,68,0.08)] overflow-hidden">
             <div className="px-6 py-6 md:px-8 md:py-8">
-              <p className="text-sm font-semibold text-copper-600 tracking-widest uppercase mb-2">
-                Your Snapshot Result
-              </p>
+              <div className="flex flex-wrap items-center gap-3 mb-2">
+                <p className="text-sm font-semibold text-copper-600 tracking-widest uppercase">
+                  Your Snapshot Result
+                </p>
+                {planBadge && (
+                  <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-semibold ${planBadge.className}`}>
+                    <CheckCircle className="w-4 h-4" />
+                    {planBadge.label}
+                  </span>
+                )}
+              </div>
 
               <h1 className="text-3xl md:text-4xl font-serif font-bold text-navy-900 leading-tight mb-3">
                 Your Snapshot Foundation Score
@@ -284,6 +306,17 @@ export default function SnapshotResultsPage() {
                     picture. That means a fuller assessment can uncover strengths, context, and
                     opportunities that a quick snapshot cannot fully capture.
                   </p>
+
+                  {isAuthenticated && (
+                    <div className="mt-5 flex flex-wrap gap-3">
+                      <button
+                        onClick={() => navigate('/my-foundation')}
+                        className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-navy-700 hover:bg-gray-50 transition-colors"
+                      >
+                        Go to Dashboard
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -483,19 +516,6 @@ export default function SnapshotResultsPage() {
                   </p>
                 </div>
               </div>
-            </div>
-
-            <div className="mt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <p className="text-sm text-navy-600">
-                Ready to keep going? Your full report picks up where your snapshot left off.
-              </p>
-              <button
-                onClick={handleContinueToFull}
-                className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-copper-500 hover:bg-copper-600 text-white font-semibold rounded-xl transition-colors shadow-lg shadow-copper-900/10"
-              >
-                Continue Your Full Assessment
-                <ChevronRight className="w-4 h-4" />
-              </button>
             </div>
           </div>
         </section>
