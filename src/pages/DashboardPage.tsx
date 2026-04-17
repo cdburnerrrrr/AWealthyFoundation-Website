@@ -145,16 +145,32 @@ function getDashboardNextMoveCard(
   snapshot: ReturnType<typeof getStructuralSnapshot>,
   weakestPillar?: string
 ): { title: string; body: string; checklist: string[] } {
+  const answers = assessment?.answers ?? {};
+  const lifeStage = assessment?.lifeStage ?? 'stability';
+  const confidence = answers.financialConfidence;
+  const incomeGrowth = answers.incomeGrowth;
+  const incomeGrowthPotential = answers.incomeGrowthPotential;
+  const financialDirection = answers.financialDirection;
+  const employerMatch = answers.employerMatch;
+  const investingStatus = answers.investingStatus;
+  const investmentConfidence = answers.investmentConfidence;
   const immediateStep = assessment?.actionPlan?.immediate?.[0];
+
+  const strongInvestingHabit =
+    investingStatus === 'yes_consistently' &&
+    (employerMatch === 'maximizing_match' || employerMatch === 'have_match_not_maxing');
+
+  const highSavingsBase =
+    (snapshot?.totalSavings ?? 0) >= 10000 || (snapshot?.monthlyMargin ?? 0) >= 500;
 
   if (snapshot && snapshot.fixedCostLoad >= 65) {
     return {
       title: 'Create breathing room first',
-      body: 'Your biggest opportunity right now is structural. A large share of take-home income is already committed, so the next move should focus on the fixed costs applying the most pressure.',
+      body: 'Your next move should focus on structure, not optimization. A large share of take-home income is already committed, so the fastest lift will come from changing one major fixed-cost pressure point.',
       checklist: [
         'List housing, utilities, childcare, and debt payments in one place.',
         'Identify the single fixed cost creating the most pressure.',
-        'Decide whether the fastest win is lower costs, more income, or both.',
+        'Decide whether the clearest win is lower costs, more income, or both.',
       ],
     };
   }
@@ -171,13 +187,158 @@ function getDashboardNextMoveCard(
     };
   }
 
+  if (weakestPillar === 'protection') {
+    if (['growth', 'catch_up'].includes(lifeStage)) {
+      return {
+        title: 'Protect the progress you have already built',
+        body: 'You already have momentum in other areas. At this stage, the bigger risk is leaving one protection gap exposed that could undo progress if life gets expensive or income is interrupted.',
+        checklist: [
+          'Review the one protection area that would hurt most if it failed.',
+          'Check whether current coverage still matches your household reality.',
+          'Make one update this quarter to close the biggest gap.',
+        ],
+      };
+    }
+
+    return {
+      title: 'Close your biggest protection gap',
+      body: 'Your next lift is less about chasing growth and more about making the foundation sturdier. Tightening protection now helps keep one setback from disrupting the rest of the plan.',
+      checklist: [
+        'Review income, health, and property protection coverage.',
+        'Identify the weakest protection area in your current setup.',
+        'Make one update this quarter to improve resilience.',
+      ],
+    };
+  }
+
+  if (weakestPillar === 'vision') {
+    if (['low', 'not_confident'].includes(confidence)) {
+      return {
+        title: 'Create a clearer target before adding complexity',
+        body: 'Your habits will feel more sustainable once they are tied to a clearer destination. Right now, the opportunity is not another tactic — it is making the goal specific enough to guide your next few decisions.',
+        checklist: [
+          'Write down your top financial goal for the next 3–5 years.',
+          'Choose one 12-month milestone that would prove progress.',
+          'Make sure your next major money move supports that target.',
+        ],
+      };
+    }
+
+    if (['figuring_it_out', 'no_goals', 'stuck'].includes(financialDirection)) {
+      return {
+        title: 'Turn decent habits into a clearer plan',
+        body: 'You may already be doing some things well, but the direction is still too loose. Clarifying what matters most will make tradeoffs and next steps feel much more intentional.',
+        checklist: [
+          'Choose the one outcome that matters most over the next 12 months.',
+          'Define what success would look like in concrete terms.',
+          'Use that target to filter your next money decisions.',
+        ],
+      };
+    }
+
+    return {
+      title: 'Clarify what you are building toward',
+      body: 'Your direction is improving, but it still needs sharper edges. Clearer priorities will make the rest of your system easier to align and follow through on.',
+      checklist: [
+        'Name your highest-priority financial goal.',
+        'Choose one milestone to track over the next year.',
+        'Align your next major money move with that goal.',
+      ],
+    };
+  }
+
+  if (weakestPillar === 'investing') {
+    if (strongInvestingHabit && ['very_confident', 'somewhat_confident'].includes(investmentConfidence)) {
+      return {
+        title: 'Upgrade how your investing is working',
+        body: 'You do not need a reminder to start investing — you are already doing that. The better next move is reviewing whether your current setup is aligned, efficient, and doing enough heavy lifting for your stage.',
+        checklist: [
+          'Review whether your current contribution rate still fits your goals.',
+          'Check that account mix and allocation still make sense.',
+          'Choose one improvement to make over the next 90 days.',
+        ],
+      };
+    }
+
+    return {
+      title: 'Turn consistency into long-term growth',
+      body: 'You may already be building margin. The next step is making sure more of that progress is moving into long-term growth instead of staying parked.',
+      checklist: [
+        'Review current investment contributions.',
+        'Increase consistency before adding complexity.',
+        'Set a realistic 90-day contribution target.',
+      ],
+    };
+  }
+
+  if (weakestPillar === 'saving') {
+    if (highSavingsBase && ['growth', 'catch_up'].includes(lifeStage)) {
+      return {
+        title: 'Strengthen your buffer, not just your balance sheet',
+        body: 'You may already be building for the future, but the next improvement is making sure your cash reserve is strong enough to protect that long-term progress when life gets expensive.',
+        checklist: [
+          'Decide what “enough” cash reserves means for your household.',
+          'Choose a monthly amount to direct toward that buffer.',
+          'Recheck after 90 days and adjust if needed.',
+        ],
+      };
+    }
+
+    return {
+      title: 'Convert surplus into structure',
+      body: 'You have some breathing room. The opportunity now is turning that into a more reliable saving system that strengthens the rest of the foundation.',
+      checklist: [
+        'Choose a fixed monthly savings amount.',
+        'Automate the transfer if possible.',
+        'Track progress once a month for the next 90 days.',
+      ],
+    };
+  }
+
+  if (weakestPillar === 'income') {
+    if (incomeGrowth === 'decreased') {
+      return {
+        title: 'Rebuild income momentum first',
+        body: 'Because income has moved backward, the next move should focus on restoring stability before pushing harder on optimization elsewhere.',
+        checklist: [
+          'Identify the main reason income slipped.',
+          'Choose one realistic way to stabilize or increase it.',
+          'Set a 90-day target tied to take-home pay.',
+        ],
+      };
+    }
+
+    if (['high', 'moderate'].includes(incomeGrowthPotential)) {
+      return {
+        title: 'Use income as your next growth lever',
+        body: 'You appear to have room to increase earning power from here. At this stage, one income move could lift saving, investing, and flexibility all at once.',
+        checklist: [
+          'Choose the most realistic path to higher income.',
+          'Take one action this week: ask, apply, pitch, or start.',
+          'Measure whether that move improves monthly margin.',
+        ],
+      };
+    }
+
+    return {
+      title: 'Strengthen income stability',
+      body: 'The next lift is not just earning more — it is making income feel more dependable so the rest of your plan can rest on a steadier base.',
+      checklist: [
+        'Identify the main source of income uncertainty.',
+        'Choose one move that improves predictability.',
+        'Review progress over the next 90 days.',
+      ],
+    };
+  }
+
   if (immediateStep) {
     return {
       title: immediateStep.title || 'Best Next Move',
       body: immediateStep.body || (assessment?.nextStep ?? 'Choose one focused next step and keep it consistent.'),
-      checklist: Array.isArray(immediateStep.checklist) && immediateStep.checklist.length
-        ? immediateStep.checklist.slice(0, 3)
-        : [assessment?.nextStep || 'Choose one focused next step and keep it consistent.'],
+      checklist:
+        Array.isArray(immediateStep.checklist) && immediateStep.checklist.length
+          ? immediateStep.checklist.slice(0, 3)
+          : [assessment?.nextStep || 'Choose one focused next step and keep it consistent.'],
     };
   }
 
@@ -185,15 +346,70 @@ function getDashboardNextMoveCard(
     return {
       title: weakestPillar ? `Start with ${formatPillarName(weakestPillar)}` : 'Best Next Move',
       body: assessment.nextStep,
-      checklist: ['Choose one concrete step to take this week.', 'Keep the move small enough to repeat.', 'Review progress before changing direction.'],
+      checklist: [
+        'Choose one concrete step to take this week.',
+        'Keep the move small enough to repeat.',
+        'Review progress before changing direction.',
+      ],
     };
   }
 
   return {
     title: weakestPillar ? `Start with ${formatPillarName(weakestPillar)}` : 'Best Next Move',
     body: getDashboardNextMove(assessment, snapshot, weakestPillar),
-    checklist: ['Choose one next step.', 'Take action this week.', 'Review what changed before adding more complexity.'],
+    checklist: [
+      'Choose one next step.',
+      'Take action this week.',
+      'Review what changed before adding more complexity.',
+    ],
   };
+}
+
+function getDashboardWhyThisMatters(
+  assessment: CurrentAssessmentShape | null,
+  snapshot: ReturnType<typeof getStructuralSnapshot>,
+  weakestPillar?: string
+): string {
+  const lifeStage = assessment?.lifeStage ?? 'stability';
+  const answers = assessment?.answers ?? {};
+  const confidence = answers.financialConfidence;
+  const incomeGrowthPotential = answers.incomeGrowthPotential;
+
+  if (snapshot && snapshot.fixedCostLoad >= 60) {
+    return 'When too much take-home income is already committed, even strong habits can feel tight. Creating more breathing room gives the rest of your plan room to work.';
+  }
+
+  if (weakestPillar === 'protection') {
+    return ['growth', 'catch_up'].includes(lifeStage)
+      ? 'At this stage, the next risk is not simply growth — it is leaving what you have already built exposed to an avoidable setback.'
+      : 'Protection matters now because one uncovered risk can interrupt progress before the rest of the foundation has a chance to compound.';
+  }
+
+  if (weakestPillar === 'vision') {
+    return ['low', 'not_confident'].includes(confidence)
+      ? 'Clearer direction reduces decision fatigue. Once the target is sharper, saving, investing, and tradeoffs usually get easier to sustain.'
+      : 'This matters now because stronger direction helps the rest of your good habits work together instead of drifting in separate directions.';
+  }
+
+  if (weakestPillar === 'income') {
+    return ['high', 'moderate'].includes(incomeGrowthPotential)
+      ? 'Income is not just another category — it is the lever that can lift saving, investing, and flexibility all at once.'
+      : 'A steadier income base gives the rest of the foundation something more dependable to build on.';
+  }
+
+  if (weakestPillar === 'investing') {
+    return 'This matters now because the gap is no longer just about behavior — it is about making sure your long-term system is doing enough work for the future you want.';
+  }
+
+  if (weakestPillar === 'saving') {
+    return 'A stronger buffer gives you more control over setbacks, better flexibility, and more confidence in the rest of the plan.';
+  }
+
+  if (assessment?.nextStep) {
+    return 'This next move matters because it addresses the area most likely to improve the rest of your financial foundation, not just this one category.';
+  }
+
+  return 'The right next move should strengthen the weakest part of the system first so the rest of your progress becomes easier to sustain.';
 }
 
 const PILLAR_LABELS: Record<string, string> = {
@@ -1311,6 +1527,15 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                           </li>
                         ))}
                       </ul>
+                    </div>
+
+                    <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-5">
+                      <div className="text-sm font-semibold text-navy-900 mb-2">
+                        Why this matters now
+                      </div>
+                      <p className="text-gray-700 leading-7">
+                        {dashboardWhyThisMatters}
+                      </p>
                     </div>
                   </div>
                 </div>
