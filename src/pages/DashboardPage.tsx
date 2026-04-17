@@ -125,6 +125,74 @@ const PLAN_FEATURES: Record<
   },
 };
 
+function getPlanBadgeClass(plan: PlanTier) {
+  if (plan === 'premium') {
+    return 'border-copper-300/35 bg-copper-500/10 text-copper-100';
+  }
+
+  if (plan === 'standard') {
+    return 'border-blue-200/30 bg-blue-500/10 text-blue-50';
+  }
+
+  return '';
+}
+
+function getDashboardNextMoveCard(
+  assessment: CurrentAssessmentShape | null,
+  snapshot: ReturnType<typeof getStructuralSnapshot>,
+  weakestPillar?: string
+): { title: string; body: string; checklist: string[] } {
+  const immediateStep = assessment?.actionPlan?.immediate?.[0];
+
+  if (snapshot && snapshot.fixedCostLoad >= 65) {
+    return {
+      title: 'Create breathing room first',
+      body: 'Your biggest opportunity right now is structural. A large share of take-home income is already committed, so the next move should focus on the fixed costs applying the most pressure.',
+      checklist: [
+        'List housing, utilities, childcare, and debt payments in one place.',
+        'Identify the single fixed cost creating the most pressure.',
+        'Decide whether the fastest win is lower costs, more income, or both.',
+      ],
+    };
+  }
+
+  if (snapshot && snapshot.fixedCostLoad >= 50) {
+    return {
+      title: 'Protect your monthly margin',
+      body: 'Your structure is workable, but fixed costs are still tight enough to slow progress. Relief here should make the rest of the plan easier to execute.',
+      checklist: [
+        'Review the top one or two fixed costs in your budget.',
+        'Choose one realistic change to test over the next 30 days.',
+        'Redirect any freed-up cash toward your highest-priority goal.',
+      ],
+    };
+  }
+
+  if (immediateStep) {
+    return {
+      title: immediateStep.title || 'Best Next Move',
+      body: immediateStep.body || (assessment?.nextStep ?? 'Choose one focused next step and keep it consistent.'),
+      checklist: Array.isArray(immediateStep.checklist) && immediateStep.checklist.length
+        ? immediateStep.checklist.slice(0, 3)
+        : [assessment?.nextStep || 'Choose one focused next step and keep it consistent.'],
+    };
+  }
+
+  if (assessment?.nextStep) {
+    return {
+      title: weakestPillar ? `Start with ${formatPillarName(weakestPillar)}` : 'Best Next Move',
+      body: assessment.nextStep,
+      checklist: ['Choose one concrete step to take this week.', 'Keep the move small enough to repeat.', 'Review progress before changing direction.'],
+    };
+  }
+
+  return {
+    title: weakestPillar ? `Start with ${formatPillarName(weakestPillar)}` : 'Best Next Move',
+    body: getDashboardNextMove(assessment, snapshot, weakestPillar),
+    checklist: ['Choose one next step.', 'Take action this week.', 'Review what changed before adding more complexity.'],
+  };
+}
+
 const PILLAR_LABELS: Record<string, string> = {
   income: 'Income',
   spending: 'Spending',
@@ -971,6 +1039,10 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
   const welcomeName = user?.name || user?.email?.split('@')?.[0] || 'there';
   const fixedCostTone = getLoadTone(snapshot?.fixedCostLoad || 0);
+  const dashboardNextMoveCard = useMemo(
+    () => getDashboardNextMoveCard(assessment, snapshot, weakestPillar ?? undefined),
+    [assessment, snapshot, weakestPillar]
+  );
 
   return (
     <div className="min-h-screen bg-[#f6f9fc] flex flex-col">
@@ -998,9 +1070,18 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
         <section className="grid xl:grid-cols-[1.1fr_0.9fr] gap-6 mb-6">
           <div className="bg-gradient-to-br from-[#17385a] to-[#21456d] rounded-3xl border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.15)] p-6 md:p-8 text-white">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-copper-50 text-copper-700 text-sm font-semibold mb-5">
-              <Sparkles className="w-4 h-4" />
-              Welcome back, {welcomeName}
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-copper-50 text-copper-700 text-sm font-semibold">
+                <Sparkles className="w-4 h-4" />
+                Welcome back, {welcomeName}
+              </div>
+
+              {PLAN_FEATURES[currentPlan].badgeLabel ? (
+                <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold tracking-wide ${getPlanBadgeClass(currentPlan)}`}>
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  {PLAN_FEATURES[currentPlan].badgeLabel}
+                </span>
+              ) : null}
             </div>
 
             <h2 className="text-3xl md:text-4xl font-bold leading-tight mb-3">
@@ -1048,12 +1129,6 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 </div>
 
 <div className="mt-4 flex flex-wrap gap-3">
-              {PLAN_FEATURES[currentPlan].badgeLabel ? (
-                <span className="inline-flex items-center gap-2 rounded-full border border-copper-400/25 bg-copper-500/10 px-3 py-1 text-sm font-semibold text-copper-200">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  {PLAN_FEATURES[currentPlan].badgeLabel}
-                </span>
-              ) : null}
               {showAssessment && scoreBand ? (
                 <span
                   className={`inline-flex px-3 py-1 rounded-full text-sm font-semibold ${scoreBand.bg} ${scoreBand.color}`}
@@ -1208,14 +1283,28 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                       </div>
                     )}
 
-                    {priorities.length > 0 && priorities.length < 3 && assessment?.nextStep && (
-                      <div className="rounded-2xl bg-[#f8fbff] border border-[#d7e3f0] p-4">
-                        <div className="text-sm font-semibold text-copper-600 mb-1">
-                          Best Next Move
-                        </div>
-                        <p className="text-gray-700 leading-7">{assessment.nextStep}</p>
+                    <div className="rounded-2xl border border-copper-200 bg-copper-50/45 p-5">
+                      <div className="text-sm font-semibold text-copper-700 mb-2">
+                        Best Next Move
                       </div>
-                    )}
+                      <div className="font-semibold text-navy-900 mb-2">
+                        {dashboardNextMoveCard.title}
+                      </div>
+                      <p className="text-gray-700 leading-7 mb-4">
+                        {dashboardNextMoveCard.body}
+                      </p>
+                      <ul className="space-y-2">
+                        {dashboardNextMoveCard.checklist.map((item, index) => (
+                          <li
+                            key={`dashboard-next-move-${index}`}
+                            className="flex items-start gap-2 text-sm text-gray-700"
+                          >
+                            <span className="mt-1 h-1.5 w-1.5 rounded-full bg-copper-600" />
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
                 </div>
 
