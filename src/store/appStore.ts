@@ -90,6 +90,7 @@ interface AppState {
   userPlan: 'free' | 'standard' | 'premium';
   setPremium: (isPremium: boolean) => void;
   setUserPlan: (plan: 'free' | 'standard' | 'premium') => void;
+  refreshProfile: () => Promise<void>;
 }
 
 export const useAppStore = create<AppState>()(
@@ -215,6 +216,38 @@ export const useAppStore = create<AppState>()(
       userPlan: 'free',
       setPremium: (isPremium) => set({ isPremium }),
       setUserPlan: (plan) => set({ userPlan: plan, isPremium: plan !== 'free' }),
+      refreshProfile: async () => {
+        const { user } = get();
+
+        const userId = (user as any)?.user_id || (user as any)?.id;
+        if (!userId) return;
+
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', userId)
+          .single();
+
+        if (error || !data) {
+          console.error('refreshProfile failed:', error);
+          return;
+        }
+
+        set((state: any) => ({
+          user: {
+            ...state.user,
+            ...data,
+          },
+          profile: {
+            ...state.profile,
+            ...data,
+          },
+        }));
+
+        const plan = (data.plan as 'free' | 'standard' | 'premium') || 'free';
+        get().setUserPlan(plan);
+        get().setPremium(plan === 'premium');
+      },
     }),
     {
       name: 'wealthy-foundation-storage',
