@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAppStore } from '../store/appStore';
+
 import { exportReportPdf } from '../utils/pdfExport';
-import { useNavigate } from 'react-router-dom';
+
 import {
   AlertCircle,
   ArrowRight,
@@ -24,7 +27,7 @@ import {
   Users,
   Zap,
 } from 'lucide-react';
-import { useAppStore } from '../store/appStore';
+
 import logoImage from '../assets/house-icon.png';
 import { useUserPlan } from '../hooks/useUserPlan';
 import { getEntitlements } from '../lib/entitlements';
@@ -710,14 +713,38 @@ function ActionButtonCard({
 export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const navigate = useNavigate();
   const printRef = useRef<HTMLDivElement>(null);
-  const { user, currentAssessment, assessmentHistory, userPlan } =
+  const [searchParams] = useSearchParams();
+
+  const { user, currentAssessment, assessmentHistory, userPlan, refreshProfile } =
     useAppStore() as any;
+
   const { track, trackLockedFeature, trackUpgradeClick, trackTabViewed } =
     useTrackEvent();
   const actualPlan = useUserPlan();
   const entitlements = getEntitlements(actualPlan);
 
   const rawAssessment = (currentAssessment as (CurrentAssessmentShape & { report?: CurrentAssessmentShape }) | null) ?? null;
+
+  useEffect(() => {
+  if (searchParams.get('checkout') === 'success') {
+    console.log('Checkout success detected');
+
+    refreshProfile?.();
+
+    window.history.replaceState({}, '', '/my-foundation');
+  }
+}, [searchParams, refreshProfile]);
+
+
+  useEffect(() => {
+    if (searchParams.get('checkout') === 'success') {
+      console.log('Checkout success detected — refreshing profile');
+
+      refreshProfile?.();
+
+      window.history.replaceState({}, '', '/my-foundation');
+    }
+  }, [searchParams, refreshProfile]);
 
   const historyRecords = useMemo(() => {
     return safeArray(assessmentHistory as any[]).sort((a: any, b: any) => {

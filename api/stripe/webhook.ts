@@ -135,7 +135,7 @@ const userId = session.metadata?.userId;
         const session = event.data.object as Stripe.Checkout.Session;
 
         const plan = session.metadata?.plan;
-        const userId = session.metadata?.user_id;
+        const userId = session.metadata?.userId;
 
         if (!plan || (plan !== 'standard' && plan !== 'premium')) {
           throw new Error('Missing or invalid plan in async payment metadata');
