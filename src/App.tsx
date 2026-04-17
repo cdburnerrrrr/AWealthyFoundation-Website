@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import { useAppStore } from './store/appStore';
 import { supabase } from './lib/supabase';
 import { loadAssessmentsFromSupabase } from './services/assessmentService';
+import { useHydrateProfile } from './hooks/useHydrateProfile';
+import SnapshotResultsPage from './pages/SnapshotResultsPage';
 
 // Pages
 import LandingPage from './pages/LandingPage';
@@ -27,11 +29,16 @@ import Layout from './layouts/Layouts';
 function App() {
   const {
     isAuthenticated,
-    setAuth,
-    setUser,
     setCurrentAssessment,
     setAssessmentHistory,
+    setAuth,
+    setUser,
+    setProfile,
+    setUserPlan,
+    setPremium,
   } = useAppStore();
+
+  useHydrateProfile();
 
   const [authChecked, setAuthChecked] = useState(false);
 
@@ -84,10 +91,8 @@ function App() {
 
       if (assessments.length > 0) {
         if (assessments[0]?.report) {
-          // ✅ Use full saved report (best case)
           setCurrentAssessment(assessments[0].report);
         } else {
-          // ⚠️ Fallback for older assessments
           setCurrentAssessment(buildCurrentAssessmentFromHistoryItem(assessments[0]));
         }
       } else {
@@ -101,78 +106,32 @@ function App() {
   }
 
   useEffect(() => {
-    void checkAuth();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setAuth(true, false);
-        setUser({
-          id: 0,
-          userId: session.user.id,
-          name: session.user.user_metadata?.name || null,
-          email: session.user.email || null,
-          isPremium: 0,
-          subscriptionStatus: 'free',
-          createdAt: null,
-          updatedAt: null,
-        });
-
-        setAuthChecked(true);
-        void hydrateAssessments();
-      } else {
-        setAuth(false, false);
-        setUser(null);
-        setCurrentAssessment(null);
-        setAssessmentHistory([]);
-        setAuthChecked(true);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
+    // Let useHydrateProfile own auth/session hydration.
+    // App.tsx should only react to the authenticated state and hydrate assessments.
+    setAuthChecked(true);
   }, []);
 
-  async function checkAuth() {
-    try {
+  useEffect(() => {
+    async function runHydration() {
+      if (!isAuthenticated) {
+        setAssessmentHistory([]);
+        setCurrentAssessment(null);
+        return;
+      }
+  
       const {
         data: { session },
       } = await supabase.auth.getSession();
-
-      if (session?.user) {
-        setAuth(true, false);
-        setUser({
-          id: 0,
-          userId: session.user.id,
-          name: session.user.user_metadata?.name || null,
-          email: session.user.email || null,
-          isPremium: 0,
-          subscriptionStatus: 'free',
-          createdAt: null,
-          updatedAt: null,
-        });
-
-        setAuthChecked(true);
-        void hydrateAssessments();
+  
+      if (!session?.user) {
         return;
       }
-
-      setAuth(false, false);
-      setUser(null);
-      setCurrentAssessment(null);
-      setAssessmentHistory([]);
-      setAuthChecked(true);
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      setAuth(false, false);
-      setUser(null);
-      setCurrentAssessment(null);
-      setAssessmentHistory([]);
-      setAuthChecked(true);
+  
+      await hydrateAssessments();
     }
-  }
+  
+    runHydration();
+  }, [isAuthenticated]);
 
   async function handleLogout() {
     try {
@@ -182,6 +141,9 @@ function App() {
     } finally {
       setAuth(false, false);
       setUser(null);
+      setProfile(null);
+      setUserPlan('free');
+      setPremium(false);
       setCurrentAssessment(null);
       setAssessmentHistory([]);
     }
@@ -202,7 +164,8 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route element={<Layout />}>
-          <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<LandingPage />} />
+
           <Route path="/building-blocks" element={<BuildingBlocksPage />} />
           <Route path="/financial-pillars" element={<FinancialPillarsPage />} />
           <Route path="/foundation-score" element={<FoundationScorePage />} />
@@ -212,6 +175,7 @@ function App() {
           <Route path="/articles/new" element={<NewArticlePage />} />
           <Route path="/articles/:id" element={<ArticleDetailPage />} />
           <Route path="/trusted-experts" element={<TrustedExpertsPage />} />
+          <Route path="/results/snapshot" element={<SnapshotResultsPage />} />
 
           <Route
             path="/login"

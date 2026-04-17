@@ -1,39 +1,50 @@
 import { supabase } from '../lib/supabase';
+import { useAppStore } from '../store/appStore';
 
 export async function loadAssessmentsFromSupabase() {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    // ✅ Get user from Zustand (NOT Supabase auth)
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    
+    const userId = session?.user?.id;
+    
+    if (!userId) return [];
 
-  if (!user) return [];
+    const { data, error } = await supabase
+      .from('assessments')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
 
-  const { data, error } = await supabase
-    .from('assessments')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
+    if (error) {
+      console.error('Load error:', error);
+      return [];
+    }
 
-  if (error) {
-    console.error('Load error:', error);
+    return (data ?? []).map((item) => ({
+      id: item.id,
+      userId: item.user_id,
+      assessmentType: item.assessment_type,
+      overallScore: item.overall_score,
+      createdAt: item.created_at
+        ? new Date(item.created_at).getTime()
+        : Date.now(),
+      updatedAt: item.created_at
+        ? new Date(item.created_at).getTime()
+        : Date.now(),
+      buildingBlockScores: item.building_block_scores ?? {},
+      pillarScores: item.pillar_scores ?? {},
+      lifeStage: item.life_stage,
+      insights: item.insights ?? [],
+      priorities: item.priorities ?? [],
+      milestonesCompleted: item.milestones_completed ?? [],
+      nextMilestones: item.next_milestones ?? [],
+      report: item.report,
+    }));
+  } catch (err) {
+    console.error('Assessment load failed:', err);
     return [];
   }
-
-  return (data ?? []).map((item) => ({
-    id: item.id,
-    userId: item.user_id,
-    assessmentType: item.assessment_type,
-    overallScore: item.overall_score,
-    createdAt: item.created_at ? new Date(item.created_at).getTime() : Date.now(),
-    updatedAt: item.created_at ? new Date(item.created_at).getTime() : Date.now(),
-    buildingBlockScores: item.building_block_scores ?? {},
-    pillarScores: item.pillar_scores ?? {},
-    lifeStage: item.life_stage,
-    insights: item.insights ?? [],
-    priorities: item.priorities ?? [],
-    milestonesCompleted: item.milestones_completed ?? [],
-    nextMilestones: item.next_milestones ?? [],
-
-    report: item.report
-    
-  }));
 }

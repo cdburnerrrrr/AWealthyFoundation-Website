@@ -1,5 +1,13 @@
+# dependencies
 node_modules
+
+# build output
 dist
+
+# environment variables (VERY IMPORTANT)
 .env
+.env.*
 .env.local
-.env.*.local
+
+# vercel
+.vercel

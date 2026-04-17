@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { exportReportPdf } from '../utils/pdfExport';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -13,30 +14,28 @@ import {
   DollarSign,
   Eye,
   Sparkles,
+  RefreshCcw,
 } from 'lucide-react';
+import PremiumGuidanceSection from '../components/results/PremiumGuidanceSection';
+import {
+  getReportFeatures,
+  getReportTier,
+  isDevReportOverrideEnabled,
+  type ReportTier,
+} from '../lib/reportFeatures';
 import { useAppStore } from '../store/appStore';
-import { PILLAR_LABELS, getScoreBand, getBiggestOpportunity, type PillarKey } from '../types/assessment';
+import {
+  PILLAR_LABELS,
+  getScoreBand,
+  getBiggestOpportunity,
+  type PillarKey,
+} from '../types/assessment';
 
 type ActionPlanStep = {
   title: string;
   body: string;
   checklist: string[];
 };
-
-function PillarReasonList({ reasons }: { reasons?: string[] }) {
-  if (!reasons?.length) return null;
-
-  return (
-    <div className="mt-3">
-      <p className="text-sm font-semibold text-slate-800">Why this score</p>
-      <ul className="mt-1 space-y-1 text-sm text-slate-600">
-        {reasons.slice(0, 3).map((reason) => (
-          <li key={reason}>• {reason}</li>
-        ))}
-      </ul>
-    </div>
-  );
-}
 
 type StructuralWarning = {
   type: 'housing_pressure' | 'income_constraint' | 'structural_pressure';
@@ -201,9 +200,14 @@ function getBestNextMoveText(pillar: string) {
   return `Focus on improving ${formatPillarName(pillar)} first. This is the constraint holding back faster progress across your entire foundation.`;
 }
 
-function getPriorityHeadline(pillar: string, isBiggest: boolean) {
+function getPriorityHeadline(
+  pillar: string,
+  isBiggest: boolean,
+  overallScore: number
+) {
   const label = formatPillarName(pillar);
 
+  if (overallScore >= 80 && isBiggest) return `${label} is your next optimization lever.`;
   return isBiggest
     ? `${label} is currently your biggest opportunity.`
     : `${label} is an area to strengthen.`;
@@ -215,37 +219,30 @@ function getPriorityBody(pillar: string, isBiggest: boolean) {
       return isBiggest
         ? 'Your Income building block is currently the weakest part of your foundation. Increasing earning power or stability will unlock faster progress across saving, investing, and long-term growth.'
         : 'Strengthening your Income building block will support continued growth and open up more financial flexibility.';
-
     case 'spending':
       return isBiggest
         ? 'Your Spending building block is currently the weakest part of your foundation. Better control here can free up margin that improves nearly every other area.'
         : 'Refining your Spending habits will help you keep more of what you earn and direct it toward your goals.';
-
     case 'saving':
       return isBiggest
         ? 'Your Saving building block is currently the weakest part of your foundation. A stronger buffer would make the whole system more stable and resilient.'
         : 'Strengthening your Saving habits will improve stability and give you more breathing room.';
-
     case 'investing':
       return isBiggest
         ? 'Your Investing building block is currently the weakest part of your foundation. More consistent investing is how today’s stability becomes long-term wealth.'
         : 'Improving your Investing consistency will strengthen your long-term financial growth.';
-
     case 'debt':
       return isBiggest
         ? 'Your Debt building block is currently the weakest part of your foundation. Lowering pressure here can quickly improve flexibility, confidence, and momentum.'
         : 'Reducing debt further will continue improving your flexibility and financial confidence.';
-
     case 'protection':
       return isBiggest
         ? 'Your Protection building block is currently the weakest part of your foundation. Closing the right gaps now helps preserve the progress you have already made.'
         : 'Strengthening your Protection will help safeguard the progress you are making.';
-
     case 'vision':
       return isBiggest
         ? 'Your Vision building block is currently the weakest part of your foundation. Clearer direction will make your next financial decisions easier to align and follow through on.'
         : 'Refining your Vision will help align your decisions with your long-term goals.';
-
     default:
       return isBiggest
         ? 'This is currently the weakest part of your foundation and the best place to focus first.'
@@ -254,7 +251,10 @@ function getPriorityBody(pillar: string, isBiggest: boolean) {
 }
 
 function getFallbackPlanStep(pillar: string, rank: number): ActionPlanStep {
-  const title = rank === 0 ? `Next: Strengthen ${formatPillarName(pillar)}` : `Then focus on ${formatPillarName(pillar)}`;
+  const title =
+    rank === 0
+      ? `Next: Strengthen ${formatPillarName(pillar)}`
+      : `Then focus on ${formatPillarName(pillar)}`;
 
   switch (pillar) {
     case 'income':
@@ -438,7 +438,10 @@ function getStructuralBestNextMove(
     : 'Start with the weakest part of your foundation first and make one move that increases consistency.';
 }
 
-function getStructuralContextNote(warnings: StructuralWarning[], metrics?: ResultShape['metrics']) {
+function getStructuralContextNote(
+  warnings: StructuralWarning[],
+  metrics?: ResultShape['metrics']
+) {
   if (!warnings.length) return null;
 
   const fixedCost = formatPercent(metrics?.fixedCostPressureRatio);
@@ -491,16 +494,80 @@ function getWarningBodyWithMetrics(
   }
 }
 
+function SectionShell({
+  icon: Icon,
+  title,
+  children,
+  className = '',
+}: {
+  icon: React.ElementType;
+  title: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <section
+      data-pdf-card="true"
+      className={`bg-white/95 backdrop-blur rounded-3xl border border-white/10 shadow-sm p-6 md:p-8 ${className}`}
+    >
+      <div className="flex items-center gap-2 mb-5">
+        <Icon className="w-5 h-5 text-copper-600" />
+        <h2 className="text-2xl font-bold text-navy-900">{title}</h2>
+      </div>
+      {children}
+    </section>
+  );
+}
+
 export default function ResultsPage() {
   const navigate = useNavigate();
-  const { currentAssessment } = useAppStore();
-  const result = (currentAssessment as ResultShape | null) ?? null;
+  const { currentAssessment, assessmentHistory } = useAppStore() as any;
+
+  const latestHistoryRecord = useMemo(() => {
+    return safeArray(assessmentHistory as any[])
+      .slice()
+      .sort((a: any, b: any) => (b?.createdAt ?? 0) - (a?.createdAt ?? 0))[0] ?? null;
+  }, [assessmentHistory]);
+
+  const rawCurrentResult = (((currentAssessment as any)?.report ?? currentAssessment) as ResultShape | null) ?? null;
+  const historyResult = ((((latestHistoryRecord as any)?.report ?? latestHistoryRecord) as ResultShape | null) ?? null);
+  const result = (rawCurrentResult ?? historyResult) as ResultShape | null;
+
+  const reportRef = useRef<HTMLDivElement>(null);
+
   const warnings = result?.structuralWarnings || [];
   const metrics = result?.metrics;
   const scoreBand = useMemo(() => getScoreBand(result?.foundationScore ?? 0), [result]);
   const adjustedScoreColor =
     scoreBand.label === 'Needs Attention' ? 'text-copper-300' : scoreBand.color;
   const pillarScores = result?.pillarScores ?? result?.pillars ?? {};
+
+  const derivedTier = (currentAssessment as any)?.reportTier || (latestHistoryRecord as any)?.reportTier || ((((currentAssessment as any)?.assessmentType ?? (latestHistoryRecord as any)?.assessmentType) === 'premium') ? 'premium' : (((currentAssessment as any)?.assessmentType ?? (latestHistoryRecord as any)?.assessmentType) === 'detailed' ? 'standard' : 'free'));
+  const reportTier: ReportTier = getReportTier(derivedTier);
+  const features = getReportFeatures(reportTier);
+  const [showPdfUpgradeModal, setShowPdfUpgradeModal] = useState(false);
+
+  const handlePdfClick = async () => {
+  if (!features.allowFullPdfExport) {
+    setShowPdfUpgradeModal(true);
+    return;
+  }
+
+  if (!reportRef.current) {
+    console.error('PDF export failed: report container not found.');
+    return;
+  }
+
+  try {
+    await exportReportPdf({
+      element: reportRef.current,
+      tier: reportTier,
+      foundationScore: score,
+    });
+  } catch (error) {
+    console.error('PDF export failed:', error);
+  }
+};
 
   const pillarEntries = useMemo(() => {
     if (!Object.keys(pillarScores).length) return [];
@@ -531,6 +598,25 @@ export default function ResultsPage() {
       : [...pillarEntries].sort((a, b) => a[1] - b[1]).slice(0, 2);
   }, [pillarEntries]);
 
+  if (!result) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center px-6">
+        <div className="text-center max-w-lg">
+          <h1 className="text-3xl font-bold text-navy-900 mb-3">No Results Yet</h1>
+          <p className="text-gray-600 mb-6">
+            Complete an assessment first so we can build your Foundation Report.
+          </p>
+          <button
+            onClick={() => navigate('/assessment/comprehensive')}
+            className="px-6 py-3 bg-copper-600 text-white rounded-xl font-bold hover:bg-copper-700"
+          >
+            Take Assessment
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const score = result?.foundationScore ?? 0;
   const summary = result?.summary || '';
   const insights = safeArray(result?.insights);
@@ -552,30 +638,11 @@ export default function ResultsPage() {
           .filter(Boolean)
           .map((pillar, index) => getFallbackPlanStep(pillar, index));
 
-  if (!result) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center px-6">
-        <div className="text-center max-w-lg">
-          <h1 className="text-3xl font-bold text-navy-900 mb-3">No Results Yet</h1>
-          <p className="text-gray-600 mb-6">
-            Complete an assessment first so we can build your Foundation Report.
-          </p>
-          <button
-            onClick={() => navigate('/assessment/detailed')}
-            className="px-6 py-3 bg-copper-600 text-white rounded-xl font-bold hover:bg-copper-700"
-          >
-            Take Assessment
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const debtPressure = formatDebtPressure(Number(pillarScores?.debt || 0));
+  const debtPressure = formatDebtPressure(Number((pillarScores as Record<string, number>)?.debt || 0));
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0f2a44] via-[#132f4c] to-[#1e3a5f]">
-      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-100">
+      <header data-pdf-ignore="true" className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <button
             onClick={() => navigate('/')}
@@ -585,19 +652,74 @@ export default function ResultsPage() {
             Back Home
           </button>
 
-          <button
-            onClick={() => navigate('/my-foundation')}
-            className="inline-flex items-center gap-2 text-sm font-semibold text-copper-700 hover:text-copper-800"
-          >
-            Go to Dashboard
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          <div className="flex flex-col items-end">
+            <button
+              onClick={() => navigate('/my-foundation')}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-copper-600 text-white font-semibold shadow-sm hover:bg-copper-700 transition-colors"
+            >
+              Go to Dashboard
+              <ArrowRight className="w-4 h-4" />
+            </button>
+
+            <div className="text-xs text-slate-500 mt-1 text-right">
+              Track progress and view your full dashboard
+            </div>
+          </div>
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-8 md:py-10">
+  <div id="report-pdf-root" ref={reportRef}>
+  <div
+    data-pdf-only="true"
+    style={{ display: 'none' }}
+    className="mb-8 rounded-3xl border border-slate-200 bg-white p-8"
+  >
+    <div className="text-sm font-semibold uppercase tracking-[0.18em] text-copper-700 mb-3">
+      A Wealthy Foundation
+    </div>
+
+    <h1 className="text-4xl font-bold text-navy-900 mb-3">
+      Your Foundation Report
+    </h1>
+
+    <p className="text-slate-600 leading-7 mb-6 max-w-3xl">
+      A personalized financial review built around your Foundation Score,
+      weakest constraints, and next steps.
+    </p>
+
+    <div className="grid grid-cols-3 gap-4">
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <div className="text-sm text-slate-500 mb-2">Foundation Score</div>
+        <div className="text-3xl font-bold text-navy-900">{score}</div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <div className="text-sm text-slate-500 mb-2">Report Tier</div>
+        <div className="text-3xl font-bold text-navy-900">
+          {reportTier === 'premium'
+            ? 'Premium'
+            : reportTier === 'standard'
+            ? 'Full Report'
+            : 'Preview'}
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <div className="text-sm text-slate-500 mb-2">Top Strength</div>
+        <div className="text-3xl font-bold text-navy-900">
+          {strongest[0] ? formatPillarName(strongest[0][0]) : '—'}
+        </div>
+      </div>
+    </div>
+  </div>
+
         <section className="grid lg:grid-cols-[1.2fr_0.8fr] gap-6 mb-6">
-          <div className="bg-gradient-to-br from-[#17385a] to-[#21456d] rounded-3xl border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.35)] p-6 md:p-8">
+          <div
+            data-pdf-dark-card="true"
+            data-pdf-page-break-avoid="true"
+            className="bg-gradient-to-br from-[#17385a] to-[#21456d] rounded-3xl border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.35)] p-6 md:p-8"
+          >
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-copper-50 text-copper-700 text-sm font-semibold mb-5">
               <Sparkles className="w-4 h-4" />
               Your Foundation Report
@@ -607,15 +729,61 @@ export default function ResultsPage() {
               {buildExecutiveHeadline(score)}
             </h1>
 
-            <p className="text-base md:text-lg text-white/80 max-w-3xl mb-6">
-              {getBandNarrative(score)}
-            </p>
+            <div className="mb-6">
+              <p className="text-base md:text-lg text-white/80 max-w-3xl">
+                {getBandNarrative(score)}
+              </p>
+
+              <p className="mt-3 text-sm md:text-base text-copper-200 max-w-3xl leading-7">
+                Your score of {score} reflects{' '}
+                {score >= 80
+                  ? 'a strong foundation'
+                  : score >= 60
+                    ? 'good momentum with some remaining gaps'
+                    : score >= 40
+                      ? 'a workable base that still needs reinforcement'
+                      : 'a foundation that needs attention before growth becomes the priority'}
+                . This roadmap focuses on removing the remaining constraints holding you back.
+              </p>
+            </div>
+
+            <div data-pdf-ignore="true" className="flex flex-wrap items-center gap-3 mb-6">
+              {features.showPdfButton && (
+                <button
+                  onClick={handlePdfClick}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-copper-600 text-white font-semibold shadow-sm hover:bg-copper-700 transition-colors"
+                >
+                  Save as PDF
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
+
+              {reportTier !== 'premium' && (
+                <button
+                  onClick={() => navigate('/pricing')}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 text-white font-semibold border border-white/10 hover:bg-white/15 transition-colors"
+                >
+                  Unlock Premium Guidance
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
+
+              {isDevReportOverrideEnabled() && (
+                <div className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/80 border border-white/10">
+                  Dev mode: all features visible
+                </div>
+              )}
+            </div>
 
             <div className="grid sm:grid-cols-3 gap-4">
               <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
                 <div className="text-sm text-white/70 mb-2">Foundation Score</div>
-                <div className="inline-flex items-center justify-center w-28 h-28 rounded-full bg-gradient-to-br from-[#ffcf9e] to-[#b87333] shadow-[0_20px_60px_rgba(194,120,58,0.45)] border border-white/30 text-5xl font-bold text-white">{score}</div>
-                <div className={`mt-3 inline-flex px-3 py-1 rounded-full text-sm font-semibold ${scoreBand.bg} ${adjustedScoreColor}`}>
+                <div className="inline-flex items-center justify-center w-28 h-28 rounded-full bg-gradient-to-br from-[#ffcf9e] to-[#b87333] shadow-[0_20px_60px_rgba(194,120,58,0.45)] border border-white/30 text-5xl font-bold text-white">
+                  {score}
+                </div>
+                <div
+                  className={`mt-3 inline-flex px-3 py-1 rounded-full text-sm font-semibold ${scoreBand.bg} ${adjustedScoreColor}`}
+                >
                   {scoreBand.label}
                 </div>
               </div>
@@ -640,12 +808,17 @@ export default function ResultsPage() {
             </div>
           </div>
 
-          <div className="bg-navy-900 text-white rounded-3xl shadow-sm p-6 md:p-8">
+          <div
+            data-pdf-dark-card="true"
+            data-pdf-page-break-avoid="true"
+            className="bg-navy-900 text-white rounded-3xl shadow-sm p-6 md:p-8"
+          >
             <div className="text-sm uppercase tracking-[0.18em] text-copper-300 mb-3">
               Executive Summary
             </div>
             <p className="text-lg leading-8 text-white/95 mb-6">
-              {summary || 'Your report is ready. The next level of progress will come from strengthening the weakest part of your foundation first.'}
+              {summary ||
+                'Your report is ready. The next level of progress will come from strengthening the weakest part of your foundation first.'}
             </p>
 
             <div className="rounded-2xl bg-white/10 border border-white/10 p-5">
@@ -657,54 +830,8 @@ export default function ResultsPage() {
           </div>
         </section>
 
-        {warnings.length > 0 && (
-          <section className="mb-6">
-            <div className="bg-white/95 backdrop-blur rounded-3xl border border-white/10 shadow-sm p-6 md:p-8">
-              <div className="flex items-center gap-2 mb-5">
-                <Sparkles className="w-5 h-5 text-copper-600" />
-                <h2 className="text-2xl font-bold text-navy-900">Foundation Stress Test</h2>
-              </div>
-
-              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {warnings.map((warning, index) => {
-                  const tone = getWarningTone(warning.severity);
-
-                  return (
-                    <div
-                      key={`${warning.type}-${index}`}
-                      className={`rounded-2xl border p-5 ${tone.card}`}
-                    >
-                      <div className="flex items-start justify-between gap-4 mb-3">
-                        <div className="text-lg font-bold text-white/90">
-                          {getWarningTitle(warning.type)}
-                        </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${tone.badge}`}>
-                          {warning.severity === 'critical' ? 'Critical' : 'Warning'}
-                        </span>
-                      </div>
-
-                      <p className="text-gray-700 leading-7 mb-3">
-                        {getWarningBodyWithMetrics(warning, metrics)}
-                      </p>
-
-                      <div className="text-sm font-medium text-copper-700 leading-6">
-                        {getWarningAction(warning.type)}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </section>
-        )}
-
         <section className="grid lg:grid-cols-[0.95fr_1.05fr] gap-6 mb-6">
-          <div className="bg-white/95 backdrop-blur rounded-3xl border border-white/10 shadow-sm p-6 md:p-8">
-            <div className="flex items-center gap-2 mb-5">
-              <Target className="w-5 h-5 text-copper-600" />
-              <h2 className="text-2xl font-bold text-navy-900">Priority Opportunities</h2>
-            </div>
-
+          <SectionShell icon={Target} title="Priority Opportunities">
             {getStructuralContextNote(warnings, metrics) && (
               <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-900">
                 {getStructuralContextNote(warnings, metrics)}
@@ -712,62 +839,60 @@ export default function ResultsPage() {
             )}
 
             <div className="space-y-4">
-             {weakest.map(([pillar, pillarScore], index) => {
-  const isBiggest = pillar === biggest;
+              {weakest.map(([pillar, pillarScore], index) => {
+                const isBiggest = pillar === biggest;
 
-  return (
-                <div key={pillar} className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
-                  <div className="flex items-start justify-between gap-4 mb-3">
-                    <div>
-                      <div className="text-lg font-bold text-navy-900">
-                        {formatPillarName(pillar)}
+                return (
+                  <div key={pillar} className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
+                    <div className="flex items-start justify-between gap-4 mb-3">
+                      <div>
+                        <div className="text-lg font-bold text-navy-900">
+                          {formatPillarName(pillar)}
+                        </div>
+                        <div className="text-sm text-copper-500">Score: {pillarScore}/100</div>
                       </div>
-                      <div className="text-sm text-copper-300">Score: {pillarScore}/100</div>
-                    </div>
 
-                    <div className="flex items-center gap-2">
-                      {index === 0 && (
-                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-copper-100 text-copper-700">
-                          {warnings.length > 0 ? 'Top Pillar Priority' : '#1 Priority'}
+                      <div className="flex items-center gap-2">
+                        {index === 0 && (
+                          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-copper-100 text-copper-700">
+                            {warnings.length > 0 ? 'Top Pillar Priority' : '#1 Priority'}
+                          </span>
+                        )}
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-semibold ${getPillarTone(pillarScore).badge}`}
+                        >
+                          {getPillarTone(pillarScore).label}
                         </span>
-                      )}
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getPillarTone(pillarScore).badge}`}>
-                        {getPillarTone(pillarScore).label}
-                      </span>
+                      </div>
+                    </div>
+
+                    <p className="text-navy-900 font-semibold leading-7 mb-2">
+                      {getPriorityHeadline(pillar, isBiggest, score)}
+                    </p>
+
+                    <p className="text-gray-700 leading-7 mb-3">
+                      {getPriorityBody(pillar, isBiggest)}
+                    </p>
+
+                    <div className="h-2 rounded-full bg-gray-200 overflow-hidden mb-3">
+                      <div
+                        className={`h-full ${getPillarTone(pillarScore).bar}`}
+                        style={{ width: `${Math.max(4, pillarScore)}%` }}
+                      />
+                    </div>
+
+                    <div className="text-sm font-medium text-copper-700">
+                      {priorities.find((item) =>
+                        item.toLowerCase().includes(pillar.toLowerCase())
+                      ) || getConstraintLine(pillar)}
                     </div>
                   </div>
-
-                  <p className="text-navy-900 font-semibold leading-7 mb-2">
-                    {getPriorityHeadline(pillar, isBiggest)}
-                  </p>
-
-                  <p className="text-gray-700 leading-7 mb-3">
-                  {getPriorityBody(pillar, isBiggest)}
-                  </p>
-
-                  <div className="h-2 rounded-full bg-gray-200 overflow-hidden mb-3">
-                    <div
-                      className={`h-full ${getPillarTone(pillarScore).bar}`}
-                      style={{ width: `${Math.max(4, pillarScore)}%` }}
-                    />
-                  </div>
-
-                  <div className="text-sm font-medium text-copper-700">
-                    {priorities.find((item) => item.toLowerCase().includes(pillar.toLowerCase())) ||
-                      getConstraintLine(pillar)}
-                  </div>
-                </div>
-               );
+                );
               })}
             </div>
-          </div>
+          </SectionShell>
 
-          <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6 md:p-8">
-            <div className="flex items-center gap-2 mb-5">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              <h2 className="text-2xl font-bold text-navy-900">What Is Already Working</h2>
-            </div>
-
+          <SectionShell icon={CheckCircle2} title="What Is Already Working">
             <div className="space-y-4">
               {strongest.map(([pillar, pillarScore]) => (
                 <div key={pillar} className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
@@ -801,123 +926,169 @@ export default function ResultsPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </SectionShell>
         </section>
 
-        <section className="grid lg:grid-cols-[1fr_1fr] gap-6 mb-6">
-          <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6 md:p-8">
-            <div className="flex items-center gap-2 mb-5">
-              <Sparkles className="w-5 h-5 text-copper-600" />
-              <h2 className="text-2xl font-bold text-navy-900">Key Insights</h2>
-            </div>
+        <section className="grid lg:grid-cols-2 gap-6 mb-6">
+          <SectionShell icon={Sparkles} title="Foundation Stress Test">
+            {warnings.length > 0 ? (
+              <div className="space-y-4">
+                {warnings.map((warning, index) => {
+                  const tone = getWarningTone(warning.severity);
 
-            <div className="space-y-4">
-              {insights.length > 0 ? (
-                insights.map((insight, index) => (
-                  <div
-                    key={`${index}-${insight.slice(0, 24)}`}
-                    className="rounded-2xl bg-gray-50 border border-gray-200 p-5"
-                  >
-                    <div className="text-xs uppercase tracking-[0.16em] text-copper-600 font-semibold mb-2">
+                  return (
+                    <div
+                      key={`${warning.type}-${index}`}
+                      className={`rounded-2xl border p-5 ${tone.card}`}
+                    >
+                      <div className="flex items-start justify-between gap-4 mb-3">
+                        <div className="text-lg font-bold text-amber-950">
+                          {getWarningTitle(warning.type)}
+                        </div>
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-semibold ${tone.badge}`}
+                        >
+                          {warning.severity === 'critical' ? 'Critical' : 'Warning'}
+                        </span>
+                      </div>
+
+                      <p className="text-gray-700 leading-7 mb-3">
+                        {getWarningBodyWithMetrics(warning, metrics)}
+                      </p>
+
+                      <div className="text-sm font-medium text-copper-700 leading-6">
+                        {getWarningAction(warning.type)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+                <div className="text-lg font-bold text-emerald-800 mb-2">
+                  No major structural warning signs
+                </div>
+                <p className="text-gray-700 leading-7">
+                  Your current financial structure does not show a major fixed-cost or debt pressure alert. That gives you more room to focus on refinement and steady progress.
+                </p>
+              </div>
+            )}
+          </SectionShell>
+
+          <SectionShell icon={Sparkles} title="Key Insights">
+            {insights.length ? (
+              <div className="space-y-4">
+                {insights.map((insight, index) => (
+                  <div key={index} className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
+                    <div className="text-sm uppercase tracking-[0.18em] text-copper-600 mb-3">
                       Insight {index + 1}
                     </div>
-                    <p className="text-gray-700 leading-7">{insight}</p>
+                    <p className="text-gray-700 leading-8">{insight}</p>
                   </div>
-                ))
-              ) : (
-                <div className="rounded-2xl bg-gray-50 border border-gray-200 p-5 text-gray-700">
-                  You have some solid pieces in place. The next level of progress will come from improving your weakest pillar first.
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
+                <div className="text-sm uppercase tracking-[0.18em] text-copper-600 mb-3">
+                  Insight 1
                 </div>
-              )}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6 md:p-8">
-            <div className="flex items-center gap-2 mb-5">
-              <Clock3 className="w-5 h-5 text-copper-600" />
-              <h2 className="text-2xl font-bold text-navy-900">Your 90-Day Plan</h2>
-            </div>
-
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-copper-200 bg-copper-50 p-5">
-                <div className="text-sm font-semibold text-copper-700 mb-2">
-                  {planStart?.title || 'Start Here'}
-                </div>
-                <p className="text-navy-900 leading-7 mb-3">
-                  {weakestPillar
-                    ? `Start with ${formatPillarName(weakestPillar)}. Improving this one area will have the biggest ripple effect across your entire financial foundation.`
-                    : planStart?.body ||
-                      'Start with your weakest area first. Improving that one area will create the biggest ripple effect.'}
+                <p className="text-gray-700 leading-8">
+                  Your strongest habits are reinforcing each other. The next level of progress comes from tightening the few areas that still create drag.
                 </p>
+              </div>
+            )}
+          </SectionShell>
+        </section>
 
-                {weakestPillar && (
-                  <p className="text-sm text-gray-700 leading-6 mb-3">
-                    {getConstraintLine(weakestPillar)}
-                  </p>
-                )}
-
-                <ul className="space-y-2">
-                  {(planStart?.checklist?.length
-                    ? planStart.checklist
-                    : [
-                        `Identify one concrete way to improve ${formatPillarName(weakestPillar || 'your weakest area')}.`,
-                        'Take one action this week.',
-                        'Set a simple 90-day target you can actually follow.',
-                      ]).map((item, index) => (
-                    <li
-                      key={`start-check-${index}`}
-                      className="flex items-start gap-2 text-sm text-navy-900"
-                    >
-                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-copper-600" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
+        {!features.showPremiumGuidance && (
+          <section
+            data-pdf-ignore="true"
+            className="bg-white/95 backdrop-blur rounded-3xl border border-copper-200 shadow-sm p-6 md:p-8 mb-6"
+          >
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <div className="inline-flex items-center rounded-full bg-copper-50 px-3 py-1 text-sm font-semibold text-copper-700 mb-3">
+                  Premium Upgrade
+                </div>
+                <h2 className="text-2xl font-bold text-navy-900 mb-2">
+                  {reportTier === 'standard'
+                    ? 'Want guided implementation, not just the report?'
+                    : 'Want a step-by-step plan for the next 12 months?'}
+                </h2>
+                <p className="text-gray-700 leading-7 max-w-3xl">
+                  Upgrade to Premium to unlock your personalized roadmap, quarterly action
+                  plan, priority ladder, and guided prompts built around your weakest
+                  constraint.
+                </p>
               </div>
 
-              {planSteps.map((step, index) => (
-                <div
-                  key={`plan-step-${index}`}
-                  className="rounded-2xl border border-gray-200 bg-gray-50 p-5"
+              <div className="shrink-0">
+                <button
+                  onClick={() => navigate('/pricing')}
+                  className="inline-flex items-center gap-2 rounded-xl bg-copper-600 text-white px-5 py-3 font-semibold shadow-sm hover:bg-copper-700 transition-colors"
                 >
-                  <div className="text-sm font-semibold text-gray-500 mb-2">
-                    {step.title}
-                  </div>
-                  <p className="text-gray-700 leading-7 mb-3">{step.body}</p>
-                  {step.checklist?.length ? (
-                    <ul className="space-y-2">
-                      {step.checklist.map((item, itemIndex) => (
-                        <li
-                          key={`step-${index}-item-${itemIndex}`}
-                          className="flex items-start gap-2 text-sm text-gray-700"
-                        >
-                          <span className="mt-1 h-1.5 w-1.5 rounded-full bg-copper-600" />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-                </div>
-              ))}
+                  Unlock Premium Guidance
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
 
-              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
-                <div className="text-sm font-semibold text-gray-500 mb-2">
-                  {planAfter?.title || 'After 90 Days'}
+        {features.showPremiumGuidance && Object.keys(pillarScores).length > 0 && (
+          <div data-pdf-page-break-before="true">
+            <PremiumGuidanceSection
+            pillarScores={pillarScores as Record<string, number>}
+            reportTier={reportTier}
+            onUnlockPremium={() => navigate('/pricing')}
+          />
+          </div>
+        )}
+
+        <SectionShell icon={Clock3} title="Your 90-Day Plan" className="mb-6 pdf-avoid-break">
+          <div className="grid xl:grid-cols-4 md:grid-cols-2 gap-4">
+            <div className="rounded-2xl border border-copper-200 bg-copper-50/50 p-5">
+              <div className="text-sm font-semibold text-copper-700 mb-3">
+                {planStart?.title || 'Start Here'}
+              </div>
+              <p className="text-navy-900 leading-7 mb-4">
+                {planStart?.body ||
+                  (weakestPillar
+                    ? `Start with ${formatPillarName(weakestPillar)}. Improving this one area should create the biggest ripple effect across your foundation.`
+                    : result.nextStep ||
+                      'Start with the weakest part of your foundation and make one focused improvement this quarter.')}
+              </p>
+              <ul className="space-y-2">
+                {(planStart?.checklist?.length
+                  ? planStart.checklist
+                  : [
+                      `Identify one concrete way to improve ${formatPillarName(
+                        weakestPillar || 'your next priority'
+                      )}.`,
+                      'Take one action this week.',
+                      'Set a simple 90-day target you can actually follow.',
+                    ]).map((item, index) => (
+                  <li
+                    key={`immediate-check-${index}`}
+                    className="flex items-start gap-2 text-sm text-navy-900"
+                  >
+                    <span className="mt-1 h-1.5 w-1.5 rounded-full bg-copper-600" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {planSteps.map((step, index) => (
+              <div key={`${step.title}-${index}`} className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
+                <div className="text-sm font-semibold text-gray-500 mb-3">
+                  {step.title}
                 </div>
-                <p className="text-gray-700 leading-7 mb-3">
-                  {planAfter?.body ||
-                    'Review your progress, keep what is working, and then move to the next weakest area.'}
-                </p>
+                <p className="text-gray-700 leading-7 mb-4">{step.body}</p>
                 <ul className="space-y-2">
-                  {(planAfter?.checklist?.length
-                    ? planAfter.checklist
-                    : [
-                        'Review what improved over the last 90 days.',
-                        'Keep the habits that are working.',
-                        'Choose the next area to strengthen.',
-                      ]).map((item, index) => (
+                  {step.checklist.map((item, itemIndex) => (
                     <li
-                      key={`after-check-${index}`}
+                      key={`${step.title}-${itemIndex}`}
                       className="flex items-start gap-2 text-sm text-gray-700"
                     >
                       <span className="mt-1 h-1.5 w-1.5 rounded-full bg-copper-600" />
@@ -926,16 +1097,38 @@ export default function ResultsPage() {
                   ))}
                 </ul>
               </div>
+            ))}
+
+            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
+              <div className="text-sm font-semibold text-gray-500 mb-3">
+                {planAfter?.title || 'After 90 Days'}
+              </div>
+              <p className="text-gray-700 leading-7 mb-4">
+                {planAfter?.body ||
+                  'Review your progress, keep what is working, and then move to the next weakest area.'}
+              </p>
+              <ul className="space-y-2">
+                {(planAfter?.checklist?.length
+                  ? planAfter.checklist
+                  : [
+                      'Review what improved over the last 90 days.',
+                      'Keep the habits that are working.',
+                      'Choose the next area to strengthen.',
+                    ]).map((item, index) => (
+                  <li
+                    key={`after-check-${index}`}
+                    className="flex items-start gap-2 text-sm text-gray-700"
+                  >
+                    <span className="mt-1 h-1.5 w-1.5 rounded-full bg-copper-600" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
-        </section>
+        </SectionShell>
 
-        <section className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6 md:p-8 mb-8">
-          <div className="flex items-center gap-2 mb-6">
-            <TrendingUp className="w-5 h-5 text-copper-600" />
-            <h2 className="text-2xl font-bold text-navy-900">Pillar Breakdown</h2>
-          </div>
-
+        <SectionShell icon={TrendingUp} title="Pillar Breakdown" className="mb-8 pdf-avoid-break">
           <div className="grid md:grid-cols-2 gap-4">
             {pillarEntries.map(([pillar, pillarScore]) => {
               const tone = getPillarTone(pillarScore);
@@ -968,7 +1161,7 @@ export default function ResultsPage() {
                     />
                   </div>
 
-                  <p className="text-sm text-gray-700 leading-6">
+                  <p className="text-sm text-gray-700 leading-7">
                     {pillarScore >= 75
                       ? strengthDescriptions[pillar] ||
                         'This area is giving your foundation real support.'
@@ -978,23 +1171,101 @@ export default function ResultsPage() {
               );
             })}
           </div>
-        </section>
+        </SectionShell>
 
-        <div className="flex flex-col sm:flex-row gap-3 justify-between items-center">
+        <div data-pdf-ignore="true" className="flex justify-center pb-8">
           <button
-            onClick={() => navigate('/assessment/detailed')}
-            className="w-full sm:w-auto px-6 py-3 rounded-xl border border-gray-300 text-navy-900 font-semibold hover:bg-gray-50"
+            onClick={() => navigate('/assessment/comprehensive')}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold bg-white text-navy-900 border border-navy-200 shadow-sm hover:bg-copper-50 hover:border-copper-300 transition-colors"
           >
+            <RefreshCcw className="w-4 h-4" />
             Retake Assessment
           </button>
+        </div>
 
+        <div
+          data-pdf-ignore="true"
+          className="mt-12 pt-8 border-t border-slate-200 flex flex-col items-center text-center"
+        >
           <button
             onClick={() => navigate('/my-foundation')}
-            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-copper-600 text-white font-semibold hover:bg-copper-700 inline-flex items-center justify-center gap-2"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-copper-600 text-white font-semibold text-lg shadow-sm hover:bg-copper-700 transition-colors"
           >
-            View Dashboard
-            <ArrowRight className="w-4 h-4" />
+            Go to Your Dashboard
+            <ArrowRight className="w-5 h-5" />
           </button>
+
+          <p className="text-sm text-slate-500 mt-2">
+            Track your progress, revisit your plan, and keep building momentum
+          </p>
+        </div>
+
+        {showPdfUpgradeModal && (
+          <div
+            data-pdf-ignore="true"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4"
+          >
+            <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl">
+              <div className="inline-flex rounded-full bg-copper-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-copper-700">
+                Unlock Full Report
+              </div>
+
+              <h3 className="mt-4 text-2xl font-bold text-navy-900">
+                Your full report is ready to download
+              </h3>
+
+              <p className="mt-3 text-sm leading-7 text-gray-600">
+                Unlock the full PDF export for $29, or upgrade to Premium for guided
+                implementation, a 12-month roadmap, and workbook-style prompts.
+              </p>
+
+              <div className="mt-5 grid gap-3 md:grid-cols-2">
+                <div className="rounded-2xl border border-gray-200 p-4">
+                  <div className="text-sm font-bold text-navy-900">$29 Full Report</div>
+                  <p className="mt-2 text-sm text-gray-600">
+                    Full report + full PDF export
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-copper-200 bg-copper-50 p-4">
+                  <div className="text-sm font-bold text-navy-900">$79 Premium</div>
+                  <p className="mt-2 text-sm text-gray-600">
+                    Full report + PDF + 12-month roadmap + guided prompts
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <button
+                  onClick={() => {
+                    setShowPdfUpgradeModal(false);
+                    navigate('/pricing');
+                  }}
+                  className="rounded-2xl bg-navy-900 px-4 py-3 text-sm font-semibold text-white"
+                >
+                  Unlock for $29
+                </button>
+
+                <button
+                  onClick={() => {
+                    setShowPdfUpgradeModal(false);
+                    navigate('/pricing');
+                  }}
+                  className="rounded-2xl bg-copper-600 px-4 py-3 text-sm font-semibold text-white"
+                >
+                  Upgrade to Premium
+                </button>
+
+                <button
+                  onClick={() => setShowPdfUpgradeModal(false)}
+                  className="rounded-2xl border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700"
+                >
+                  Maybe later
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         </div>
       </main>
     </div>

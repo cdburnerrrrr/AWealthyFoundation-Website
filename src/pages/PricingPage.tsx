@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, Crown, ArrowLeft, Zap, Target, Calendar, Shield } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
-import { client } from '../api/client';
+import { startCheckout } from '../lib/stripe';
 
 const TIERS = [
   {
@@ -46,13 +46,27 @@ export default function PricingPage() {
 
   const handleSelectPlan = async (tierId: string) => {
     if (!user) {
-      navigate(`/login?redirect=/assessment/comprehensive?tier=${tierId}`);
+      navigate(`/login?redirect=/pricing`);
       return;
     }
-
-    // Navigate to the comprehensive questionnaire with the selected tier
-    // Payment will be collected later - for now, assessments are free
-    navigate(`/assessment/comprehensive?tier=${tierId}`);
+  
+    try {
+      setLoading(tierId);
+  
+      const plan =
+        tierId === 'foundation-roadmap' ? 'premium' : 'standard';
+  
+      await startCheckout(plan);
+    } catch (error) {
+      console.error('Checkout failed:', error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : 'Unable to start checkout.'
+      );
+    } finally {
+      setLoading(null);
+    }
   };
 
   return (

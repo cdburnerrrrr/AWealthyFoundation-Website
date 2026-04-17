@@ -23,12 +23,8 @@ export default function UserMenu() {
   const foundationScore = useMemo(() => {
     if (!currentAssessment) return null;
 
-    return (
-      currentAssessment.foundationScore ??
-      currentAssessment.score ??
-      currentAssessment.foundation_score ??
-      null
-    );
+    return currentAssessment?.foundationScore ?? null;
+    
   }, [currentAssessment]);
 
   useEffect(() => {

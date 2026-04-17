@@ -12,6 +12,9 @@ type CurrentAssessmentResult = {
   insights?: string[];
   summary?: string;
   nextStep?: string;
+  answers?: Record<string, any>;
+  report?: any;
+  assessmentType?: 'free' | 'detailed' | 'premium';
 };
 
 type AssessmentHistoryItem = {
@@ -28,6 +31,10 @@ type AssessmentHistoryItem = {
   priorities?: string[];
   milestonesCompleted?: string[];
   nextMilestones?: string[];
+  summary?: string;
+  nextStep?: string;
+  answers?: Record<string, any>;
+  report?: any;
 };
 
 interface SaveAssessmentInput {
@@ -41,6 +48,7 @@ interface SaveAssessmentInput {
   milestonesCompleted?: string[];
   nextMilestones?: string[];
   report?: any;
+  answers?: Record<string, any>;
   summary?: string;
   nextStep?: string;
   actionPlan?: any;
@@ -49,7 +57,9 @@ interface SaveAssessmentInput {
 interface AppState {
   // User
   user: UserProfile | null;
+  profile: UserProfile | null;
   setUser: (user: UserProfile | null) => void;
+  setProfile: (profile: UserProfile | null) => void;
 
   // Auth
   isAuthenticated: boolean;
@@ -59,7 +69,9 @@ interface AppState {
   // Assessments
   currentAssessment: CurrentAssessmentResult | null;
   assessmentHistory: AssessmentHistoryItem[];
+  snapshotAnswers: Record<string, any> | null;
   setCurrentAssessment: (assessment: CurrentAssessmentResult | null) => void;
+  setSnapshotAnswers: (answers: Record<string, any> | null) => void;
   addAssessmentToHistory: (assessment: AssessmentHistoryItem) => void;
   setAssessmentHistory: (assessments: AssessmentHistoryItem[]) => void;
   clearAssessmentHistory: () => void;
@@ -75,9 +87,9 @@ interface AppState {
 
   // Premium
   isPremium: boolean;
-  userPlan: 'free' | 'foundation' | 'roadmap';
+  userPlan: 'free' | 'standard' | 'premium';
   setPremium: (isPremium: boolean) => void;
-  setUserPlan: (plan: 'free' | 'foundation' | 'roadmap') => void;
+  setUserPlan: (plan: 'free' | 'standard' | 'premium') => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -85,7 +97,9 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       // User
       user: null,
+      profile: null,
       setUser: (user) => set({ user }),
+      setProfile: (profile) => set({ profile }),
 
       // Auth
       isAuthenticated: false,
@@ -95,8 +109,10 @@ export const useAppStore = create<AppState>()(
       // Assessments
       currentAssessment: null,
       assessmentHistory: [],
+      snapshotAnswers: null,
 
       setCurrentAssessment: (assessment) => set({ currentAssessment: assessment }),
+      setSnapshotAnswers: (answers) => set({ snapshotAnswers: answers }),
 
       addAssessmentToHistory: (assessment) => {
         const { assessmentHistory } = get();
@@ -140,6 +156,7 @@ export const useAppStore = create<AppState>()(
           priorities: input.priorities,
           milestones_completed: input.milestonesCompleted,
           next_milestones: input.nextMilestones,
+          answers: input.answers ?? null,
           report: input.report ?? null,
         })
         .select()
@@ -165,6 +182,10 @@ export const useAppStore = create<AppState>()(
           priorities: input.priorities,
           milestonesCompleted: input.milestonesCompleted,
           nextMilestones: input.nextMilestones,
+          summary: input.summary,
+          nextStep: input.nextStep,
+          answers: input.answers,
+          report: input.report ?? null,
         };
       
         addAssessmentToHistory(newAssessment);
@@ -178,6 +199,7 @@ export const useAppStore = create<AppState>()(
         set({
           assessmentHistory: [],
           currentAssessment: null,
+          snapshotAnswers: null,
         }),
 
       // Consultations
@@ -198,9 +220,11 @@ export const useAppStore = create<AppState>()(
       name: 'wealthy-foundation-storage',
       partialize: (state) => ({
         user: state.user,
+        profile: state.profile,
         isAuthenticated: state.isAuthenticated,
         currentAssessment: state.currentAssessment,
         assessmentHistory: state.assessmentHistory,
+        snapshotAnswers: state.snapshotAnswers,
         userPlan: state.userPlan,
       }),
     }

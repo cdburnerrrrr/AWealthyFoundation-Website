@@ -32,6 +32,7 @@ export const QUESTION_STRATEGY = {
     'otherDebt',
     'monthlyDebtPayments',
     'debtManageability',
+    'progressPriority',
     'debtPaydownStrategy',
     'healthInsurance',
     'investingStatus',
@@ -66,7 +67,6 @@ export const QUESTION_STRATEGY = {
     'spendingTracking',
     'lifestyleInflation',
     'threeMonthReview',
-    'financialTimeHorizon',
     'lifeGoal',
   ],
 } as const;
@@ -786,28 +786,24 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     },
   },
   {
-    key: 'totalInvestments',
-    question: 'About how much do you have invested in total?',
-    type: 'single',
-    section: 'investing',
-    required: true,
-    conditions: [
-      { key: 'investingStatus', operator: 'in', value: ['yes_consistently', 'yes_irregularly'] },
-    ],
-    options: [
-      { value: '500000_plus', label: '$500,000+' },
-      { value: '250000_500000', label: '$250,000-$500,000' },
-      { value: '100000_250000', label: '$100,000-$250,000' },
-      { value: '50000_100000', label: '$50,000-$100,000' },
-      { value: '20000_50000', label: '$20,000-$50,000' },
-      { value: 'under_20000', label: 'Under $20,000' },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
+    
+      key: 'totalInvestments',
+      question: 'About how much do you have invested in total?',
+      type: 'number',
+      section: 'investing',
+      required: true,
+      placeholder: 'e.g. 125000',
+      helperText:
+        'Include 401(k), IRA, brokerage accounts, and other investment accounts. A best estimate is fine.',
+      conditions: [
+        { key: 'investingStatus', operator: 'in', value: ['yes_consistently', 'yes_irregularly'] },
+      ],
+      tags: {
+        modes: ['detailed'],
+        priority: 'conditional',
+        askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
+      },
     },
-  },
 
   // VISION
   {
@@ -831,11 +827,11 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     section: 'vision',
     required: true,
     options: [
-      { value: 'stability', label: 'Create more stability and breathing room' },
+      { value: 'stability', label: 'Create more breathing room month to month' },
       { value: 'debt', label: 'Pay down debt faster' },
-      { value: 'saving', label: 'Build savings' },
-      { value: 'investing', label: 'Grow wealth / retirement progress' },
-      { value: 'clarity', label: 'Get organized and clear on the plan' },
+      { value: 'saving', label: 'Build a stronger emergency cushion' },
+      { value: 'investing', label: 'Make more progress toward retirement and investing' },
+      { value: 'clarity', label: 'Get clear on the right overall plan' },
     ],
     tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
   },
@@ -854,18 +850,18 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
   },
   {
-    key: 'financialTimeHorizon',
-    question: 'When are you most hoping to see major progress?',
+    key: 'progressPriority',
+    question: 'What kind of progress matters most right now?',
     type: 'single',
     section: 'vision',
-    required: false,
+    required: true,
     options: [
-      { value: '0_2_years', label: 'Within 0-2 years' },
-      { value: '3_5_years', label: 'Within 3-5 years' },
-      { value: '5_10_years', label: 'Within 5-10 years' },
-      { value: '10_plus_years', label: '10+ years out' },
+      { value: 'relief', label: 'I need relief in the next few months' },
+      { value: 'one_year', label: 'I want solid progress within the next year' },
+      { value: 'long_term', label: 'I’m focused on building long-term momentum' },
+      { value: 'unsure', label: 'I’m not sure yet — I mostly want a clear plan' },
     ],
-    tags: { modes: ['detailed'], priority: 'defer' },
+    tags: { modes: ['detailed'], priority: 'core' },
   },
   {
     key: 'lifeGoal',

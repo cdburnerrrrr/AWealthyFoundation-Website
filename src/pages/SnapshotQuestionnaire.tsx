@@ -1,34 +1,32 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  ArrowRight,
+  Check,
   ChevronLeft,
   ChevronRight,
-  CheckCircle,
-  Home,
-  ArrowRight,
-  Target,
-  TrendingUp,
-  PiggyBank,
   CreditCard,
   DollarSign,
   Eye,
+  Home,
+  Lock,
+  PiggyBank,
   Shield,
-  Star,
   Sparkles,
+  Square,
+  TrendingUp,
+  Users,
 } from 'lucide-react';
 import {
-  generateReport,
   BUILDING_BLOCK_LABELS,
-  PILLAR_LABELS,
+  generateReport,
   type BuildingBlockKey,
-  type PillarKey,
   type Question,
-  getScoreBand,
-  LIFE_STAGE_LABELS,
 } from '../types/assessment';
 import { getSnapshotQuestions } from '../types/optimized_question_config';
 import { useAppStore } from '../store/appStore';
-import logoImage from '../assets/house-icon.png';
+
+type ResponseValue = string | string[] | number | null;
 
 const SECTION_ICONS: Record<string, React.ElementType> = {
   income: DollarSign,
@@ -38,75 +36,621 @@ const SECTION_ICONS: Record<string, React.ElementType> = {
   protection: Shield,
   investing: TrendingUp,
   vision: Eye,
+  context: Users,
+  foundation: Users,
 };
 
-type ResponseValue = string | string[] | number;
+const ROUTING_KEYS = new Set([
+  'ageRange',
+  'relationshipStatus',
+  'housingStatus',
+]);
 
-type FreeReportResultsProps = {
-  reportData: any;
-  onUpgrade: () => void;
-  onRetake: () => void;
+const SECTION_META: Record<
+  string,
+  {
+    shortLabel: string;
+    transitionTitle: string;
+    transitionBody: string;
+    colorClass: string;
+    eyebrow?: string;
+  }
+> = {
+  foundation: {
+    shortLabel: 'Foundation Today',
+    transitionTitle: 'Let’s start with your foundation today.',
+    transitionBody:
+      'We’ll begin with the core questions that shape your snapshot so the rest of the review can adapt around your situation.',
+    colorClass: 'bg-gradient-to-br from-[#1a365d] to-[#2c4b71]',
+    eyebrow: '',
+  },
+  context: {
+    shortLabel: 'About You',
+    transitionTitle: 'Let’s start with your foundation today.',
+    transitionBody:
+      'We’ll begin with the basics so the rest of your snapshot can adapt around your real situation.',
+    colorClass: 'bg-gradient-to-br from-[#1a365d] to-[#2c4b71]',
+    eyebrow: '',
+  },
+  income: {
+    shortLabel: 'Income',
+    transitionTitle: 'Next, let’s look at your income picture.',
+    transitionBody:
+      'This helps us understand the base supporting the rest of your financial foundation.',
+    colorClass: 'bg-gradient-to-br from-[#2a4b73] to-[#3e6b98]',
+    eyebrow: 'Income',
+  },
+  spending: {
+    shortLabel: 'Cash Flow',
+    transitionTitle: 'Now let’s look at cash flow and fixed costs.',
+    transitionBody:
+      'This helps us understand how much breathing room you really have each month.',
+    colorClass: 'bg-gradient-to-br from-[#4b6176] to-[#6f8398]',
+    eyebrow: 'Cash Flow',
+  },
+  saving: {
+    shortLabel: 'Saving',
+    transitionTitle: 'Next, let’s review your savings foundation.',
+    transitionBody:
+      'We’re looking at how much buffer and resilience you have in place today.',
+    colorClass: 'bg-gradient-to-br from-[#2f6771] to-[#4b9498]',
+    eyebrow: 'Saving',
+  },
+  debt: {
+    shortLabel: 'Debt',
+    transitionTitle: 'Now let’s review debt pressure.',
+    transitionBody:
+      'This helps us see whether debt is manageable or quietly slowing progress elsewhere.',
+    colorClass: 'bg-gradient-to-br from-[#7f533a] to-[#ad7248]',
+    eyebrow: 'Debt',
+  },
+  protection: {
+    shortLabel: 'Protection',
+    transitionTitle: 'Next, let’s look at protection.',
+    transitionBody:
+      'This section helps us understand how protected your foundation is when life gets expensive.',
+    colorClass: 'bg-gradient-to-br from-[#55657d] to-[#7e92ab]',
+    eyebrow: 'Protection',
+  },
+  investing: {
+    shortLabel: 'Investing',
+    transitionTitle: 'Now let’s look at long-term growth.',
+    transitionBody:
+      'This helps us understand whether your current system is building toward future freedom.',
+    colorClass: 'bg-gradient-to-br from-[#315f79] to-[#4f93aa]',
+    eyebrow: 'Investing',
+  },
+  vision: {
+    shortLabel: 'Vision',
+    transitionTitle: 'You’re making great progress.',
+    transitionBody:
+      'This final section helps us shape your snapshot around what matters most to you.',
+    colorClass: 'bg-gradient-to-br from-[#8b6a44] to-[#c58b55]',
+    eyebrow: 'Vision',
+  },
 };
 
-function getSectionLabel(section?: Question['section']) {
+const INLINE_GROUPS: Record<string, string[]> = {
+  relationshipStatus: ['monthlyChildcareCost', 'childcarePressure', 'lifeInsurance'],
+  housingStatus: ['mortgageBalance', 'homeValue', 'mortgageImpact'],
+  vehicleDebt: ['carLoanBalance', 'leasePayment'],
+  otherDebt: ['creditCardBehavior'],
+  healthInsurance: ['incomeInterruptionCoverage', 'propertyCoverage', 'autoCoverage'],
+  investingStatus: [
+    'employerMatch',
+    'investmentAccounts',
+    'investmentConfidence',
+    'totalInvestments',
+  ],
+  savingConsistency: ['savingsAutomation'],
+};
+
+const CHILD_KEYS = new Set(Object.values(INLINE_GROUPS).flat());
+
+function getEffectiveSectionKey(question?: Question) {
+  if (!question) return 'foundation';
+  if (ROUTING_KEYS.has(question.key)) return 'foundation';
+  return question.section ?? 'context';
+}
+
+function getSectionLabel(section?: Question['section'], key?: string) {
+  if (key && ROUTING_KEYS.has(key)) return 'Foundation Today';
   if (!section) return '';
   if (section === 'context') return 'About You';
   return BUILDING_BLOCK_LABELS[section as BuildingBlockKey] ?? 'Assessment';
 }
 
-function getSectionIntro(section?: Question['section']) {
-  switch (section) {
-    case 'income':
-      return 'Let’s start with your income and stability.';
-    case 'spending':
-      return 'Now let’s look at the bills and costs shaping your month.';
-    case 'saving':
-      return 'Next, we’ll check your cushion and consistency.';
-    case 'debt':
-      return 'Let’s understand the obligations competing for your cash flow.';
-    case 'protection':
-      return 'A strong foundation also protects against setbacks.';
-    case 'investing':
-      return 'Now we’ll look at long-term progress and retirement.';
-    case 'vision':
-      return 'Finally, let’s make sure your financial direction is clear.';
+function isAnswered(question: Question | undefined, value: ResponseValue | undefined) {
+  if (!question) return false;
+
+  switch (question.type) {
+    case 'multiple':
+      return Array.isArray(value) && value.length > 0;
+    case 'number':
+      return (
+        value !== '' &&
+        value !== undefined &&
+        value !== null &&
+        !Number.isNaN(Number(value))
+      );
+    case 'single':
+    case 'scale':
+      return value !== '' && value !== undefined && value !== null;
     default:
-      return 'Answer a few quick questions to personalize your snapshot.';
+      return false;
   }
+}
+
+function getRenderableQuestions(visibleQuestions: Question[]) {
+  return visibleQuestions.filter((question) => !CHILD_KEYS.has(question.key));
+}
+
+function getSectionSequence(questions: Question[]) {
+  const seen = new Set<string>();
+  const sequence: string[] = [];
+
+  questions.forEach((question) => {
+    const section = getEffectiveSectionKey(question);
+    if (!seen.has(section)) {
+      seen.add(section);
+      sequence.push(section);
+    }
+  });
+
+  return sequence;
+}
+
+function getSequentialVisibleChildQuestions(
+  rootQuestion: Question | undefined,
+  visibleQuestions: Question[],
+  responses: Record<string, any>
+) {
+  if (!rootQuestion) return [];
+
+  const childKeys = INLINE_GROUPS[rootQuestion.key] ?? [];
+  const children = childKeys
+    .map((key) => visibleQuestions.find((question) => question.key === key))
+    .filter(Boolean) as Question[];
+
+  if (!isAnswered(rootQuestion, responses[rootQuestion.key])) {
+    return [];
+  }
+
+  const revealed: Question[] = [];
+
+  for (let i = 0; i < children.length; i += 1) {
+    const child = children[i];
+    revealed.push(child);
+
+    if (!isAnswered(child, responses[child.key])) {
+      break;
+    }
+  }
+
+  return revealed;
+}
+
+function TrustBlock() {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 rounded-full bg-slate-100 p-2 text-navy-900">
+          <Lock className="h-4 w-4" />
+        </div>
+
+        <div>
+          <h3 className="text-base font-semibold text-slate-900">
+            Your data stays private.
+          </h3>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            Your assessment information is stored securely, used only to generate
+            your experience inside A Wealthy Foundation, and is never sold to
+            outside advisors or marketers.
+          </p>
+          <p className="mt-2 text-sm font-medium text-slate-800">
+            You will not receive calls or outreach as a result of this assessment.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TrustInline() {
+  return (
+    <div className="mt-6 flex items-center justify-center gap-2 text-xs text-slate-500">
+      <Lock className="h-3.5 w-3.5" />
+      <span>Private • Never sold • No outreach</span>
+    </div>
+  );
+}
+
+type ProgressProps = {
+  sectionTitle: string;
+  sectionIndex: number;
+  totalSections: number;
+  currentStep: number;
+  totalSteps: number;
+};
+
+function ProgressHeader({
+  sectionTitle,
+  sectionIndex,
+  totalSections,
+  currentStep,
+  totalSteps,
+}: ProgressProps) {
+  const percent = totalSteps > 0 ? Math.round(((currentStep + 1) / totalSteps) * 100) : 0;
+  const remaining = Math.max(totalSteps - currentStep - 1, 0);
+
+  return (
+    <div className="bg-white border-b border-gray-100 py-3">
+      <div className="max-w-2xl mx-auto px-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium text-navy-700">{sectionTitle}</span>
+          <span className="text-sm text-gray-500">{percent}% complete</span>
+        </div>
+
+        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-copper-500 transition-all duration-300"
+            style={{ width: `${percent}%` }}
+          />
+        </div>
+
+        <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+          <span>
+            Section {sectionIndex} of {totalSections}
+          </span>
+          <span>About {remaining} questions left</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type TransitionCardProps = {
+  sectionKey: string;
+  onContinue: () => void;
+  isFirst: boolean;
+};
+
+function TransitionCard({ sectionKey, onContinue, isFirst }: TransitionCardProps) {
+  const meta = SECTION_META[sectionKey] ?? SECTION_META.foundation;
+
+  return (
+    <div className={`rounded-3xl p-8 text-white shadow-sm ${meta.colorClass}`}>
+      {!isFirst && meta.eyebrow ? (
+        <div className="inline-flex rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em]">
+          {meta.eyebrow}
+        </div>
+      ) : null}
+
+      <h2 className="mt-4 text-2xl md:text-3xl font-bold tracking-tight">
+        {meta.transitionTitle}
+      </h2>
+
+      <p className="mt-3 max-w-2xl text-sm md:text-base leading-6 text-white/90">
+        {meta.transitionBody}
+      </p>
+
+      <button
+        type="button"
+        onClick={onContinue}
+        className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-bold text-slate-900 hover:bg-slate-100 transition"
+      >
+        Continue
+        <ArrowRight className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
+type IntroCardProps = {
+  onStart: () => void;
+};
+
+function IntroCard({ onStart }: IntroCardProps) {
+  return (
+    <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 md:p-10">
+      <div className="inline-flex rounded-full bg-copper-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-copper-700">
+        Quick Financial Snapshot
+      </div>
+
+      <div className="mt-5 grid gap-8 lg:grid-cols-[1.25fr_0.95fr] lg:items-start">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-navy-900">
+            Snapshot Assessment
+          </h1>
+
+          <p className="mt-4 text-gray-600 leading-7 max-w-2xl">
+            This quick review gives you an early read on the strength of your financial
+            foundation. We’ll focus on the core signals first so you can see what looks
+            strong, what may need attention, and where to focus next.
+          </p>
+
+          <div className="mt-6 rounded-2xl border border-copper-100 bg-copper-50/40 p-4">
+            <h3 className="text-sm font-semibold text-navy-900">
+              The Snapshot gives you:
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-gray-600">
+              A quick Foundation Score, early insights across your core building blocks,
+              and a clear next step. If you decide to go deeper later, you will not need
+              to repeat the questions you already answered.
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="rounded-2xl bg-gray-50 border border-gray-100 p-4">
+            <h2 className="text-sm font-semibold text-navy-900">What to expect</h2>
+            <ul className="mt-3 space-y-2 text-sm text-gray-600">
+              <li>Takes about 5 minutes</li>
+              <li>Most answers can be estimates</li>
+              <li>You do not need every number in front of you</li>
+              <li>You’ll get a real score, not just a teaser</li>
+            </ul>
+          </div>
+
+          <div className="rounded-2xl bg-gray-50 border border-gray-100 p-4">
+            <h2 className="text-sm font-semibold text-navy-900">Helpful to have nearby</h2>
+            <ul className="mt-3 space-y-2 text-sm text-gray-600">
+              <li>Approximate take-home income</li>
+              <li>Regular monthly housing and utility costs</li>
+              <li>Savings estimate</li>
+              <li>Debt payment estimate</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-8">
+        <TrustBlock />
+      </div>
+
+      <button
+        type="button"
+        onClick={onStart}
+        className="mt-6 inline-flex items-center justify-center gap-2 rounded-2xl bg-copper-600 px-6 py-3 text-white font-bold hover:bg-copper-700 transition"
+      >
+        Start My Snapshot
+        <ArrowRight className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
+type OptionGridProps = {
+  question: Question;
+  value: ResponseValue | undefined;
+  onChange: (value: ResponseValue) => void;
+};
+
+function OptionGrid({ question, value, onChange }: OptionGridProps) {
+  if (!question.options?.length) return null;
+
+  if (question.type === 'multiple') {
+    const selectedValues = Array.isArray(value) ? value : [];
+
+    return (
+      <div>
+        <div className="mb-3 inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+          Select all that apply
+        </div>
+
+        <div className="grid gap-3">
+          {question.options.map((option) => {
+            const selected = selectedValues.includes(option.value);
+
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => {
+                  const next = selected
+                    ? selectedValues.filter((item) => item !== option.value)
+                    : [...selectedValues, option.value];
+                  onChange(next);
+                }}
+                className={`rounded-2xl border p-4 text-left transition ${
+                  selected
+                    ? 'border-copper-500 bg-copper-50 shadow-sm'
+                    : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="shrink-0">
+                    {selected ? (
+                      <span className="flex h-5 w-5 items-center justify-center rounded-md bg-copper-600 text-white">
+                        <Check className="h-3.5 w-3.5" />
+                      </span>
+                    ) : (
+                      <span className="flex h-5 w-5 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-400">
+                        <Square className="h-3.5 w-3.5" />
+                      </span>
+                    )}
+                  </span>
+
+                  <span className="text-sm font-semibold text-slate-900">
+                    {option.label}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-3">
+      {question.options.map((option) => {
+        const selected = value === option.value;
+
+        return (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onChange(option.value)}
+            className={`rounded-2xl border px-3 py-4 text-sm font-semibold transition ${
+              selected
+                ? 'border-copper-500 bg-copper-50 text-slate-900'
+                : 'border-gray-200 bg-white text-slate-700 hover:bg-gray-50'
+            }`}
+          >
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+type NumberInputProps = {
+  question: Question;
+  value: ResponseValue | undefined;
+  onChange: (value: ResponseValue) => void;
+  onEnter?: () => void;
+};
+
+function NumberInput({ question, value, onChange, onEnter }: NumberInputProps) {
+  return (
+    <div>
+      <input
+        type="number"
+        value={value ?? ''}
+        placeholder={question.placeholder ?? 'Enter an amount'}
+        onChange={(e) =>
+          onChange(e.target.value === '' ? null : (e.target.value as unknown as number))
+        }
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && onEnter) onEnter();
+        }}
+        className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-4 text-base text-slate-900 outline-none transition focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
+      />
+      {question.helperText ? (
+        <p className="mt-2 text-sm text-slate-500">{question.helperText}</p>
+      ) : null}
+    </div>
+  );
+}
+
+type ScaleInputProps = {
+  question: Question;
+  value: ResponseValue | undefined;
+  onChange: (value: ResponseValue) => void;
+};
+
+function ScaleInput({ question, value, onChange }: ScaleInputProps) {
+  return (
+    <OptionGrid question={question} value={value} onChange={onChange} />
+  );
+}
+
+type QuestionInputProps = {
+  question: Question;
+  value: ResponseValue | undefined;
+  onChange: (value: ResponseValue) => void;
+  onEnter?: () => void;
+};
+
+function QuestionInput({ question, value, onChange, onEnter }: QuestionInputProps) {
+  if (question.type === 'number') {
+    return <NumberInput question={question} value={value} onChange={onChange} onEnter={onEnter} />;
+  }
+
+  if (question.type === 'scale') {
+    return <ScaleInput question={question} value={value} onChange={onChange} />;
+  }
+
+  return <OptionGrid question={question} value={value} onChange={onChange} />;
+}
+
+type InlineChildCardProps = {
+  question: Question;
+  value: ResponseValue | undefined;
+  onChange: (value: ResponseValue) => void;
+  onEnter?: () => void;
+  stepNumber: number;
+};
+
+function InlineChildCard({
+  question,
+  value,
+  onChange,
+  onEnter,
+  stepNumber,
+}: InlineChildCardProps) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+      <div className="inline-flex rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500 border border-slate-200">
+        Follow-up {stepNumber}
+      </div>
+
+      <div className="mt-3 rounded-2xl border-l-4 border-copper-500 bg-white px-4 py-4">
+        <h3 className="text-lg font-semibold text-navy-900 leading-tight">
+          {question.question}
+        </h3>
+
+        {question.helperText ? (
+          <p className="mt-2 text-sm leading-6 text-slate-600">{question.helperText}</p>
+        ) : null}
+      </div>
+
+      <div className="mt-4">
+        <QuestionInput
+          question={question}
+          value={value}
+          onChange={onChange}
+          onEnter={onEnter}
+        />
+      </div>
+    </div>
+  );
 }
 
 export default function SnapshotQuestionnaire() {
   const navigate = useNavigate();
-  const { isAuthenticated, saveAssessment, setCurrentAssessment } = useAppStore();
+  const { isAuthenticated, saveAssessment, setCurrentAssessment, setSnapshotAnswers } = useAppStore();
 
+  const [mode, setMode] = useState<'intro' | 'transition' | 'question'>('intro');
   const [currentStep, setCurrentStep] = useState(0);
-  const [responses, setResponses] = useState<Record<string, ResponseValue>>({});
+  const [responses, setResponses] = useState<Record<string, any>>({});
   const [visibleQuestions, setVisibleQuestions] = useState<Question[]>(() =>
     getSnapshotQuestions({}) as Question[]
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showResults, setShowResults] = useState(false);
-  const [reportData, setReportData] = useState<any>(null);
 
-  const totalSteps = visibleQuestions.length;
-  const currentQuestion = visibleQuestions[currentStep];
-  const progress = totalSteps > 0 ? ((currentStep + 1) / totalSteps) * 100 : 0;
+  const renderableQuestions = useMemo(
+    () => getRenderableQuestions(visibleQuestions),
+    [visibleQuestions]
+  );
+
+  const currentQuestion = renderableQuestions[currentStep];
+
+  const currentInlineQuestions = useMemo(
+    () => getSequentialVisibleChildQuestions(currentQuestion, visibleQuestions, responses),
+    [currentQuestion, responses, visibleQuestions]
+  );
+
+  const sectionSequence = useMemo(
+    () => getSectionSequence(renderableQuestions),
+    [renderableQuestions]
+  );
+
+  const currentSectionKey = getEffectiveSectionKey(currentQuestion);
+  const currentSectionIndex = Math.max(sectionSequence.indexOf(currentSectionKey) + 1, 1);
+  const currentSectionMeta = SECTION_META[currentSectionKey] ?? SECTION_META.foundation;
+  const currentSectionLabel =
+    getSectionLabel(currentQuestion?.section, currentQuestion?.key) ||
+    currentSectionMeta.shortLabel;
 
   useEffect(() => {
-    if (currentStep > 0 && currentStep >= visibleQuestions.length) {
-      setCurrentStep(Math.max(0, visibleQuestions.length - 1));
+    if (currentStep > 0 && currentStep >= renderableQuestions.length) {
+      setCurrentStep(Math.max(0, renderableQuestions.length - 1));
     }
-  }, [currentStep, visibleQuestions.length]);
-
-  const previewReport = useMemo(() => {
-    if (Object.keys(responses).length < 4) return null;
-
-    try {
-      return generateReport(responses, 'free');
-    } catch {
-      return null;
-    }
-  }, [responses]);
+  }, [currentStep, renderableQuestions.length]);
 
   const updateResponses = (key: string, value: ResponseValue) => {
     const updated = { ...responses, [key]: value };
@@ -115,90 +659,117 @@ export default function SnapshotQuestionnaire() {
     setResponses(updated);
     setVisibleQuestions(filtered);
 
-    if (currentStep >= filtered.length) {
-      setCurrentStep(Math.max(0, filtered.length - 1));
+    const nextRenderable = getRenderableQuestions(filtered);
+    if (currentStep >= nextRenderable.length) {
+      setCurrentStep(Math.max(0, nextRenderable.length - 1));
     }
 
-    return { updated, filtered };
+    return { updated, filtered, nextRenderable };
   };
 
-  const isQuestionAnswered = (
-    question: Question | undefined,
-    value: ResponseValue | undefined
-  ) => {
-    if (!question) return false;
-
-    switch (question.type) {
-      case 'multiple':
-        return Array.isArray(value) && value.length > 0;
-      case 'number':
-        return (
-          value !== '' &&
-          value !== undefined &&
-          value !== null &&
-          !Number.isNaN(Number(value))
-        );
-      case 'single':
-      case 'scale':
-        return value !== '' && value !== undefined && value !== null;
-      default:
-        return false;
+  const handleValueChange = (question: Question, value: ResponseValue) => {
+    const nextResponses = { ...responses, [question.key]: value };
+    const { filtered } = updateResponses(question.key, value);
+  
+    if (
+      question.key === currentQuestion?.key &&
+      (question.type === 'single' || question.type === 'scale')
+    ) {
+      const nextVisibleChildren = getSequentialVisibleChildQuestions(
+        question,
+        filtered,
+        nextResponses
+      );
+  
+      const answeredRoot = isAnswered(question, value);
+      const hasInlineFollowUps = nextVisibleChildren.length > 0;
+  
+      if (answeredRoot && !hasInlineFollowUps) {
+        setTimeout(() => {
+          if (currentStep < renderableQuestions.length - 1) {
+            goNext();
+          }
+        }, 0);
+      }
+    }
+  
+    if (CHILD_KEYS.has(question.key)) {
+      const root = currentQuestion;
+      if (!root) return;
+  
+      const updatedChildren = getSequentialVisibleChildQuestions(root, filtered, nextResponses);
+      const group = [root, ...updatedChildren];
+  
+      const allAnswered = group.every((q) => {
+        if (q.required === false) return true;
+        return isAnswered(q, nextResponses[q.key]);
+      });
+  
+      const shouldAutoAdvanceChild =
+        question.type === 'single' || question.type === 'scale';
+  
+      if (allAnswered && shouldAutoAdvanceChild) {
+        setTimeout(() => {
+          if (currentStep < renderableQuestions.length - 1) {
+            goNext();
+          }
+        }, 0);
+      }
     }
   };
 
-  const handleResponse = (question: Question, value: ResponseValue) => {
-    updateResponses(question.key, value);
+  const canProceed = useMemo(() => {
+    if (!currentQuestion) return false;
 
-    if (question.type === 'single' && isQuestionAnswered(question, value)) {
-      setTimeout(() => {
-        if (currentStep < visibleQuestions.length - 1) {
-          setCurrentStep((prev) => prev + 1);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-      }, 0);
+    const group = [currentQuestion, ...currentInlineQuestions];
+
+    return group.every((question) => {
+      if (question.required === false) return true;
+      return isAnswered(question, responses[question.key]);
+    });
+  }, [currentInlineQuestions, currentQuestion, responses]);
+
+  const goNext = () => {
+    if (!currentQuestion || currentStep >= renderableQuestions.length - 1) return;
+
+    const nextQuestion = renderableQuestions[currentStep + 1];
+    setCurrentStep((prev) => prev + 1);
+
+    if (
+      nextQuestion &&
+      getEffectiveSectionKey(nextQuestion) !== getEffectiveSectionKey(currentQuestion)
+    ) {
+      setMode('transition');
     }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleMultipleToggle = (question: Question, optionValue: string) => {
-    const current = Array.isArray(responses[question.key])
-      ? (responses[question.key] as string[])
-      : [];
-
-    const updated = current.includes(optionValue)
-      ? current.filter((v) => v !== optionValue)
-      : [...current, optionValue];
-
-    updateResponses(question.key, updated);
-  };
-
-  const handleNumberChange = (question: Question, rawValue: string) => {
-    if (rawValue === '') {
-      updateResponses(question.key, '' as unknown as number);
+  const goBack = () => {
+    if (mode === 'transition') {
+      setMode('question');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
-    updateResponses(question.key, rawValue as unknown as number);
-  };
-
-  const nextStep = () => {
-    if (currentStep < visibleQuestions.length - 1) {
-      setCurrentStep((prev) => prev + 1);
+    if (currentStep === 0) {
+      setMode('intro');
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
     }
-  };
 
-  const prevStep = () => {
-    if (currentStep > 0) {
-      setCurrentStep((prev) => prev - 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    const previousQuestion = renderableQuestions[currentStep - 1];
+    setCurrentStep((prev) => Math.max(prev - 1, 0));
+
+    if (
+      currentQuestion &&
+      previousQuestion &&
+      getEffectiveSectionKey(previousQuestion) !== getEffectiveSectionKey(currentQuestion)
+    ) {
+      setMode('question');
     }
-  };
 
-  const canProceed = () => {
-    return isQuestionAnswered(
-      currentQuestion,
-      currentQuestion ? responses[currentQuestion.key] : undefined
-    );
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const submitAssessment = async () => {
@@ -206,8 +777,19 @@ export default function SnapshotQuestionnaire() {
 
     try {
       const report = generateReport(responses, 'free');
-      setReportData(report);
-      setCurrentAssessment(report);
+      setSnapshotAnswers(responses);
+      setCurrentAssessment({
+        foundationScore: report.foundationScore,
+        scoreBand: report.scoreBand,
+        pillars: report.pillarScores,
+        insights: report.insights ?? [],
+        topFocusAreas: report.priorities ?? [],
+        summary: report.summary ?? '',
+        nextStep: report.nextStep ?? '',
+        answers: responses,
+        report,
+        assessmentType: 'free',
+      });
 
       if (isAuthenticated) {
         await saveAssessment({
@@ -220,50 +802,33 @@ export default function SnapshotQuestionnaire() {
           priorities: report.priorities,
           summary: report.summary,
           nextStep: report.nextStep,
+          answers: responses,
           report,
         });
       }
 
-      setShowResults(true);
+      navigate('/results/snapshot');
     } catch (error) {
-      console.error('Error submitting assessment:', error);
-      alert('There was a problem generating your report. Please try again.');
+      console.error('Error submitting snapshot assessment:', error);
+      alert('There was a problem generating your snapshot. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (showResults && reportData) {
+  if (!currentQuestion && mode !== 'intro') {
     return (
-      <FreeReportResults
-        reportData={reportData}
-        onUpgrade={() => navigate('/pricing')}
-        onRetake={() => {
-          setShowResults(false);
-          setReportData(null);
-          setResponses({});
-          setCurrentStep(0);
-          setVisibleQuestions(getSnapshotQuestions({}) as Question[]);
-          window.scrollTo({ top: 0, behavior: 'auto' });
-        }}
-      />
-    );
-  }
-
-  if (!currentQuestion) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-[#fff8ef] to-[#fdf2e6] flex items-center justify-center px-4">
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-8 max-w-lg text-center">
-          <img src={logoImage} alt="A Wealthy Foundation" className="w-12 h-12 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-navy-900 mb-3">Snapshot unavailable</h1>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 max-w-lg w-full text-center">
+          <h1 className="text-2xl font-bold text-navy-900 mb-3">Snapshot Assessment</h1>
           <p className="text-gray-600 mb-6">
-            We couldn’t load the Snapshot assessment questions. Please go back and try again.
+            We could not load the snapshot questions right now. Please go back and try again.
           </p>
           <button
+            type="button"
             onClick={() => navigate('/')}
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-copper-600 text-white font-bold hover:bg-copper-700"
+            className="px-5 py-3 rounded-xl bg-copper-600 text-white font-semibold hover:bg-copper-700"
           >
-            <Home className="w-4 h-4" />
             Back to Home
           </button>
         </div>
@@ -271,362 +836,175 @@ export default function SnapshotQuestionnaire() {
     );
   }
 
-  const sectionLabel = getSectionLabel(currentQuestion.section);
-  const sectionIntro = getSectionIntro(currentQuestion.section);
+  const HeaderIcon =
+    currentQuestion?.section
+      ? SECTION_ICONS[getEffectiveSectionKey(currentQuestion)] ??
+        SECTION_ICONS[currentQuestion.section]
+      : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0f2a44] via-[#132f4c] to-[#1e3a5f] flex flex-col">
-      <div className="bg-navy-900/80 backdrop-blur border-b border-white/10">
-        <div className="max-w-6xl mx-auto px-4 py-2">
-          <div className="flex items-center gap-4">
-            <div className="flex-1 min-w-[220px]">
-            <div className="flex items-center justify-between mb-1 text-xs">
-            <span className="font-semibold text-white/90 tracking-wide uppercase text-[11px]">
-    Your progress
-  </span>
-  <span className="text-white/70 whitespace-nowrap">
-    {currentStep + 1}/{totalSteps}
-  </span>
-</div>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="flex items-center justify-between h-14">
+            <button
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2 hover:opacity-80"
+            >
+              <Home className="w-8 h-8 text-copper-600" />
+              <span className="font-serif font-bold text-navy-900">
+                A Wealthy Foundation
+              </span>
+            </button>
 
-              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-copper-500 transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
+            {isAuthenticated ? (
+              <button
+                onClick={() => navigate('/my-foundation')}
+                className="text-sm text-copper-600 font-medium"
+              >
+                Dashboard
+              </button>
+            ) : (
+              <div className="inline-flex rounded-full bg-copper-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-copper-700">
+                Snapshot
               </div>
-            </div>
-
-            <div className="hidden md:flex items-center gap-3 shrink-0">
-              <div className="inline-flex items-center gap-2 rounded-full bg-copper-50 px-3 py-1.5 text-copper-700 border border-copper-100 text-sm">
-                <Sparkles className="w-4 h-4" />
-                Quick assessment
-              </div>
-
-              {isAuthenticated && (
-                <button
-                  onClick={() => navigate('/my-foundation')}
-                  className="text-sm text-copper-600 font-medium whitespace-nowrap"
-                >
-                  Dashboard
-                </button>
-              )}
-            </div>
+            )}
           </div>
-        </div>
-      </div>
-
-      <main className="flex-1 py-4 md:py-4">
-        <div className="max-w-3xl mx-auto px-4">
-        <div className="rounded-[28px] border border-white/10 bg-white shadow-[0_25px_70px_rgba(0,0,0,0.45)] overflow-hidden">
-            <div className="px-5 md:px-6 pt-5 pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2 text-copper-700 text-xs uppercase tracking-[0.18em] font-semibold mb-2">
-                {currentQuestion.section && (() => {
-                  const Icon = SECTION_ICONS[currentQuestion.section];
-                  return Icon ? <Icon className="w-4 h-4" /> : null;
-                })()}
-                <span>{sectionLabel}</span>
-              </div>
-
-              <h1 className="text-xl md:text-[1.7rem] font-bold leading-tight text-navy-900">
-                {currentQuestion.question}
-              </h1>
-
-              <p className="text-sm text-copper-600/90 mt-2">
-                {sectionIntro}
-              </p>
-            </div>
-
-            <div className="px-5 md:px-6 py-5">
-              {currentQuestion.helperText && (
-                <div className="mb-4 rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm text-slate-600">
-                  {currentQuestion.helperText}
-                </div>
-              )}
-
-              {currentQuestion.type === 'single' && currentQuestion.options && (
-                <div className="space-y-3">
-                  {currentQuestion.options.map((option) => (
-                    <button
-                      key={option.value}
-                      onClick={() => handleResponse(currentQuestion, option.value)}
-                      className={`group w-full px-4 py-3 text-left rounded-2xl border transition-all ${
-                        responses[currentQuestion.key] === option.value
-                          ? 'border-copper-500 bg-white shadow-[0_4px_16px_rgba(194,120,58,0.12)] text-navy-900 ring-2 ring-copper-100'
-                          : 'border-slate-200 bg-slate-50/40 hover:border-copper-300 hover:bg-white text-navy-700'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-base font-medium">{option.label}</span>
-                        <span
-                          className={`w-5 h-5 rounded-full border-2 transition-all ${
-                            responses[currentQuestion.key] === option.value
-                              ? 'border-copper-500 bg-copper-500 shadow-[inset_0_0_0_4px_white]'
-                              : 'border-gray-300 group-hover:border-copper-300'
-                          }`}
-                        />
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {currentQuestion.type === 'multiple' && currentQuestion.options && (
-                <div className="space-y-3">
-                  {currentQuestion.options.map((option) => {
-                    const selected = Array.isArray(responses[currentQuestion.key])
-                      ? (responses[currentQuestion.key] as string[]).includes(option.value)
-                      : false;
-
-                    return (
-                      <button
-                        key={option.value}
-                        onClick={() => handleMultipleToggle(currentQuestion, option.value)}
-                        className={`w-full px-4 py-3 text-left rounded-2xl border transition-all flex items-center gap-3 ${
-                          selected
-                            ? 'border-copper-500 bg-white shadow-[0_4px_16px_rgba(194,120,58,0.12)] text-navy-900 ring-2 ring-copper-100'
-                            : 'border-slate-200 bg-slate-50/40 hover:border-copper-300 hover:bg-white text-navy-700'
-                        }`}
-                      >
-                        <div
-                          className={`w-5 h-5 rounded-md border-2 flex items-center justify-center ${
-                            selected ? 'border-copper-500 bg-copper-500' : 'border-gray-300 bg-white'
-                          }`}
-                        >
-                          {selected && <CheckCircle className="w-3 h-3 text-white" />}
-                        </div>
-                        <span className="text-base font-medium">{option.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
-              {currentQuestion.type === 'number' && (
-                <div>
-                  <input
-                    type="number"
-                    placeholder={currentQuestion.placeholder}
-                    value={responses[currentQuestion.key] ?? ''}
-                    onChange={(e) => handleNumberChange(currentQuestion, e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key !== 'Enter') return;
-
-                      const rawValue = e.currentTarget.value;
-                      const hasValue =
-                        rawValue !== '' &&
-                        rawValue !== undefined &&
-                        rawValue !== null &&
-                        !Number.isNaN(Number(rawValue));
-
-                      if (!hasValue) return;
-
-                      e.preventDefault();
-
-                      if (currentStep === totalSteps - 1) {
-                        submitAssessment();
-                      } else {
-                        nextStep();
-                      }
-                    }}
-                    className="w-full p-4 text-lg border-2 border-gray-200 rounded-2xl focus:border-copper-500 focus:outline-none focus:ring-4 focus:ring-copper-100 transition-all"
-                  />
-                  <p className="text-xs text-gray-500 mt-2">
-                    Enter a number and press Enter to continue.
-                  </p>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between mt-5 pt-1">
-                <button
-                  onClick={prevStep}
-                  disabled={currentStep === 0}
-                  className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl font-medium transition-colors ${
-                    currentStep === 0
-                      ? 'text-gray-300 cursor-not-allowed'
-                      : 'text-navy-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                  Back
-                </button>
-
-                {currentStep === totalSteps - 1 ? (
-                  <button
-                    onClick={submitAssessment}
-                    disabled={isSubmitting || !canProceed()}
-                    className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all ${
-                      canProceed() && !isSubmitting
-                        ? 'bg-copper-600 text-white hover:bg-copper-700 shadow-sm hover:scale-[1.02]'
-                      : 'bg-copper-600/40 text-white/60 cursor-not-allowed'
-                    }`}
-                  >
-                    {isSubmitting ? 'Calculating...' : 'See My Results'}
-                    <ArrowRight className="w-5 h-5" />
-                  </button>
-                ) : (
-                  <button
-                    onClick={nextStep}
-                    disabled={!canProceed()}
-                    className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all ${
-                      canProceed()
-                        ? 'bg-copper-600 text-white hover:bg-copper-700 shadow-sm hover:scale-[1.02]'
-                      : 'bg-copper-600/40 text-white/60 cursor-not-allowed'
-                    }`}
-                  >
-                    Next
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
-
-      {previewReport && (
-        <div className="fixed bottom-4 left-0 right-0 px-4 pointer-events-none">
-          <div className="max-w-3xl mx-auto rounded-2xl border border-[#d8e2ec] bg-white/95 backdrop-blur shadow-lg p-4 pointer-events-auto">
-            <div className="flex items-center justify-between gap-4">
-              <div className="text-sm text-gray-600">
-                Current Score:{' '}
-                <span className="font-bold text-navy-900">{previewReport.foundationScore}</span>
-                <span
-                  className={`ml-2 text-xs px-2 py-0.5 rounded ${getScoreBand(previewReport.foundationScore).bg} ${getScoreBand(previewReport.foundationScore).color}`}
-                >
-                  {getScoreBand(previewReport.foundationScore).label}
-                </span>
-              </div>
-              <div className="text-sm text-gray-500 text-right">
-                {LIFE_STAGE_LABELS[previewReport.lifeStage]}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function FreeReportResults({
-  reportData,
-  onUpgrade,
-  onRetake,
-}: FreeReportResultsProps) {
-  const navigate = useNavigate();
-  const { isAuthenticated } = useAppStore();
-
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0f2a44] via-[#132f4c] to-[#1e3a5f]">
-      <header className="bg-navy-900 text-white py-10 border-b border-white/10">
-        <div className="max-w-3xl mx-auto px-4 text-center">
-          <img src={logoImage} alt="A Wealthy Foundation" className="w-12 h-12 mx-auto mb-4" />
-          <h1 className="text-3xl font-serif font-bold mb-2">Your Foundation Score</h1>
-          <p className="text-navy-300">A personalized financial snapshot</p>
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-8">
-        <div className="bg-gradient-to-b from-[#0f2a44] via-[#132f4c] to-[#1e3a5f]">
-          <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-32 h-32 rounded-full bg-gradient-to-br from-[#ffcf9e] to-[#b87333] shadow-[0_20px_60px_rgba(194,120,58,0.45)] border border-white/30 mb-4">
-  <span className="text-4xl font-bold text-white">
-    {reportData.foundationScore}
-  </span>
-</div>
-            <h2 className={`text-2xl font-bold ${getScoreBand(reportData.foundationScore).color === 'text-red-600' ? 'text-copper-300' : getScoreBand(reportData.foundationScore).color === 'text-amber-600' ? 'text-copper-300' : getScoreBand(reportData.foundationScore).color}`}>
-              {getScoreBand(reportData.foundationScore).label}
-            </h2>
-            <p className="text-copper-200 mt-2 font-medium">
-  {LIFE_STAGE_LABELS[reportData.lifeStage]} Stage
-</p>
-          </div>
+      {mode !== 'intro' && currentQuestion ? (
+        <ProgressHeader
+          sectionTitle={currentSectionLabel}
+          sectionIndex={currentSectionIndex}
+          totalSections={sectionSequence.length}
+          currentStep={currentStep}
+          totalSteps={renderableQuestions.length}
+        />
+      ) : null}
 
-          <div className="space-y-4 mb-6">
-          <h3 className="font-bold text-copper-300">Your 7 Pillars</h3>
-            {Object.entries(reportData.pillarScores).map(([pillar, score]: [string, number]) => (
-              <div key={pillar}>
-                <div className="flex justify-between text-sm mb-1">
-                <span className="font-medium text-white/90">
-                    {PILLAR_LABELS[pillar as PillarKey]}
-                  </span>
-                  <span className="text-copper-300">{score}</span>
+      <main className="flex-1 py-8">
+        <div className={`${mode === 'intro' ? 'max-w-5xl' : 'max-w-2xl'} mx-auto px-4`}>
+          {mode === 'intro' ? (
+            <IntroCard onStart={() => setMode('transition')} />
+          ) : mode === 'transition' ? (
+            <TransitionCard
+              sectionKey={currentSectionKey}
+              onContinue={() => setMode('question')}
+              isFirst={currentStep === 0}
+            />
+          ) : currentQuestion ? (
+            <div className="space-y-5">
+              <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-5 md:p-7">
+                <div className="flex items-center gap-3">
+                  {HeaderIcon ? (
+                    <div className="h-10 w-10 rounded-2xl bg-copper-50 text-copper-700 flex items-center justify-center shrink-0">
+                      <HeaderIcon className="h-5 w-5" />
+                    </div>
+                  ) : null}
+
+                  <div>
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-copper-700">
+                      {currentSectionMeta.eyebrow || currentSectionLabel}
+                    </div>
+                    <h1 className="mt-1 text-2xl md:text-[2rem] font-bold tracking-tight text-navy-900">
+                      {currentQuestion.question}
+                    </h1>
+                  </div>
                 </div>
-                <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${
-                      score >= 70 ? 'bg-emerald-500' : score >= 50 ? 'bg-amber-500' : 'bg-red-500'
-                    }`}
-                    style={{ width: `${score}%` }}
+
+                {currentQuestion.helperText ? (
+                  <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+                    <p className="text-sm leading-6 text-slate-600">{currentQuestion.helperText}</p>
+                  </div>
+                ) : null}
+
+                <div className="mt-6">
+                  <QuestionInput
+                    question={currentQuestion}
+                    value={responses[currentQuestion.key]}
+                    onChange={(value) => handleValueChange(currentQuestion, value)}
+                    onEnter={() => {
+                      if (canProceed && currentQuestion.type === 'number') {
+                        if (currentStep === renderableQuestions.length - 1) {
+                          submitAssessment();
+                        } else {
+                          goNext();
+                        }
+                      }
+                    }}
                   />
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
 
-        <div className="bg-white/95 backdrop-blur rounded-3xl shadow-sm border border-white/10 p-6 mb-6">
-          <h3 className="font-bold text-navy-900 mb-4 flex items-center gap-2">
-            <Target className="w-5 h-5 text-copper-600" />
-            Your Key Insights
-          </h3>
-          <ul className="space-y-3">
-            {reportData.insights.map((insight: string, i: number) => (
-              <li key={i} className="flex items-start gap-3 text-gray-700">
-                <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                {insight}
-              </li>
-            ))}
-          </ul>
-        </div>
+              {currentInlineQuestions.length > 0 ? (
+                <div className="space-y-4">
+                  {currentInlineQuestions.map((question, index) => (
+                    <InlineChildCard
+                      key={question.key}
+                      question={question}
+                      value={responses[question.key]}
+                      onChange={(value) => handleValueChange(question, value)}
+                      onEnter={() => {
+                        const isLastInline = index === currentInlineQuestions.length - 1;
+                        if (isLastInline && canProceed && question.type === 'number') {
+                          if (currentStep === renderableQuestions.length - 1) {
+                            submitAssessment();
+                          } else {
+                            goNext();
+                          }
+                        }
+                      }}
+                      stepNumber={index + 1}
+                    />
+                  ))}
+                </div>
+              ) : null}
 
-        <div className="bg-white/95 backdrop-blur rounded-3xl shadow-sm border border-white/10 p-6 mb-6">
-          <h3 className="font-bold text-navy-900 mb-4 flex items-center gap-2">
-            <Star className="w-5 h-5 text-copper-600" />
-            Your Top Priorities
-          </h3>
-          <ul className="space-y-3">
-            {reportData.priorities.map((priority: string, i: number) => (
-              <li key={i} className="flex items-start gap-3 text-gray-700">
-                <span className="w-6 h-6 rounded-full bg-copper-100 text-copper-600 flex items-center justify-center text-sm font-bold flex-shrink-0">
-                  {i + 1}
-                </span>
-                {priority}
-              </li>
-            ))}
-          </ul>
-        </div>
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={goBack}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-gray-50"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Back
+                </button>
 
-        <div className="bg-gradient-to-br from-navy-900 to-navy-800 rounded-3xl p-6 text-white text-center border border-copper-500/60 shadow-[0_10px_30px_rgba(194,120,58,0.15)]">
-          <h3 className="text-xl font-bold mb-2">See exactly how to improve your score</h3>
-          <p className="text-navy-200 mb-4">
-            Upgrade to the Detailed Assessment for a deeper breakdown, more personalized
-            recommendations, and a stronger action plan.
-          </p>
-          <button
-            onClick={onUpgrade}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-copper-600 text-white rounded-xl font-bold hover:bg-copper-700 transition-colors"
-          >
-            Upgrade to Detailed Assessment
-            <ArrowRight className="w-5 h-5" />
-          </button>
-        </div>
+                {currentStep === renderableQuestions.length - 1 ? (
+                  <button
+                    type="button"
+                    onClick={submitAssessment}
+                    disabled={isSubmitting || !canProceed}
+                    className={`inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold transition ${
+                      canProceed && !isSubmitting
+                        ? 'bg-copper-600 text-white hover:bg-copper-700'
+                        : 'bg-copper-200 text-white/80 cursor-not-allowed'
+                    }`}
+                  >
+                    {isSubmitting ? 'Calculating...' : 'See My Snapshot'}
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={goNext}
+                    disabled={!canProceed}
+                    className={`inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold transition ${
+                      canProceed
+                        ? 'bg-copper-600 text-white hover:bg-copper-700'
+                        : 'bg-copper-200 text-white/80 cursor-not-allowed'
+                    }`}
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
 
-        <div className="flex justify-center gap-4 mt-6 pt-4 border-t border-white/10">
-          <button
-            onClick={onRetake}
-            className="text-white/60 font-medium hover:text-white transition-colors"
-          >
-            Retake Assessment
-          </button>
-          {isAuthenticated && (
-            <button
-              onClick={() => navigate('/my-foundation')}
-              className="text-copper-600 font-medium hover:text-copper-300 transition-colors"
-            >
-              Go to Dashboard
-            </button>
-          )}
+              <TrustInline />
+            </div>
+          ) : null}
         </div>
       </main>
     </div>

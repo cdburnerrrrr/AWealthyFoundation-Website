@@ -52,6 +52,62 @@ export const PILLAR_LABELS: Record<PillarKey, string> = {
   protection: 'Protection',
   vision: 'Vision',
 };
+
+export const OUTCOME_PILLAR_LABELS: Record<PillarKey, string> = {
+  income: 'Clarity',
+  spending: 'Control',
+  saving: 'Consistency',
+  investing: 'Growth',
+  debt: 'Efficiency',
+  protection: 'Security',
+  vision: 'Purpose',
+};
+
+export function getScoreBand(score: number): {
+  label: string;
+  color: string;
+  bg: string;
+  description: string;
+} {
+  if (score >= 80) {
+    return {
+      label: 'Strong Foundation',
+      color: 'text-emerald-700',
+      bg: 'bg-emerald-100',
+      description:
+        'Your financial foundation is strong. You are now in refinement and optimization territory.',
+    };
+  }
+
+  if (score >= 60) {
+    return {
+      label: 'Building Momentum',
+      color: 'text-amber-700',
+      bg: 'bg-amber-100',
+      description:
+        'You have several good pieces in place, but a few weaker areas are still limiting full progress.',
+    };
+  }
+
+  if (score >= 40) {
+    return {
+      label: 'Needs Attention',
+      color: 'text-orange-700',
+      bg: 'bg-orange-100',
+      description:
+        'There are meaningful gaps in your foundation, but focused improvements can create visible momentum.',
+    };
+  }
+
+  return {
+    label: 'At Risk',
+    color: 'text-red-700',
+    bg: 'bg-red-100',
+    description:
+      'Stability needs attention now. Strengthen the foundation before worrying about optimization.',
+  };
+}
+
 export interface Milestone {
   id: string;
   name: string;
@@ -258,6 +314,11 @@ export interface Question {
   conditions?: QuestionCondition[];
   stage?: Array<LifeStage | 'all'>;
   askIf?: (responses: Record<string, any>, route: AssessmentRoute) => boolean;
+  tags?: {
+    modes?: ('snapshot' | 'detailed')[];
+    priority?: 'core' | 'conditional' | 'defer';
+    askIf?: (answers: Record<string, any>) => boolean;
+  };
 }
 
 
@@ -295,6 +356,7 @@ const SNAPSHOT_QUESTION_KEYS = new Set([
   'emergencyAccess',
   'savingConsistency',
   'vehicleDebt',
+  'progressPriority',
   'otherDebt',
   'monthlyDebtPayments',
   'debtManageability',
@@ -369,6 +431,375 @@ function hasDependents(a: Record<string, any>) {
 
 function hasConsumerDebt(a: Record<string, any>) {
   return hasVehicleDebt(a) || hasOtherDebt(a);
+}
+
+export function calculateBuildingBlockScores(
+  a: Record<string, any>,
+  signals?: UserSignals,
+  mode: ScoringMode = 'detailed'
+) {
+  const derivedSignals = signals ?? deriveSignals(a, mode);
+
+  const spending = scoreSpending(a, derivedSignals, mode);
+  const saving = scoreSaving(a, derivedSignals, mode);
+  const investing = scoreInvesting(a, derivedSignals, mode);
+  const protection = scoreProtection(a, mode);
+  const vision = scoreVision(a);
+
+  return {
+    income: scoreIncome(a, derivedSignals),
+    spending: mode === 'snapshot' ? clamp(spending, 5, 100) : spending,
+    saving: mode === 'snapshot' ? clamp(saving, 5, 100) : saving,
+    debt: scoreDebt(a, derivedSignals),
+    protection,
+    investing: mode === 'snapshot' ? clamp(investing, 5, 100) : investing,
+    vision,
+  };
+}
+
+export function calculateEnhancedBuildingBlockScores(
+  answers: Record<string, any>,
+  signals?: UserSignals,
+  mode: ScoringMode = 'detailed'
+): Record<BuildingBlockKey, number> {
+  return calculateBuildingBlockScores(answers, signals, mode);
+}
+
+export function calculatePillarScores(
+  buildingBlockScores: Record<BuildingBlockKey, number>
+): Record<PillarKey, number> {
+  return {
+    income: clamp(Math.round(buildingBlockScores.income)),
+    spending: clamp(Math.round(buildingBlockScores.spending)),
+    saving: clamp(Math.round(buildingBlockScores.saving)),
+    investing: clamp(Math.round(buildingBlockScores.investing)),
+    debt: clamp(Math.round(buildingBlockScores.debt)),
+    protection: clamp(Math.round(buildingBlockScores.protection)),
+    vision: clamp(Math.round(buildingBlockScores.vision)),
+  };
+}
+
+export function calculateFoundationScore(pillars: Record<string, number>) {
+  return Math.round(
+    pillars.income * 0.15 +
+      pillars.spending * 0.15 +
+      pillars.saving * 0.2 +
+      pillars.investing * 0.15 +
+      pillars.debt * 0.15 +
+      pillars.protection * 0.1 +
+      pillars.vision * 0.1
+  );
+}
+
+export function determineLifeStage(input: {
+  investingActivity?: boolean;
+  pillars?: Record<PillarKey, number>;
+  answers?: Record<string, any>;
+}): LifeStage {
+  const pillars = input.pillars;
+  const answers = input.answers;
+  const investingActivity = input.investingActivity ?? false;
+
+  if (!pillars || !answers) {
+    return investingActivity ? 'growth' : 'starting_out';
+  }
+
+  const hasStarterSavings = [
+    '5000_15000',
+    '15000_30000',
+    '30000_50000',
+    '50000_100000',
+    '100000_plus',
+  ].includes(answers.totalLiquidSavings);
+
+  const debtHeavy =
+    pillars.debt < 50 ||
+    answers.debtManageability === 'struggling' ||
+    answers.debtManageability === 'overwhelming';
+
+  if (!hasStarterSavings || debtHeavy) return 'starting_out';
+  if (hasStarterSavings && !investingActivity) return 'stability';
+  if (investingActivity && pillars.vision >= 60 && pillars.saving >= 60) return 'growth';
+  return 'catch_up';
+}
+
+
+export function getScoreLabel(score: number): {
+  label: string;
+  color: string;
+  description: string;
+} {
+  const band = getScoreBand(score);
+  return {
+    label: band.label,
+    color: band.color,
+    description: band.description,
+  };
+}
+
+export function getPillarScoreLabel(score: number): {
+  label: string;
+  color: string;
+  bg: string;
+} {
+  if (score >= 80) {
+    return { label: 'Strong', color: 'text-emerald-600', bg: 'bg-emerald-50' };
+  }
+  if (score >= 60) {
+    return { label: 'Building', color: 'text-amber-600', bg: 'bg-amber-50' };
+  }
+  if (score >= 40) {
+    return { label: 'Needs Attention', color: 'text-orange-600', bg: 'bg-orange-50' };
+  }
+  return { label: 'Weak', color: 'text-red-600', bg: 'bg-red-50' };
+}
+
+function getTier(score: number): 'optimize' | 'build' | 'fix' {
+  if (score >= 80) return 'optimize';
+  if (score >= 60) return 'build';
+  return 'fix';
+}
+
+function getBuildingBlockLabel(key: PillarKey): string {
+  return BUILDING_BLOCK_LABELS[key as BuildingBlockKey] ?? key;
+}
+
+function getIncomeMessage(score: number) {
+  const tier = getTier(score);
+
+  if (tier === 'fix') {
+    return {
+      title: 'Income is limiting your stability.',
+      body: 'Right now, income is making it harder to create breathing room. Improving consistency or increasing earnings will unlock immediate relief.',
+      action: 'Focus on increasing income stability or finding one way to earn more in the next 30 days.',
+    };
+  }
+
+  if (tier === 'build') {
+    return {
+      title: 'Income is a solid base with room to grow.',
+      body: 'Your income supports your foundation, but increasing it would accelerate progress across saving and investing.',
+      action: 'Look for one opportunity to increase income through raises, skill growth, or side income.',
+    };
+  }
+
+  return {
+    title: 'Income is your next growth lever.',
+    body: 'You have a strong foundation. Increasing income now is the fastest way to accelerate wealth building.',
+    action: 'Focus on income optimization — raises, high-value skills, or scalable income streams.',
+  };
+}
+
+function getSpendingMessage(score: number, signals: UserSignals) {
+  const tier = getTier(score);
+  const structural = signals.highObligationPressure || signals.highHousingBurden;
+
+  if (tier === 'fix') {
+    return {
+      title: 'Spending is holding back progress.',
+      body: structural
+        ? 'Fixed costs are taking up too much of your income. This is limiting flexibility more than day-to-day spending.'
+        : 'Spending leaks are reducing your ability to save and invest.',
+      action: structural
+        ? 'Focus on reducing major fixed costs first.'
+        : 'Track spending and eliminate unnecessary expenses.',
+    };
+  }
+
+  if (tier === 'build') {
+    return {
+      title: 'Spending is mostly under control.',
+      body: structural
+        ? 'Your spending is disciplined, but fixed costs are still applying pressure.'
+        : 'Your spending is fairly intentional, with some room for improvement.',
+      action: structural
+        ? 'Look for ways to optimize major fixed expenses.'
+        : 'Tighten 1–2 spending categories.',
+    };
+  }
+
+  return {
+    title: 'Spending is working in your favor.',
+    body: structural
+      ? 'Your habits are strong, but structural costs still reduce flexibility slightly.'
+      : 'Your spending is intentional and aligned with your goals.',
+    action: 'Continue optimizing efficiency and directing money toward priorities.',
+  };
+}
+
+function getSavingMessage(score: number) {
+  const tier = getTier(score);
+
+  if (tier === 'fix') {
+    return {
+      title: 'Savings need attention.',
+      body: 'Your current savings level may not be enough to handle unexpected expenses.',
+      action: 'Start building an emergency fund with consistent monthly contributions.',
+    };
+  }
+
+  if (tier === 'build') {
+    return {
+      title: 'Savings are building stability.',
+      body: 'You’re creating a buffer that protects your financial progress.',
+      action: 'Continue increasing your emergency fund toward 3–6 months of expenses.',
+    };
+  }
+
+  return {
+    title: 'Savings are a strong safety net.',
+    body: 'You have a solid buffer that supports long-term decision making.',
+    action: 'Consider optimizing where savings are held and how much cash you keep idle.',
+  };
+}
+
+function getInvestingMessage(score: number) {
+  const tier = getTier(score);
+
+  if (tier === 'fix') {
+    return {
+      title: 'Investing is missing or inconsistent.',
+      body: 'You may be missing long-term growth opportunities.',
+      action: 'Start investing consistently, even in small amounts.',
+    };
+  }
+
+  if (tier === 'build') {
+    return {
+      title: 'Investing is building momentum.',
+      body: 'You’ve started investing, which is a strong step toward future wealth.',
+      action: 'Increase consistency and contribution levels.',
+    };
+  }
+
+  return {
+    title: 'Investing is a major strength.',
+    body: 'You are effectively turning income into long-term wealth.',
+    action: 'Optimize allocation, tax efficiency, and long-term strategy.',
+  };
+}
+
+function getProtectionMessage(score: number) {
+  const tier = getTier(score);
+
+  if (tier === 'fix') {
+    return {
+      title: 'Protection gaps could create risk.',
+      body: 'Unexpected events could significantly impact your financial stability.',
+      action: 'Review insurance and emergency coverage.',
+    };
+  }
+
+  if (tier === 'build') {
+    return {
+      title: 'Protection is partially in place.',
+      body: 'You have some safeguards, but there may still be gaps.',
+      action: 'Strengthen coverage in key areas.',
+    };
+  }
+
+  return {
+    title: 'Protection is strong.',
+    body: 'You are well protected against major financial disruptions.',
+    action: 'Review occasionally to keep coverage aligned.',
+  };
+}
+
+function getVisionMessage(score: number) {
+  const tier = getTier(score);
+
+  if (tier === 'fix') {
+    return {
+      title: 'Lack of clarity is slowing progress.',
+      body: 'Without a clear direction, financial decisions become harder to align.',
+      action: 'Define one clear financial goal.',
+    };
+  }
+
+  if (tier === 'build') {
+    return {
+      title: 'You’re building direction.',
+      body: 'You have some clarity, but refining your goals will improve decision-making.',
+      action: 'Set a 90-day financial priority.',
+    };
+  }
+
+  return {
+    title: 'Your direction is clear.',
+    body: 'You have a strong sense of where you’re going financially.',
+    action: 'Refine and align decisions with long-term goals.',
+  };
+}
+
+export function getTierAwarePillarMessage(
+  pillar: PillarKey,
+  score: number,
+  signals?: UserSignals
+): { title: string; body: string; action: string } {
+  switch (pillar) {
+    case 'income':
+      return getIncomeMessage(score);
+    case 'spending':
+      return getSpendingMessage(
+        score,
+        signals ?? {
+          highHousingBurden: false,
+          highObligationPressure: false,
+          veryHighObligationPressure: false,
+          hasCreditCardDebt: false,
+          hasBnplDebt: false,
+          hasPaydayDebt: false,
+          hasPersonalLoanDebt: false,
+          hasStudentLoanDebt: false,
+          hasVehicleDebt: false,
+          hasMortgage: false,
+          hasNoDebtPlan: false,
+          minimumsOnly: false,
+          lowEmergencyFund: false,
+          noEmergencyFund: false,
+          inconsistentSaving: false,
+          lowRetirementContribution: false,
+          noClearGoals: false,
+          carriesCreditCardBalance: false,
+          debtFeelsHeavy: false,
+          incomeConstraintTriggered: false,
+          variableIncomeWithLowBuffer: false,
+          limitedMonthlyMargin: false,
+          housingRatio: 0,
+          obligationPressure: 0,
+          debtPaymentRatio: 0,
+        }
+      );
+    case 'saving':
+      return getSavingMessage(score);
+    case 'investing':
+      return getInvestingMessage(score);
+    case 'protection':
+      return getProtectionMessage(score);
+    case 'vision':
+      return getVisionMessage(score);
+    case 'debt':
+      return {
+        title:
+          getTier(score) === 'optimize'
+            ? 'Debt pressure is working in your favor.'
+            : getTier(score) === 'build'
+            ? 'Debt pressure is manageable with room to improve.'
+            : 'Debt pressure is limiting flexibility.',
+        body:
+          getTier(score) === 'optimize'
+            ? 'Lower debt pressure gives you more room to save, invest, and make decisions from a position of strength.'
+            : getTier(score) === 'build'
+            ? 'You have debt pressure under reasonable control, but reducing it further would create more flexibility.'
+            : 'Debt is likely creating friction in the background and making progress harder than it needs to be.',
+        action:
+          getTier(score) === 'optimize'
+            ? 'Keep debt from creeping back into the system.'
+            : getTier(score) === 'build'
+            ? 'Target the balance, payment, or rate that is creating the most drag.'
+            : 'Map every debt in one place and choose a clear payoff strategy.',
+      };
+  }
 }
 
 export function deriveAssessmentRoute(
@@ -1726,7 +2157,7 @@ function scoreSpending(
     return clamp(Math.round(s), 5, 100);
   }
 
-  let s = 0;
+  let s = 10;
   const income = toNumber(a.monthlyTakeHomeIncome);
   const fixedCosts =
     toNumber(a.monthlyHousingCost) +
@@ -1734,78 +2165,92 @@ function scoreSpending(
     toNumber(a.monthlyChildcareCost) +
     debtPaymentEstimate(a);
 
-  if (a.spendingAwareness === 'track_everything') s += 24;
-  else if (a.spendingAwareness === 'good_general_idea') s += 18;
-  else if (a.spendingAwareness === 'not_really_sure') s += 9;
+  // Behavioral spending quality
+  if (a.spendingAwareness === 'track_everything') s += 22;
+  else if (a.spendingAwareness === 'good_general_idea') s += 16;
+  else if (a.spendingAwareness === 'not_really_sure') s += 8;
 
-  if (a.spendingTracking === 'yes_consistently') s += 16;
-  else if (a.spendingTracking === 'occasionally') s += 8;
+  if (a.spendingTracking === 'yes_consistently') s += 14;
+  else if (a.spendingTracking === 'occasionally') s += 7;
 
-  if (a.overspendingFrequency === 'rarely') s += 16;
-  else if (a.overspendingFrequency === 'sometimes') s += 10;
-  else if (a.overspendingFrequency === 'often') s += 4;
+  if (a.overspendingFrequency === 'rarely') s += 14;
+  else if (a.overspendingFrequency === 'sometimes') s += 8;
+  else if (a.overspendingFrequency === 'often') s += 2;
+  else if (a.overspendingFrequency === 'almost_always') s -= 6;
 
   if (a.moneyLeaks === 'none') s += 10;
-  else if (a.moneyLeaks === 'a_few') s += 7;
-  else if (a.moneyLeaks === 'several') s += 3;
+  else if (a.moneyLeaks === 'a_few') s += 6;
+  else if (a.moneyLeaks === 'several') s += 1;
+  else if (a.moneyLeaks === 'a_lot') s -= 6;
 
   if (a.lifestyleInflation === 'save_or_invest_most') s += 8;
   else if (a.lifestyleInflation === 'split_it') s += 4;
+  else if (a.lifestyleInflation === 'spend_most') s -= 4;
 
   if (a.threeMonthReview === 'yes') s += 6;
 
+  // Subjective cost pressure matters, but should not dominate behavioral spending.
   switch (a.housingPressure) {
     case 'very_manageable':
-      s += 10;
-      break;
-    case 'manageable':
       s += 6;
       break;
+    case 'manageable':
+      s += 3;
+      break;
     case 'a_bit_tight':
-      s += 1;
       break;
     case 'tight':
-      s -= 6;
+      s -= 3;
       break;
     case 'stressful':
-      s -= 12;
+      s -= 6;
       break;
   }
 
   switch (a.childcarePressure) {
     case 'none':
-      s += 2;
+      s += 1;
       break;
     case 'some':
       break;
     case 'meaningful':
-      s -= 2;
+      s -= 1;
       break;
     case 'heavy':
-      s -= 5;
+      s -= 3;
       break;
     case 'very_heavy':
-      s -= 8;
+      s -= 5;
       break;
   }
 
+  // Structural pressure should influence the score, but not overwhelm good habits.
   if (income > 0) {
     const ratio = fixedCosts / income;
-    if (ratio <= 0.35) s += 12;
-    else if (ratio <= 0.45) s += 6;
-    else if (ratio <= 0.55) s -= 4;
-    else if (ratio <= 0.7) s -= 12;
-    else s -= 22;
+    if (ratio <= 0.35) s += 8;
+    else if (ratio <= 0.45) s += 4;
+    else if (ratio <= 0.55) s += 0;
+    else if (ratio <= 0.7) s -= 4;
+    else s -= 8;
   }
 
-  if (derivedSignals.highHousingBurden) s -= 8;
-  if (derivedSignals.veryHighObligationPressure) s -= 10;
-  else if (derivedSignals.highObligationPressure) s -= 6;
-  if (derivedSignals.incomeConstraintTriggered) s -= 6;
+  if (derivedSignals.highHousingBurden) s -= 3;
+  if (derivedSignals.veryHighObligationPressure) s -= 4;
+  else if (derivedSignals.highObligationPressure) s -= 2;
+  if (derivedSignals.incomeConstraintTriggered) s -= 2;
+
+  // If habits are solid but fixed costs are high, avoid misclassifying the issue as careless spending.
+  const strongBehaviorSignals =
+    (a.overspendingFrequency === 'rarely' || a.overspendingFrequency === 'sometimes') &&
+    (a.moneyLeaks === 'none' || a.moneyLeaks === 'a_few') &&
+    (a.spendingAwareness === 'track_everything' || a.spendingAwareness === 'good_general_idea');
+
+  if (strongBehaviorSignals && (derivedSignals.highObligationPressure || derivedSignals.highHousingBurden)) {
+    s += 8;
+  }
 
   return clamp(Math.round(s));
 }
-
 function scoreSaving(
   a: Record<string, any>,
   signals?: UserSignals,
@@ -2034,72 +2479,105 @@ function scoreProtection(a: Record<string, any>, mode: ScoringMode = 'detailed')
 
   let s = 0;
 
+  // Income interruption / resilience
   switch (a.incomeInterruptionCoverage) {
-    case '6_plus_months':
+    case 'very_prepared':
       s += 25;
       break;
-    case '3_6_months':
-      s += 18;
-      break;
-    case '1_3_months':
-      s += 10;
-      break;
-    case 'under_1_month':
-      s += 4;
-      break;
-  }
-
-  if (['employer', 'private', 'government', 'through_spouse', 'excellent', 'good_coverage', 'basic_coverage'].includes(a.healthInsurance)) {
-    s += a.healthInsurance === 'basic_coverage' ? 10 : 15;
-  }
-
-  if (['6_plus_months', '3_6_months'].includes(a.incomeInterruptionCoverage)) {
-    s += 10;
-  } else if (a.incomeInterruptionCoverage === '1_3_months') {
-    s += 5;
-  }
-
-  switch (a.propertyCoverage) {
-    case 'well_protected':
+    case 'somewhat_prepared':
       s += 15;
       break;
-    case 'appropriate_coverage':
+    case 'not_prepared':
+      s += 2;
+      break;
+    default:
+      break;
+  }
+
+  // Health insurance
+  switch (a.healthInsurance) {
+    case 'good_coverage':
+      s += 20;
+      break;
+    case 'basic_coverage':
       s += 12;
       break;
-    case 'some_coverage':
-      s += 7;
+    case 'limited_coverage':
+      s += 5;
       break;
-    case 'underinsured':
-      s += 2;
+    case 'none':
+      s += 0;
       break;
-    case 'not_applicable':
-      s += 10;
-      break;
-  }
-
-  switch (a.autoCoverage) {
-    case 'full':
-      s += 15;
-      break;
-    case 'basic':
-      s += 10;
-      break;
-    case 'minimal':
-      s += 4;
-      break;
-    case 'minimum':
-      s += 2;
-      break;
-    case 'do_not_drive':
-      s += 10;
+    default:
       break;
   }
 
-  if (hasDependents(a)) {
-    if (['adequate', 'fully_covered'].includes(a.lifeInsurance)) s += 10;
-    else if (a.lifeInsurance === 'some') s += 5;
-  } else {
+  // Property / renter coverage
+  // If living with family, this question is not asked, so don't penalize.
+  if (a.housingStatus === 'living_with_family') {
     s += 10;
+  } else {
+    switch (a.propertyCoverage) {
+      case 'solid':
+        s += 15;
+        break;
+      case 'basic':
+        s += 10;
+        break;
+      case 'minimal':
+        s += 4;
+        break;
+      case 'none':
+        s += 0;
+        break;
+      default:
+        break;
+    }
+  }
+
+  // Auto coverage
+  // If no vehicle, don't penalize.
+  if (a.vehicleDebt === 'no_vehicle') {
+    s += 10;
+  } else {
+    switch (a.autoCoverage) {
+      case 'full':
+        s += 15;
+        break;
+      case 'basic':
+        s += 10;
+        break;
+      case 'minimal':
+        s += 4;
+        break;
+      case 'minimum':
+        s += 1;
+        break;
+      case 'do_not_drive':
+        s += 10;
+        break;
+      default:
+        break;
+    }
+  }
+
+  // Life insurance only matters if others depend on the user's income
+  if (hasDependents(a)) {
+    switch (a.lifeInsurance) {
+      case 'enough':
+        s += 15;
+        break;
+      case 'some':
+        s += 7;
+        break;
+      case 'none':
+        s += 0;
+        break;
+      default:
+        break;
+    }
+  } else {
+    s += 15;
   }
 
   return clamp(Math.round(s));
@@ -2166,17 +2644,28 @@ function scoreInvesting(
     if (acc.includes('hsa')) s += 5;
   }
 
-  const investmentMap: Record<string, number> = {
-    '500000_plus': 20,
-    '250000_500000': 16,
-    '100000_250000': 12,
-    '50000_100000': 8,
-    '10000_50000': 5,
-    '1000_10000': 2,
-    'under_1000': 1,
-  };
+  const totalInvestments = toNumber(a.totalInvestments);
+  if (totalInvestments > 0) {
+    if (totalInvestments >= 1000000) s += 20;
+    else if (totalInvestments >= 500000) s += 18;
+    else if (totalInvestments >= 250000) s += 14;
+    else if (totalInvestments >= 100000) s += 10;
+    else if (totalInvestments >= 50000) s += 7;
+    else if (totalInvestments >= 20000) s += 4;
+    else s += 2;
+  } else {
+    const investmentMap: Record<string, number> = {
+      '500000_plus': 20,
+      '250000_500000': 16,
+      '100000_250000': 12,
+      '50000_100000': 8,
+      '10000_50000': 5,
+      '1000_10000': 2,
+      'under_1000': 1,
+    };
 
-  s += investmentMap[a.totalInvestments] || 0;
+    s += investmentMap[a.totalInvestments] || 0;
+  }
 
   if (a.investmentConfidence === 'very_confident') s += 5;
   else if (a.investmentConfidence === 'somewhat_confident') s += 3;
@@ -2186,265 +2675,147 @@ function scoreInvesting(
 
   return clamp(Math.round(s));
 }
-
-function scoreVision(a: Record<string, any>, mode: ScoringMode = 'detailed') {
-  if (mode === 'snapshot') {
-    let s = 50;
-
-    switch (a.financialDirection) {
-      case 'very_clear':
-      case 'clear_plan':
-        s += 20;
-        break;
-      case 'fairly_clear':
-      case 'goals_no_plan':
-      case 'somewhat_clear':
-        s += 10;
-        break;
-      case 'unclear':
-      case 'figuring_it_out':
-        s -= 8;
-        break;
-      case 'very_unclear':
-        s -= 15;
-        break;
-    }
-
-    switch (a.financialConfidence) {
-      case 'very_confident':
-        s += 12;
-        break;
-      case 'somewhat_confident':
-        s += 6;
-        break;
-      case 'not_confident':
-        s -= 6;
-        break;
-      case 'overwhelmed':
-        s -= 12;
-        break;
-      case 'uncertain':
-        s -= 4;
-        break;
-    }
-
-    if (hasAnswer(a, 'primaryFinancialPriority')) {
-      s += 5;
-    }
-
-    return clamp(Math.round(s));
-  }
-
+function scoreVision(a: Record<string, any>): number {
   let s = 0;
 
-  if (a.financialDirection === 'clear_plan') s += 30;
-  else if (a.financialDirection === 'goals_no_plan') s += 18;
-  else if (a.financialDirection === 'somewhat_clear') s += 15;
-  else if (a.financialDirection === 'figuring_it_out') s += 10;
+  if (a.financialDirection === 'very_clear') s += 32;
+  else if (a.financialDirection === 'fairly_clear') s += 24;
+  else if (a.financialDirection === 'unclear') s += 10;
+  else if (a.financialDirection === 'very_unclear') s += 2;
 
-  if (['5_10_years', '10_20_years', '20_plus_years'].includes(a.financialTimeHorizon)) s += 20;
-  else if (a.financialTimeHorizon === 'short_term') s += 6;
+  if (a.primaryFinancialPriority) s += 18;
 
-  if (a.financialConfidence === 'very_confident') s += 20;
-  else if (a.financialConfidence === 'somewhat_confident') s += 12;
-  else if (a.financialConfidence === 'uncertain') s += 5;
+  if (a.progressPriority === 'relief') s += 14;
+  else if (a.progressPriority === 'one_year') s += 18;
+  else if (a.progressPriority === 'long_term') s += 22;
+  else if (a.progressPriority === 'unsure') s += 4;
 
-  if (['wealth_building', 'maintain_optimize', 'grow_investing', 'build_savings'].includes(a.primaryFinancialPriority)) {
-    s += 10;
-  } else if (['survival', 'get_out_of_debt', 'reduce_debt'].includes(a.primaryFinancialPriority)) {
-    s += 4;
-  }
+  if (a.financialConfidence === 'very_confident') s += 28;
+  else if (a.financialConfidence === 'somewhat_confident') s += 20;
+  else if (a.financialConfidence === 'not_confident') s += 8;
+  else if (a.financialConfidence === 'overwhelmed') s += 0;
 
   return clamp(Math.round(s));
 }
-
-export function calculateBuildingBlockScores(
-  a: Record<string, any>,
-  signals?: UserSignals,
-  mode: ScoringMode = 'detailed'
-) {
-  const derivedSignals = signals ?? deriveSignals(a, mode);
-
-  const spending = scoreSpending(a, derivedSignals, mode);
-  const saving = scoreSaving(a, derivedSignals, mode);
-  const investing = scoreInvesting(a, derivedSignals, mode);
-  const protection = scoreProtection(a, mode);
-  const vision = scoreVision(a, mode);
-
-  return {
-    income: scoreIncome(a, derivedSignals),
-    spending: mode === 'snapshot' ? clamp(spending, 5, 100) : spending,
-    saving: mode === 'snapshot' ? clamp(saving, 5, 100) : saving,
-    debt: scoreDebt(a, derivedSignals),
-    protection,
-    investing: mode === 'snapshot' ? clamp(investing, 5, 100) : investing,
-    vision,
-  };
-}
-
-export function calculateEnhancedBuildingBlockScores(
-  answers: Record<string, any>,
-  signals?: UserSignals,
-  mode: ScoringMode = 'detailed'
-): Record<BuildingBlockKey, number> {
-  return calculateBuildingBlockScores(answers, signals, mode);
-}
-
-export function calculatePillarScores(
-  buildingBlockScores: Record<BuildingBlockKey, number>
-): Record<PillarKey, number> {
-  return {
-    income: clamp(Math.round(buildingBlockScores.income)),
-    spending: clamp(Math.round(buildingBlockScores.spending)),
-    saving: clamp(Math.round(buildingBlockScores.saving)),
-    investing: clamp(Math.round(buildingBlockScores.investing)),
-    debt: clamp(Math.round(buildingBlockScores.debt)),
-    protection: clamp(Math.round(buildingBlockScores.protection)),
-    vision: clamp(Math.round(buildingBlockScores.vision)),
-  };
-}
-
-export function calculateFoundationScore(pillars: Record<string, number>) {
-  return Math.round(
-    pillars.income * 0.15 +
-      pillars.spending * 0.15 +
-      pillars.saving * 0.2 +
-      pillars.investing * 0.15 +
-      pillars.debt * 0.15 +
-      pillars.protection * 0.1 +
-      pillars.vision * 0.1
-  );
-}
-
-// =====================================================
-// LIFE STAGE / LABELS
-// =====================================================
-
-export function determineLifeStage(input: {
-  investingActivity?: boolean;
-  pillars?: Record<PillarKey, number>;
-  answers?: Record<string, any>;
-}): LifeStage {
-  const pillars = input.pillars;
-  const answers = input.answers;
-  const investingActivity = input.investingActivity ?? false;
-
-  if (!pillars || !answers) {
-    return investingActivity ? 'growth' : 'starting_out';
-  }
-
-  const hasStarterSavings = [
-    '5000_15000',
-    '15000_30000',
-    '30000_50000',
-    '50000_100000',
-    '100000_plus',
-  ].includes(answers.totalLiquidSavings);
-
-  const debtHeavy =
-    pillars.debt < 50 ||
-    answers.debtManageability === 'struggling' ||
-    answers.debtManageability === 'overwhelming';
-
-  if (!hasStarterSavings || debtHeavy) return 'starting_out';
-  if (hasStarterSavings && !investingActivity) return 'stability';
-  if (investingActivity && pillars.vision >= 60 && pillars.saving >= 60) return 'growth';
-  return 'catch_up';
-}
-
-export function getScoreBand(score: number): {
-  label: string;
-  color: string;
-  bg: string;
-  description: string;
-} {
-  if (score >= 80) {
-    return {
-      label: 'Strong Foundation',
-      color: 'text-emerald-700',
-      bg: 'bg-emerald-100',
-      description: 'Your financial foundation is strong. You are now in refinement and optimization territory.',
-    };
-  }
-
-  if (score >= 60) {
-    return {
-      label: 'Building Momentum',
-      color: 'text-amber-700',
-      bg: 'bg-amber-100',
-      description: 'You have several good pieces in place, but a few weaker areas are still limiting full progress.',
-    };
-  }
-
-  if (score >= 40) {
-    return {
-      label: 'Needs Attention',
-      color: 'text-orange-700',
-      bg: 'bg-orange-100',
-      description: 'There are meaningful gaps in your foundation, but focused improvements can create visible momentum.',
-    };
-  }
-
-  return {
-    label: 'At Risk',
-    color: 'text-red-700',
-    bg: 'bg-red-100',
-    description: 'Stability needs attention now. Strengthen the foundation before worrying about optimization.',
-  };
-}
-
-export function getScoreLabel(score: number): {
-  label: string;
-  color: string;
-  description: string;
-} {
-  const band = getScoreBand(score);
-  return {
-    label: band.label,
-    color: band.color,
-    description: band.description,
-  };
-}
-
-export function getPillarScoreLabel(score: number): {
-  label: string;
-  color: string;
-  bg: string;
-} {
-  if (score >= 80) return { label: 'Strong', color: 'text-emerald-600', bg: 'bg-emerald-50' };
-  if (score >= 60) return { label: 'Building', color: 'text-amber-600', bg: 'bg-amber-50' };
-  if (score >= 40) return { label: 'Needs Attention', color: 'text-orange-600', bg: 'bg-orange-50' };
-  return { label: 'Weak', color: 'text-red-600', bg: 'bg-red-50' };
-}
-
-// =====================================================
-// REPORT BUILDERS
-// =====================================================
-
 function getTopFocusAreas(
   pillars: Record<PillarKey, number>,
   answers: Record<string, any>,
-  signals: UserSignals,
+  signals?: UserSignals,
   mode: ScoringMode = 'detailed'
 ) {
-  const biggest = getBiggestOpportunity(pillars, answers, mode === 'snapshot' ? undefined : signals);
-
-  const textMap: Record<PillarKey, string> = {
-    debt: 'Reduce financial pressure and free up flexibility by improving the debt area that is creating the most strain right now.',
-    spending: 'Improve spending clarity and reduce money leaks so more cash can flow toward real priorities.',
-    saving: 'Build a stronger emergency buffer and make saving more automatic.',
-    investing: 'Strengthen long-term investing consistency so today’s income becomes future wealth.',
-    protection: 'Close protection gaps before a setback has the chance to undo progress.',
-    income: 'Increase income stability and future earning capacity where possible.',
-    vision: 'Clarify the destination so your money decisions support a clear direction.',
-  };
+  const derivedSignals = signals ?? deriveSignals(answers, mode);
+  const biggest = getBiggestOpportunity(
+    pillars,
+    answers,
+    mode === 'snapshot' ? undefined : derivedSignals
+  );
 
   const ordered = Object.entries(pillars)
     .sort((a, b) => a[1] - b[1])
     .map(([pillar]) => pillar as PillarKey);
 
   const focus = [biggest, ...ordered.filter((pillar) => pillar !== biggest)].slice(0, 3);
-  return focus.map((pillar) => textMap[pillar]);
+
+  return focus.map((pillar) => {
+    const score = pillars[pillar];
+
+    switch (pillar) {
+      case 'income': {
+        const stableIncome =
+          answers.incomeConsistency === 'very_consistent' ||
+          answers.incomeConsistency === 'mostly_consistent';
+        const incomeRecentlyDown = answers.incomeGrowth === 'decreased';
+        const limitedGrowth =
+          answers.incomeGrowthPotential === 'limited' ||
+          answers.incomeGrowthPotential === 'none';
+
+        if (stableIncome && !incomeRecentlyDown && !limitedGrowth && score >= 70) {
+          return 'Protect the income stability you already have and choose one realistic lever for future growth, rather than treating income as a problem area.';
+        }
+
+        return getTierAwarePillarMessage(pillar, score, derivedSignals).action;
+      }
+
+      case 'spending': {
+        if ((derivedSignals.highObligationPressure || derivedSignals.highHousingBurden) && (pillars.spending < 75 || biggest === 'spending')) {
+          return 'Review your major fixed costs first — especially housing, utilities, childcare, and debt — so you do not confuse structural pressure with careless spending.';
+        }
+
+        if (mode !== 'snapshot' && answers.threeMonthReview === 'no' && score < 75) {
+          return 'Complete a 3-Month Clarity Review so you can see where your money is actually going before trying to optimize smaller categories.';
+        }
+
+        if ((answers.moneyLeaks === 'several' || answers.moneyLeaks === 'a_lot' || answers.overspendingFrequency === 'often' || answers.overspendingFrequency === 'almost_always') && score < 75) {
+          return 'Tighten the one or two spending habits creating the most drag, then redirect that money toward a real priority.';
+        }
+
+        return score >= 80
+          ? 'Keep spending aligned with your priorities and continue protecting the cash-flow habits that are already working.'
+          : 'Keep spending aligned with your priorities and protect the cash-flow habits that are already supporting your foundation.';
+      }
+
+      case 'saving': {
+        const highSavings = ['30000_50000', '50000_100000', '100000_plus'].includes(answers.totalLiquidSavings);
+        const automatedSaving = answers.savingsAutomation === 'fully_automated' || answers.savingsAutomation === 'partially_automated';
+
+        if (derivedSignals.noEmergencyFund) {
+          return 'Build your first layer of emergency savings so one unexpected cost does not throw the rest of your foundation off course.';
+        }
+
+        if (derivedSignals.lowEmergencyFund || derivedSignals.inconsistentSaving) {
+          return 'Strengthen savings consistency with one automatic transfer and keep building your cash buffer month by month.';
+        }
+
+        if (highSavings && automatedSaving && score >= 70) {
+          return 'Your savings habit is already strong. Review how much cash you want to keep liquid and decide whether excess reserves should now support investing, debt reduction, or another priority.';
+        }
+
+        return 'Protect the savings habit you already have and make sure your cash reserves still match the level of stability you want.';
+      }
+
+      case 'investing': {
+        const alreadyInvestingConsistently = answers.investingStatus === 'yes_consistently';
+        const maximizingMatch = answers.employerMatch === 'maximizing_match';
+
+        if (alreadyInvestingConsistently && maximizingMatch && score >= 70) {
+          return 'Keep your investing system automatic and review whether your contribution level, account mix, and long-term targets still match your goals.';
+        }
+
+        if (answers.employerMatch === 'have_match_not_contributing' || answers.employerMatch === 'have_match_not_maxing') {
+          return 'Start with the easiest long-term win available: capture as much employer match as you reasonably can.';
+        }
+
+        return getTierAwarePillarMessage(pillar, score, derivedSignals).action;
+      }
+
+      case 'debt': {
+        if (hasMortgage(answers) && ['holds_me_back', 'major_pressure'].includes(answers.mortgageImpact)) {
+          return 'Review your full housing picture in one place so you can see whether the real drag is mortgage pressure, not just generic debt.';
+        }
+
+        return getTierAwarePillarMessage(pillar, score, derivedSignals).action;
+      }
+
+      case 'protection': {
+        if (answers.healthInsurance === 'no_coverage' || answers.healthInsurance === 'none') {
+          return 'Close the biggest protection gap first, especially around health coverage or income disruption.';
+        }
+
+        return getTierAwarePillarMessage(pillar, score, derivedSignals).action;
+      }
+
+      case 'vision': {
+        if (answers.progressPriority === 'unsure' || answers.financialDirection === 'stuck' || derivedSignals.noClearGoals) {
+          return 'Define one clear financial target for the next 12 months so the rest of your decisions have a direction to support.';
+        }
+
+        return getTierAwarePillarMessage(pillar, score, derivedSignals).action;
+      }
+
+      default:
+        return getTierAwarePillarMessage(pillar, score, derivedSignals).action;
+    }
+  });
 }
 
 function getInsights(
@@ -2502,7 +2873,12 @@ function getInsights(
     );
   }
 
-  if (mode !== 'snapshot' && pillars.spending < 60 && answers.threeMonthReview === 'no') {
+  if (
+    mode !== 'snapshot' &&
+    pillars.spending < 60 &&
+    answers.threeMonthReview === 'no' &&
+    !signals.highObligationPressure
+  ) {
     insights.push(
       'Your biggest near-term opportunity may be clarity. A 3-month spending review could quickly uncover hidden leaks and create margin without requiring a dramatic lifestyle change.'
     );
@@ -2588,28 +2964,35 @@ function buildSummary(
   const sorted = Object.entries(pillars).sort((a, b) => a[1] - b[1]);
   const weakest = getBiggestOpportunity(pillars, answers, mode === 'snapshot' ? undefined : signals);
   const strongest = sorted[sorted.length - 1][0] as PillarKey;
+  const weakestLabel = getBuildingBlockLabel(weakest);
+  const strongestLabel = getBuildingBlockLabel(strongest);
 
   if (score >= 80) {
-    return `Your Foundation Score is ${score}, placing you in the "${scoreBand}" range. You already have a strong financial base. Your strongest area is ${PILLAR_LABELS[strongest]}, and your biggest opportunity now is refining ${PILLAR_LABELS[weakest]} so the entire foundation is working at the same level.`;
+    const weakestMessage =
+      weakest === 'income'
+        ? 'Income is now your next growth lever.'
+        : `${weakestLabel} is the next building block to refine.`;
+
+    return `Your Foundation Score is ${score}, placing you in the "${scoreBand}" range. You already have a strong financial base. Your strongest building block is ${strongestLabel}, and ${weakestMessage} The opportunity now is less about fixing problems and more about bringing the weaker edges of the foundation up to the same level.`;
   }
 
   if (score >= 60) {
-    return `Your Foundation Score is ${score}, which puts you in the "${scoreBand}" range. You are moving in the right direction and have several solid habits in place. Right now, ${PILLAR_LABELS[weakest]} is creating the most drag, while ${PILLAR_LABELS[strongest]} is giving you something real to build from.`;
+    return `Your Foundation Score is ${score}, which puts you in the "${scoreBand}" range. You are moving in the right direction and have several solid habits in place. Right now, ${weakestLabel} is creating the most drag, while ${strongestLabel} is giving you something real to build from.`;
   }
 
   if (score >= 40) {
     if (signals.incomeConstraintTriggered) {
-      return `Your Foundation Score is ${score}, which puts you in the "${scoreBand}" range. Your foundation has some meaningful strengths, but real pressure appears to be coming from limited monthly margin, not just execution. Improving ${PILLAR_LABELS[weakest]} first should make the whole system feel more stable.`;
+      return `Your Foundation Score is ${score}, which puts you in the "${scoreBand}" range. Your foundation has some meaningful strengths, but real pressure appears to be coming from limited monthly margin, not just execution. Improving ${weakestLabel} first should make the whole system feel more stable.`;
     }
 
-    return `Your Foundation Score is ${score}, which puts you in the "${scoreBand}" range. Your foundation has some meaningful strengths, but a few gaps are creating unnecessary pressure. Improving ${PILLAR_LABELS[weakest]} first should make the whole system feel more stable.`;
+    return `Your Foundation Score is ${score}, which puts you in the "${scoreBand}" range. Your foundation has some meaningful strengths, but a few gaps are creating unnecessary pressure. Improving ${weakestLabel} first should make the whole system feel more stable.`;
   }
 
   if (signals.incomeConstraintTriggered) {
-    return `Your Foundation Score is ${score}, placing you in the "${scoreBand}" range. Right now, your finances may feel heavier than they need to, and much of that pressure appears to be structural rather than just behavioral. The good news is that you do not need to fix everything at once. Starting with ${PILLAR_LABELS[weakest]} should create the clearest path toward stability and momentum.`;
+    return `Your Foundation Score is ${score}, placing you in the "${scoreBand}" range. Right now, your finances may feel heavier than they need to, and much of that pressure appears to be structural rather than just behavioral. The good news is that you do not need to fix everything at once. Starting with ${weakestLabel} should create the clearest path toward stability and momentum.`;
   }
 
-  return `Your Foundation Score is ${score}, placing you in the "${scoreBand}" range. Right now, your finances may feel heavier than they need to. The good news is that you do not need to fix everything at once. Starting with ${PILLAR_LABELS[weakest]} should create the clearest path toward stability and momentum.`;
+  return `Your Foundation Score is ${score}, placing you in the "${scoreBand}" range. Right now, your finances may feel heavier than they need to. The good news is that you do not need to fix everything at once. Starting with ${weakestLabel} should create the clearest path toward stability and momentum.`;
 }
 
 function buildNextStep(
@@ -2633,7 +3016,7 @@ function buildNextStep(
     return 'Your best next move is a 3-Month Clarity Review. Once you can clearly see where your money is going, better decisions become much easier.';
   }
 
-  if (weakest === 'spending' && (metrics.fixedCostPressureRatio ?? 0) >= 70) {
+  if (weakest == 'spending' && (metrics.fixedCostPressureRatio ?? 0) >= 70) {
     return 'Your best next move is to review your fixed monthly obligations in one place, especially housing, utilities, childcare, and debt. Your biggest issue may be fixed-cost pressure more than day-to-day spending.';
   }
 
@@ -2646,6 +3029,13 @@ function buildNextStep(
   }
 
   if (weakest === 'saving') {
+    const highSavings = ['30000_50000', '50000_100000', '100000_plus'].includes(answers.totalLiquidSavings);
+    const automatedSaving = answers.savingsAutomation === 'fully_automated' || answers.savingsAutomation === 'partially_automated';
+
+    if (highSavings && automatedSaving && pillars.saving >= 70) {
+      return 'Your next step is to review whether all of your cash still belongs in savings. You already have a strong buffer, so the better move may be optimizing where excess cash goes next.';
+    }
+
     return 'Your next step is to automate one savings transfer, even if it starts small. Consistency matters more than the starting amount.';
   }
 
@@ -2658,11 +3048,23 @@ function buildNextStep(
   }
 
   if (weakest === 'income') {
-    return 'Your next step is to identify the highest-leverage way to improve income or income stability. This is the area most likely to create a ripple effect across the rest of your foundation.';
+    return 'Your next step is to identify the highest-leverage way to improve income or income stability. If the rest of the foundation is already strong, income now becomes your next growth lever.';
   }
 
   if (weakest === 'vision') {
-    return 'Your next step is to define what financial freedom would actually look like in your life. Clear direction makes every other money decision easier.';
+    if (answers.progressPriority === 'unsure') {
+      return 'Your next step is to define one clear financial target for the next 12 months. Clear direction will make the rest of your decisions easier to align.';
+    }
+    if (answers.progressPriority === 'relief') {
+      return 'Your next step is to focus your plan around near-term relief. That means reducing pressure, creating breathing room, and choosing one practical target for the next 90 days.';
+    }
+    if (answers.progressPriority === 'one_year') {
+      return 'Your next step is to turn your goals into a measurable 12-month target and make sure your next financial decisions clearly support it.';
+    }
+    if (answers.progressPriority === 'long_term') {
+      return 'Your next step is to make sure your long-term goals are supported by a consistent monthly system, especially around saving and investing.';
+    }
+    return 'Your next step is to define one clear financial target and align your next 90 days around it.';
   }
 
   return 'Your next step is not a dramatic overhaul. Keep strengthening your weakest area first, because that is where the biggest overall lift usually comes from.';
@@ -2676,8 +3078,8 @@ function getDynamicPlanStep(
 ): ActionPlanStep {
   const title =
     rank === 0
-      ? `Next: Strengthen ${PILLAR_LABELS[pillar]}`
-      : `Then focus on ${PILLAR_LABELS[pillar]}`;
+      ? `Next: Strengthen ${getBuildingBlockLabel(pillar)}`
+      : `Then focus on ${getBuildingBlockLabel(pillar)}`;
 
   switch (pillar) {
     case 'income':
@@ -2754,11 +3156,11 @@ function getDynamicPlanStep(
 
       return {
         title,
-        body: 'Make spending more intentional. Better control here will create margin you can use everywhere else.',
+        body: 'Make spending more intentional where you actually have control. The goal is to improve cash flow without confusing structural pressure for careless spending.',
         checklist: [
-          'Review your top 3 spending categories.',
-          'Choose one category to tighten.',
-          'Track improvement over the next 30 days.',
+          'Review your top 3 flexible spending categories.',
+          'Choose one category to tighten for the next 30 days.',
+          'Redirect the savings toward a real priority.',
         ],
       };
 
@@ -2783,6 +3185,18 @@ function getDynamicPlanStep(
             'Pick a recurring savings amount.',
             'Turn it into an automatic transfer.',
             'Check progress once a month.',
+          ],
+        };
+      }
+
+      if (['30000_50000', '50000_100000', '100000_plus'].includes(answers.totalLiquidSavings) && (answers.savingsAutomation === 'fully_automated' || answers.savingsAutomation === 'partially_automated')) {
+        return {
+          title,
+          body: 'Your savings system is already strong. The smarter next move is to review how much cash you truly want to keep liquid and whether excess reserves should support investing, debt reduction, or another major goal.',
+          checklist: [
+            'Decide how much cash you want to keep as a buffer.',
+            'Identify any excess cash that could support another priority.',
+            'Choose one optimization move to make over the next 90 days.',
           ],
         };
       }
@@ -2914,15 +3328,62 @@ function getDynamicPlanStep(
         ],
       };
 
-    case 'vision':
-      if (answers.financialDirection === 'stuck' || answers.financialDirection === 'no_goals') {
+      case 'vision':
+        if (answers.progressPriority === 'unsure') {
+          return {
+            title,
+            body: 'Right now, the biggest gap is clarity. Without one clear target, it is harder to know which move matters most next.',
+            checklist: [
+              'Choose one clear financial goal for the next 12 months.',
+              'Pick one 90-day priority that supports that goal.',
+              'Ignore lower-priority goals until this direction is set.',
+            ],
+          };
+        }
+      
+        if (answers.progressPriority === 'relief') {
+          return {
+            title,
+            body: 'You are looking for near-term relief, so your plan should focus on reducing pressure and creating breathing room first.',
+            checklist: [
+              'Identify the biggest source of financial pressure.',
+              'Choose one move that creates relief in the next 30–90 days.',
+              'Build a simple short-term plan around stability first.',
+            ],
+          };
+        }
+      
+        if (answers.progressPriority === 'one_year') {
+          return {
+            title,
+            body: 'You are aiming for meaningful progress within the next year, which means your plan needs one measurable target and a monthly system to support it.',
+            checklist: [
+              'Define one measurable 12-month goal.',
+              'Track progress toward it each month.',
+              'Make sure your spending and saving decisions support that goal.',
+            ],
+          };
+        }
+      
+        if (answers.progressPriority === 'long_term') {
+          return {
+            title,
+            body: 'You are focused on long-term momentum, which is a strong position to be in. The goal now is alignment and consistency over time.',
+            checklist: [
+              'Choose the long-term outcome that matters most.',
+              'Make sure your monthly saving or investing system supports it.',
+              'Review progress once a quarter instead of relying on motivation.',
+            ],
+          };
+        }
+      
         return {
           title,
-          body: 'Define what you are actually working toward. A clearer destination will make your next financial decisions much easier.',
+          body: 'Clarify your direction so your next financial decisions are easier to align.',
           checklist: [
-            'Write down your top financial goal.',
-            'Choose a 12-month target.',
-            'Make sure your next money move supports that target.',
+            'Choose one top financial goal.',
+            'Set one 90-day priority.',
+            'Make sure your next major money move supports it.',
           ],
         };
       }
@@ -2949,20 +3410,20 @@ function getDynamicPlanStep(
         ],
       };
   }
-}
 
-function buildActionPlan(
-  pillars: Record<PillarKey, number>,
-  answers: Record<string, any>,
-  metrics: FinancialMetrics,
-  nextStep: string,
-  signals: UserSignals
-): ActionPlan {
-  const ordered = Object.entries(pillars)
+  function buildActionPlan(
+    pillarScores: Record<PillarKey, number>,
+    workingAnswers: Record<string, any>,
+    metrics: FinancialMetrics,
+    nextStep: string,
+    signals: UserSignals,
+    _mode: ScoringMode
+  ): ActionPlan {
+    const ordered = Object.entries(pillarScores)
     .sort((a, b) => a[1] - b[1])
     .map(([pillar]) => pillar as PillarKey);
 
-  const weakest = getBiggestOpportunity(pillars, answers, signals);
+    const weakest = getBiggestOpportunity(pillarScores, workingAnswers, signals);
   const remaining = ordered.filter((pillar) => pillar !== weakest);
   const second = remaining[0];
   const third = remaining[1];
@@ -2984,11 +3445,11 @@ function buildActionPlan(
   immediate.push({
     title: 'Start Here',
     body: weakest
-      ? `Start with ${PILLAR_LABELS[weakest]}. Improving this one area will have the biggest ripple effect across your entire financial foundation.`
+      ? `Start with ${getBuildingBlockLabel(weakest)}. Improving this one area will have the biggest ripple effect across your entire financial foundation.`
       : nextStep,
     checklist: weakest
       ? [
-          `Identify one concrete way to improve ${PILLAR_LABELS[weakest]}.`,
+          `Identify one concrete way to improve ${getBuildingBlockLabel(weakest)}.`,
           'Take one action this week.',
           'Set a simple 90-day target you can actually follow.',
         ]
@@ -3068,10 +3529,10 @@ function buildActionPlan(
     [second, third]
       .filter(Boolean)
       .forEach((pillar, index) => {
-        shortTerm.push(getDynamicPlanStep(pillar, answers, metrics, index));
+        shortTerm.push(getDynamicPlanStep(pillar, workingAnswers, metrics, index));
       });
   } else if (second && shortTerm.length < 2) {
-    shortTerm.push(getDynamicPlanStep(second, answers, metrics, 0));
+    shortTerm.push(getDynamicPlanStep(second, workingAnswers, metrics, 0));
   }
 
   return {
@@ -3144,7 +3605,7 @@ export function generateReport(
       : sanitizedAnswers;
 
   const signals = deriveSignals(workingAnswers, mode);
-  const buildingBlockScores = calculateEnhancedBuildingBlockScores(
+  const buildingBlockScores = calculateBuildingBlockScores(
     workingAnswers,
     signals,
     mode
@@ -3180,7 +3641,7 @@ export function generateReport(
     answers: workingAnswers,
   });
 
-  const priorities = getTopFocusAreas(pillarScores, workingAnswers);
+  const priorities = getTopFocusAreas(pillarScores, workingAnswers, signals, mode);
   const insights = getInsights(pillarScores, workingAnswers, metrics, signals, mode);
   const summary = buildSummary(
     foundationScore,
