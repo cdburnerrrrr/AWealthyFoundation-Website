@@ -336,14 +336,16 @@ function TransitionCard({ sectionKey, onContinue, onBack, isFirst }: TransitionC
       </p>
 
       <div className="mt-8 flex items-center justify-between">
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex items-center gap-2 rounded-2xl border border-white/30 bg-white/10 px-4 py-3 text-sm font-semibold text-white hover:bg-white/20 transition"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Back
-        </button>
+        {!isFirst && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center gap-2 rounded-2xl border border-white/30 bg-white/10 px-4 py-3 text-sm font-semibold text-white hover:bg-white/20 transition"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Back
+          </button>
+        )}
 
         <button
           type="button"
@@ -759,6 +761,13 @@ export default function SnapshotQuestionnaire() {
 
   const goBack = () => {
     if (mode === 'transition') {
+      if (currentStep === 0) {
+        setMode('intro');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+
+      setCurrentStep((prev) => Math.max(prev - 1, 0));
       setMode('question');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
