@@ -83,6 +83,9 @@ type CurrentAssessmentShape = {
   topFocusAreas?: string[];
   summary?: string;
   nextStep?: string;
+  lifeStage?: 'starting_out' | 'stability' | 'growth' | 'catch_up' | string;
+  answers?: Record<string, any>;
+  signals?: Record<string, any>;
   metrics?: MetricsShape;
   structuralWarnings?: StructuralWarning[];
   actionPlan?: {
@@ -1041,6 +1044,10 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const fixedCostTone = getLoadTone(snapshot?.fixedCostLoad || 0);
   const dashboardNextMoveCard = useMemo(
     () => getDashboardNextMoveCard(assessment, snapshot, weakestPillar ?? undefined),
+    [assessment, snapshot, weakestPillar]
+  );
+  const dashboardWhyThisMatters = useMemo(
+    () => getDashboardWhyThisMatters(assessment, snapshot, weakestPillar ?? undefined),
     [assessment, snapshot, weakestPillar]
   );
 
