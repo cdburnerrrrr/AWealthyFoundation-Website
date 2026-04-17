@@ -103,20 +103,23 @@ type ExpertCard = {
 
 const PLAN_FEATURES: Record<
   PlanTier,
-  { name: string; price: number; accent: string }
+  { name: string; badgeLabel: string | null; price: number; accent: string }
 > = {
   free: {
     name: 'Free',
+    badgeLabel: null,
     price: 0,
     accent: 'bg-navy-900 text-white border-navy-900',
   },
   standard: {
     name: 'Foundation Assessment',
+    badgeLabel: 'Foundation Assessment Plan',
     price: 29,
     accent: 'bg-blue-600 text-white border-blue-600',
   },
   premium: {
     name: 'Foundation Roadmap',
+    badgeLabel: 'Foundation Roadmap Plan',
     price: 79,
     accent: 'bg-copper-600 text-white border-copper-600',
   },
@@ -715,35 +718,34 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const [searchParams] = useSearchParams();
 
-  const { user, currentAssessment, assessmentHistory, userPlan, refreshProfile } =
+  const { user, currentAssessment, assessmentHistory, refreshProfile } =
     useAppStore() as any;
 
   const { track, trackLockedFeature, trackUpgradeClick, trackTabViewed } =
     useTrackEvent();
   const actualPlan = useUserPlan();
-  const entitlements = getEntitlements(actualPlan);
+  const currentPlan: PlanTier =
+    actualPlan === 'standard' || actualPlan === 'premium' ? actualPlan : 'free';
+  const entitlements = getEntitlements(currentPlan);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const rawAssessment = (currentAssessment as (CurrentAssessmentShape & { report?: CurrentAssessmentShape }) | null) ?? null;
 
   useEffect(() => {
-  if (searchParams.get('checkout') === 'success') {
-    console.log('Checkout success detected');
+    async function handleCheckoutSuccess() {
+      if (searchParams.get('checkout') !== 'success') return;
 
-    refreshProfile?.();
-
-    window.history.replaceState({}, '', '/my-foundation');
-  }
-}, [searchParams, refreshProfile]);
-
-
-  useEffect(() => {
-    if (searchParams.get('checkout') === 'success') {
-      console.log('Checkout success detected — refreshing profile');
-
-      refreshProfile?.();
-
-      window.history.replaceState({}, '', '/my-foundation');
+      try {
+        await refreshProfile?.();
+        setShowSuccess(true);
+      } finally {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('checkout');
+        window.history.replaceState({}, '', `${url.pathname}${url.search}`);
+      }
     }
+
+    void handleCheckoutSuccess();
   }, [searchParams, refreshProfile]);
 
   const historyRecords = useMemo(() => {
@@ -762,16 +764,8 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const showAssessment = foundationScore > 0;
   const scoreBand = foundationScore > 0 ? getScoreBand(foundationScore) : null;
 
-  const resolvedUserPlan: PlanTier =
-    userPlan === 'standard' || userPlan === 'premium' ? userPlan : 'free';
-
-  const [currentPlan, setCurrentPlan] = useState<PlanTier>(resolvedUserPlan);
   const [whatIf, setWhatIf] = useState({ income: 500, housing: 300, debt: 0 });
   const [guidanceTab, setGuidanceTab] = useState<GuidanceTab>('roadmap');
-
-  useEffect(() => {
-    setCurrentPlan(resolvedUserPlan);
-  }, [resolvedUserPlan]);
 
   const latestAssessmentType = latestHistoryRecord?.assessmentType ?? rawAssessment?.assessmentType ?? assessment?.assessmentType ?? null;
   const latestPaidType = latestAssessmentType === 'detailed' || latestAssessmentType === 'premium';
@@ -983,6 +977,25 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
       
 
       <main ref={printRef} className="max-w-7xl mx-auto px-4 py-8 flex-1 w-full">
+        {showSuccess && currentPlan !== 'free' && (
+          <div
+            data-pdf-ignore="true"
+            className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 shadow-sm"
+          >
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-600" />
+              <div>
+                <p className="text-sm font-semibold text-emerald-900">
+                  You’ve unlocked {PLAN_FEATURES[currentPlan].name}
+                </p>
+                <p className="mt-1 text-sm text-emerald-800">
+                  Your dashboard and report now reflect your upgraded access.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <section className="grid xl:grid-cols-[1.1fr_0.9fr] gap-6 mb-6">
           <div className="bg-gradient-to-br from-[#17385a] to-[#21456d] rounded-3xl border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.15)] p-6 md:p-8 text-white">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-copper-50 text-copper-700 text-sm font-semibold mb-5">
@@ -1035,9 +1048,12 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 </div>
 
 <div className="mt-4 flex flex-wrap gap-3">
-              <span className="inline-flex px-3 py-1 rounded-full text-sm font-semibold bg-white/10 border border-white/10">
-                {PLAN_FEATURES[resolvedUserPlan].name}
-              </span>
+              {PLAN_FEATURES[currentPlan].badgeLabel ? (
+                <span className="inline-flex items-center gap-2 rounded-full border border-copper-400/25 bg-copper-500/10 px-3 py-1 text-sm font-semibold text-copper-200">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  {PLAN_FEATURES[currentPlan].badgeLabel}
+                </span>
+              ) : null}
               {showAssessment && scoreBand ? (
                 <span
                   className={`inline-flex px-3 py-1 rounded-full text-sm font-semibold ${scoreBand.bg} ${scoreBand.color}`}
@@ -1148,33 +1164,6 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
             )}
           </div>
         </section>
-
-        <div data-pdf-ignore="true" className="mb-6 p-5 bg-white border border-[#d7e3f0] rounded-2xl shadow-sm">
-          <p className="text-sm text-gray-600 mb-3">View dashboard as:</p>
-          <div className="flex flex-wrap gap-2">
-            {(['free', 'standard', 'premium'] as PlanTier[]).map((plan) => (
-              <button
-                key={plan}
-                onClick={() => setCurrentPlan(plan)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
-                  currentPlan === plan
-                    ? PLAN_FEATURES[plan].accent
-                    : 'bg-[#f8fbff] border-[#d7e3f0] text-gray-700 hover:bg-white'
-                }`}
-              >
-                {PLAN_FEATURES[plan].name}{' '}
-                {plan !== 'free' && `($${PLAN_FEATURES[plan].price})`}
-              </button>
-            ))}
-          </div>
-
-          {currentPlan !== resolvedUserPlan && (
-            <p className="mt-3 text-xs text-gray-500">
-              Preview mode only. Your actual access is still based on your current
-              plan: {PLAN_FEATURES[resolvedUserPlan].name}.
-            </p>
-          )}
-        </div>
 
         {showAssessment ? (
           <>

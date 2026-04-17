@@ -24,6 +24,7 @@ import {
   type ReportTier,
 } from '../lib/reportFeatures';
 import { useAppStore } from '../store/appStore';
+import { useUserPlan } from '../hooks/useUserPlan';
 import {
   PILLAR_LABELS,
   getScoreBand,
@@ -71,6 +72,28 @@ type ResultShape = {
     longTerm?: ActionPlanStep[];
   };
 };
+
+type PlanTier = 'free' | 'standard' | 'premium';
+
+function getPlanBadgeMeta(plan: PlanTier) {
+  if (plan === 'premium') {
+    return {
+      label: 'Foundation Roadmap Plan',
+      className:
+        'bg-copper-500/10 text-copper-200 border border-copper-400/20',
+    };
+  }
+
+  if (plan === 'standard') {
+    return {
+      label: 'Foundation Assessment Plan',
+      className:
+        'bg-blue-500/10 text-blue-100 border border-blue-300/20',
+    };
+  }
+
+  return null;
+}
 
 const PILLAR_ICONS: Record<string, React.ElementType> = {
   income: DollarSign,
@@ -522,6 +545,7 @@ function SectionShell({
 export default function ResultsPage() {
   const navigate = useNavigate();
   const { currentAssessment, assessmentHistory } = useAppStore() as any;
+  const actualPlan = useUserPlan() as PlanTier;
 
   const latestHistoryRecord = useMemo(() => {
     return safeArray(assessmentHistory as any[])
@@ -545,6 +569,7 @@ export default function ResultsPage() {
   const derivedTier = (currentAssessment as any)?.reportTier || (latestHistoryRecord as any)?.reportTier || ((((currentAssessment as any)?.assessmentType ?? (latestHistoryRecord as any)?.assessmentType) === 'premium') ? 'premium' : (((currentAssessment as any)?.assessmentType ?? (latestHistoryRecord as any)?.assessmentType) === 'detailed' ? 'standard' : 'free'));
   const reportTier: ReportTier = getReportTier(derivedTier);
   const features = getReportFeatures(reportTier);
+  const planBadge = getPlanBadgeMeta(actualPlan);
   const [showPdfUpgradeModal, setShowPdfUpgradeModal] = useState(false);
 
   const handlePdfClick = async () => {
@@ -683,6 +708,13 @@ export default function ResultsPage() {
       Your Foundation Report
     </h1>
 
+    {planBadge && (
+      <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-semibold text-navy-900">
+        <CheckCircle2 className="w-4 h-4 text-copper-600" />
+        {planBadge.label}
+      </div>
+    )}
+
     <p className="text-slate-600 leading-7 mb-6 max-w-3xl">
       A personalized financial review built around your Foundation Score,
       weakest constraints, and next steps.
@@ -697,7 +729,11 @@ export default function ResultsPage() {
       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
         <div className="text-sm text-slate-500 mb-2">Report Tier</div>
         <div className="text-3xl font-bold text-navy-900">
-          {reportTier === 'premium'
+          {actualPlan === 'premium'
+            ? 'Foundation Roadmap Plan'
+            : actualPlan === 'standard'
+            ? 'Foundation Assessment Plan'
+            : reportTier === 'premium'
             ? 'Premium'
             : reportTier === 'standard'
             ? 'Full Report'
@@ -720,9 +756,18 @@ export default function ResultsPage() {
             data-pdf-page-break-avoid="true"
             className="bg-gradient-to-br from-[#17385a] to-[#21456d] rounded-3xl border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.35)] p-6 md:p-8"
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-copper-50 text-copper-700 text-sm font-semibold mb-5">
-              <Sparkles className="w-4 h-4" />
-              Your Foundation Report
+            <div className="flex flex-wrap items-center gap-3 mb-5">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-copper-50 text-copper-700 text-sm font-semibold">
+                <Sparkles className="w-4 h-4" />
+                Your Foundation Report
+              </div>
+
+              {planBadge && (
+                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold ${planBadge.className}`}>
+                  <CheckCircle2 className="w-4 h-4" />
+                  {planBadge.label}
+                </div>
+              )}
             </div>
 
             <h1 className="text-3xl md:text-5xl font-bold text-white leading-tight mb-3">
