@@ -2,18 +2,9 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Shield, TrendingUp, Wallet, PiggyBank, DollarSign, CreditCard, Lightbulb,
-  Menu, X, ArrowRight, CheckCircle, Home, Target, BarChart3, User
+  ArrowRight, CheckCircle, Target, BarChart3, 
 } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
-
-const NAV_ITEMS = [
-  { label: 'The Building Blocks', href: '/building-blocks', isRoute: true },
-  { label: 'Financial Pillars', href: '/financial-pillars', isRoute: true },
-  { label: 'Foundation Score', href: '/foundation-score', isRoute: true },
-  { label: 'Premium', href: '/premium', isRoute: true },
-  { label: 'Articles', href: '/articles', isRoute: true },
-  { label: 'Newsletter', href: '/newsletter', isRoute: true },
-];
 
 const BUILDING_BLOCKS = [
   { id: 'Vision', name: 'Vision', icon: Lightbulb, color: 'text-teal-600', bg: 'bg-teal-100', pillar: 'Direction' },
@@ -38,75 +29,10 @@ const PILLARS = [
 export default function FoundationScorePage() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAppStore();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
+  
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 lg:px-6">
-          <div className="flex items-center justify-between h-16">
-            <button onClick={() => navigate('/')} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-              <Home className="w-10 h-10 text-copper-600" />
-              <div>
-                <h1 className="text-xl font-serif font-bold text-navy-900">A Wealthy Foundation</h1>
-                <p className="text-xs text-copper-600">Design the life you want. Build the financial foundation to support it.</p>
-              </div>
-            </button>
-            <nav className="hidden lg:flex items-center space-x-4">
-              {NAV_ITEMS.map((item) => (
-                item.isRoute ? (
-                  <button key={item.label} onClick={() => navigate(item.href)} className="text-sm font-medium text-navy-700 hover:text-copper-600">
-                    {item.label}
-                  </button>
-                ) : (
-                  <a key={item.label} href={item.href} className="text-sm font-medium text-navy-700 hover:text-copper-600">
-                    {item.label}
-                  </a>
-                )
-              ))}
-            </nav>
-            {isAuthenticated ? (
-              <button 
-                onClick={() => navigate('/my-foundation')}
-                className="flex items-center gap-1.5 px-4 py-1.5 bg-copper-600 text-white text-sm font-semibold rounded hover:bg-copper-700 transition-colors"
-              >
-                <User className="w-4 h-4" />
-                Dashboard
-              </button>
-            ) : (
-              <button 
-                onClick={() => navigate('/login')}
-                className="flex items-center gap-1.5 px-4 py-1.5 bg-navy-900 text-white text-sm font-semibold rounded hover:bg-navy-800 transition-colors"
-              >
-                <User className="w-4 h-4" />
-                Login
-              </button>
-            )}
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="lg:hidden p-1 text-navy-700">
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-          </div>
-          {mobileMenuOpen && (
-            <div className="lg:hidden py-2 border-t border-gray-100">
-              <nav className="flex flex-wrap gap-x-4 gap-y-1 items-center">
-                {NAV_ITEMS.map((item) => (
-                  item.isRoute ? (
-                    <button key={item.label} onClick={() => { setMobileMenuOpen(false); navigate(item.href); }} className="text-sm font-medium text-navy-700 hover:text-copper-600">
-                      {item.label}
-                    </button>
-                  ) : (
-                    <a key={item.label} href={item.href} onClick={() => setMobileMenuOpen(false)} className="text-sm font-medium text-navy-700 hover:text-copper-600">
-                      {item.label}
-                    </a>
-                  )
-                ))}
-              </nav>
-            </div>
-          )}
-        </div>
-      </header>
-
+  
       {/* Main Content */}
       <main className="flex-1">
         {/* Hero */}
