@@ -88,10 +88,10 @@ export default function FinancialPillarsPage() {
       {/* Main Content */}
       <main className="flex-1">
         {/* Hero */}
-        <section className="bg-gradient-to-br from-navy-900 to-navy-800 text-white py-16 lg:py-20">
+        <section className="bg-gradient-to-br from-navy-900 to-navy-800 text-white py-10 lg:py-12">
           <div className="max-w-4xl mx-auto px-4 lg:px-6 text-center">
-            <h1 className="text-3xl lg:text-5xl font-serif font-bold mb-4">The 7 Financial Pillars</h1>
-            <p className="text-xl text-navy-200 mb-8">
+          <h1 className="text-2xl lg:text-4xl font-serif font-bold mb-3">The 7 Financial Pillars</h1>
+          <p className="text-base lg:text-lg text-navy-200 mb-5 max-w-2xl mx-auto">
               These seven pillars support your entire financial house. 
               A strong foundation means all pillars are equally solid.
             </p>
