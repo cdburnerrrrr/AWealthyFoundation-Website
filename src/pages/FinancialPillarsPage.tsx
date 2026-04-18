@@ -88,7 +88,7 @@ export default function FinancialPillarsPage() {
       {/* Main Content */}
       <main className="flex-1">
         {/* Hero */}
-        <section className="bg-gradient-to-br from-navy-900 to-navy-800 text-white py-10 lg:py-12">
+        <section className="bg-gradient-to-br from-navy-900 to-navy-800 text-white py-5 lg:py-6">
           <div className="max-w-4xl mx-auto px-4 lg:px-6 text-center">
           <h1 className="text-2xl lg:text-4xl font-serif font-bold mb-3">The 7 Financial Pillars</h1>
           <p className="text-base lg:text-lg text-navy-200 mb-5 max-w-2xl mx-auto">
