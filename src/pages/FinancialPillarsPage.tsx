@@ -100,7 +100,7 @@ export default function FinancialPillarsPage() {
 
         {/* Pillars Grid */}
         <section className="py-12 lg:py-16">
-          <div className="max-w-5xl mx-auto px-4 lg:px-6">
+          <div className="max-w-[1200px] mx-auto px-4 lg:px-6">
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               {PILLARS.map((pillar) => {
                 const Icon = pillar.icon;
