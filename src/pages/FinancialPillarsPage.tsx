@@ -91,7 +91,7 @@ export default function FinancialPillarsPage() {
         <section className="bg-gradient-to-br from-navy-900 to-navy-800 text-white py-5 lg:py-6">
           <div className="max-w-4xl mx-auto px-4 lg:px-6 text-center">
           <h1 className="text-2xl lg:text-4xl font-serif font-bold mb-3">The 7 Financial Pillars</h1>
-          <p className="text-base lg:text-lg text-navy-200 mb-5 max-w-2xl mx-auto">
+          <p className="text-base lg:text-lg text-navy-200 mb-3 max-w-2xl mx-auto">
               These seven pillars support your entire financial house. 
               A strong foundation means all pillars are equally solid.
             </p>

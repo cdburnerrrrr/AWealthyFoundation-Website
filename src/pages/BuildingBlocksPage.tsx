@@ -89,10 +89,10 @@ export default function BuildingBlocksPage() {
       {/* Main Content */}
       <main className="flex-1">
         {/* Hero */}
-        <section className="bg-gradient-to-br from-navy-900 to-navy-800 text-white py-8 lg:py-10">
+        <section className="bg-gradient-to-br from-navy-900 to-navy-800 text-white py-5 lg:py-6">
           <div className="max-w-4xl mx-auto px-4 lg:px-6 text-center">
             <h1 className="text-2xl lg:text-4xl font-serif font-bold mb-3">The 7 Building Blocks</h1>
-            <p className="text-base lg:text-lg text-navy-200 mb-5 max-w-2xl mx-auto">
+            <p className="text-base lg:text-lg text-navy-200 mb-3 max-w-2xl mx-auto">
               These seven areas form the foundation of your financial house. 
               Strong blocks create a solid foundation for the life you want.
             </p>
