@@ -24,7 +24,7 @@ const BUILDING_BLOCKS = [
     bg: 'bg-teal-100',
     pillar: 'Direction',
     description: 'What is this all for',
-    details: 'Your vision is about more than wealth — it\'s about where you want to end up. Your reason for getting wealthy. Freedom, a dream house, travel, charitable giving, your kids college funds... It defines what you’re working toward — and makes it easier to align your income, spending, saving, and investing decisions with what actually matters to you. Vision is your North Star. Always keep it front and center.'
+    details: 'Your vision is about more than wealth. It\'s your reason for getting wealthy. Freedom, a dream house, travel, charitable giving, your kids college funds... Vision is the guard rail that aligns your income, spending, saving, and investing decisions with what actually matters to you.'
   },
   { 
     id: 'protection', 
@@ -34,7 +34,7 @@ const BUILDING_BLOCKS = [
     bg: 'bg-blue-100',
     pillar: 'Security',
     description: 'Prepare for the unexpected',
-    details: 'Unexpected events — illness, job loss, emergencies — can quickly destabilize your finances. Strong protection systems (insurance, emergency funds, contingency plans) keep your financial house standing even during storms.'
+    details: 'Unexpected events such as illness, job loss, or an emergency can quickly destabilize your finances. Strong protection systems (insurance, emergency funds, contingency plans) keep your financial house standing even during storms.'
   },
   { 
     id: 'investing', 
@@ -44,7 +44,7 @@ const BUILDING_BLOCKS = [
     bg: 'bg-green-100',
     pillar: 'Growth',
     description: 'Grow your wealth over time',
-    details: 'Investing is how your money works harder than you do. Strategic investment in diversified assets builds long-term wealth that outpaces inflation and creates financial freedom.'
+    details: 'Investing is how your money works harder than you do. Strategic investment in diversified assets builds long-term wealth that outpaces inflation and creates financial freedom. You can\'t save your way to wealth. You have to get your money making money and compounding.'
   },
   { 
     id: 'spending', 
@@ -84,7 +84,7 @@ const BUILDING_BLOCKS = [
     bg: 'bg-red-100',
     pillar: 'Efficiency',
     description: 'Manage and eliminate debt',
-    details: 'Debt can be a tool or a trap — the difference lies in strategy. Managing debt efficiently (distinguishing good debt from bad) accelerates wealth building rather than hindering it.'
+    details: 'Debt can be a tool or a trap. The difference lies in strategy. Managing debt efficiently (distinguishing good debt from bad) accelerates wealth building rather than hindering it. '
   },
 ];
 

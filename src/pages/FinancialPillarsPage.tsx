@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Shield, TrendingUp, Wallet, PiggyBank, DollarSign, CreditCard, TreeDeciduous,
+  Shield, TrendingUp, Wallet, PiggyBank, DollarSign, CreditCard, Lightbulb,
   Menu, X, Home, User
 } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
@@ -17,14 +17,14 @@ const NAV_ITEMS = [
 
 const PILLARS = [
   { 
-    id: 'purpose', 
-    name: 'Purpose', 
-    icon: TreeDeciduous, 
+    id: 'Direction', 
+    name: 'Direction', 
+    icon: Lightbulb, 
     color: 'text-teal-600', 
     bg: 'bg-teal-100',
-    block: 'Legacy',
-    description: 'Define your why and legacy goals',
-    details: 'Your purpose drives all financial decisions. What do you want to achieve? What impact do you want to leave? Defining your purpose gives your finances meaning and direction.'
+    block: 'Direction',
+    description: 'Your North Star. Your Guiding Light',
+    details: 'Your direction should guide and influence all of your financial decisions. What do you want to achieve? Where do you want to end up? What impact do you want to leave? Without a strong direction, it is easy to start chasing someone else\'s dreams and not even realize it.'
   },
   { 
     id: 'security', 

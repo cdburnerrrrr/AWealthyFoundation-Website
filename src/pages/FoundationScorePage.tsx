@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Shield, TrendingUp, Wallet, PiggyBank, DollarSign, CreditCard, TreeDeciduous,
-  Menu, X, ArrowRight, CheckCircle, Home, Target, BarChart3, Lightbulb, User
+  Shield, TrendingUp, Wallet, PiggyBank, DollarSign, CreditCard, Lightbulb,
+  Menu, X, ArrowRight, CheckCircle, Home, Target, BarChart3, User
 } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
 
@@ -16,7 +16,7 @@ const NAV_ITEMS = [
 ];
 
 const BUILDING_BLOCKS = [
-  { id: 'legacy', name: 'Legacy', icon: TreeDeciduous, color: 'text-teal-600', bg: 'bg-teal-100', pillar: 'Purpose' },
+  { id: 'Vision', name: 'Vision', icon: Lightbulb, color: 'text-teal-600', bg: 'bg-teal-100', pillar: 'Direction' },
   { id: 'protection', name: 'Protection', icon: Shield, color: 'text-blue-600', bg: 'bg-blue-100', pillar: 'Security' },
   { id: 'investing', name: 'Investing', icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-100', pillar: 'Growth' },
   { id: 'spending', name: 'Spending', icon: Wallet, color: 'text-amber-600', bg: 'bg-amber-100', pillar: 'Control' },
@@ -26,7 +26,7 @@ const BUILDING_BLOCKS = [
 ];
 
 const PILLARS = [
-  { id: 'purpose', name: 'Purpose', description: 'Define your why and legacy goals', color: 'text-teal-700', bg: 'bg-teal-50' },
+  { id: 'direction', name: 'Direction', description: 'Define your why and vision goals', color: 'text-teal-700', bg: 'bg-teal-50' },
   { id: 'security', name: 'Security', description: 'Protect what you\'ve built', color: 'text-blue-700', bg: 'bg-blue-50' },
   { id: 'growth', name: 'Growth', description: 'Build wealth over time', color: 'text-green-700', bg: 'bg-green-50' },
   { id: 'control', name: 'Control', description: 'Master your financial decisions', color: 'text-amber-700', bg: 'bg-amber-50' },
@@ -129,7 +129,7 @@ export default function FoundationScorePage() {
             <div className="text-center mb-10">
               <h2 className="text-2xl lg:text-3xl font-serif font-bold text-navy-900 mb-3">How Your Score is Calculated</h2>
               <p className="text-navy-600 max-w-2xl mx-auto">
-                Your Foundation Score ranges from 300 to 850, similar to a credit score. 
+                Your Foundation Score ranges from 1 to 100.  
                 We analyze 7 key areas of your financial life to give you a complete picture.
               </p>
             </div>
@@ -207,21 +207,21 @@ export default function FoundationScorePage() {
             <div className="grid md:grid-cols-3 gap-6">
               <div className="bg-red-50 border-2 border-red-200 rounded-xl p-6 text-center">
                 <BarChart3 className="w-10 h-10 text-red-500 mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-red-700 mb-2">300-499</h3>
+                <h3 className="text-lg font-bold text-red-700 mb-2">1-59</h3>
                 <p className="text-sm text-red-600">Foundation Under Construction</p>
                 <p className="text-xs text-gray-600 mt-2">Your financial house needs significant attention. Focus on the basics: emergency fund, debt management, and basic coverage.</p>
               </div>
               <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-6 text-center">
                 <Target className="w-10 h-10 text-amber-500 mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-amber-700 mb-2">500-649</h3>
+                <h3 className="text-lg font-bold text-amber-700 mb-2">60-79</h3>
                 <p className="text-sm text-amber-600">Foundation Being Built</p>
                 <p className="text-xs text-gray-600 mt-2">You have the basics in place. Time to strengthen each block and optimize your financial strategy.</p>
               </div>
               <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-6 text-center">
                 <Lightbulb className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-emerald-700 mb-2">650-850</h3>
+                <h3 className="text-lg font-bold text-emerald-700 mb-2">80-100</h3>
                 <p className="text-sm text-emerald-600">Strong Foundation</p>
-                <p className="text-xs text-gray-600 mt-2">Excellent work! Your financial house is solid. Focus on optimization and building legacy.</p>
+                <p className="text-xs text-gray-600 mt-2">Excellent work! Your financial house is solid. Focus on optimization and building vision.</p>
               </div>
             </div>
           </div>
