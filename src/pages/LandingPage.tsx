@@ -20,29 +20,29 @@ export default function LandingPage() {
       <main className="flex-1 flex flex-col">
         {/* Hero Section */}
         <section className="bg-white overflow-hidden">
-          <div className="max-w-7xl mx-auto px-4 lg:px-6 py-6 lg:py-8">
-            <div className="grid lg:grid-cols-2 gap-6 items-center">
-              <div className="text-center lg:text-left order-2 lg:order-1">
+          <div className="max-w-7xl mx-auto px-4 pt-6 pb-10 sm:pt-8 sm:pb-12 lg:px-6 lg:py-12">
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:items-center">
+              <div className="text-center lg:text-left order-1 lg:order-1">
                 <p className="text-sm font-semibold text-copper-600 tracking-widest uppercase mb-2">
                   A Simple Framework for Building Wealth
                 </p>
 
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold text-navy-900 leading-tight mb-1">
+                <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-bold text-navy-900 leading-tight">
                   Design the Life You Want.
                 </h1>
 
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold text-copper-600 leading-tight mb-4">
+                <h2 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-bold text-copper-600 leading-tight mt-1 mb-4">
                   Build the Financial House to Support It.
                 </h2>
 
-                <p className="text-base sm:text-lg text-navy-600 mb-5 max-w-xl mx-auto lg:mx-0 leading-8">
+                <p className="text-sm sm:text-lg text-navy-600 mb-4 max-w-xl mx-auto lg:mx-0 leading-7">
                   A Wealthy Foundation helps you understand how your financial life is really
                   working — from income and debt to saving, protection, investing, and long-term
                   direction. Build your house one block at a time, discover your Foundation Score,
                   and see exactly what to strengthen next.
                 </p>
 
-                <p className="text-sm text-navy-500 mb-6 max-w-lg mx-auto lg:mx-0 leading-7">
+                <p className="text-sm text-navy-500 mb-5 max-w-lg mx-auto lg:mx-0 leading-6">
                   Start with a free assessment and get a clearer picture of what is strong, what
                   needs attention, and where to focus first.
                 </p>
@@ -50,13 +50,13 @@ export default function LandingPage() {
                 <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 mb-4">
                   <button
                     onClick={handleGetStarted}
-                    className="inline-flex items-center gap-3 px-6 py-3 bg-copper-600 text-white text-base font-bold rounded-xl hover:bg-copper-700 transition-all shadow-lg shadow-copper-600/30"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-copper-600 px-5 text-sm font-semibold text-white transition hover:bg-copper-700 shadow-md"
                   >
                     Take the FREE Test <ArrowRight className="w-5 h-5" />
                   </button>
                 </div>
 
-                <p className="text-sm text-navy-500 flex items-center justify-center lg:justify-start gap-4">
+                <p className="text-sm text-navy-500 flex items-center justify-center lg:justify-start gap-5 mt-1">
                   <span className="flex items-center gap-1">
                     <Clock className="w-4 h-4" /> 5 Minutes
                   </span>
@@ -66,7 +66,7 @@ export default function LandingPage() {
                 </p>
               </div>
 
-              <div className="order-1 lg:order-2 flex justify-center lg:justify-end">
+              <div className="order-2 lg:order-2 flex justify-center lg:justify-end mt-2 lg:mt-0">
                 <HouseLayout className="lg:mr-2" />
               </div>
             </div>
@@ -88,9 +88,9 @@ export default function LandingPage() {
 </p>
             </div>
 
-            <div className="grid lg:grid-cols-3 gap-6 items-stretch">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {/* Snapshot */}
-              <div className="bg-white rounded-lg border border-gray-200 p-5 hover:border-copper-300 hover:shadow-md transition-all h-full flex flex-col">
+              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-5 hover:border-copper-300 hover:shadow-md transition-all h-full flex flex-col">
                 <div className="mb-3">
                   <h3 className="text-lg font-bold text-navy-900">Start With the Snapshot</h3>
                   <span className="text-2xl font-bold text-copper-600">Free</span>
@@ -118,14 +118,14 @@ export default function LandingPage() {
 
                 <button
                   onClick={() => navigate('/assessment/snapshot')}
-                  className="w-full py-2.5 bg-copper-600 text-white text-sm font-semibold rounded hover:bg-copper-700 transition-colors"
+                  className="w-full h-10 bg-copper-600 text-white text-sm font-semibold rounded hover:bg-copper-700 transition-colors"
                 >
                   Take the Free Test
                 </button>
               </div>
 
               {/* Full Report */}
-              <div className="bg-white rounded-lg border-2 border-copper-300 p-5 shadow-sm hover:shadow-md transition-all h-full flex flex-col">
+              <div className="bg-white rounded-lg border-2 border-copper-300 p-4 sm:p-5 shadow-sm hover:shadow-md transition-all h-full flex flex-col">
                 <div className="mb-3">
                   <h3 className="text-lg font-bold text-navy-900">Full Report</h3>
                   <span className="text-2xl font-bold text-copper-600">$29</span>
@@ -161,14 +161,14 @@ export default function LandingPage() {
                       ? startCheckout('standard')
                       : navigate('/login?redirect=/pricing')
                   }
-                  className="w-full py-2.5 border border-copper-500 text-copper-600 text-sm font-semibold rounded hover:bg-copper-50 transition-colors"
+                  className="w-full h-10 border border-copper-500 text-copper-600 text-sm font-semibold rounded hover:bg-copper-50 transition-colors"
                 >
                   Unlock Full Report
                 </button>
               </div>
 
               {/* Premium Guidance */}
-              <div className="bg-navy-900 rounded-lg p-5 text-white relative overflow-hidden h-full flex flex-col">
+              <div className="bg-navy-900 rounded-lg p-4 sm:p-5 text-white relative overflow-hidden h-full flex flex-col">
                 <div className="absolute top-3 right-3 px-2 py-1 bg-copper-500 text-white text-xs font-bold rounded">
                   Best Value
                 </div>
@@ -208,7 +208,7 @@ export default function LandingPage() {
                       ? startCheckout('premium')
                       : navigate('/login?redirect=/pricing')
                   }
-                  className="w-full py-2.5 bg-copper-500 text-white text-sm font-semibold rounded hover:bg-copper-600 transition-colors"
+                  className="w-full h-10 bg-copper-500 text-white text-sm font-semibold rounded hover:bg-copper-600 transition-colors"
                 >
                   Get Premium Guidance
                 </button>
@@ -315,7 +315,7 @@ export default function LandingPage() {
   </div>
 </div>
 
-                  <div className="grid sm:grid-cols-[1fr,1fr,auto] gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr,1fr,auto]">
                     <input
                       type="text"
                       placeholder="Name"
