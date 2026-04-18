@@ -102,7 +102,7 @@ export default function BuildingBlocksPage() {
         {/* Building Blocks Grid */}
         <section className="py-12 lg:py-16">
           <div className="max-w-5xl mx-auto px-4 lg:px-6">
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               {BUILDING_BLOCKS.map((block) => {
                 const Icon = block.icon;
                 return (
