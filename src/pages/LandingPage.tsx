@@ -280,8 +280,8 @@ export default function LandingPage() {
               {/* Newsletter - 2 wide */}
               <div
   id="newsletter"
-  className="lg:col-span-2 bg-white rounded-lg border border-gray-200 p-5 relative overflow-hidden"
-><div className="absolute top-4 right-4 px-2.5 py-1 bg-copper-50 text-copper-700 text-xs font-semibold rounded-full border border-copper-200">
+  className="lg:col-span-2 bg-white rounded-lg border border-gray-200 p-4 pt-14 sm:p-5 sm:pt-5 relative overflow-hidden"
+><div className="absolute top-4 right-4 px-2.5 py-1 bg-copper-50 text-copper-700 text-xs font-semibold rounded-full border border-copper-200 sm:top-4 sm:right-4">
   Newsletter
 </div>
                 <div className="max-w-2xl">
