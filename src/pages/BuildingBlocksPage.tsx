@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Shield, TrendingUp, Wallet, PiggyBank, DollarSign, CreditCard, TreeDeciduous,
+  Shield, TrendingUp, Wallet, PiggyBank, DollarSign, CreditCard, Lightbulb,
   Menu, X, Home, User
 } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
@@ -17,14 +17,14 @@ const NAV_ITEMS = [
 
 const BUILDING_BLOCKS = [
   { 
-    id: 'legacy', 
-    name: 'Legacy', 
-    icon: TreeDeciduous, 
+    id: 'Vision', 
+    name: 'Vision', 
+    icon: Lightbulb, 
     color: 'text-teal-600', 
     bg: 'bg-teal-100',
-    pillar: 'Purpose',
-    description: 'Leave a lasting impact',
-    details: 'Your legacy is about more than wealth — it\'s about the values, wisdom, and opportunities you pass on. Estate planning, charitable giving, and teaching financial literacy ensure your impact extends beyond your lifetime.'
+    pillar: 'Direction',
+    description: 'What is this all for',
+    details: 'Your vision is about more than wealth — it\'s about where you want to end up. Your reason for getting wealthy. Freedom, a dream house, travel, charitable giving, your kids college funds... It defines what you’re working toward — and makes it easier to align your income, spending, saving, and investing decisions with what actually matters to you. Vision is your North Star. Always keep it front and center.'
   },
   { 
     id: 'protection', 
