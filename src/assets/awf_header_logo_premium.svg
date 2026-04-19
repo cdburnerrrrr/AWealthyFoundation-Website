@@ -1,0 +1,36 @@
+<svg viewBox="0 0 560 120" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100%" height="100%" fill="white"/>
+
+  <g transform="translate(22,20)">
+    <path d="M8 40L42 16L76 40"
+      stroke="#C47A2C"
+      stroke-width="4.5"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      fill="none"/>
+    <rect x="18" y="40" width="48" height="42" rx="3.5"
+      stroke="#0F2A44"
+      stroke-width="4"
+      fill="none"/>
+    <rect x="36" y="57" width="14" height="25" rx="2"
+      fill="#0F2A44"/>
+    <rect x="14" y="87" width="56" height="4.5" rx="2.25"
+      fill="#C47A2C"/>
+  </g>
+
+  <g transform="translate(124,28)">
+    <text x="0" y="34"
+      font-family="Georgia, 'Times New Roman', serif"
+      font-size="31"
+      font-weight="700"
+      fill="#0F2A44">A Wealthy Foundation</text>
+
+    <rect x="0" y="50" width="295" height="1.4" rx="0.7" fill="#C47A2C" opacity="0.25"/>
+
+    <text x="0" y="80"
+      font-family="Arial, Helvetica, sans-serif"
+      font-size="16"
+      letter-spacing="0.9"
+      fill="#C47A2C">A SIMPLE FRAMEWORK FOR BUILDING WEALTH</text>
+  </g>
+</svg>

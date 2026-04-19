@@ -2,7 +2,7 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import UserMenu from '../components/UserMenu';
-import logoImage from '../assets/house-icon.png';
+import logoImage from '../assets/awf_header_logo_premium.svg';
 
 export default function Layout() {
   const location = useLocation();
