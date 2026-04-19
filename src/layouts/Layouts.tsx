@@ -40,7 +40,7 @@ export default function Layout() {
   <img
     src={logoImage}
     alt="A Wealthy Foundation"
-    className="h-12 w-auto"
+    className="h-15 w-auto"
   />
 </Link>
 
