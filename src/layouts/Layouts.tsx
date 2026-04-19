@@ -32,20 +32,17 @@ export default function Layout() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-14 items-center justify-between sm:h-16">
             <div className="flex items-center gap-8">
-              <Link
-                to="/"
-                className="flex items-center gap-3 text-navy-700 transition hover:text-copper-600"
-                onClick={closeMenu}
-              >
-                <img
-                  src={logoImage}
-                  alt="A Wealthy Foundation"
-                  className="h-9 w-auto shrink-0"
-                />
-                <span className="text-lg font-bold tracking-tight">
-                  A Wealthy Foundation
-                </span>
-              </Link>
+            <Link
+  to="/"
+  className="flex items-center transition hover:opacity-90"
+  onClick={closeMenu}
+>
+  <img
+    src={logoImage}
+    alt="A Wealthy Foundation"
+    className="h-12 w-auto"
+  />
+</Link>
 
               <nav className="hidden md:flex items-center gap-6">
                 {navLinks.map((link) => (
