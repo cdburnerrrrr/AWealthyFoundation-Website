@@ -2,8 +2,8 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import UserMenu from '../components/UserMenu';
-import logoDesktop from '../assets/awf_header_logo_compact.svg';
-import logoMobile from '../assets/awf_header_logo_mobile.svg';
+import logoDesktop from '../assets/awf_logo_desktop.svg';
+import logoMobile from '../assets/awf_logo_mobile.svg';
 
 export default function Layout() {
   const location = useLocation();
@@ -39,11 +39,14 @@ export default function Layout() {
   onClick={closeMenu}
 >
   <picture>
+    {/* Mobile */}
     <source media="(max-width: 640px)" srcSet={logoMobile} />
+
+    {/* Desktop */}
     <img
       src={logoDesktop}
       alt="A Wealthy Foundation"
-      className="h-12 w-auto shrink-0 sm:h-14"
+      className="h-14 w-auto shrink-0"
     />
   </picture>
 </Link>
