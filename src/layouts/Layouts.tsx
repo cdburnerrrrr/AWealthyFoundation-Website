@@ -44,7 +44,7 @@ export default function Layout() {
                   <img
                     src={logoDesktop}
                     alt="A Wealthy Foundation"
-                    className="block h-10 w-auto shrink-0 sm:h-12 lg:h-[54px]"
+                    className="block h-10 w-auto shrink-0 sm:h-[52px] lg:h-[58px]"
                   />
                 </picture>
               </Link>
