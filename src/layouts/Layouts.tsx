@@ -31,23 +31,23 @@ export default function Layout() {
     <div className="min-h-screen bg-white">
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-[68px] items-center justify-between gap-3 sm:h-[76px]">
+        <div className="flex h-[72px] items-center justify-between gap-3 sm:h-[80px]">
             <div className="flex min-w-0 items-center gap-5 lg:gap-7">
-              <Link
-                to="/"
-                className="shrink-0 transition hover:opacity-90"
-                onClick={closeMenu}
-                aria-label="A Wealthy Foundation home"
-              >
-                <picture>
-                  <source media="(max-width: 640px)" srcSet={logoMobile} />
-                  <img
-                    src={logoDesktop}
-                    alt="A Wealthy Foundation"
-                    className="block h-10 w-auto shrink-0 sm:h-[52px] lg:h-[58px]"
-                  />
-                </picture>
-              </Link>
+            <Link
+  to="/"
+  className="flex items-center gap-2 transition hover:opacity-90"
+  onClick={closeMenu}
+>
+  <picture>
+    <source media="(max-width: 640px)" srcSet={logoMobile} />
+
+    <img
+      src={logoDesktop}
+      alt="A Wealthy Foundation"
+      className="block h-12 w-auto sm:h-14 lg:h-[60px]"
+    />
+  </picture>
+</Link>
 
               <nav className="hidden md:flex items-center gap-4 lg:gap-6 xl:gap-7">
                 {navLinks.map((link) => (
