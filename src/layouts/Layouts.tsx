@@ -10,7 +10,7 @@ export default function Layout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinkClass = (path: string) =>
-    `text-sm font-medium transition-colors whitespace-nowrap ${
+    `relative text-sm font-medium transition-all duration-200 ${
       location.pathname === path
         ? 'text-copper-600'
         : 'text-navy-700 hover:text-copper-600'
@@ -31,11 +31,11 @@ export default function Layout() {
     <div className="min-h-screen bg-white">
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-[72px] items-center justify-between gap-3 sm:h-[80px]">
+        <div className="flex h-[68px] items-center justify-between gap-3 sm:h-[74px]">
         <div className="flex min-w-0 items-center gap-4 lg:gap-5">
             <Link
   to="/"
-  className="flex items-center gap-1.5 transition hover:opacity-90"
+  className="flex items-center gap-1 transition hover:opacity-90"
   onClick={closeMenu}
 >
   <picture>
@@ -44,7 +44,7 @@ export default function Layout() {
     <img
       src={logoDesktop}
       alt="A Wealthy Foundation"
-      className="block h-12 w-auto sm:h-[56px] lg:h-[64px]"
+      className="block h-12 w-auto sm:h-[56px] lg:h-[64px] -translate-y-[1px]"
     />
   </picture>
 </Link>
@@ -52,13 +52,22 @@ export default function Layout() {
 <nav className="hidden md:flex items-center gap-3 lg:gap-5 xl:gap-6">
                 {navLinks.map((link) => (
                   <Link
-                    key={link.to}
-                    to={link.to}
-                    className={navLinkClass(link.to)}
-                    onClick={closeMenu}
-                  >
+                  key={link.to}
+                  to={link.to}
+                  className={`${navLinkClass(link.to)} group`}
+                  onClick={closeMenu}
+                >
+                  <span className="relative">
                     {link.label}
-                  </Link>
+                
+                    {/* underline */}
+                    <span
+                      className={`absolute left-0 -bottom-1 h-[2px] w-full origin-left scale-x-0 bg-copper-600 transition-transform duration-200 group-hover:scale-x-100 ${
+                        location.pathname === link.to ? 'scale-x-100' : ''
+                      }`}
+                    />
+                  </span>
+                </Link>
                 ))}
               </nav>
             </div>
