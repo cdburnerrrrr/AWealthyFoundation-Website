@@ -32,10 +32,10 @@ export default function Layout() {
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-[72px] items-center justify-between gap-3 sm:h-[80px]">
-            <div className="flex min-w-0 items-center gap-5 lg:gap-7">
+        <div className="flex min-w-0 items-center gap-4 lg:gap-5">
             <Link
   to="/"
-  className="flex items-center gap-2 transition hover:opacity-90"
+  className="flex items-center gap-1.5 transition hover:opacity-90"
   onClick={closeMenu}
 >
   <picture>
@@ -44,12 +44,12 @@ export default function Layout() {
     <img
       src={logoDesktop}
       alt="A Wealthy Foundation"
-      className="block h-12 w-auto sm:h-14 lg:h-[60px]"
+      className="block h-12 w-auto sm:h-[56px] lg:h-[64px]"
     />
   </picture>
 </Link>
 
-              <nav className="hidden md:flex items-center gap-4 lg:gap-6 xl:gap-7">
+<nav className="hidden md:flex items-center gap-3 lg:gap-5 xl:gap-6">
                 {navLinks.map((link) => (
                   <Link
                     key={link.to}
