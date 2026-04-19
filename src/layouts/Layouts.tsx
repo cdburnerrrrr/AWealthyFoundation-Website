@@ -34,7 +34,7 @@ export default function Layout() {
             <div className="flex items-center gap-8">
             <Link
   to="/"
-  className="flex items-center transition hover:opacity-90"
+  className="flex items-center gap-3 transition hover:opacity-90"
   onClick={closeMenu}
 >
   <img
@@ -42,6 +42,9 @@ export default function Layout() {
     alt="A Wealthy Foundation"
     className="h-12 w-auto shrink-0"
   />
+  <span className="text-xl font-semibold text-navy-900">
+    A Wealthy Foundation
+  </span>
 </Link>
 
               <nav className="hidden md:flex items-center gap-6">
