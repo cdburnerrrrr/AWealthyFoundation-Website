@@ -75,6 +75,15 @@ type ResultShape = {
 
 type PlanTier = 'free' | 'standard' | 'premium';
 
+type BestNextMoveCard = {
+  title: string;
+  intro: string;
+  rightNow: string[];
+  whyThisMatters: string;
+  nextStep: string;
+  thisWeek: string[];
+};
+
 function getPlanBadgeMeta(plan: PlanTier) {
   if (plan === 'premium') {
     return {
@@ -219,11 +228,225 @@ function getConstraintLine(pillar: string) {
   }
 }
 
-function getBestNextMoveText(pillar: string) {
-  return `Focus on improving ${formatPillarName(pillar)} first. This is the constraint holding back faster progress across your entire foundation.`;
+function getBestNextMoveCard(
+  warnings: StructuralWarning[],
+  metrics: ResultShape['metrics'] | undefined,
+  weakestPillar: string,
+  nextStep?: string
+): BestNextMoveCard {
+  const fixedCost = formatPercent(metrics?.fixedCostPressureRatio);
+  const debtToIncome = formatPercent(metrics?.debtToIncomeRatio);
+
+  if (warnings.some((warning) => warning.type === 'income_constraint')) {
+    return {
+      title: 'Use income as the next lever',
+      intro:
+        'Your assessment suggests this is more of a math problem than a discipline problem. Faster progress will likely come from more income, a lower major fixed cost, or both.',
+      rightNow: [
+        fixedCost
+          ? `Fixed costs are taking about ${fixedCost} of take-home pay.`
+          : 'Fixed costs are taking too much of monthly cash flow.',
+        'That leaves less room to save, invest, or absorb surprises.',
+      ],
+      whyThisMatters:
+        'Without more margin, progress in the rest of the foundation is likely to stall even if your habits improve.',
+      nextStep:
+        'Choose the single highest-leverage move that either increases take-home income or reduces a major fixed cost.',
+      thisWeek: [
+        'List the 1–2 most realistic ways to increase income or reduce a major fixed cost.',
+        'Take one real action this week: ask, apply, renegotiate, or cut.',
+      ],
+    };
+  }
+
+  if (warnings.some((warning) => warning.type === 'housing_pressure')) {
+    return {
+      title: 'Reduce the biggest fixed-cost drag',
+      intro:
+        'Your housing and core fixed costs are doing more damage than small day-to-day spending leaks right now.',
+      rightNow: [
+        fixedCost
+          ? `Fixed costs are about ${fixedCost} of take-home pay.`
+          : 'Housing and fixed costs are consuming too much of monthly cash flow.',
+        'That makes the rest of the plan feel tighter than it should.',
+      ],
+      whyThisMatters:
+        'When the biggest pressure point is structural, solving that first creates more lift than trying to optimize around it.',
+      nextStep:
+        'Review housing, utilities, and any other major fixed obligations together before making smaller cuts elsewhere.',
+      thisWeek: [
+        'List housing, utilities, and fixed obligations in one place.',
+        'Identify the one cost change that would create the biggest monthly relief.',
+      ],
+    };
+  }
+
+  if (warnings.some((warning) => warning.type === 'structural_pressure')) {
+    return {
+      title: 'Create breathing room first',
+      intro:
+        'Multiple fixed obligations are stacking pressure onto the same monthly cash flow.',
+      rightNow: [
+        debtToIncome
+          ? `Debt payments alone are about ${debtToIncome} of take-home pay.`
+          : 'Debt and fixed costs are combining to reduce flexibility.',
+        'That pressure makes saving, investing, and long-term progress much harder.',
+      ],
+      whyThisMatters:
+        'Until the pressure eases, other improvements will feel slower and harder to sustain.',
+      nextStep:
+        'Start with the fixed obligation or debt payment creating the most friction, then work outward from there.',
+      thisWeek: [
+        'List every major fixed obligation and debt payment.',
+        'Choose the one pressure point that deserves attention first.',
+      ],
+    };
+  }
+
+  switch (weakestPillar) {
+    case 'income':
+      return {
+        title: 'Strengthen income first',
+        intro:
+          'Income is the area most likely to create a ripple effect across the rest of your foundation.',
+        rightNow: [
+          'More income would improve saving, debt flexibility, and long-term progress at the same time.',
+          'This is usually a higher-leverage move than trying to optimize everything else first.',
+        ],
+        whyThisMatters:
+          'A stronger income base gives the rest of the system more room to work.',
+        nextStep:
+          nextStep || 'Identify one practical way to improve income stability or earning power over the next 30 days.',
+        thisWeek: [
+          'Choose one realistic income move to focus on.',
+          'Take the first visible action this week.',
+        ],
+      };
+    case 'saving':
+      return {
+        title: 'Build a stronger buffer',
+        intro:
+          'Savings is the weakest support layer in your foundation right now.',
+        rightNow: [
+          'A thin buffer leaves the rest of the plan more exposed to setbacks.',
+          'Even a modest reserve improves flexibility and confidence.',
+        ],
+        whyThisMatters:
+          'A stronger cash cushion protects progress everywhere else.',
+        nextStep:
+          nextStep || 'Build your next savings milestone with a simple, repeatable contribution habit.',
+        thisWeek: [
+          'Choose a weekly or monthly savings amount.',
+          'Move the first contribution this week.',
+        ],
+      };
+    case 'protection':
+      return {
+        title: 'Close your biggest protection gap',
+        intro:
+          'Protection is the area most likely to preserve the progress you have already built.',
+        rightNow: [
+          'One uncovered risk can undo progress faster than most people expect.',
+          'This is less about growth and more about making the foundation sturdier.',
+        ],
+        whyThisMatters:
+          'A stronger protection layer helps keep one setback from turning into a major financial interruption.',
+        nextStep:
+          nextStep || 'Review the single protection gap that would hurt most if it failed.',
+        thisWeek: [
+          'Identify the biggest protection gap in your current setup.',
+          'Choose one update to make this quarter.',
+        ],
+      };
+    case 'vision':
+      return {
+        title: 'Clarify the target first',
+        intro:
+          'When direction is fuzzy, it becomes harder to align saving, spending, and investing decisions.',
+        rightNow: [
+          'You may have workable habits in place, but the target still needs sharper edges.',
+          'That can make good decisions feel less connected than they should.',
+        ],
+        whyThisMatters:
+          'Clearer direction usually improves every other money decision.',
+        nextStep:
+          nextStep || 'Write down the top financial goal you want the next 12 months to support.',
+        thisWeek: [
+          'Choose one 12-month priority.',
+          'Make sure your next major money move supports it.',
+        ],
+      };
+    default:
+      return {
+        title: `Start with ${formatPillarName(weakestPillar || 'your weakest area')}`,
+        intro:
+          'This is the area most likely to create the biggest overall lift if improved first.',
+        rightNow: [
+          getConstraintLine(weakestPillar),
+          'This is where extra attention should produce the clearest payoff.',
+        ],
+        whyThisMatters:
+          'Focusing on the weakest part of the system first usually creates faster overall progress.',
+        nextStep:
+          nextStep || `Take one focused step to strengthen ${formatPillarName(weakestPillar || 'this area')}.`,
+        thisWeek: [
+          'Choose one realistic action.',
+          'Take it this week while the priority is clear.',
+        ],
+      };
+  }
+}
+
+function getFallbackStabilizeItems(
+  warnings: StructuralWarning[],
+  weakestPillar: string
+) {
+  if (warnings.length) {
+    return [
+      'Reduce the biggest fixed-cost pressure first.',
+      'Build a small cash buffer before trying to optimize everything else.',
+      weakestPillar
+        ? `Then strengthen ${formatPillarName(weakestPillar)} once the pressure eases.`
+        : 'Then strengthen the weakest area once the pressure eases.',
+    ];
+  }
+
+  return [
+    weakestPillar
+      ? `Start by improving ${formatPillarName(weakestPillar)}.`
+      : 'Start with the weakest part of your foundation first.',
+    'Focus on one move that improves consistency, not complexity.',
+    'Build momentum before adding more goals.',
+  ];
+}
+
+function getPillarBreakdownMicrocopy(pillar: string, score: number) {
+  if (score >= 75) {
+    return 'This area is giving your foundation real support.';
+  }
+
+  switch (pillar) {
+    case 'income':
+      return 'More stability or earning power here would lift the rest of the system.';
+    case 'spending':
+      return 'Better control here creates room for stronger choices elsewhere.';
+    case 'saving':
+      return 'A stronger buffer would make the whole system more resilient.';
+    case 'investing':
+      return 'More consistency here turns today’s progress into long-term growth.';
+    case 'debt':
+      return 'Less pressure here would improve flexibility quickly.';
+    case 'protection':
+      return 'Closing the right gap here would make your progress safer.';
+    case 'vision':
+      return 'Clearer direction here would help align the rest of your choices.';
+    default:
+      return 'This area still needs more support to strengthen the full foundation.';
+  }
 }
 
 function getPriorityHeadline(
+
   pillar: string,
   isBiggest: boolean,
   overallScore: number
@@ -531,11 +754,11 @@ function SectionShell({
   return (
     <section
       data-pdf-card="true"
-      className={`bg-white/95 backdrop-blur rounded-3xl border border-white/10 shadow-sm p-6 md:p-8 ${className}`}
+      className={`bg-white/95 backdrop-blur rounded-3xl border border-white/10 shadow-sm p-5 md:p-7 ${className}`}
     >
-      <div className="flex items-center gap-2 mb-5">
+      <div className="flex items-center gap-2 mb-4">
         <Icon className="w-5 h-5 text-copper-600" />
-        <h2 className="text-2xl font-bold text-navy-900">{title}</h2>
+        <h2 className="text-xl md:text-2xl font-bold text-navy-900">{title}</h2>
       </div>
       {children}
     </section>
@@ -607,8 +830,15 @@ export default function ResultsPage() {
       if (pillar === 'debt') return score >= 85;
       return score >= 75;
     });
-    return prioritized.length > 0 ? prioritized.slice(0, 3) : pillarEntries.slice(0, 2);
+    return prioritized.length > 0 ? prioritized.slice(0, 2) : pillarEntries.slice(0, 1);
   }, [pillarEntries]);
+
+  const meaningfulStrengths = useMemo(() => {
+    return strongest.filter(([pillar, score]) => {
+      if (pillar === 'debt') return score >= 85;
+      return score >= 75;
+    });
+  }, [strongest]);
 
   const weakest = useMemo(() => {
     const filtered = [...pillarEntries]
@@ -619,7 +849,7 @@ export default function ResultsPage() {
       });
 
     return filtered.length > 0
-      ? filtered.slice(0, 3)
+      ? filtered.slice(0, 2)
       : [...pillarEntries].sort((a, b) => a[1] - b[1]).slice(0, 2);
   }, [pillarEntries]);
 
@@ -644,7 +874,7 @@ export default function ResultsPage() {
 
   const score = result?.foundationScore ?? 0;
   const summary = result?.summary || '';
-  const insights = safeArray(result?.insights);
+  const insights = safeArray(result?.insights).slice(0, 2);
   const priorities = safeArray(result?.priorities ?? result?.topFocusAreas);
 
   const biggest = Object.keys(pillarScores).length
@@ -653,17 +883,15 @@ export default function ResultsPage() {
 
   const weakestPillar = weakest[0]?.[0] || '';
   const secondWeakest = weakest[1]?.[0] || '';
-  const thirdWeakest = weakest[2]?.[0] || '';
-  const planStart = result?.actionPlan?.immediate?.[0];
+    const planStart = result?.actionPlan?.immediate?.[0];
   const planAfter = result?.actionPlan?.longTerm?.[0];
-  const planSteps =
-    result?.actionPlan?.shortTerm?.length
-      ? result.actionPlan.shortTerm
-      : [secondWeakest, thirdWeakest]
-          .filter(Boolean)
-          .map((pillar, index) => getFallbackPlanStep(pillar, index));
+  const nextFocusStep =
+    result?.actionPlan?.shortTerm?.[0] ||
+    (secondWeakest ? getFallbackPlanStep(secondWeakest, 0) : null);
 
   const debtPressure = formatDebtPressure(Number((pillarScores as Record<string, number>)?.debt || 0));
+  const bestNextMoveCard = getBestNextMoveCard(warnings, metrics, weakestPillar, result?.nextStep);
+  const stabilizeItems = getFallbackStabilizeItems(warnings, weakestPillar);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0f2a44] via-[#132f4c] to-[#1e3a5f]">
@@ -788,7 +1016,7 @@ export default function ResultsPage() {
                     : score >= 40
                       ? 'a workable base that still needs reinforcement'
                       : 'a foundation that needs attention before growth becomes the priority'}
-                . This roadmap focuses on removing the remaining constraints holding you back.
+                .
               </p>
             </div>
 
@@ -856,7 +1084,7 @@ export default function ResultsPage() {
           <div
             data-pdf-dark-card="true"
             data-pdf-page-break-avoid="true"
-            className="bg-navy-900 text-white rounded-3xl shadow-sm p-6 md:p-8"
+            className="bg-navy-900 text-white rounded-3xl shadow-sm p-5 md:p-7"
           >
             <div className="text-sm uppercase tracking-[0.18em] text-copper-300 mb-3">
               Executive Summary
@@ -868,9 +1096,46 @@ export default function ResultsPage() {
 
             <div className="rounded-2xl bg-white/10 border border-white/10 p-5">
               <div className="text-copper-300 text-sm font-semibold mb-2">Best Next Move</div>
-              <p className="text-white leading-7">
-                {getStructuralBestNextMove(warnings, metrics, weakestPillar)}
-              </p>
+              <div className="space-y-4">
+                <div>
+                  <div className="font-semibold text-white mb-2">{bestNextMoveCard.title}</div>
+                  <p className="text-white/90 leading-7">{bestNextMoveCard.intro}</p>
+                </div>
+
+                <div>
+                  <div className="text-xs uppercase tracking-[0.18em] text-copper-200 mb-2">Right now</div>
+                  <ul className="space-y-2">
+                    {bestNextMoveCard.rightNow.map((item, index) => (
+                      <li key={`bnm-right-now-${index}`} className="flex items-start gap-2 text-white/90 leading-7">
+                        <span className="mt-3 h-1.5 w-1.5 rounded-full bg-copper-300" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div>
+                  <div className="text-xs uppercase tracking-[0.18em] text-copper-200 mb-2">Why this matters</div>
+                  <p className="text-white/90 leading-7">{bestNextMoveCard.whyThisMatters}</p>
+                </div>
+
+                <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
+                  <div className="text-xs uppercase tracking-[0.18em] text-copper-200 mb-2">Next step</div>
+                  <p className="text-white leading-7">{bestNextMoveCard.nextStep}</p>
+                </div>
+
+                <div>
+                  <div className="text-xs uppercase tracking-[0.18em] text-copper-200 mb-2">This week</div>
+                  <ul className="space-y-2">
+                    {bestNextMoveCard.thisWeek.map((item, index) => (
+                      <li key={`bnm-this-week-${index}`} className="flex items-start gap-2 text-white/90 leading-7">
+                        <span className="mt-3 h-1.5 w-1.5 rounded-full bg-copper-300" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -937,40 +1202,59 @@ export default function ResultsPage() {
             </div>
           </SectionShell>
 
-          <SectionShell icon={CheckCircle2} title="What Is Already Working">
-            <div className="space-y-4">
-              {strongest.map(([pillar, pillarScore]) => (
-                <div key={pillar} className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
-                  <div className="flex items-start justify-between gap-4 mb-3">
-                    <div className="flex items-center gap-3">
-                      {(() => {
-                        const Icon = PILLAR_ICONS[pillar] || CheckCircle2;
-                        return (
-                          <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center border border-emerald-200">
-                            <Icon className="w-5 h-5 text-emerald-700" />
+          <SectionShell
+            icon={meaningfulStrengths.length >= 2 ? CheckCircle2 : Target}
+            title={meaningfulStrengths.length >= 2 ? 'What Is Already Working' : 'Where to Stabilize First'}
+          >
+            {meaningfulStrengths.length >= 2 ? (
+              <div className="space-y-4">
+                {meaningfulStrengths.map(([pillar, pillarScore]) => (
+                  <div key={pillar} className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+                    <div className="flex items-start justify-between gap-4 mb-3">
+                      <div className="flex items-center gap-3">
+                        {(() => {
+                          const Icon = PILLAR_ICONS[pillar] || CheckCircle2;
+                          return (
+                            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center border border-emerald-200">
+                              <Icon className="w-5 h-5 text-emerald-700" />
+                            </div>
+                          );
+                        })()}
+                        <div>
+                          <div className="text-lg font-bold text-navy-900">
+                            {formatPillarName(pillar)}
                           </div>
-                        );
-                      })()}
-                      <div>
-                        <div className="text-lg font-bold text-navy-900">
-                          {formatPillarName(pillar)}
+                          <div className="text-sm text-gray-600">{pillarScore}/100</div>
                         </div>
-                        <div className="text-sm text-gray-600">{pillarScore}/100</div>
                       </div>
+
+                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white text-emerald-700 border border-emerald-200">
+                        Strong
+                      </span>
                     </div>
 
-                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white text-emerald-700 border border-emerald-200">
-                      Strong
-                    </span>
+                    <p className="text-gray-700 leading-7">
+                      {strengthDescriptions[pillar] ||
+                        'This part of your foundation is giving you something meaningful to build on.'}
+                    </p>
                   </div>
-
-                  <p className="text-gray-700 leading-7">
-                    {strengthDescriptions[pillar] ||
-                      'This part of your foundation is giving you something meaningful to build on.'}
-                  </p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+                <p className="text-gray-700 leading-7 mb-4">
+                  Right now, most areas of your foundation still need reinforcement. That is not unusual — it just means your focus should be on stabilizing before optimizing.
+                </p>
+                <ul className="space-y-3">
+                  {stabilizeItems.map((item, index) => (
+                    <li key={`stabilize-item-${index}`} className="flex items-start gap-2 text-sm text-gray-700">
+                      <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-copper-600" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </SectionShell>
         </section>
 
@@ -1048,7 +1332,7 @@ export default function ResultsPage() {
         {!features.showPremiumGuidance && (
           <section
             data-pdf-ignore="true"
-            className="bg-white/95 backdrop-blur rounded-3xl border border-copper-200 shadow-sm p-6 md:p-8 mb-6"
+            className="bg-white/95 backdrop-blur rounded-3xl border border-copper-200 shadow-sm p-5 md:p-7 mb-6"
           >
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
@@ -1091,7 +1375,7 @@ export default function ResultsPage() {
         )}
 
         <SectionShell icon={Clock3} title="Your 90-Day Plan" className="mb-6 pdf-avoid-break">
-          <div className="grid xl:grid-cols-4 md:grid-cols-2 gap-4">
+          <div className="grid lg:grid-cols-3 gap-4">
             <div className="rounded-2xl border border-copper-200 bg-copper-50/50 p-5">
               <div className="text-sm font-semibold text-copper-700 mb-3">
                 {planStart?.title || 'Start Here'}
@@ -1105,44 +1389,43 @@ export default function ResultsPage() {
               </p>
               <ul className="space-y-2">
                 {(planStart?.checklist?.length
-                  ? planStart.checklist
+                  ? planStart.checklist.slice(0, 2)
                   : [
                       `Identify one concrete way to improve ${formatPillarName(
                         weakestPillar || 'your next priority'
                       )}.`,
                       'Take one action this week.',
-                      'Set a simple 90-day target you can actually follow.',
                     ]).map((item, index) => (
                   <li
                     key={`immediate-check-${index}`}
                     className="flex items-start gap-2 text-sm text-navy-900"
                   >
-                    <span className="mt-1 h-1.5 w-1.5 rounded-full bg-copper-600" />
+                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-copper-600" />
                     <span>{item}</span>
                   </li>
                 ))}
               </ul>
             </div>
 
-            {planSteps.map((step, index) => (
-              <div key={`${step.title}-${index}`} className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
+            {nextFocusStep && (
+              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
                 <div className="text-sm font-semibold text-gray-500 mb-3">
-                  {step.title}
+                  {nextFocusStep.title}
                 </div>
-                <p className="text-gray-700 leading-7 mb-4">{step.body}</p>
+                <p className="text-gray-700 leading-7 mb-4">{nextFocusStep.body}</p>
                 <ul className="space-y-2">
-                  {step.checklist.map((item, itemIndex) => (
+                  {nextFocusStep.checklist.slice(0, 2).map((item, itemIndex) => (
                     <li
-                      key={`${step.title}-${itemIndex}`}
+                      key={`${nextFocusStep.title}-${itemIndex}`}
                       className="flex items-start gap-2 text-sm text-gray-700"
                     >
-                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-copper-600" />
+                      <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-copper-600" />
                       <span>{item}</span>
                     </li>
                   ))}
                 </ul>
               </div>
-            ))}
+            )}
 
             <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
               <div className="text-sm font-semibold text-gray-500 mb-3">
@@ -1154,17 +1437,16 @@ export default function ResultsPage() {
               </p>
               <ul className="space-y-2">
                 {(planAfter?.checklist?.length
-                  ? planAfter.checklist
+                  ? planAfter.checklist.slice(0, 2)
                   : [
                       'Review what improved over the last 90 days.',
-                      'Keep the habits that are working.',
                       'Choose the next area to strengthen.',
                     ]).map((item, index) => (
                   <li
                     key={`after-check-${index}`}
                     className="flex items-start gap-2 text-sm text-gray-700"
                   >
-                    <span className="mt-1 h-1.5 w-1.5 rounded-full bg-copper-600" />
+                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-copper-600" />
                     <span>{item}</span>
                   </li>
                 ))}
@@ -1207,10 +1489,7 @@ export default function ResultsPage() {
                   </div>
 
                   <p className="text-sm text-gray-700 leading-7">
-                    {pillarScore >= 75
-                      ? strengthDescriptions[pillar] ||
-                        'This area is giving your foundation real support.'
-                      : getPriorityBody(pillar, false)}
+                    {getPillarBreakdownMicrocopy(pillar, pillarScore)}
                   </p>
                 </div>
               );
@@ -1241,7 +1520,7 @@ export default function ResultsPage() {
           </button>
 
           <p className="text-sm text-slate-500 mt-2">
-            Track your progress, revisit your plan, and keep building momentum
+            Track progress, revisit your plan, and keep building momentum
           </p>
         </div>
 
