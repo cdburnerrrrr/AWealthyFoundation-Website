@@ -24,7 +24,7 @@ export default function Layout() {
     { to: '/foundation-score', label: 'Foundation Score' },
     { to: '/premium', label: 'Premium' },
     { to: '/articles', label: 'Articles' },
-    { to: '/Foundation Tools', label: 'Foundation Tools' },
+    { to: '/foundation-tools', label: 'Foundation Tools' },
   ];
 
   return (
