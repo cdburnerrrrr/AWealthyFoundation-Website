@@ -39,9 +39,10 @@ export default function FoundationToolsPage() {
             </p>
           </div>
 
-          {/* Tool */}
-          <FixedCostLoadTool />
-        </section>
+          <div className="space-y-8">
+  <FixedCostLoadTool />
+  <MonthlyMarginPlannerTool />
+</div>
 
         
 
