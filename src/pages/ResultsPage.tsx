@@ -59,6 +59,11 @@ type ResultShape = {
     fixedCostPressureRatio?: number;
     debtToIncomeRatio?: number;
     savingsRate?: number;
+    totalSavings?: number;
+    totalInvestments?: number;
+    totalDebtBalance?: number;
+    netWorth?: number;
+    homeEquity?: number;
     monthlyIncome?: number;
     monthlyHousingCost?: number;
     monthlyUtilities?: number;
@@ -653,6 +658,24 @@ function formatCurrency(value?: number) {
   }).format(Number(value));
 }
 
+function getFinancialPositionLabel(netWorth?: number | null) {
+  if (netWorth === undefined || netWorth === null || Number.isNaN(Number(netWorth))) return 'In progress';
+  if (Number(netWorth) < 0) return 'Shaky Foundation';
+  if (Number(netWorth) < 25000) return 'Framing Stage';
+  return 'Solid Foundation';
+}
+
+function getMetricsCallout(metrics?: ResultShape['metrics']) {
+  if (!metrics) return null;
+  const lines = [
+    metrics.monthlyFixedCosts ? `About ${formatCurrency(metrics.monthlyFixedCosts)} of your money is already committed each month.` : null,
+    metrics.totalSavings ? `Liquid savings: ${formatCurrency(metrics.totalSavings)}.` : null,
+    metrics.totalInvestments ? `Investments: ${formatCurrency(metrics.totalInvestments)}.` : null,
+    metrics.netWorth || metrics.netWorth === 0 ? `Estimated net worth: ${formatCurrency(metrics.netWorth)}.` : null,
+  ].filter(Boolean);
+  return lines.length ? lines.slice(0, 2).join(' ') : null;
+}
+
 function getStructuralBestNextMove(
   warnings: StructuralWarning[],
   metrics?: ResultShape['metrics'],
@@ -892,6 +915,8 @@ export default function ResultsPage() {
   const debtPressure = formatDebtPressure(Number((pillarScores as Record<string, number>)?.debt || 0));
   const bestNextMoveCard = getBestNextMoveCard(warnings, metrics, weakestPillar, result?.nextStep);
   const stabilizeItems = getFallbackStabilizeItems(warnings, weakestPillar);
+  const financialPositionLabel = getFinancialPositionLabel(metrics?.netWorth);
+  const metricsCallout = getMetricsCallout(metrics);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0f2a44] via-[#132f4c] to-[#1e3a5f]">
@@ -1048,7 +1073,7 @@ export default function ResultsPage() {
               )}
             </div>
 
-            <div className="grid sm:grid-cols-3 gap-4">
+            <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
               <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
                 <div className="text-sm text-white/70 mb-2">Foundation Score</div>
                 <div className="inline-flex items-center justify-center w-28 h-28 rounded-full bg-gradient-to-br from-[#ffcf9e] to-[#b87333] shadow-[0_20px_60px_rgba(194,120,58,0.45)] border border-white/30 text-5xl font-bold text-white">
@@ -1078,6 +1103,16 @@ export default function ResultsPage() {
                   Lower debt pressure generally means more flexibility.
                 </div>
               </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+                <div className="text-sm text-white/70 mb-2">Net Worth</div>
+                <div className="text-2xl font-bold text-white">
+                  {metrics?.netWorth || metrics?.netWorth === 0 ? formatCurrency(metrics.netWorth) : '—'}
+                </div>
+                <div className="mt-2 text-sm text-white/70">
+                  {financialPositionLabel}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1093,6 +1128,12 @@ export default function ResultsPage() {
               {summary ||
                 'Your report is ready. The next level of progress will come from strengthening the weakest part of your foundation first.'}
             </p>
+
+            {metricsCallout ? (
+              <div className="mb-6 rounded-2xl bg-white/10 border border-white/10 p-4 text-sm leading-7 text-white/90">
+                {metricsCallout}
+              </div>
+            ) : null}
 
             <div className="rounded-2xl bg-white/10 border border-white/10 p-5">
               <div className="text-copper-300 text-sm font-semibold mb-2">Best Next Move</div>

@@ -31,6 +31,7 @@ export const QUESTION_STRATEGY = {
     'vehicleDebt',
     'otherDebt',
     'monthlyDebtPayments',
+    'unexpectedExpenseHandling',
     'debtManageability',
     'progressPriority',
     'debtPaydownStrategy',
@@ -45,7 +46,7 @@ export const QUESTION_STRATEGY = {
     'monthlyChildcareCost',
     'childcarePressure',
     'carLoanBalance',
-    'leasePayment',
+    'monthlyVehiclePayment',
     'mortgageBalance',
     'homeValue',
     'mortgageImpact',
@@ -57,9 +58,16 @@ export const QUESTION_STRATEGY = {
     'investmentAccounts',
     'investmentConfidence',
     'totalInvestments',
+    'investmentMix',
     'savingsAutomation',
+    'totalDebtBalance',
+    'monthlyVehiclePayment',
+    'fixedCostPressureReview',
+    'emergencyFundReview',
+    'carPaymentOpportunityReview',
+    'netWorthEntry',
   ],
-  remove: ['dependents', 'incomeProtection', 'housingDebt'],
+  remove: ['dependents', 'incomeProtection', 'housingDebt', 'leasePayment'],
   defer: [
     'incomeGrowth',
     'incomeSources',
@@ -343,23 +351,17 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
 
   // SAVING
   {
-    key: 'totalLiquidSavings',
-    question:
-      'How much do you have in total liquid savings across checking, savings, and high-yield savings?',
-    type: 'single',
-    section: 'saving',
-    required: true,
-    options: [
-      { value: '100000_plus', label: '$100,000+' },
-      { value: '50000_100000', label: '$50,000-$100,000' },
-      { value: '30000_50000', label: '$30,000-$50,000' },
-      { value: '15000_30000', label: '$15,000-$30,000' },
-      { value: '5000_15000', label: '$5,000-$15,000' },
-      { value: '1000_5000', label: '$1,000-$5,000' },
-      { value: 'under_1000', label: 'Under $1,000' },
-    ],
-    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
-  },
+  key: 'totalLiquidSavings',
+  question:
+    'About how much do you currently have in liquid savings?',
+  type: 'number',
+  section: 'saving',
+  required: true,
+  placeholder: 'e.g. 8000',
+  helperText:
+    'Checking, savings, and emergency funds combined. A quick estimate is fine.',
+  tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+},
   {
     key: 'emergencyAccess',
     question:
@@ -375,6 +377,38 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     ],
     tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
   },
+
+{
+  key: 'fixedCostPressureReview',
+  question: 'See your fixed cost pressure',
+  type: 'single',
+  section: 'spending',
+  required: false,
+  options: [{ value: 'review', label: 'Show me the breakdown' }],
+  tags: {
+    modes: ['detailed'],
+    priority: 'conditional',
+    askIf: (a) =>
+      Boolean(a.monthlyTakeHomeIncome) &&
+      (Boolean(a.monthlyHousingCost) || Boolean(a.monthlyUtilities) || Boolean(a.monthlyDebtPayments)),
+  },
+},
+{
+  key: 'emergencyFundReview',
+  question: 'See your emergency fund coverage',
+  type: 'single',
+  section: 'saving',
+  required: false,
+  options: [{ value: 'review', label: 'Show me the coverage' }],
+  tags: {
+    modes: ['detailed'],
+    priority: 'conditional',
+    askIf: (a) =>
+      Boolean(a.totalLiquidSavings) &&
+      Boolean(a.monthlyTakeHomeIncome),
+  },
+},
+
   {
     key: 'savingConsistency',
     question: 'Are you currently saving money each month?',
@@ -419,43 +453,63 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
   },
   {
-    key: 'carLoanBalance',
-    question: 'What is your approximate car loan balance?',
-    type: 'single',
-    section: 'debt',
-    required: true,
-    options: [
-      { value: 'under_5000', label: 'Under $5,000' },
-      { value: '5000_15000', label: '$5,000-$15,000' },
-      { value: '15000_30000', label: '$15,000-$30,000' },
-      { value: '30000_plus', label: '$30,000+' },
-    ],
-    conditions: [{ key: 'vehicleDebt', operator: 'equals', value: 'car_loan' }],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) => a.vehicleDebt === 'car_loan',
-    },
+  key: 'carLoanBalance',
+  question: 'What is your approximate car loan balance?',
+  type: 'number',
+  section: 'debt',
+  required: true,
+  placeholder: 'e.g. 18000',
+  helperText: 'A best estimate is fine.',
+  conditions: [{ key: 'vehicleDebt', operator: 'equals', value: 'car_loan' }],
+  tags: {
+    modes: ['detailed'],
+    priority: 'conditional',
+    askIf: (a) => a.vehicleDebt === 'car_loan',
   },
+},
   {
-    key: 'leasePayment',
-    question: 'About how much is your monthly lease payment?',
-    type: 'single',
-    section: 'debt',
-    required: true,
-    conditions: [{ key: 'vehicleDebt', operator: 'equals', value: 'car_lease' }],
-    options: [
-      { value: 'under_250', label: 'Under $250' },
-      { value: '250_450', label: '$250-$450' },
-      { value: '450_650', label: '$450-$650' },
-      { value: '650_plus', label: '$650+' },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) => a.vehicleDebt === 'car_lease',
+  key: 'monthlyVehiclePayment',
+  question: 'About how much is your monthly vehicle payment?',
+  type: 'number',
+  section: 'debt',
+  required: true,
+  placeholder: 'e.g. 540',
+  helperText: 'Use your monthly loan or lease payment. An estimate is fine.',
+  conditions: [
+    {
+      operator: 'custom',
+      fn: (r) => r.vehicleDebt === 'car_loan' || r.vehicleDebt === 'car_lease',
     },
+  ],
+  tags: {
+    modes: ['detailed'],
+    priority: 'conditional',
+    askIf: (a) => a.vehicleDebt === 'car_loan' || a.vehicleDebt === 'car_lease',
   },
+},
+{
+  key: 'carPaymentOpportunityReview',
+  question: 'See what your car payment may be costing your future',
+  type: 'single',
+  section: 'debt',
+  required: false,
+  options: [{ value: 'review', label: 'Show me the long-term impact' }],
+  conditions: [
+    {
+      operator: 'custom',
+      fn: (r) =>
+        (r.vehicleDebt === 'car_loan' || r.vehicleDebt === 'car_lease') &&
+        Number(r.monthlyVehiclePayment || 0) >= 250,
+    },
+  ],
+  tags: {
+    modes: ['detailed'],
+    priority: 'conditional',
+    askIf: (a) =>
+      (a.vehicleDebt === 'car_loan' || a.vehicleDebt === 'car_lease') &&
+      Number(a.monthlyVehiclePayment || 0) >= 250,
+  },
+},
   {
     key: 'otherDebt',
     question: 'Which of the following debts do you currently have?',
@@ -474,18 +528,41 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
   },
   {
-    key: 'monthlyDebtPayments',
-    question: 'About how much are your monthly non-mortgage debt payments total?',
-    type: 'single',
+    key: 'totalDebtBalance',
+    question: 'About how much total non-mortgage debt do you have right now?',
+    type: 'number',
     section: 'debt',
     required: true,
-    options: [
-      { value: 'none', label: 'None' },
-      { value: 'under_200', label: 'Under $200' },
-      { value: '200_500', label: '$200-$500' },
-      { value: '500_1000', label: '$500-$1,000' },
-      { value: '1000_plus', label: '$1,000+' },
+    placeholder: 'e.g. 24000',
+    helperText:
+      'Include credit cards, car loans, student loans, personal loans, and other non-mortgage debt. A quick estimate is fine.',
+    conditions: [
+      {
+        operator: 'custom',
+        fn: (r) =>
+          r.vehicleDebt === 'car_loan' ||
+          r.vehicleDebt === 'car_lease' ||
+          (Array.isArray(r.otherDebt) && !r.otherDebt.includes('none')),
+      },
     ],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) =>
+        a.vehicleDebt === 'car_loan' ||
+        a.vehicleDebt === 'car_lease' ||
+        (Array.isArray(a.otherDebt) && !a.otherDebt.includes('none')),
+    },
+  },
+  {
+    key: 'monthlyDebtPayments',
+    question: 'About how much do you pay toward debt each month?',
+    type: 'number',
+    section: 'debt',
+    required: true,
+    placeholder: 'e.g. 450',
+    helperText:
+      'Include credit cards, car loans, student loans, and personal loans. A quick estimate is fine.',
     conditions: [
       {
         operator: 'custom',
@@ -503,6 +580,21 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
         a.vehicleDebt === 'car_lease' ||
         (Array.isArray(a.otherDebt) && !a.otherDebt.includes('none')),
     },
+  },
+  {
+    key: 'unexpectedExpenseHandling',
+    question: 'If a $1,000 expense hit this month, what would you most likely do?',
+    type: 'single',
+    section: 'protection',
+    required: true,
+    options: [
+      { value: 'savings', label: 'Use savings' },
+      { value: 'credit', label: 'Use credit' },
+      { value: 'adjust', label: 'Cut other spending and work around it' },
+      { value: 'family', label: 'Rely on family or someone else' },
+      { value: 'uncertain', label: 'I’m not really sure' },
+    ],
+    tags: { modes: ['detailed'], priority: 'core' },
   },
   {
     key: 'debtManageability',
@@ -804,6 +896,46 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
         askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
       },
     },
+
+{
+  key: 'investmentMix',
+  question: 'What best describes your investments?',
+  type: 'single',
+  section: 'investing',
+  required: true,
+  conditions: [
+    { key: 'investingStatus', operator: 'in', value: ['yes_consistently', 'yes_irregularly'] },
+  ],
+  options: [
+    { value: 'diversified', label: 'Mostly retirement accounts / index funds' },
+    { value: 'mixed', label: 'Mix of funds and individual stocks' },
+    { value: 'speculative', label: 'Mostly individual stocks or crypto' },
+    { value: 'unknown', label: 'Not sure' },
+  ],
+  tags: {
+    modes: ['detailed'],
+    priority: 'conditional',
+    askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
+  },
+},
+
+
+{
+  key: 'netWorthEntry',
+  question: 'Let’s pull your full financial picture together',
+  type: 'single',
+  section: 'vision',
+  required: false,
+  options: [{ value: 'start', label: 'Calculate my net worth' }],
+  tags: {
+    modes: ['detailed'],
+    priority: 'conditional',
+    askIf: (a) =>
+      Boolean(a.totalLiquidSavings) &&
+      (Boolean(a.totalInvestments) || Boolean(a.totalDebtBalance) || Boolean(a.carLoanBalance) || Boolean(a.mortgageBalance)),
+  },
+},
+
 
   // VISION
   {

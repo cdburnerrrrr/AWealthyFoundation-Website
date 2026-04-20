@@ -26,8 +26,15 @@ import {
 } from '../types/assessment';
 import { getDetailedQuestions, getSnapshotQuestions } from '../types/optimized_question_config';
 import { useAppStore } from '../store/appStore';
+import NetWorthActivity from '../components/activities/NetWorthActivity';
+import CarPaymentActivity from '../components/activities/CarPaymentActivity';
 
 type ResponseValue = string | string[] | number | null;
+type ActivityKey =
+  | 'fixedCostPressureReview'
+  | 'emergencyFundReview'
+  | 'carPaymentOpportunityReview'
+  | 'netWorthEntry';
 
 const SECTION_ICONS: Record<string, React.ElementType> = {
   income: DollarSign,
@@ -45,6 +52,13 @@ const ROUTING_KEYS = new Set([
   'ageRange',
   'relationshipStatus',
   'housingStatus',
+]);
+
+const ACTIVITY_KEYS = new Set<ActivityKey>([
+  'fixedCostPressureReview',
+  'emergencyFundReview',
+  'carPaymentOpportunityReview',
+  'netWorthEntry',
 ]);
 
 const SECTION_META: Record<
@@ -134,7 +148,7 @@ const SECTION_META: Record<
 const INLINE_GROUPS: Record<string, string[]> = {
   relationshipStatus: ['monthlyChildcareCost', 'childcarePressure', 'lifeInsurance'],
   housingStatus: ['mortgageBalance', 'homeValue', 'mortgageImpact'],
-  vehicleDebt: ['carLoanBalance', 'leasePayment'],
+  vehicleDebt: ['carLoanBalance', 'monthlyVehiclePayment'],
   otherDebt: ['creditCardBehavior'],
   healthInsurance: ['incomeInterruptionCoverage', 'propertyCoverage', 'autoCoverage'],
   investingStatus: [
@@ -142,6 +156,7 @@ const INLINE_GROUPS: Record<string, string[]> = {
     'investmentAccounts',
     'investmentConfidence',
     'totalInvestments',
+    'investmentMix',
   ],
   savingConsistency: ['savingsAutomation'],
 };
@@ -245,6 +260,87 @@ function getLatestFreeAssessment(assessmentHistory: any[]) {
   return [...(assessmentHistory || [])]
     .filter((item) => item?.assessmentType === 'free')
     .sort((a, b) => (b?.createdAt || 0) - (a?.createdAt || 0))[0] || null;
+}
+
+function toNumber(value: unknown): number {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+  if (typeof value === 'string') {
+    const parsed = Number(value.replace(/[^\d.-]/g, ''));
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+}
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function formatPercent(value: number) {
+  return `${Math.round(value)}%`;
+}
+
+function getFixedCosts(responses: Record<string, any>) {
+  return (
+    toNumber(responses.monthlyHousingCost) +
+    toNumber(responses.monthlyUtilities) +
+    toNumber(responses.monthlyChildcareCost) +
+    toNumber(responses.monthlyDebtPayments)
+  );
+}
+
+function getEmergencyMonths(responses: Record<string, any>) {
+  const totalLiquidSavings = toNumber(responses.totalLiquidSavings);
+  const fixedCosts = getFixedCosts(responses);
+  if (fixedCosts <= 0) return 0;
+  return totalLiquidSavings / fixedCosts;
+}
+
+function getFixedCostTone(load: number) {
+  if (load < 50) {
+    return {
+      label: 'Healthy',
+      tone: 'border-emerald-200 bg-emerald-50 text-emerald-900',
+      body: 'A healthy share of your income is still available for saving, investing, and handling surprises.',
+    };
+  }
+  if (load < 70) {
+    return {
+      label: 'Tight',
+      tone: 'border-amber-200 bg-amber-50 text-amber-900',
+      body: 'Your structure is workable, but fixed costs are tight enough to slow progress elsewhere.',
+    };
+  }
+  return {
+    label: 'Stressed',
+    tone: 'border-red-200 bg-red-50 text-red-900',
+    body: 'Too much of your income is already committed, which limits breathing room before groceries, gas, and unexpected expenses even show up.',
+  };
+}
+
+function getEmergencyFundTone(months: number) {
+  if (months >= 6) {
+    return {
+      label: 'Solid Foundation',
+      tone: 'border-emerald-200 bg-emerald-50 text-emerald-900',
+      body: 'You have a real buffer in place. Now it is about protecting and using that strength wisely.',
+    };
+  }
+  if (months >= 3) {
+    return {
+      label: 'Framing Stage',
+      tone: 'border-amber-200 bg-amber-50 text-amber-900',
+      body: 'You have some real protection in place, but a stronger buffer would make the rest of the structure more resilient.',
+    };
+  }
+  return {
+    label: 'Shaky Foundation',
+    tone: 'border-red-200 bg-red-50 text-red-900',
+    body: 'This is more common than most people think at this stage. Let’s pull out the blueprints and strengthen the base first.',
+    };
 }
 
 function TrustBlock() {
@@ -384,7 +480,7 @@ function IntroCard({ onStart, isContinueMode = false }: IntroCardProps) {
   return (
     <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 md:p-10">
       <div className="inline-flex rounded-full bg-copper-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-copper-700">
-{isContinueMode ? 'Continue Your Full Assessment' : 'Guided Financial Review'}
+        {isContinueMode ? 'Continue Your Full Assessment' : 'Guided Financial Review'}
       </div>
 
       <div className="mt-5 grid gap-8 lg:grid-cols-[1.25fr_0.95fr] lg:items-start">
@@ -414,7 +510,7 @@ function IntroCard({ onStart, isContinueMode = false }: IntroCardProps) {
           <div className="rounded-2xl bg-gray-50 border border-gray-100 p-4">
             <h2 className="text-sm font-semibold text-navy-900">What to expect</h2>
             <ul className="mt-3 space-y-2 text-sm text-gray-600">
-              <li>{isContinueMode ? 'Takes about 2–3 minutes' : 'Takes about 8–12 minutes'}</li>
+              <li>{isContinueMode ? 'Takes about 3–5 minutes' : 'Takes about 8–12 minutes'}</li>
               <li>Most answers can be estimates</li>
               <li>You do not need every number in front of you</li>
               <li>{isContinueMode ? 'You will not repeat the questions you already answered' : 'We’ll guide you section by section'}</li>
@@ -663,6 +759,173 @@ function InlineChildCard({
   );
 }
 
+type FixedCostPressureActivityProps = {
+  responses: Record<string, any>;
+  onContinue: () => void;
+};
+
+function FixedCostPressureActivity({ responses, onContinue }: FixedCostPressureActivityProps) {
+  const income = toNumber(responses.monthlyTakeHomeIncome);
+  const fixedCosts = getFixedCosts(responses);
+  const load = income > 0 ? (fixedCosts / income) * 100 : 0;
+  const remaining = income - fixedCosts;
+  const tone = getFixedCostTone(load);
+
+  return (
+    <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-7">
+      <div className="mb-4 inline-flex rounded-full bg-copper-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-copper-700">
+        Fixed Cost Review
+      </div>
+
+      <h2 className="text-2xl font-bold tracking-tight text-navy-900">
+        Your fixed costs are {formatPercent(load)} of your income
+      </h2>
+
+      <p className="mt-3 text-sm leading-7 text-slate-600">
+        With {formatCurrency(fixedCosts)} in fixed costs and {formatCurrency(income)} in take-home income,
+        that leaves about {formatCurrency(Math.max(remaining, 0))} for groceries, gas, going out, and unexpected expenses.
+      </p>
+
+      <div className={`mt-6 rounded-2xl border p-5 ${tone.tone}`}>
+        <div className="text-lg font-bold">{tone.label}</div>
+        <p className="mt-2 leading-7">{tone.body}</p>
+      </div>
+
+      <div className="mt-6 grid gap-4 md:grid-cols-3">
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div className="text-sm text-slate-500">Monthly Income</div>
+          <div className="mt-2 text-2xl font-bold text-navy-900">{formatCurrency(income)}</div>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div className="text-sm text-slate-500">Fixed Costs</div>
+          <div className="mt-2 text-2xl font-bold text-navy-900">{formatCurrency(fixedCosts)}</div>
+        </div>
+        <div className="rounded-2xl border border-copper-200 bg-copper-50 p-4">
+          <div className="text-sm text-slate-500">Monthly Margin</div>
+          <div className="mt-2 text-2xl font-bold text-navy-900">{formatCurrency(remaining)}</div>
+        </div>
+      </div>
+
+      <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+        <div className="text-lg font-bold text-navy-900">Blueprint takeaway</div>
+        <p className="mt-2 leading-7 text-slate-700">
+          When fixed costs rise too high, the whole house gets tighter. Looking for ways to either reduce your biggest fixed cost or increase income will usually give you the fastest win.
+        </p>
+      </div>
+
+      <div className="mt-6 flex justify-end">
+        <button
+          type="button"
+          onClick={onContinue}
+          className="inline-flex items-center gap-2 rounded-2xl bg-copper-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-copper-700"
+        >
+          Continue
+          <ArrowRight className="h-4 w-4" />
+        </button>
+      </div>
+    </section>
+  );
+}
+
+type EmergencyFundActivityProps = {
+  responses: Record<string, any>;
+  onContinue: () => void;
+};
+
+function EmergencyFundActivity({ responses, onContinue }: EmergencyFundActivityProps) {
+  const savings = toNumber(responses.totalLiquidSavings);
+  const months = getEmergencyMonths(responses);
+  const fixedCosts = getFixedCosts(responses);
+  const tone = getEmergencyFundTone(months);
+
+  return (
+    <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-7">
+      <div className="mb-4 inline-flex rounded-full bg-copper-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-copper-700">
+        Emergency Fund Review
+      </div>
+
+      <h2 className="text-2xl font-bold tracking-tight text-navy-900">
+        Your savings would cover about {months.toFixed(1)} months of core expenses
+      </h2>
+
+      <p className="mt-3 text-sm leading-7 text-slate-600">
+        With about {formatCurrency(savings)} in liquid savings and roughly {formatCurrency(fixedCosts)} in core monthly costs, this is the cushion you currently have if life gets expensive.
+      </p>
+
+      <div className={`mt-6 rounded-2xl border p-5 ${tone.tone}`}>
+        <div className="text-lg font-bold">{tone.label}</div>
+        <p className="mt-2 leading-7">{tone.body}</p>
+      </div>
+
+      <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+        <div className="text-lg font-bold text-navy-900">Blueprint takeaway</div>
+        <p className="mt-2 leading-7 text-slate-700">
+          A stronger emergency fund makes the whole foundation more stable. This is one of the clearest ways to reduce stress and avoid turning a surprise into new debt.
+        </p>
+      </div>
+
+      <div className="mt-6 flex justify-end">
+        <button
+          type="button"
+          onClick={onContinue}
+          className="inline-flex items-center gap-2 rounded-2xl bg-copper-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-copper-700"
+        >
+          Continue
+          <ArrowRight className="h-4 w-4" />
+        </button>
+      </div>
+    </section>
+  );
+}
+
+type ActivityStepProps = {
+  activityKey: ActivityKey;
+  responses: Record<string, any>;
+  onComplete: (updates?: Record<string, any>) => void;
+};
+
+function ActivityStep({ activityKey, responses, onComplete }: ActivityStepProps) {
+  const activityMap: Record<ActivityKey, React.ReactNode> = {
+    fixedCostPressureReview: (
+      <FixedCostPressureActivity
+        responses={responses}
+        onContinue={() => onComplete({ fixedCostPressureReview: 'reviewed' })}
+      />
+    ),
+    emergencyFundReview: (
+      <EmergencyFundActivity
+        responses={responses}
+        onContinue={() => onComplete({ emergencyFundReview: 'reviewed' })}
+      />
+    ),
+    carPaymentOpportunityReview: (
+      <CarPaymentActivity
+        monthlyVehiclePayment={toNumber(responses.monthlyVehiclePayment)}
+        onContinue={() => onComplete({ carPaymentOpportunityReview: 'reviewed' })}
+      />
+    ),
+    netWorthEntry: (
+      <NetWorthActivity
+        initialValues={{
+          totalLiquidSavings: toNumber(responses.totalLiquidSavings),
+          totalInvestments: toNumber(responses.totalInvestments),
+          homeValue: toNumber(responses.homeValue),
+          mortgageBalance: toNumber(responses.mortgageBalance),
+          totalDebtBalance: toNumber(responses.totalDebtBalance),
+        }}
+        onComplete={({ netWorth }) =>
+          onComplete({
+            netWorthEntry: 'completed',
+            netWorth,
+          })
+        }
+      />
+    ),
+  };
+
+  return <>{activityMap[activityKey]}</>;
+}
+
 export default function ComprehensiveQuestionnaire() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -718,6 +981,8 @@ export default function ComprehensiveQuestionnaire() {
   );
 
   const currentQuestion = renderableQuestions[currentStep];
+  const isActivityStep =
+    currentQuestion && ACTIVITY_KEYS.has(currentQuestion.key as ActivityKey);
 
   const currentInlineQuestions = useMemo(
     () =>
@@ -770,6 +1035,7 @@ export default function ComprehensiveQuestionnaire() {
 
   const canProceed = useMemo(() => {
     if (!currentQuestion) return false;
+    if (isActivityStep) return true;
 
     const group = [currentQuestion, ...currentInlineQuestions];
 
@@ -777,7 +1043,7 @@ export default function ComprehensiveQuestionnaire() {
       if (question.required === false) return true;
       return isAnswered(question, responses[question.key]);
     });
-  }, [currentInlineQuestions, currentQuestion, responses]);
+  }, [currentInlineQuestions, currentQuestion, responses, isActivityStep]);
 
   const goNext = () => {
     if (!currentQuestion || currentStep >= renderableQuestions.length - 1) return;
@@ -801,6 +1067,36 @@ export default function ComprehensiveQuestionnaire() {
 
     setCurrentStep((prev) => prev - 1);
     setMode('question');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const completeActivity = (updates?: Record<string, any>) => {
+    if (!currentQuestion) return;
+
+    let nextResponses = { ...responses };
+    let filtered = visibleQuestions;
+
+    if (updates) {
+      nextResponses = { ...nextResponses, ...updates };
+      filtered = isContinueMode ? getContinueModeQuestions(nextResponses) : getDetailedQuestions(nextResponses);
+      setResponses(nextResponses);
+      setVisibleQuestions(filtered);
+    }
+
+    const nextRenderable = getRenderableQuestions(filtered);
+    if (currentStep >= nextRenderable.length - 1) {
+      return;
+    }
+
+    const nextQuestion = nextRenderable[currentStep + 1];
+    setCurrentStep((prev) => prev + 1);
+
+    if (nextQuestion && getEffectiveSectionKey(nextQuestion) !== getEffectiveSectionKey(currentQuestion)) {
+      setMode('transition');
+    } else {
+      setMode('question');
+    }
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -991,6 +1287,12 @@ export default function ComprehensiveQuestionnaire() {
                 setMode('question');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
+            />
+          ) : isActivityStep && currentQuestion ? (
+            <ActivityStep
+              activityKey={currentQuestion.key as ActivityKey}
+              responses={responses}
+              onComplete={completeActivity}
             />
           ) : (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-8">

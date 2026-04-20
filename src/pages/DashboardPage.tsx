@@ -49,6 +49,7 @@ type MetricsShape = {
   homeEquity?: number;
   totalSavings?: number;
   totalInvestments?: number;
+  totalDebtBalance?: number;
   monthlyIncome?: number;
   monthlyDebtPayments?: number;
   monthlyHousingCost?: number;
@@ -166,7 +167,7 @@ function getDashboardNextMoveCard(
   if (snapshot && snapshot.fixedCostLoad >= 65) {
     return {
       title: 'Create breathing room first',
-      body: 'Your next move should focus on structure, not optimization. A large share of take-home income is already committed, so the fastest lift will come from changing one major fixed-cost pressure point.',
+      body: `With about ${formatCurrency(snapshot.fixedCosts)} of ${formatCurrency(snapshot.income)} already committed each month, your next move should focus on structure, not optimization. The fastest lift will likely come from changing one major fixed-cost pressure point.`,
       checklist: [
         'List housing, utilities, childcare, and debt payments in one place.',
         'Identify the single fixed cost creating the most pressure.',
@@ -178,7 +179,7 @@ function getDashboardNextMoveCard(
   if (snapshot && snapshot.fixedCostLoad >= 50) {
     return {
       title: 'Protect your monthly margin',
-      body: 'Your structure is workable, but fixed costs are still tight enough to slow progress. Relief here should make the rest of the plan easier to execute.',
+      body: `With fixed costs around ${formatCurrency(snapshot.fixedCosts)} a month, your structure is workable, but still tight enough to slow progress. Creating even a little more monthly margin should make the rest of the plan easier to execute.`,
       checklist: [
         'Review the top one or two fixed costs in your budget.',
         'Choose one realistic change to test over the next 30 days.',
@@ -376,7 +377,7 @@ function getDashboardWhyThisMatters(
   const incomeGrowthPotential = answers.incomeGrowthPotential;
 
   if (snapshot && snapshot.fixedCostLoad >= 60) {
-    return 'When too much take-home income is already committed, even strong habits can feel tight. Creating more breathing room gives the rest of your plan room to work.';
+    return `With about ${formatCurrency(snapshot.fixedCosts)} of ${formatCurrency(snapshot.income)} already committed each month, even strong habits can feel tight. Creating more breathing room gives the rest of your plan room to work.`;
   }
 
   if (weakestPillar === 'protection') {
@@ -548,6 +549,7 @@ function getStructuralSnapshot(metrics?: MetricsShape | null) {
     savingsRate: Number(metrics.savingsRate ?? 0),
     totalSavings: Number(metrics.totalSavings ?? 0),
     totalInvestments: Number(metrics.totalInvestments ?? 0),
+    totalDebtBalance: Number(metrics.totalDebtBalance ?? 0),
     netWorth: Number(metrics.netWorth ?? 0),
     homeEquity: Number(metrics.homeEquity ?? 0),
   };
@@ -1694,12 +1696,16 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                           Net Worth
                         </div>
                         <div className="text-3xl font-bold text-navy-900">
-                          Coming Soon
+                          {snapshot.netWorth ? formatCurrency(snapshot.netWorth) : '—'}
                         </div>
                         <p className="mt-2 text-sm text-gray-500">
-                          We will unlock a more accurate net worth view once more
-                          asset and liability data is included.
+                          Built from savings, investments, home equity, and debt inputs currently in your profile.
                         </p>
+                        {(snapshot.totalDebtBalance ?? 0) > 0 ? (
+                          <p className="mt-2 text-xs text-slate-500">
+                            Non-mortgage debt in the picture: {formatCurrency(snapshot.totalDebtBalance)}
+                          </p>
+                        ) : null}
                       </div>
                     </>
                   ) : (

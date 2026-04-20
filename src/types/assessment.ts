@@ -239,6 +239,7 @@ export interface FinancialMetrics {
   monthlyUtilities?: number;
   monthlyChildcareCost?: number;
   monthlyFixedCosts?: number;
+  totalDebtBalance?: number;
 }
 
 
@@ -359,6 +360,7 @@ const SNAPSHOT_QUESTION_KEYS = new Set([
   'progressPriority',
   'otherDebt',
   'monthlyDebtPayments',
+  'unexpectedExpenseHandling',
   'debtManageability',
   'debtPaydownStrategy',
   'healthInsurance',
@@ -388,6 +390,9 @@ function midpointRangeMap(map: Record<string, number>, value: string | undefined
 }
 
 function getLiquidSavingsEstimate(a: Record<string, any>): number {
+  const direct = toNumber(a.totalLiquidSavings);
+  if (direct > 0) return direct;
+
   const savingsMap: Record<string, number> = {
     '100000_plus': 100000,
     '50000_100000': 75000,
@@ -414,7 +419,7 @@ function getEmergencyFundMonthsEstimate(a: Record<string, any>): number {
 }
 
 function hasMortgage(a: Record<string, any>) {
-  return a.housingDebt === 'yes';
+  return a.housingStatus === 'own_with_mortgage' || a.housingDebt === 'yes';
 }
 
 function hasVehicleDebt(a: Record<string, any>) {
@@ -504,13 +509,7 @@ export function determineLifeStage(input: {
     return investingActivity ? 'growth' : 'starting_out';
   }
 
-  const hasStarterSavings = [
-    '5000_15000',
-    '15000_30000',
-    '30000_50000',
-    '50000_100000',
-    '100000_plus',
-  ].includes(answers.totalLiquidSavings);
+  const hasStarterSavings = hasStarterSavingsValue(answers);
 
   const debtHeavy =
     pillars.debt < 50 ||
@@ -1942,7 +1941,46 @@ function homeEquityEstimate(a: Record<string, any>): number {
   return Math.max(0, toNumber(a.homeValue) - toNumber(a.mortgageBalance));
 }
 
+function totalDebtBalanceEstimate(a: Record<string, any>): number {
+  const direct = toNumber(a.totalDebtBalance);
+  if (direct > 0) return direct;
+
+  const carLoanMap: Record<string, number> = {
+    under_5000: 2500,
+    '5000_15000': 10000,
+    '15000_30000': 22500,
+    '30000_plus': 35000,
+  };
+
+  let total = 0;
+
+  if (a.vehicleDebt === 'car_loan') {
+    total += carLoanMap[a.carLoanBalance] || 0;
+  }
+
+  const debts = safeArray(a.otherDebt);
+  if (debts.includes('credit_cards')) total += 5000;
+  if (debts.includes('student_loans')) total += 25000;
+  if (debts.includes('personal_loan')) total += 10000;
+  if (debts.includes('bnpl')) total += 1500;
+  if (debts.includes('medical')) total += 3000;
+  if (debts.includes('other')) total += 5000;
+
+  return total;
+}
+
+function hasStarterSavingsValue(a: Record<string, any>): boolean {
+  return getLiquidSavingsEstimate(a) >= 5000;
+}
+
+function hasHighSavingsValue(a: Record<string, any>): boolean {
+  return getLiquidSavingsEstimate(a) >= 30000;
+}
+
 function debtPaymentEstimate(a: Record<string, any>): number {
+  const direct = toNumber(a.monthlyDebtPayments);
+  if (direct > 0 || a.monthlyDebtPayments === 0) return direct;
+
   const map: Record<string, number> = {
     none: 0,
     under_250: 125,
@@ -1956,16 +1994,6 @@ function debtPaymentEstimate(a: Record<string, any>): number {
 }
 
 export function calculateAllFinancialMetrics(answers: Record<string, any>): FinancialMetrics {
-  const savingsMap: Record<string, number> = {
-    '100000_plus': 100000,
-    '50000_100000': 75000,
-    '30000_50000': 40000,
-    '15000_30000': 22500,
-    '5000_15000': 10000,
-    '1000_5000': 3000,
-    'under_1000': 500,
-  };
-
   const investmentMap: Record<string, number> = {
     '500000_plus': 500000,
     '250000_500000': 375000,
@@ -1982,8 +2010,12 @@ export function calculateAllFinancialMetrics(answers: Record<string, any>): Fina
   const monthlyUtilities = toNumber(answers.monthlyUtilities);
   const monthlyChildcareCost = toNumber(answers.monthlyChildcareCost);
   const monthlyFixedCosts = monthlyHousingCost + monthlyUtilities + monthlyChildcareCost + monthlyDebtPayments;
-  const totalSavings = midpointRangeMap(savingsMap, answers.totalLiquidSavings);
-  const totalInvestments = midpointRangeMap(investmentMap, answers.totalInvestments);
+  const totalSavings = getLiquidSavingsEstimate(answers);
+  const totalInvestments = toNumber(answers.totalInvestments) > 0
+    ? toNumber(answers.totalInvestments)
+    : midpointRangeMap(investmentMap, answers.totalInvestments);
+  const totalDebtBalance = totalDebtBalanceEstimate(answers);
+  const mortgageBalance = hasMortgage(answers) ? toNumber(answers.mortgageBalance) : 0;
   const homeEquity = homeEquityEstimate(answers);
 
   const debtToIncomeRatio =
@@ -1999,11 +2031,13 @@ export function calculateAllFinancialMetrics(answers: Record<string, any>): Fina
     else savingsRate = 0;
   }
 
+  const netWorth = totalSavings + totalInvestments + toNumber(answers.homeValue) - mortgageBalance - totalDebtBalance;
+
   return {
     debtToIncomeRatio,
     fixedCostPressureRatio,
     savingsRate,
-    netWorth: totalSavings + totalInvestments + homeEquity,
+    netWorth,
     homeEquity,
     totalSavings,
     totalInvestments,
@@ -2013,6 +2047,7 @@ export function calculateAllFinancialMetrics(answers: Record<string, any>): Fina
     monthlyUtilities,
     monthlyChildcareCost,
     monthlyFixedCosts,
+    totalDebtBalance,
   };
 }
 
@@ -2755,7 +2790,7 @@ function getTopFocusAreas(
       }
 
       case 'saving': {
-        const highSavings = ['30000_50000', '50000_100000', '100000_plus'].includes(answers.totalLiquidSavings);
+        const highSavings = hasHighSavingsValue(answers);
         const automatedSaving = answers.savingsAutomation === 'fully_automated' || answers.savingsAutomation === 'partially_automated';
 
         if (derivedSignals.noEmergencyFund) {
@@ -3029,7 +3064,7 @@ function buildNextStep(
   }
 
   if (weakest === 'saving') {
-    const highSavings = ['30000_50000', '50000_100000', '100000_plus'].includes(answers.totalLiquidSavings);
+    const highSavings = hasHighSavingsValue(answers);
     const automatedSaving = answers.savingsAutomation === 'fully_automated' || answers.savingsAutomation === 'partially_automated';
 
     if (highSavings && automatedSaving && pillars.saving >= 70) {
@@ -3189,7 +3224,7 @@ function getDynamicPlanStep(
         };
       }
 
-      if (['30000_50000', '50000_100000', '100000_plus'].includes(answers.totalLiquidSavings) && (answers.savingsAutomation === 'fully_automated' || answers.savingsAutomation === 'partially_automated')) {
+      if (hasHighSavingsValue(answers) && (answers.savingsAutomation === 'fully_automated' || answers.savingsAutomation === 'partially_automated')) {
         return {
           title,
           body: 'Your savings system is already strong. The smarter next move is to review how much cash you truly want to keep liquid and whether excess reserves should support investing, debt reduction, or another major goal.',
