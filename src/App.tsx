@@ -23,7 +23,7 @@ import PremiumPage from './pages/PremiumPage';
 import BuildingBlocksPage from './pages/BuildingBlocksPage';
 import FinancialPillarsPage from './pages/FinancialPillarsPage';
 import NewsletterPage from './pages/NewsletterPage';
-import TrustedExpertsPage from './pages/TrustedExpertsPage';
+import FoundationToolsPage from './pages/FoundationToolsPage';
 import Layout from './layouts/Layouts';
 
 function App() {
@@ -174,7 +174,7 @@ function App() {
           <Route path="/articles" element={<ArticlesPage />} />
           <Route path="/articles/new" element={<NewArticlePage />} />
           <Route path="/articles/:id" element={<ArticleDetailPage />} />
-          <Route path="/trusted-experts" element={<TrustedExpertsPage />} />
+          <Route path="/foundation-tools" element={<FoundationToolsPage />} />
           <Route path="/results/snapshot" element={<SnapshotResultsPage />} />
 
           <Route
