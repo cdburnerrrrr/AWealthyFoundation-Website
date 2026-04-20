@@ -26,6 +26,7 @@ import {
 } from '../types/assessment';
 import { getDetailedQuestions, getSnapshotQuestions } from '../types/optimized_question_config';
 import { useAppStore } from '../store/appStore';
+import { useUserPlan } from '../hooks/useUserPlan';
 import NetWorthActivity from '../components/activities/NetWorthActivity';
 import CarPaymentActivity from '../components/activities/CarPaymentActivity';
 
@@ -949,6 +950,7 @@ export default function ComprehensiveQuestionnaire() {
     snapshotAnswers,
     setSnapshotAnswers,
     currentAssessment,
+    profile,
   } = useAppStore();
 
   const isContinueMode = searchParams.get('mode') === 'continue';
@@ -956,6 +958,38 @@ export default function ComprehensiveQuestionnaire() {
     () => getLatestFreeAssessment(assessmentHistory as any[]),
     [assessmentHistory]
   );
+
+  const actualPlan = useUserPlan();
+  const plan = actualPlan === 'standard' || actualPlan === 'premium' ? actualPlan : 'free';
+  const planExpiresAt = profile?.plan_expires_at ? new Date(profile.plan_expires_at) : null;
+  const hasActivePaidAccess =
+    plan !== 'free' && !!planExpiresAt && planExpiresAt.getTime() > Date.now();
+
+  const gateState = useMemo(() => {
+    if (plan === 'free') {
+      return {
+        blocked: true,
+        title: 'Unlock your full assessment',
+        body:
+          'Your free Snapshot is complete. Upgrade to run and update your Foundation Score anytime over the next year.',
+      };
+    }
+
+    if (!hasActivePaidAccess) {
+      return {
+        blocked: true,
+        title: 'Your assessment access has expired',
+        body:
+          'You can still view your past reports, but to run a new full assessment and update your Foundation Score, you’ll need to renew access.',
+      };
+    }
+
+    return {
+      blocked: false,
+      title: '',
+      body: '',
+    };
+  }, [plan, hasActivePaidAccess]);
 
   const baseContinueAnswers = useMemo(() => {
     if (!isContinueMode) return null;
@@ -1023,6 +1057,12 @@ export default function ComprehensiveQuestionnaire() {
     setCurrentStep(0);
     setMode('intro');
   }, [isContinueMode, baseContinueAnswers]);
+
+  useEffect(() => {
+    if (mode !== 'intro' && gateState.blocked) {
+      navigate('/pricing');
+    }
+  }, [mode, gateState.blocked, navigate]);
 
   useEffect(() => {
     if (currentStep > 0 && currentStep >= renderableQuestions.length) {
@@ -1283,13 +1323,44 @@ export default function ComprehensiveQuestionnaire() {
       <main className="flex-1 py-8">
         <div className={`${mode === 'intro' ? 'max-w-5xl' : 'max-w-2xl'} mx-auto px-4`}>
           {mode === 'intro' ? (
-            <IntroCard
-              isContinueMode={isContinueMode}
-              onStart={() => {
-                setMode('transition');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-            />
+            <div className="space-y-5">
+              {gateState.blocked ? (
+                <div className="rounded-2xl border border-copper-200 bg-copper-50 px-5 py-4">
+                  <div className="text-base font-semibold text-navy-900">{gateState.title}</div>
+                  <p className="mt-2 text-sm leading-6 text-slate-700">{gateState.body}</p>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={() => navigate('/pricing')}
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl bg-copper-600 px-5 py-3 text-white font-bold hover:bg-copper-700 transition"
+                    >
+                      View Plans
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => navigate('/my-foundation')}
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-navy-900 font-semibold hover:bg-slate-50 transition"
+                    >
+                      Go to Dashboard
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              <IntroCard
+                isContinueMode={isContinueMode}
+                onStart={() => {
+                  if (gateState.blocked) {
+                    navigate('/pricing');
+                    return;
+                  }
+                  setMode('transition');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              />
+            </div>
           ) : mode === 'transition' ? (
             <TransitionCard
               sectionKey={currentSectionKey}
