@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Home, Wallet, Shield, Car, CreditCard, Sparkles } from 'lucide-react';
 // Adjust this import path to wherever your helper lives
-import { calculateObligationPressure } from '../lib/assessment';
+// import { calculateObligationPressure } from '../lib/assessment';
 
 type FixedCostLoadToolProps = {
   className?: string;
@@ -143,21 +143,7 @@ export default function FixedCostLoadTool({ className = '' }: FixedCostLoadToolP
   // This is the key integration point.
   // If your helper already estimates debt pressure using your core logic,
   // we pass in matching answer names so the tool aligns with your assessment model.
-  const obligationPressure = useMemo(() => {
-    try {
-      return calculateObligationPressure({
-        monthlyTakeHomeIncome: values.monthlyTakeHomeIncome,
-        monthlyHousingCost: values.monthlyHousingCost,
-        monthlyUtilities: values.monthlyUtilities,
-        monthlyChildcareCost: values.monthlyChildcareCost,
-        // If your helper reads estimated debt payments from debts rather than a direct field,
-        // you can adapt this object to match your current implementation.
-        monthlyDebtPayments: values.monthlyDebtPayments,
-      } as any);
-    } catch {
-      return ratio;
-    }
-  }, [values, ratio]);
+  const obligationPressure = ratio;
 
   const band = getLoadBand(typeof obligationPressure === 'number' ? obligationPressure : ratio);
 
