@@ -1059,12 +1059,6 @@ export default function ComprehensiveQuestionnaire() {
   }, [isContinueMode, baseContinueAnswers]);
 
   useEffect(() => {
-    if (mode !== 'intro' && gateState.blocked) {
-      navigate('/pricing');
-    }
-  }, [mode, gateState.blocked, navigate]);
-
-  useEffect(() => {
     if (currentStep > 0 && currentStep >= renderableQuestions.length) {
       setCurrentStep(Math.max(0, renderableQuestions.length - 1));
     }
@@ -1259,6 +1253,43 @@ export default function ComprehensiveQuestionnaire() {
     }
   };
 
+  if (gateState.blocked) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <main className="max-w-5xl mx-auto px-4 py-10">
+          <div className="rounded-3xl border border-copper-200 bg-copper-50/40 p-6 md:p-8">
+            <h1 className="text-2xl md:text-3xl font-bold text-navy-900">
+              {gateState.title}
+            </h1>
+
+            <p className="mt-3 max-w-3xl text-gray-700 leading-7">
+              {gateState.body}
+            </p>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => navigate('/pricing')}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-copper-600 px-6 py-3 text-white font-bold hover:bg-copper-700 transition"
+              >
+                {plan === 'free' ? 'View Plans' : 'Renew Access'}
+                <ArrowRight className="h-4 w-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigate('/my-foundation')}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-gray-300 bg-white px-6 py-3 text-navy-900 font-bold hover:bg-gray-50 transition"
+              >
+                Go to Dashboard
+              </button>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   if (!currentQuestion && mode !== 'intro') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -1287,29 +1318,6 @@ export default function ComprehensiveQuestionnaire() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="flex items-center justify-between h-14">
-            <button
-              onClick={() => navigate('/')}
-              className="flex items-center gap-2 hover:opacity-80"
-            >
-              <Home className="w-8 h-8 text-copper-600" />
-              <span className="font-serif font-bold text-navy-900">
-                A Wealthy Foundation
-              </span>
-            </button>
-
-            <button
-              onClick={() => navigate('/my-foundation')}
-              className="text-sm text-copper-600 font-medium"
-            >
-              Dashboard
-            </button>
-          </div>
-        </div>
-      </header>
-
       {mode !== 'intro' && currentQuestion ? (
         <ProgressHeader
           sectionTitle={currentSectionLabel}
@@ -1323,44 +1331,13 @@ export default function ComprehensiveQuestionnaire() {
       <main className="flex-1 py-8">
         <div className={`${mode === 'intro' ? 'max-w-5xl' : 'max-w-2xl'} mx-auto px-4`}>
           {mode === 'intro' ? (
-            <div className="space-y-5">
-              {gateState.blocked ? (
-                <div className="rounded-2xl border border-copper-200 bg-copper-50 px-5 py-4">
-                  <div className="text-base font-semibold text-navy-900">{gateState.title}</div>
-                  <p className="mt-2 text-sm leading-6 text-slate-700">{gateState.body}</p>
-                  <div className="mt-4 flex flex-wrap gap-3">
-                    <button
-                      type="button"
-                      onClick={() => navigate('/pricing')}
-                      className="inline-flex items-center justify-center gap-2 rounded-2xl bg-copper-600 px-5 py-3 text-white font-bold hover:bg-copper-700 transition"
-                    >
-                      View Plans
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => navigate('/my-foundation')}
-                      className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-navy-900 font-semibold hover:bg-slate-50 transition"
-                    >
-                      Go to Dashboard
-                    </button>
-                  </div>
-                </div>
-              ) : null}
-
-              <IntroCard
-                isContinueMode={isContinueMode}
-                onStart={() => {
-                  if (gateState.blocked) {
-                    navigate('/pricing');
-                    return;
-                  }
-                  setMode('transition');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-              />
-            </div>
+            <IntroCard
+              isContinueMode={isContinueMode}
+              onStart={() => {
+                setMode('transition');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
           ) : mode === 'transition' ? (
             <TransitionCard
               sectionKey={currentSectionKey}
