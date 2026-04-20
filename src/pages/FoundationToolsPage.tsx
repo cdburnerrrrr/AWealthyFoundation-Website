@@ -43,21 +43,7 @@ export default function FoundationToolsPage() {
           <FixedCostLoadTool />
         </section>
 
-        <section className="mb-20">
-  <div className="mb-8 text-center">
-    <h2 className="text-2xl font-semibold text-white mb-2">
-      Spending Tools
-    </h2>
-    <p className="text-navy-200 max-w-xl mx-auto">
-      Understand how much of your income is already committed—and how much flexibility you really have.
-    </p>
-  </div>
-
-  <div className="space-y-8">
-    <FixedCostLoadTool />
-    <MonthlyMarginPlannerTool />
-  </div>
-</section>
+        
 
         {/* Future sections go here */}
         {/*
