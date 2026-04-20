@@ -665,14 +665,114 @@ function getFinancialPositionLabel(netWorth?: number | null) {
   return 'Solid Foundation';
 }
 
+function getDebtSnapshotLine(metrics?: ResultShape['metrics']) {
+  if (!metrics) return null;
+
+  const debtBalance = formatCurrency(metrics.totalDebtBalance);
+  const debtPayment = formatCurrency(metrics.monthlyDebtPayments);
+  const debtToIncome = formatPercent(metrics.debtToIncomeRatio);
+
+  if (debtBalance && debtPayment && debtToIncome) {
+    return `Non-mortgage debt is about ${debtBalance}, with roughly ${debtPayment}/month in payments (${debtToIncome} of take-home pay).`;
+  }
+
+  if (debtBalance && debtPayment) {
+    return `Non-mortgage debt is about ${debtBalance}, with roughly ${debtPayment}/month in payments.`;
+  }
+
+  if (debtBalance) {
+    return `Non-mortgage debt is about ${debtBalance}.`;
+  }
+
+  return null;
+}
+
+function getNetWorthNarrative(metrics?: ResultShape['metrics']) {
+  if (
+    !metrics ||
+    metrics.netWorth === undefined ||
+    metrics.netWorth === null ||
+    Number.isNaN(Number(metrics.netWorth))
+  ) {
+    return null;
+  }
+
+  const netWorth = Number(metrics.netWorth);
+  const debtBalance = formatCurrency(metrics.totalDebtBalance);
+  const totalSavings = formatCurrency(metrics.totalSavings);
+  const totalInvestments = formatCurrency(metrics.totalInvestments);
+
+  if (netWorth < 0) {
+    return `Estimated net worth is ${formatCurrency(netWorth)}. Right now, liabilities still outweigh assets${debtBalance ? `, with about ${debtBalance} of non-mortgage debt still in the picture` : ''}. That makes stabilizing debt and building reserves more important than optimizing elsewhere.`;
+  }
+
+  if (netWorth < 25000) {
+    return `Estimated net worth is ${formatCurrency(netWorth)}. You are in the framing stage, where${totalSavings ? ` savings of ${totalSavings}` : ' savings'}${totalInvestments ? ` and investments of ${totalInvestments}` : ' and investing progress'} are starting to offset what you owe.`;
+  }
+
+  return `Estimated net worth is ${formatCurrency(netWorth)}. You have a real base in place now, which means the opportunity is shifting from pure stability toward strengthening and growing what you already own.`;
+}
+
+function getPriorityMetricLine(
+  pillar: string,
+  metrics?: ResultShape['metrics']
+) {
+  if (!metrics) return null;
+
+  switch (pillar) {
+    case 'debt': {
+      const balance = formatCurrency(metrics.totalDebtBalance);
+      const payment = formatCurrency(metrics.monthlyDebtPayments);
+      if (balance && payment) {
+        return `About ${balance} of non-mortgage debt and roughly ${payment}/month in payments are still creating pressure here.`;
+      }
+      if (balance) {
+        return `About ${balance} of non-mortgage debt is still sitting in this part of the house.`;
+      }
+      return null;
+    }
+    case 'saving': {
+      const savings = formatCurrency(metrics.totalSavings);
+      if (savings) {
+        return `Liquid savings are currently about ${savings}.`;
+      }
+      return null;
+    }
+    case 'investing': {
+      const investments = formatCurrency(metrics.totalInvestments);
+      if (investments) {
+        return `Investments are currently about ${investments}.`;
+      }
+      return null;
+    }
+    case 'income': {
+      const income = formatCurrency(metrics.monthlyIncome);
+      if (income) {
+        return `Monthly take-home income is currently about ${income}.`;
+      }
+      return null;
+    }
+    default:
+      return null;
+  }
+}
+
 function getMetricsCallout(metrics?: ResultShape['metrics']) {
   if (!metrics) return null;
+
   const lines = [
-    metrics.monthlyFixedCosts ? `About ${formatCurrency(metrics.monthlyFixedCosts)} of your money is already committed each month.` : null,
-    metrics.totalSavings ? `Liquid savings: ${formatCurrency(metrics.totalSavings)}.` : null,
-    metrics.totalInvestments ? `Investments: ${formatCurrency(metrics.totalInvestments)}.` : null,
-    metrics.netWorth || metrics.netWorth === 0 ? `Estimated net worth: ${formatCurrency(metrics.netWorth)}.` : null,
+    metrics.monthlyFixedCosts
+      ? `About ${formatCurrency(metrics.monthlyFixedCosts)} of your money is already committed each month.`
+      : null,
+    getDebtSnapshotLine(metrics),
+    metrics.totalSavings
+      ? `Liquid savings are about ${formatCurrency(metrics.totalSavings)}.`
+      : null,
+    metrics.netWorth || metrics.netWorth === 0
+      ? `Estimated net worth is ${formatCurrency(metrics.netWorth)}.`
+      : null,
   ].filter(Boolean);
+
   return lines.length ? lines.slice(0, 2).join(' ') : null;
 }
 
@@ -788,9 +888,96 @@ function SectionShell({
   );
 }
 
+
+function LockedResultsPreview({
+  onUpgrade,
+  onDashboard,
+}: {
+  onUpgrade: () => void;
+  onDashboard: () => void;
+}) {
+  return (
+    <div className="space-y-6">
+      <section className="grid lg:grid-cols-[1.05fr_0.95fr] gap-6">
+        <div className="bg-gradient-to-br from-[#17385a] to-[#21456d] rounded-3xl border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.35)] p-6 md:p-8 text-white">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-copper-50 text-copper-700 text-sm font-semibold">
+            <Sparkles className="w-4 h-4" />
+            Your Full Foundation Report
+          </div>
+
+          <h1 className="mt-5 text-3xl md:text-5xl font-bold leading-tight">
+            Your report is ready.
+          </h1>
+
+          <p className="mt-4 text-base md:text-lg text-white/85 leading-8 max-w-2xl">
+            You finished the deeper assessment. Unlock your complete report to view your full Foundation Score, pillar breakdown, 90-day plan, and PDF.
+          </p>
+
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <button
+              onClick={onUpgrade}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-copper-600 text-white font-semibold shadow-sm hover:bg-copper-700 transition-colors"
+            >
+              Unlock Full Report
+              <ArrowRight className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={onDashboard}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 text-white font-semibold border border-white/10 hover:bg-white/15 transition-colors"
+            >
+              Go to Dashboard
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="mt-8 grid sm:grid-cols-3 gap-4">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+              <div className="text-sm text-white/70 mb-2">Included</div>
+              <div className="text-lg font-semibold text-white">Full Foundation Score</div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+              <div className="text-sm text-white/70 mb-2">Included</div>
+              <div className="text-lg font-semibold text-white">7-block breakdown</div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+              <div className="text-sm text-white/70 mb-2">Included</div>
+              <div className="text-lg font-semibold text-white">90-day plan + PDF</div>
+            </div>
+          </div>
+        </div>
+
+        <SectionShell icon={LockIcon} title="Why upgrade now">
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
+              <div className="text-sm uppercase tracking-[0.18em] text-copper-600 mb-2">What unlocks</div>
+              <ul className="space-y-3 text-gray-700 leading-7">
+                <li>• Your complete Foundation Score and executive summary</li>
+                <li>• Priority opportunities tied to your real numbers</li>
+                <li>• Full 90-day action plan and downloadable PDF</li>
+              </ul>
+            </div>
+
+            <div className="rounded-2xl border border-copper-200 bg-copper-50 p-5">
+              <div className="font-semibold text-navy-900 mb-2">Foundation Assessment — $29</div>
+              <p className="text-sm text-gray-700 leading-7">
+                Run and update your Foundation Score anytime over the next year. Most users check in every 90 days to track progress.
+              </p>
+            </div>
+          </div>
+        </SectionShell>
+      </section>
+    </div>
+  );
+}
+
+function LockIcon(props: React.ComponentProps<typeof Shield>) {
+  return <Shield {...props} />;
+}
+
 export default function ResultsPage() {
   const navigate = useNavigate();
-  const { currentAssessment, assessmentHistory } = useAppStore() as any;
+  const { currentAssessment, assessmentHistory, profile } = useAppStore() as any;
   const actualPlan = useUserPlan() as PlanTier;
 
   const latestHistoryRecord = useMemo(() => {
@@ -812,10 +999,31 @@ export default function ResultsPage() {
     scoreBand.label === 'Needs Attention' ? 'text-copper-300' : scoreBand.color;
   const pillarScores = result?.pillarScores ?? result?.pillars ?? {};
 
-  const derivedTier = (currentAssessment as any)?.reportTier || (latestHistoryRecord as any)?.reportTier || ((((currentAssessment as any)?.assessmentType ?? (latestHistoryRecord as any)?.assessmentType) === 'premium') ? 'premium' : (((currentAssessment as any)?.assessmentType ?? (latestHistoryRecord as any)?.assessmentType) === 'detailed' ? 'standard' : 'free'));
-  const reportTier: ReportTier = getReportTier(derivedTier);
+  const currentAssessmentType =
+    (currentAssessment as any)?.assessmentType ??
+    (rawCurrentResult as any)?.assessmentType ??
+    (latestHistoryRecord as any)?.assessmentType ??
+    (historyResult as any)?.assessmentType ??
+    'free';
+
+  const derivedTier =
+    (currentAssessment as any)?.reportTier ||
+    (latestHistoryRecord as any)?.reportTier ||
+    (currentAssessmentType === 'premium'
+      ? 'premium'
+      : currentAssessmentType === 'detailed'
+      ? 'standard'
+      : 'free');
+
+  const shouldGateFullReport =
+    !isDevReportOverrideEnabled() &&
+    actualPlan === 'free' &&
+    (derivedTier === 'standard' || derivedTier === 'premium');
+
+  const effectiveTier = shouldGateFullReport ? 'free' : derivedTier;
+  const reportTier: ReportTier = getReportTier(effectiveTier);
   const features = getReportFeatures(reportTier);
-  const planBadge = getPlanBadgeMeta(actualPlan);
+  const planBadge = getPlanBadgeMeta(shouldGateFullReport ? 'free' : actualPlan);
   const [showPdfUpgradeModal, setShowPdfUpgradeModal] = useState(false);
 
   const handlePdfClick = async () => {
@@ -896,6 +1104,39 @@ export default function ResultsPage() {
   }
 
   const score = result?.foundationScore ?? 0;
+
+  if (shouldGateFullReport) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#0f2a44] via-[#132f4c] to-[#1e3a5f]">
+        <header data-pdf-ignore="true" className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-100">
+          <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+            <button
+              onClick={() => navigate('/')}
+              className="inline-flex items-center gap-2 text-navy-900 font-semibold hover:text-copper-700"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back Home
+            </button>
+
+            <button
+              onClick={() => navigate('/my-foundation')}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-copper-600 text-white font-semibold shadow-sm hover:bg-copper-700 transition-colors"
+            >
+              Go to Dashboard
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </header>
+
+        <main className="max-w-6xl mx-auto px-4 py-8 md:py-10">
+          <LockedResultsPreview
+            onUpgrade={() => navigate('/pricing')}
+            onDashboard={() => navigate('/my-foundation')}
+          />
+        </main>
+      </div>
+    );
+  }
   const summary = result?.summary || '';
   const insights = safeArray(result?.insights).slice(0, 2);
   const priorities = safeArray(result?.priorities ?? result?.topFocusAreas);
@@ -1100,7 +1341,7 @@ export default function ResultsPage() {
                 <div className="text-sm text-white/70 mb-2">Debt Pressure</div>
                 <div className="text-2xl font-bold text-white">{debtPressure}</div>
                 <div className="mt-2 text-sm text-white/70">
-                  Lower debt pressure generally means more flexibility.
+                  {getDebtSnapshotLine(metrics) || 'Lower debt pressure generally means more flexibility.'}
                 </div>
               </div>
 
@@ -1130,8 +1371,14 @@ export default function ResultsPage() {
             </p>
 
             {metricsCallout ? (
-              <div className="mb-6 rounded-2xl bg-white/10 border border-white/10 p-4 text-sm leading-7 text-white/90">
+              <div className="mb-4 rounded-2xl bg-white/10 border border-white/10 p-4 text-sm leading-7 text-white/90">
                 {metricsCallout}
+              </div>
+            ) : null}
+
+            {getNetWorthNarrative(metrics) ? (
+              <div className="mb-6 rounded-2xl bg-white/5 border border-white/10 p-4 text-sm leading-7 text-white/85">
+                {getNetWorthNarrative(metrics)}
               </div>
             ) : null}
 
@@ -1237,6 +1484,12 @@ export default function ResultsPage() {
                         item.toLowerCase().includes(pillar.toLowerCase())
                       ) || getConstraintLine(pillar)}
                     </div>
+
+                    {getPriorityMetricLine(pillar, metrics) ? (
+                      <div className="mt-2 text-sm text-gray-600 leading-6">
+                        {getPriorityMetricLine(pillar, metrics)}
+                      </div>
+                    ) : null}
                   </div>
                 );
               })}
@@ -1336,10 +1589,10 @@ export default function ResultsPage() {
             ) : (
               <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
                 <div className="text-lg font-bold text-emerald-800 mb-2">
-                  No major structural warning signs
+                  No major structural warning signs were triggered
                 </div>
                 <p className="text-gray-700 leading-7">
-                  Your current financial structure does not show a major fixed-cost or debt pressure alert. That gives you more room to focus on refinement and steady progress.
+                  Your current structure did not trip a major fixed-cost or debt-pressure alert under the current thresholds. That does not mean the rest of the house is strong yet — it means the biggest issues may be showing up in your weaker pillars rather than in one obvious structural break.
                 </p>
               </div>
             )}

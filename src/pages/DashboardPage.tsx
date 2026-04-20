@@ -1140,7 +1140,8 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
         const aTime = a.createdAt ?? 0;
         const bTime = b.createdAt ?? 0;
         return aTime - bTime;
-      }) as {
+      })
+      .slice(-6) as {
       id: string | number;
       score: number;
       createdAt?: number;

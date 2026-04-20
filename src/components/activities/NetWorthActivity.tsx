@@ -11,7 +11,7 @@ type NetWorthInputs = {
 
 type NetWorthActivityProps = {
   initialValues?: NetWorthInputs;
-  onComplete?: (payload: { netWorth: number; assets: number; liabilities: number }) => void;
+  onComplete?: (payload: { netWorth: number; assets: number; liabilities: number; totalLiquidSavings: number; totalInvestments: number; homeValue: number; mortgageBalance: number; totalDebtBalance: number }) => void;
 };
 
 function toNumber(value: unknown): number {
@@ -167,12 +167,19 @@ export default function NetWorthActivity({
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-slate-500">
-          Every major insight should use real numbers, explain what they mean, and point to a clear next step.
+          
         </p>
 
         <button
           type="button"
-          onClick={() => onComplete?.(totals)}
+          onClick={() => onComplete?.({
+            ...totals,
+            totalLiquidSavings: toNumber(totalLiquidSavings),
+            totalInvestments: toNumber(totalInvestments),
+            homeValue: toNumber(homeValue),
+            mortgageBalance: toNumber(mortgageBalance),
+            totalDebtBalance: toNumber(totalDebtBalance),
+          })}
           className="inline-flex items-center gap-2 rounded-2xl bg-copper-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-copper-700"
         >
           Use This Net Worth

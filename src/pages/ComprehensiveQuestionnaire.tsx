@@ -913,10 +913,22 @@ function ActivityStep({ activityKey, responses, onComplete }: ActivityStepProps)
           mortgageBalance: toNumber(responses.mortgageBalance),
           totalDebtBalance: toNumber(responses.totalDebtBalance),
         }}
-        onComplete={({ netWorth }) =>
+        onComplete={({
+          netWorth,
+          totalLiquidSavings,
+          totalInvestments,
+          homeValue,
+          mortgageBalance,
+          totalDebtBalance,
+        }) =>
           onComplete({
             netWorthEntry: 'completed',
             netWorth,
+            totalLiquidSavings,
+            totalInvestments,
+            homeValue,
+            mortgageBalance,
+            totalDebtBalance,
           })
         }
       />

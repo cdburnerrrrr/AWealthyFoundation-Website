@@ -233,13 +233,13 @@ export interface FinancialMetrics {
   homeEquity?: number;
   totalSavings?: number;
   totalInvestments?: number;
+  totalDebtBalance?: number;
   monthlyIncome?: number;
   monthlyDebtPayments?: number;
   monthlyHousingCost?: number;
   monthlyUtilities?: number;
   monthlyChildcareCost?: number;
   monthlyFixedCosts?: number;
-  totalDebtBalance?: number;
 }
 
 
@@ -360,7 +360,6 @@ const SNAPSHOT_QUESTION_KEYS = new Set([
   'progressPriority',
   'otherDebt',
   'monthlyDebtPayments',
-  'unexpectedExpenseHandling',
   'debtManageability',
   'debtPaydownStrategy',
   'healthInsurance',
@@ -390,8 +389,8 @@ function midpointRangeMap(map: Record<string, number>, value: string | undefined
 }
 
 function getLiquidSavingsEstimate(a: Record<string, any>): number {
-  const direct = toNumber(a.totalLiquidSavings);
-  if (direct > 0) return direct;
+  const numeric = toNumber(a.totalLiquidSavings);
+  if (numeric > 0) return numeric;
 
   const savingsMap: Record<string, number> = {
     '100000_plus': 100000,
@@ -404,6 +403,29 @@ function getLiquidSavingsEstimate(a: Record<string, any>): number {
   };
 
   return midpointRangeMap(savingsMap, a.totalLiquidSavings);
+}
+
+function getInvestmentEstimate(a: Record<string, any>): number {
+  const numeric = toNumber(a.totalInvestments);
+  if (numeric > 0) return numeric;
+
+  const investmentMap: Record<string, number> = {
+    '500000_plus': 500000,
+    '250000_500000': 375000,
+    '100000_250000': 175000,
+    '50000_100000': 75000,
+    '10000_50000': 30000,
+    '1000_10000': 5000,
+    'under_1000': 500,
+  };
+
+  return midpointRangeMap(investmentMap, a.totalInvestments);
+}
+
+function totalDebtBalanceEstimate(a: Record<string, any>): number {
+  const numeric = toNumber(a.totalDebtBalance);
+  if (numeric > 0) return numeric;
+  return 0;
 }
 
 function getEmergencyFundMonthsEstimate(a: Record<string, any>): number {
@@ -509,7 +531,13 @@ export function determineLifeStage(input: {
     return investingActivity ? 'growth' : 'starting_out';
   }
 
-  const hasStarterSavings = hasStarterSavingsValue(answers);
+  const hasStarterSavings = [
+    '5000_15000',
+    '15000_30000',
+    '30000_50000',
+    '50000_100000',
+    '100000_plus',
+  ].includes(answers.totalLiquidSavings);
 
   const debtHeavy =
     pillars.debt < 50 ||
@@ -1941,45 +1969,9 @@ function homeEquityEstimate(a: Record<string, any>): number {
   return Math.max(0, toNumber(a.homeValue) - toNumber(a.mortgageBalance));
 }
 
-function totalDebtBalanceEstimate(a: Record<string, any>): number {
-  const direct = toNumber(a.totalDebtBalance);
-  if (direct > 0) return direct;
-
-  const carLoanMap: Record<string, number> = {
-    under_5000: 2500,
-    '5000_15000': 10000,
-    '15000_30000': 22500,
-    '30000_plus': 35000,
-  };
-
-  let total = 0;
-
-  if (a.vehicleDebt === 'car_loan') {
-    total += carLoanMap[a.carLoanBalance] || 0;
-  }
-
-  const debts = safeArray(a.otherDebt);
-  if (debts.includes('credit_cards')) total += 5000;
-  if (debts.includes('student_loans')) total += 25000;
-  if (debts.includes('personal_loan')) total += 10000;
-  if (debts.includes('bnpl')) total += 1500;
-  if (debts.includes('medical')) total += 3000;
-  if (debts.includes('other')) total += 5000;
-
-  return total;
-}
-
-function hasStarterSavingsValue(a: Record<string, any>): boolean {
-  return getLiquidSavingsEstimate(a) >= 5000;
-}
-
-function hasHighSavingsValue(a: Record<string, any>): boolean {
-  return getLiquidSavingsEstimate(a) >= 30000;
-}
-
 function debtPaymentEstimate(a: Record<string, any>): number {
-  const direct = toNumber(a.monthlyDebtPayments);
-  if (direct > 0 || a.monthlyDebtPayments === 0) return direct;
+  const numeric = toNumber(a.monthlyDebtPayments);
+  if (numeric > 0) return numeric;
 
   const map: Record<string, number> = {
     none: 0,
@@ -1994,16 +1986,6 @@ function debtPaymentEstimate(a: Record<string, any>): number {
 }
 
 export function calculateAllFinancialMetrics(answers: Record<string, any>): FinancialMetrics {
-  const investmentMap: Record<string, number> = {
-    '500000_plus': 500000,
-    '250000_500000': 375000,
-    '100000_250000': 175000,
-    '50000_100000': 75000,
-    '10000_50000': 30000,
-    '1000_10000': 5000,
-    'under_1000': 500,
-  };
-
   const monthlyIncome = toNumber(answers.monthlyTakeHomeIncome);
   const monthlyDebtPayments = debtPaymentEstimate(answers);
   const monthlyHousingCost = toNumber(answers.monthlyHousingCost);
@@ -2011,11 +1993,8 @@ export function calculateAllFinancialMetrics(answers: Record<string, any>): Fina
   const monthlyChildcareCost = toNumber(answers.monthlyChildcareCost);
   const monthlyFixedCosts = monthlyHousingCost + monthlyUtilities + monthlyChildcareCost + monthlyDebtPayments;
   const totalSavings = getLiquidSavingsEstimate(answers);
-  const totalInvestments = toNumber(answers.totalInvestments) > 0
-    ? toNumber(answers.totalInvestments)
-    : midpointRangeMap(investmentMap, answers.totalInvestments);
+  const totalInvestments = getInvestmentEstimate(answers);
   const totalDebtBalance = totalDebtBalanceEstimate(answers);
-  const mortgageBalance = hasMortgage(answers) ? toNumber(answers.mortgageBalance) : 0;
   const homeEquity = homeEquityEstimate(answers);
 
   const debtToIncomeRatio =
@@ -2031,7 +2010,8 @@ export function calculateAllFinancialMetrics(answers: Record<string, any>): Fina
     else savingsRate = 0;
   }
 
-  const netWorth = totalSavings + totalInvestments + toNumber(answers.homeValue) - mortgageBalance - totalDebtBalance;
+  const calculatedNetWorth = totalSavings + totalInvestments + homeEquity - totalDebtBalance;
+  const netWorth = hasAnswer(answers, 'netWorth') ? toNumber(answers.netWorth) : calculatedNetWorth;
 
   return {
     debtToIncomeRatio,
@@ -2041,13 +2021,13 @@ export function calculateAllFinancialMetrics(answers: Record<string, any>): Fina
     homeEquity,
     totalSavings,
     totalInvestments,
+    totalDebtBalance,
     monthlyIncome,
     monthlyDebtPayments,
     monthlyHousingCost,
     monthlyUtilities,
     monthlyChildcareCost,
     monthlyFixedCosts,
-    totalDebtBalance,
   };
 }
 
@@ -2426,12 +2406,22 @@ function scoreDebt(a: Record<string, any>, signals?: UserSignals) {
     s -= 6;
   }
 
+  const totalDebtBalance = totalDebtBalanceEstimate(a);
+  if (totalDebtBalance >= 100000) s -= 18;
+  else if (totalDebtBalance >= 60000) s -= 14;
+  else if (totalDebtBalance >= 30000) s -= 9;
+  else if (totalDebtBalance >= 10000) s -= 4;
+
+  if (monthlyIncome > 0 && totalDebtBalance >= monthlyIncome * 12) s -= 8;
+  else if (monthlyIncome > 0 && totalDebtBalance >= monthlyIncome * 6) s -= 4;
+
   if (
     !derivedSignals.hasCreditCardDebt &&
     !derivedSignals.hasBnplDebt &&
     !derivedSignals.hasPaydayDebt &&
     derivedSignals.debtPaymentRatio < 0.1 &&
-    derivedSignals.obligationPressure < 0.45
+    derivedSignals.obligationPressure < 0.45 &&
+    totalDebtBalance < 10000
   ) {
     s += 4;
   }
@@ -2790,7 +2780,7 @@ function getTopFocusAreas(
       }
 
       case 'saving': {
-        const highSavings = hasHighSavingsValue(answers);
+        const highSavings = ['30000_50000', '50000_100000', '100000_plus'].includes(answers.totalLiquidSavings);
         const automatedSaving = answers.savingsAutomation === 'fully_automated' || answers.savingsAutomation === 'partially_automated';
 
         if (derivedSignals.noEmergencyFund) {
@@ -3064,7 +3054,7 @@ function buildNextStep(
   }
 
   if (weakest === 'saving') {
-    const highSavings = hasHighSavingsValue(answers);
+    const highSavings = ['30000_50000', '50000_100000', '100000_plus'].includes(answers.totalLiquidSavings);
     const automatedSaving = answers.savingsAutomation === 'fully_automated' || answers.savingsAutomation === 'partially_automated';
 
     if (highSavings && automatedSaving && pillars.saving >= 70) {
@@ -3224,7 +3214,7 @@ function getDynamicPlanStep(
         };
       }
 
-      if (hasHighSavingsValue(answers) && (answers.savingsAutomation === 'fully_automated' || answers.savingsAutomation === 'partially_automated')) {
+      if (['30000_50000', '50000_100000', '100000_plus'].includes(answers.totalLiquidSavings) && (answers.savingsAutomation === 'fully_automated' || answers.savingsAutomation === 'partially_automated')) {
         return {
           title,
           body: 'Your savings system is already strong. The smarter next move is to review how much cash you truly want to keep liquid and whether excess reserves should support investing, debt reduction, or another major goal.',
@@ -3595,33 +3585,47 @@ function getStructuralWarnings(data: {
   totalExpenses: number;
   debtPayments: number;
 }) {
-  const warnings = [];
+  const warnings: { type: string; severity: 'high' | 'critical' }[] = [];
+
+  if (data.income <= 0) return warnings;
 
   const housingRatio = data.housing / data.income;
   const obligationRatio = data.totalExpenses / data.income;
+  const debtPaymentRatio = data.debtPayments / data.income;
 
-  if (housingRatio > 0.35) {
+  if (housingRatio >= 0.3) {
     warnings.push({
       type: 'housing_pressure',
-      severity: 'high',
+      severity: housingRatio >= 0.4 ? 'critical' : 'high',
     });
   }
 
-  if (data.income < 3000 && obligationRatio > 0.8) {
-    warnings.push({
-      type: 'income_constraint',
-      severity: 'high',
-    });
-  }
-
-  if (housingRatio > 0.35 && data.debtPayments > 0) {
+  if (
+    obligationRatio >= 0.6 ||
+    debtPaymentRatio >= 0.15 ||
+    (obligationRatio >= 0.5 && data.debtPayments >= 500)
+  ) {
     warnings.push({
       type: 'structural_pressure',
-      severity: 'critical',
+      severity:
+        obligationRatio >= 0.7 || debtPaymentRatio >= 0.2 ? 'critical' : 'high',
     });
   }
 
-  return warnings;
+  if (
+    (data.income < 4000 && obligationRatio >= 0.55) ||
+    obligationRatio >= 0.75
+  ) {
+    warnings.push({
+      type: 'income_constraint',
+      severity: obligationRatio >= 0.85 ? 'critical' : 'high',
+    });
+  }
+
+  return warnings.filter(
+    (warning, index, all) =>
+      all.findIndex((item) => item.type === warning.type) === index
+  );
 }
 
 // =====================================================

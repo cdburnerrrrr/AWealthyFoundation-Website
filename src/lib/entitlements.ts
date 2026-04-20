@@ -1,4 +1,3 @@
-// src/lib/entitlements.ts
 export type UserPlan = 'free' | 'standard' | 'premium';
 
 export type Entitlements = {
@@ -8,17 +7,24 @@ export type Entitlements = {
   canViewPremiumDashboardFeatures: boolean;
   canUseWhatIfCalculator: boolean;
   canViewPremiumGuidance: boolean;
-  canViewExpertHelpDetails: boolean;
+  canRunAssessment: boolean;
 };
 
-export function getEntitlements(plan: UserPlan): Entitlements {
+export function getEntitlements(
+  plan: UserPlan,
+  isActive: boolean
+): Entitlements {
+  const isPaid = plan === 'standard' || plan === 'premium';
+
   return {
-    canViewFullReport: plan === 'standard' || plan === 'premium',
-    canDownloadPdf: plan === 'standard' || plan === 'premium',
-    canViewStandardDashboardFeatures: plan === 'standard' || plan === 'premium',
+    canViewFullReport: isPaid,
+    canDownloadPdf: isPaid,
+    canViewStandardDashboardFeatures: isPaid,
     canViewPremiumDashboardFeatures: plan === 'premium',
     canUseWhatIfCalculator: plan === 'premium',
     canViewPremiumGuidance: plan === 'premium',
-    canViewExpertHelpDetails: false, // keep generic for now
+
+    // 🔥 NEW (most important)
+    canRunAssessment: isPaid && isActive,
   };
 }
