@@ -46,32 +46,32 @@ function ToolCard({
 }: ToolCardProps) {
   const cardContent = (
     <>
-      <div className="pointer-events-none absolute inset-0 opacity-[0.06]">
-        <div className="h-full w-full bg-[linear-gradient(to_right,#ffffff22_1px,transparent_1px),linear-gradient(to_bottom,#ffffff22_1px,transparent_1px)] bg-[size:20px_20px]" />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.08]">
+        <div className="h-full w-full bg-[linear-gradient(to_right,#0f3a5a16_1px,transparent_1px),linear-gradient(to_bottom,#0f3a5a16_1px,transparent_1px)] bg-[size:20px_20px]" />
       </div>
 
-      <div className="pointer-events-none absolute -right-16 -top-16 h-36 w-36 rounded-full bg-copper-500/10 blur-3xl transition-transform duration-500 group-hover:scale-125" />
+      <div className="pointer-events-none absolute -right-16 -top-16 h-36 w-36 rounded-full bg-copper-400/14 blur-3xl transition-transform duration-500 group-hover:scale-125" />
 
       <div className="relative z-10">
         <div className="mb-4 flex items-start justify-between gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-copper-500/15 text-copper-300 shadow-lg shadow-copper-900/20">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-copper-200/70 bg-copper-100/80 text-copper-700 shadow-lg shadow-copper-200/40">
             {icon}
           </div>
           {badge && (
-            <span className="rounded-full border border-copper-400/25 bg-copper-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-copper-100">
+            <span className="rounded-full border border-copper-300/70 bg-copper-100/85 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-copper-800">
               {badge}
             </span>
           )}
         </div>
 
-        <h3 className="mb-2 text-xl font-semibold tracking-tight text-white">{title}</h3>
-        <p className="mb-4 text-sm leading-6 text-white/72">{description}</p>
+        <h3 className="mb-2 text-xl font-semibold tracking-tight text-navy-900">{title}</h3>
+        <p className="mb-4 text-sm leading-6 text-navy-700">{description}</p>
 
-        <div className="mb-5 rounded-2xl border border-white/10 bg-navy-950/35 px-4 py-3 text-sm text-white/80">
-          <span className="font-semibold text-copper-100">Best for:</span> {bestFor}
+        <div className="mb-5 rounded-2xl border border-navy-200 bg-white/72 px-4 py-3 text-sm text-navy-800">
+          <span className="font-semibold text-copper-800">Best for:</span> {bestFor}
         </div>
 
-        <div className="inline-flex items-center gap-2 text-sm font-semibold text-copper-200 transition-transform duration-300 group-hover:translate-x-1">
+        <div className="inline-flex items-center gap-2 text-sm font-semibold text-copper-700 transition-transform duration-300 group-hover:translate-x-1">
           <span>{disabled ? 'Coming Soon' : 'Open Tool'}</span>
           <ArrowRight size={16} />
         </div>
@@ -80,12 +80,12 @@ function ToolCard({
   );
 
   const baseClassName =
-    'group relative overflow-hidden rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-sm transition-all duration-300';
+    'group relative overflow-hidden rounded-[28px] border border-navy-200 bg-white/80 p-6 backdrop-blur-sm transition-all duration-300';
 
   if (disabled) {
     return (
       <div
-        className={`${baseClassName} cursor-default opacity-90 hover:border-white/15 hover:bg-white/[0.07]`}
+        className={`${baseClassName} cursor-default opacity-95 hover:border-navy-300 hover:bg-white/85`}
         aria-disabled="true"
       >
         {cardContent}
@@ -96,7 +96,7 @@ function ToolCard({
   return (
     <Link
       to={to}
-      className={`${baseClassName} hover:-translate-y-1 hover:border-copper-400/30 hover:bg-white/[0.08] hover:shadow-2xl hover:shadow-copper-900/20`}
+      className={`${baseClassName} hover:-translate-y-1 hover:border-copper-300 hover:bg-white/90 hover:shadow-2xl hover:shadow-sky-200/60`}
     >
       {cardContent}
     </Link>
@@ -106,12 +106,12 @@ function ToolCard({
 function CategoryHeader({ icon, title, description }: CategoryHeaderProps) {
   return (
     <div className="mb-8 flex items-start gap-4">
-      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-copper-300">
+      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-navy-200 bg-white/80 text-copper-700 shadow-sm shadow-sky-200/50">
         {icon}
       </div>
       <div>
-        <h2 className="text-2xl font-semibold tracking-tight text-white">{title}</h2>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-white/70">{description}</p>
+        <h2 className="text-2xl font-semibold tracking-tight text-navy-900">{title}</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-navy-700">{description}</p>
       </div>
     </div>
   );
@@ -123,21 +123,19 @@ function TabButton({ label, isActive, onClick }: TabButtonProps) {
       type="button"
       onClick={onClick}
       className={`group relative rounded-full px-4 py-2.5 text-sm font-semibold transition-all duration-300 sm:px-5 ${
-        isActive
-          ? 'text-white'
-          : 'text-white/72 hover:text-white'
+        isActive ? 'text-navy-900' : 'text-navy-700 hover:text-navy-900'
       }`}
     >
       <span
         className={`absolute inset-0 rounded-full border transition-all duration-300 ${
           isActive
-            ? 'border-copper-300/40 bg-white/[0.08] shadow-[0_0_24px_rgba(222,161,93,0.18)]'
-            : 'border-white/10 bg-white/[0.04] group-hover:border-white/20 group-hover:bg-white/[0.07]'
+            ? 'border-copper-300 bg-white/90 shadow-[0_0_24px_rgba(222,161,93,0.18)]'
+            : 'border-navy-200 bg-white/60 group-hover:border-navy-300 group-hover:bg-white/85'
         }`}
       />
       <span className="relative z-10">{label}</span>
       <span
-        className={`absolute bottom-[3px] left-1/2 h-[2px] -translate-x-1/2 rounded-full bg-copper-300 shadow-[0_0_12px_rgba(255,207,136,0.65)] transition-all duration-300 ${
+        className={`absolute bottom-[3px] left-1/2 h-[2px] -translate-x-1/2 rounded-full bg-copper-500 shadow-[0_0_12px_rgba(222,161,93,0.5)] transition-all duration-300 ${
           isActive ? 'w-[62%] opacity-100' : 'w-0 opacity-0'
         }`}
       />
@@ -170,10 +168,10 @@ const categoryMeta: Record<
     title: 'Spending Tools',
     description:
       'See how much of your income is already spoken for, how much room you really have left, and where your monthly plan may be getting too tight.',
-    accent: 'from-copper-300/30 via-sky-200/20 to-copper-300/20',
-    glow: 'bg-copper-400/12',
-    drafting: 'border-sky-100/70',
-    heroGlow: 'bg-copper-500/12',
+    accent: 'from-copper-200/45 via-sky-200/35 to-copper-100/25',
+    glow: 'bg-copper-300/22',
+    drafting: 'border-navy-400/60',
+    heroGlow: 'bg-copper-400/20',
     tools: [
       {
         to: '/foundation-tools/fixed-cost-load',
@@ -200,10 +198,10 @@ const categoryMeta: Record<
     title: 'Debt Tools',
     description:
       'Measure the weight your debt is putting on your foundation and find the fastest path to a cleaner monthly picture.',
-    accent: 'from-rose-300/20 via-copper-300/18 to-sky-200/12',
-    glow: 'bg-rose-300/10',
-    drafting: 'border-rose-100/60',
-    heroGlow: 'bg-rose-300/10',
+    accent: 'from-rose-200/30 via-copper-200/26 to-sky-200/20',
+    glow: 'bg-rose-200/18',
+    drafting: 'border-navy-500/55',
+    heroGlow: 'bg-rose-200/20',
     tools: [
       {
         to: '#',
@@ -232,10 +230,10 @@ const categoryMeta: Record<
     title: 'Saving Tools',
     description:
       'Build cushion, strengthen resilience, and see how much cash reserve would give you more peace of mind.',
-    accent: 'from-emerald-300/20 via-sky-200/20 to-copper-300/12',
-    glow: 'bg-emerald-300/10',
-    drafting: 'border-emerald-100/60',
-    heroGlow: 'bg-emerald-300/10',
+    accent: 'from-emerald-200/28 via-sky-200/28 to-copper-100/18',
+    glow: 'bg-emerald-200/18',
+    drafting: 'border-navy-500/55',
+    heroGlow: 'bg-emerald-200/20',
     tools: [
       {
         to: '#',
@@ -264,10 +262,10 @@ const categoryMeta: Record<
     title: 'Investing Tools',
     description:
       'See what time, consistency, and better planning can do for your future without turning the experience into a sterile calculator.',
-    accent: 'from-sky-300/22 via-copper-300/16 to-indigo-200/10',
-    glow: 'bg-sky-300/10',
-    drafting: 'border-sky-100/60',
-    heroGlow: 'bg-sky-300/10',
+    accent: 'from-sky-200/34 via-copper-200/24 to-indigo-100/18',
+    glow: 'bg-sky-200/20',
+    drafting: 'border-navy-500/55',
+    heroGlow: 'bg-sky-200/22',
     tools: [
       {
         to: '#',
@@ -299,20 +297,20 @@ export default function FoundationToolsPage() {
   const activeCategory = useMemo(() => categoryMeta[activeTab], [activeTab]);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#081a2d] text-white">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,#143a5c_0%,#0a2138_42%,#081a2d_100%)]" />
+    <div className="relative min-h-screen overflow-hidden bg-[#d8ecf8] text-navy-900">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,#eaf6ff_0%,#d8ecf8_45%,#c6e2f2_100%)]" />
 
-      <div className="pointer-events-none absolute inset-0 opacity-[0.14]">
-        <div className="h-full w-full bg-[linear-gradient(to_right,#cfe8ff1f_1px,transparent_1px),linear-gradient(to_bottom,#cfe8ff1f_1px,transparent_1px)] bg-[size:32px_32px]" />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.18]">
+        <div className="h-full w-full bg-[linear-gradient(to_right,#0f3a5a22_1px,transparent_1px),linear-gradient(to_bottom,#0f3a5a22_1px,transparent_1px)] bg-[size:32px_32px]" />
       </div>
 
-      <div className="pointer-events-none absolute inset-0 opacity-[0.08]">
-        <div className="h-full w-full bg-[linear-gradient(to_right,#ffffff12_1px,transparent_1px),linear-gradient(to_bottom,#ffffff12_1px,transparent_1px)] bg-[size:160px_160px]" />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.12]">
+        <div className="h-full w-full bg-[linear-gradient(to_right,#0f3a5a18_1px,transparent_1px),linear-gradient(to_bottom,#0f3a5a18_1px,transparent_1px)] bg-[size:160px_160px]" />
       </div>
 
-      <div className="pointer-events-none absolute inset-0 opacity-[0.16] [background-image:radial-gradient(circle_at_1px_1px,rgba(207,232,255,0.42)_1px,transparent_0)] [background-size:24px_24px]" />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.18] [background-image:radial-gradient(circle_at_1px_1px,rgba(15,58,90,0.35)_1px,transparent_0)] [background-size:24px_24px]" />
 
-      <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-[0.11] transition-all duration-500">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-[0.16] transition-all duration-500">
         <div className={`absolute left-[8%] top-20 h-52 w-52 rounded-full border ${activeCategory.drafting} transition-all duration-500`} />
         <div className={`absolute left-[13%] top-28 h-40 w-72 rotate-[-10deg] border-t ${activeCategory.drafting} transition-all duration-500`} />
         <div className={`absolute right-[10%] top-24 h-64 w-64 rounded-full border ${activeCategory.drafting} transition-all duration-500`} />
@@ -325,22 +323,22 @@ export default function FoundationToolsPage() {
       <div className={`pointer-events-none absolute bottom-[-120px] right-[-80px] h-96 w-96 rounded-full blur-3xl transition-all duration-500 ${activeCategory.glow}`} />
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <section className="relative mb-10 overflow-hidden rounded-[36px] border border-white/10 bg-white/[0.04] px-6 py-8 backdrop-blur-sm sm:px-10 sm:py-9">
-          <div className="pointer-events-none absolute inset-0 opacity-[0.08]">
-            <div className="h-full w-full bg-[linear-gradient(to_right,#ffffff20_1px,transparent_1px),linear-gradient(to_bottom,#ffffff20_1px,transparent_1px)] bg-[size:26px_26px]" />
+        <section className="relative mb-10 overflow-hidden rounded-[36px] border border-navy-200 bg-white/72 px-6 py-8 backdrop-blur-sm sm:px-10 sm:py-9">
+          <div className="pointer-events-none absolute inset-0 opacity-[0.1]">
+            <div className="h-full w-full bg-[linear-gradient(to_right,#0f3a5a16_1px,transparent_1px),linear-gradient(to_bottom,#0f3a5a16_1px,transparent_1px)] bg-[size:26px_26px]" />
           </div>
 
           <div className={`pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-r ${activeCategory.accent} blur-2xl transition-all duration-500`} />
 
           <div className="relative z-10 grid items-center gap-8 lg:grid-cols-[1.1fr_0.9fr]">
             <div>
-              <p className="mb-3 text-sm font-semibold uppercase tracking-[0.24em] text-copper-200/80">
+              <p className="mb-3 text-sm font-semibold uppercase tracking-[0.24em] text-copper-700/90">
                 Foundation Tools
               </p>
-              <h1 className="max-w-3xl text-3xl font-semibold tracking-tight text-white sm:text-4xl lg:text-[2.65rem]">
+              <h1 className="max-w-3xl text-3xl font-semibold tracking-tight text-navy-900 sm:text-4xl lg:text-[2.65rem]">
                 Choose the right tool for the part of your foundation you want to strengthen.
               </h1>
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-white/72 sm:text-base">
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-navy-700 sm:text-base">
                 Start with the category that matters most right now. Open a tool when you are ready,
                 get a quick answer, and come back for the next step.
               </p>
@@ -348,22 +346,22 @@ export default function FoundationToolsPage() {
 
             <div className="relative mx-auto flex w-full max-w-md items-center justify-center">
               <div className="relative h-[220px] w-full sm:h-[240px]">
-                <div className="absolute left-1/2 top-0 h-8 w-36 -translate-x-1/2 rounded-t-full border border-copper-300/30 bg-copper-400/20" />
-                <div className="absolute left-1/2 top-8 h-20 w-48 -translate-x-1/2 rounded-t-[28px] border border-copper-200/30 bg-copper-300/10" />
-                <div className="absolute left-1/2 top-28 h-24 w-60 -translate-x-1/2 rounded-t-xl border border-sky-100/20 bg-sky-200/10" />
-                <div className="absolute bottom-10 left-1/2 h-10 w-72 -translate-x-1/2 rounded-md bg-gradient-to-r from-copper-400/70 via-sky-300/50 to-copper-400/70" />
-                <div className="absolute bottom-0 left-1/2 h-9 w-[20rem] -translate-x-1/2 rounded-md border border-white/10 bg-white/5" />
+                <div className="absolute left-1/2 top-0 h-8 w-36 -translate-x-1/2 rounded-t-full border border-copper-300/60 bg-copper-100/80" />
+                <div className="absolute left-1/2 top-8 h-20 w-48 -translate-x-1/2 rounded-t-[28px] border border-copper-300/60 bg-copper-50/70" />
+                <div className="absolute left-1/2 top-28 h-24 w-60 -translate-x-1/2 rounded-t-xl border border-navy-300/40 bg-sky-50/55" />
+                <div className="absolute bottom-10 left-1/2 h-10 w-72 -translate-x-1/2 rounded-md bg-gradient-to-r from-copper-300/70 via-sky-200/65 to-copper-300/70" />
+                <div className="absolute bottom-0 left-1/2 h-9 w-[20rem] -translate-x-1/2 rounded-md border border-navy-200 bg-white/70" />
 
-                <div className="absolute left-6 top-10 rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/80 shadow-xl backdrop-blur-sm">
+                <div className="absolute left-6 top-10 rounded-2xl border border-navy-200 bg-white/80 px-4 py-2.5 text-sm text-navy-800 shadow-xl shadow-sky-200/40 backdrop-blur-sm">
                   Spending
                 </div>
-                <div className="absolute right-6 top-16 rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/80 shadow-xl backdrop-blur-sm">
+                <div className="absolute right-6 top-16 rounded-2xl border border-navy-200 bg-white/80 px-4 py-2.5 text-sm text-navy-800 shadow-xl shadow-sky-200/40 backdrop-blur-sm">
                   Debt
                 </div>
-                <div className="absolute left-8 bottom-9 rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/80 shadow-xl backdrop-blur-sm">
+                <div className="absolute left-8 bottom-9 rounded-2xl border border-navy-200 bg-white/80 px-4 py-2.5 text-sm text-navy-800 shadow-xl shadow-sky-200/40 backdrop-blur-sm">
                   Saving
                 </div>
-                <div className="absolute right-8 bottom-14 rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/80 shadow-xl backdrop-blur-sm">
+                <div className="absolute right-8 bottom-14 rounded-2xl border border-navy-200 bg-white/80 px-4 py-2.5 text-sm text-navy-800 shadow-xl shadow-sky-200/40 backdrop-blur-sm">
                   Investing
                 </div>
               </div>
@@ -384,9 +382,9 @@ export default function FoundationToolsPage() {
           </div>
         </section>
 
-        <section className="relative overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.04] p-6 backdrop-blur-sm sm:p-8">
-          <div className="pointer-events-none absolute inset-0 opacity-[0.06]">
-            <div className="h-full w-full bg-[linear-gradient(to_right,#ffffff18_1px,transparent_1px),linear-gradient(to_bottom,#ffffff18_1px,transparent_1px)] bg-[size:24px_24px]" />
+        <section className="relative overflow-hidden rounded-[32px] border border-navy-200 bg-white/72 p-6 backdrop-blur-sm sm:p-8">
+          <div className="pointer-events-none absolute inset-0 opacity-[0.08]">
+            <div className="h-full w-full bg-[linear-gradient(to_right,#0f3a5a14_1px,transparent_1px),linear-gradient(to_bottom,#0f3a5a14_1px,transparent_1px)] bg-[size:24px_24px]" />
           </div>
 
           <div className={`pointer-events-none absolute inset-x-10 top-0 h-24 rounded-full bg-gradient-to-r ${activeCategory.accent} blur-3xl transition-all duration-500`} />
