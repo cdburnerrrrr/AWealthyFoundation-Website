@@ -177,9 +177,9 @@ function App() {
           <Route path="/articles" element={<ArticlesPage />} />
           <Route path="/articles/new" element={<NewArticlePage />} />
           <Route path="/articles/:id" element={<ArticleDetailPage />} />
-          <Route path="foundation-tools" element={<FoundationToolsPage />} />
-          <Route path="foundation-tools/fixed-cost-load" element={<FixedCostLoadPage />} />
-          <Route path="foundation-tools/monthly-margin-planner" element={<MonthlyMarginPlannerPage />} />
+          <Route path="/foundation-tools" element={<FoundationToolsPage />} />
+          <Route path="/foundation-tools/fixed-cost-load" element={<FixedCostLoadPage />} />
+          <Route path="/foundation-tools/monthly-margin-planner" element={<MonthlyMarginPlannerPage />} />
           <Route path="/results/snapshot" element={<SnapshotResultsPage />} />
 
           <Route
