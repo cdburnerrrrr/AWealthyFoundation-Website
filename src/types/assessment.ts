@@ -1985,53 +1985,49 @@ function debtPaymentEstimate(a: Record<string, any>): number {
   return midpointRangeMap(map, a.monthlyDebtPayments);
 }
 
-export function calculateAllFinancialMetrics(
-  answers: Record<string, any>
-): FinancialMetrics {
-
+export function calculateAllFinancialMetrics(answers: Record<string, any>): FinancialMetrics {
   const monthlyIncome = toNumber(answers.monthlyTakeHomeIncome);
+  const monthlyDebtPayments = debtPaymentEstimate(answers);
   const monthlyHousingCost = toNumber(answers.monthlyHousingCost);
   const monthlyUtilities = toNumber(answers.monthlyUtilities);
   const monthlyChildcareCost = toNumber(answers.monthlyChildcareCost);
-  const monthlyDebtPayments = debtPaymentEstimate(answers);
-
-  const monthlyFixedCosts =
-    monthlyHousingCost +
-    monthlyUtilities +
-    monthlyChildcareCost +
-    monthlyDebtPayments;
-
+  const monthlyFixedCosts = monthlyHousingCost + monthlyUtilities + monthlyChildcareCost + monthlyDebtPayments;
   const totalSavings = getLiquidSavingsEstimate(answers);
   const totalInvestments = getInvestmentEstimate(answers);
   const totalDebtBalance = totalDebtBalanceEstimate(answers);
   const homeEquity = homeEquityEstimate(answers);
 
-  const netWorth =
-    totalSavings +
-    totalInvestments +
-    homeEquity -
-    totalDebtBalance;
+  const debtToIncomeRatio =
+    monthlyIncome > 0 ? Number(((monthlyDebtPayments / monthlyIncome) * 100).toFixed(1)) : undefined;
 
   const fixedCostPressureRatio =
-    monthlyIncome > 0 ? monthlyFixedCosts / monthlyIncome : 0;
+    monthlyIncome > 0 ? Number(((monthlyFixedCosts / monthlyIncome) * 100).toFixed(1)) : undefined;
 
-  const debtToIncomeRatio =
-    monthlyIncome > 0 ? monthlyDebtPayments / monthlyIncome : 0;
+  let savingsRate: number | undefined;
+  if (monthlyIncome > 0) {
+    if (answers.savingConsistency === 'yes_consistently') savingsRate = 12;
+    else if (answers.savingConsistency === 'yes_irregularly') savingsRate = 5;
+    else savingsRate = 0;
+  }
+
+  const calculatedNetWorth = totalSavings + totalInvestments + homeEquity - totalDebtBalance;
+  const netWorth = hasAnswer(answers, 'netWorth') ? toNumber(answers.netWorth) : calculatedNetWorth;
 
   return {
-    monthlyIncome,
-    monthlyHousingCost,
-    monthlyUtilities,
-    monthlyChildcareCost,
-    monthlyDebtPayments,
-    monthlyFixedCosts,
+    debtToIncomeRatio,
+    fixedCostPressureRatio,
+    savingsRate,
+    netWorth,
+    homeEquity,
     totalSavings,
     totalInvestments,
     totalDebtBalance,
-    homeEquity,
-    netWorth,
-    fixedCostPressureRatio,
-    debtToIncomeRatio,
+    monthlyIncome,
+    monthlyDebtPayments,
+    monthlyHousingCost,
+    monthlyUtilities,
+    monthlyChildcareCost,
+    monthlyFixedCosts,
   };
 }
 
@@ -2354,6 +2350,7 @@ function scoreSaving(
 
 function scoreDebt(a: Record<string, any>, signals?: UserSignals) {
   const derivedSignals = signals ?? deriveSignals(a);
+  const monthlyIncome = toNumber(a.monthlyTakeHomeIncome);
   let s = 100;
 
   const manageabilityPenaltyMap: Record<string, number> = {
