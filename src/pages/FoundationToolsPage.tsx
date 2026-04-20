@@ -40,11 +40,10 @@ export default function FoundationToolsPage() {
           </div>
 
           <div className="space-y-8">
-  <FixedCostLoadTool />
-  <MonthlyMarginPlannerTool />
-</div>
-
-        
+            <FixedCostLoadTool />
+            <MonthlyMarginPlannerTool />
+          </div>
+        </section> {/* 👈 THIS WAS MISSING */}
 
         {/* Future sections go here */}
         {/*
