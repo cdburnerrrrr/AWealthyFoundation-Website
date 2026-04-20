@@ -58,9 +58,7 @@ function InputRow({
           <span className="text-copper-300">{icon}</span>
           <span>{label}</span>
         </div>
-        <span className="text-sm font-semibold text-copper-200">
-          {formatCurrency(value)}
-        </span>
+        <span className="text-sm font-semibold text-copper-200">{formatCurrency(value)}</span>
       </div>
 
       <input
@@ -186,19 +184,13 @@ export default function MonthlyMarginPlannerTool({
               <Wallet size={22} />
             </div>
             <div>
-              <p className="text-sm uppercase tracking-[0.2em] text-copper-200/80">
-                Spending Tool
-              </p>
-              <h2 className="text-2xl font-semibold tracking-tight">
-                Monthly Margin Planner
-              </h2>
+              <p className="text-sm uppercase tracking-[0.2em] text-copper-200/80">Spending Tool</p>
+              <h2 className="text-2xl font-semibold tracking-tight">Monthly Margin Planner</h2>
             </div>
           </div>
 
           <p className="mb-6 max-w-xl text-sm leading-6 text-white/75">
-            Plan where your money goes before it disappears. This tool helps you
-            see whether your current spending plan is creating progress or slowly
-            boxing you in.
+            Plan where your money goes before it disappears. This tool helps you see whether your current spending plan is creating progress or slowly boxing you in.
           </p>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -276,18 +268,12 @@ export default function MonthlyMarginPlannerTool({
               <div>
                 <p className="text-sm text-white/60">Planned monthly margin</p>
                 <div className="mt-1 flex items-end gap-2">
-                  <span className="text-4xl font-semibold tracking-tight">
-                    {formatCurrency(Math.abs(margin))}
-                  </span>
-                  <span className="pb-1 text-sm text-white/55">
-                    {margin >= 0 ? 'left over' : 'short'}
-                  </span>
+                  <span className="text-4xl font-semibold tracking-tight">{formatCurrency(Math.abs(margin))}</span>
+                  <span className="pb-1 text-sm text-white/55">{margin >= 0 ? 'left over' : 'short'}</span>
                 </div>
               </div>
 
-              <div
-                className={`rounded-full bg-gradient-to-r px-3 py-1 text-xs font-semibold text-navy-950 ${status.chip}`}
-              >
+              <div className={`rounded-full bg-gradient-to-r px-3 py-1 text-xs font-semibold text-navy-950 ${status.chip}`}>
                 {status.label}
               </div>
             </div>
@@ -295,30 +281,22 @@ export default function MonthlyMarginPlannerTool({
             <div className="mb-5 rounded-2xl border border-white/10 bg-navy-950/40 p-4">
               <div className="mb-2 flex items-center justify-between text-sm">
                 <span className="text-white/65">Take-home income</span>
-                <span className="font-semibold text-white">
-                  {formatCurrency(values.monthlyTakeHomeIncome)}
-                </span>
+                <span className="font-semibold text-white">{formatCurrency(values.monthlyTakeHomeIncome)}</span>
               </div>
               <div className="mb-2 flex items-center justify-between text-sm">
                 <span className="text-white/65">Total planned outflow</span>
-                <span className="font-semibold text-white">
-                  {formatCurrency(totalPlanned)}
-                </span>
+                <span className="font-semibold text-white">{formatCurrency(totalPlanned)}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-white/65">Margin status</span>
-                <span className={`font-semibold ${status.text}`}>
-                  {margin >= 0 ? 'Positive' : 'Negative'}
-                </span>
+                <span className={`font-semibold ${status.text}`}>{margin >= 0 ? 'Positive' : 'Negative'}</span>
               </div>
             </div>
 
             <div className="mb-5 rounded-3xl border border-white/10 bg-gradient-to-b from-white/5 to-white/[0.03] p-5">
               <div className="mb-4">
                 <p className="text-sm text-white/60">Money flow</p>
-                <p className={`mt-1 text-sm font-medium ${status.text}`}>
-                  {status.tone}
-                </p>
+                <p className={`mt-1 text-sm font-medium ${status.text}`}>{status.tone}</p>
               </div>
 
               <div className="space-y-3">
