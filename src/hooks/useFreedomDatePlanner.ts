@@ -76,7 +76,7 @@ export function useFreedomDatePlanner() {
   const attackOrder = useMemo(() => {
     if (validDebts.length === 0) return [];
     return getAttackOrder(validDebts, state.priority);
-  }, [validDebts, state.priority]);
+  }, [JSON.stringify(validDebts), state.priority]);
 
   const derivedTargetMonths = results?.plan.monthsToFreedom ?? state.targetMonths;
 
