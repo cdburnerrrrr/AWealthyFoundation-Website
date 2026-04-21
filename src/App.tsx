@@ -27,7 +27,7 @@ import FoundationToolsPage from './pages/FoundationToolsPage';
 import FixedCostLoadPage from './pages/FixedCostLoadPage';
 import MonthlyMarginPlannerPage from './pages/MonthlyMarginPlannerPage';
 import DebtPressureCheckPage from './pages/DebtPressureCheckPage';
-import DebtPayoffPlannerPage from './pages/DebtPayoffPlannerPage';
+import MyFreedomDatePage from './pages/MyFreedomDatePage';
 import Layout from './layouts/Layouts';
 
 
@@ -183,7 +183,7 @@ function App() {
           <Route path="/foundation-tools/fixed-cost-load" element={<FixedCostLoadPage />} />
           <Route path="/foundation-tools/monthly-margin-planner" element={<MonthlyMarginPlannerPage />} />
           <Route path="/foundation-tools/debt-pressure-check" element={<DebtPressureCheckPage />} />
-          <Route path="/foundation-tools/debt-payoff-planner" element={<DebtPayoffPlannerPage />} />
+          <Route path="/foundation-tools/my-freedom-date" element={<MyFreedomDatePage />} />
           <Route path="/results/snapshot" element={<SnapshotResultsPage />} />
 
           <Route

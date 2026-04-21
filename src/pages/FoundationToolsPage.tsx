@@ -215,14 +215,13 @@ const categoryMeta: Record<
         badge: 'Live',
       },
       {
-        to: '/foundation-tools/debt-payoff-planner',
-        title: 'Debt Payoff Planner',
+        to: '/foundation-tools/my-freedom-date',
+        title: 'My Freedom Date',
         description:
-          'Compare payoff approaches, test extra payments, and see how much faster you could get free of the weight.',
-        bestFor: 'building a clearer payoff plan with momentum',
+          'Enter your debts, adjust your monthly plan, and see when you could be debt-free.',
+        bestFor: 'turning debt payoff into a real timeline',
         icon: <Landmark size={22} />,
         badge: 'Live',
-        
       },
     ],
   },
