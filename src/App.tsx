@@ -26,6 +26,8 @@ import NewsletterPage from './pages/NewsletterPage';
 import FoundationToolsPage from './pages/FoundationToolsPage';
 import FixedCostLoadPage from './pages/FixedCostLoadPage';
 import MonthlyMarginPlannerPage from './pages/MonthlyMarginPlannerPage';
+import DebtPressureCheckPage from './pages/DebtPressureCheckPage';
+import DebtPayoffPlannerPage from './pages/DebtPayoffPlannerPage';
 import Layout from './layouts/Layouts';
 
 
@@ -180,6 +182,8 @@ function App() {
           <Route path="/foundation-tools" element={<FoundationToolsPage />} />
           <Route path="/foundation-tools/fixed-cost-load" element={<FixedCostLoadPage />} />
           <Route path="/foundation-tools/monthly-margin-planner" element={<MonthlyMarginPlannerPage />} />
+          <Route path="/foundation-tools/debt-pressure-check" element={<DebtPressureCheckPage />} />
+          <Route path="/foundation-tools/debt-payoff-planner" element={<DebtPayoffPlannerPage />} />
           <Route path="/results/snapshot" element={<SnapshotResultsPage />} />
 
           <Route

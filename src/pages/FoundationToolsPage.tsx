@@ -206,24 +206,23 @@ const categoryMeta: Record<
     heroGlow: 'bg-rose-300/14',
     tools: [
       {
-        to: '#',
+        to: '/foundation-tools/debt-pressure-check',
         title: 'Debt Pressure Check',
         description:
           'Measure how much your required debt payments are squeezing your monthly flexibility and identify when the load is getting too heavy.',
         bestFor: 'understanding whether debt is slowing everything else down',
         icon: <Shield size={22} />,
-        badge: 'Coming Soon',
-        disabled: true,
+        badge: 'Live',
       },
       {
-        to: '#',
+        to: '/foundation-tools/debt-payoff-planner',
         title: 'Debt Payoff Planner',
         description:
           'Compare payoff approaches, test extra payments, and see how much faster you could get free of the weight.',
         bestFor: 'building a clearer payoff plan with momentum',
         icon: <Landmark size={22} />,
-        badge: 'Coming Soon',
-        disabled: true,
+        badge: 'Live',
+        
       },
     ],
   },
