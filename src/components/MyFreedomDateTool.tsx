@@ -17,77 +17,80 @@ export default function MyFreedomDateTool() {
   return (
     <div className="space-y-8">
       <div className="space-y-4">
-        {state.debts.map((debt) => (
+        {state.debts.map((debt, index) => (
           <div
             key={debt.id}
             className="rounded-2xl border border-[#2b5676]/20 bg-white/78 p-4"
           >
-            <p className="mb-2 text-xs uppercase tracking-[0.18em] text-[#b8742a]">
-  Debt Details
-</p>
+            {index === 0 && (
+              <p className="mb-2 text-xs uppercase tracking-[0.18em] text-[#b8742a]">
+                Debt Details
+              </p>
+            )}
+
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-  <div>
-    <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#5a7690]">
-      Debt Name
-    </label>
-    <input
-      type="text"
-      value={debt.name}
-      onChange={(e) => updateDebt(debt.id, 'name', e.target.value)}
-      placeholder="Visa"
-      className="w-full rounded-xl border border-[#2b5676]/20 bg-white/90 px-3 py-2 text-sm text-[#153b58]"
-    />
-  </div>
+              <div>
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#5a7690]">
+                  Debt Name
+                </label>
+                <input
+                  type="text"
+                  value={debt.name}
+                  onChange={(e) => updateDebt(debt.id, 'name', e.target.value)}
+                  placeholder="Visa"
+                  className="w-full rounded-xl border border-[#2b5676]/20 bg-white/90 px-3 py-2 text-sm text-[#153b58]"
+                />
+              </div>
 
-  <div>
-    <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#5a7690]">
-      Balance
-    </label>
-    <input
-      type="number"
-      value={debt.balance}
-      onChange={(e) =>
-        updateDebt(debt.id, 'balance', Number(e.target.value) || 0)
-      }
-      placeholder="1200"
-      className="w-full rounded-xl border border-[#2b5676]/20 bg-white/90 px-3 py-2 text-sm text-[#153b58]"
-    />
-  </div>
+              <div>
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#5a7690]">
+                  Balance
+                </label>
+                <input
+                  type="number"
+                  value={debt.balance}
+                  onChange={(e) =>
+                    updateDebt(debt.id, 'balance', Number(e.target.value) || 0)
+                  }
+                  placeholder="1200"
+                  className="w-full rounded-xl border border-[#2b5676]/20 bg-white/90 px-3 py-2 text-sm text-[#153b58]"
+                />
+              </div>
 
-  <div>
-    <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#5a7690]">
-      Interest Rate
-    </label>
-    <input
-      type="number"
-      value={debt.apr}
-      onChange={(e) =>
-        updateDebt(debt.id, 'apr', Number(e.target.value) || 0)
-      }
-      placeholder="24.99"
-      className="w-full rounded-xl border border-[#2b5676]/20 bg-white/90 px-3 py-2 text-sm text-[#153b58]"
-    />
-  </div>
+              <div>
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#5a7690]">
+                  Interest Rate
+                </label>
+                <input
+                  type="number"
+                  value={debt.apr}
+                  onChange={(e) =>
+                    updateDebt(debt.id, 'apr', Number(e.target.value) || 0)
+                  }
+                  placeholder="24.99"
+                  className="w-full rounded-xl border border-[#2b5676]/20 bg-white/90 px-3 py-2 text-sm text-[#153b58]"
+                />
+              </div>
 
-  <div>
-    <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#5a7690]">
-      Minimum Payment
-    </label>
-    <input
-      type="number"
-      value={debt.minPayment ?? ''}
-      onChange={(e) =>
-        updateDebt(
-          debt.id,
-          'minPayment',
-          e.target.value === '' ? undefined : Number(e.target.value) || 0
-        )
-      }
-      placeholder="optional"
-      className="w-full rounded-xl border border-[#2b5676]/20 bg-white/90 px-3 py-2 text-sm text-[#153b58]"
-    />
-  </div>
-</div>
+              <div>
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#5a7690]">
+                  Minimum Payment
+                </label>
+                <input
+                  type="number"
+                  value={debt.minPayment ?? ''}
+                  onChange={(e) =>
+                    updateDebt(
+                      debt.id,
+                      'minPayment',
+                      e.target.value === '' ? undefined : Number(e.target.value) || 0
+                    )
+                  }
+                  placeholder="optional"
+                  className="w-full rounded-xl border border-[#2b5676]/20 bg-white/90 px-3 py-2 text-sm text-[#153b58]"
+                />
+              </div>
+            </div>
 
             <div className="mt-3 flex items-center justify-between">
               <p className="text-xs text-[#5a7690]">
@@ -104,6 +107,12 @@ export default function MyFreedomDateTool() {
           </div>
         ))}
 
+        {results?.plan.warning && (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+            {results.plan.warning}
+          </div>
+        )}
+
         <button
           type="button"
           onClick={addDebt}
@@ -113,30 +122,36 @@ export default function MyFreedomDateTool() {
         </button>
       </div>
 
-      <div className="flex flex-wrap gap-3">
-        <button
-          type="button"
-          onClick={() => setPriority('balance')}
-          className={`rounded-full px-4 py-2 text-sm font-semibold ${
-            state.priority === 'balance'
-              ? 'bg-[#0f3a5a] text-white'
-              : 'border border-[#0f3a5a]/20 bg-white/80 text-[#0f2a44]'
-          }`}
-        >
-          Prioritize by Balance
-        </button>
+      <div className="space-y-3">
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() => setPriority('balance')}
+            className={`rounded-full px-4 py-2 text-sm font-semibold ${
+              state.priority === 'balance'
+                ? 'bg-[#0f3a5a] text-white'
+                : 'border border-[#0f3a5a]/20 bg-white/80 text-[#0f2a44]'
+            }`}
+          >
+            Prioritize by Balance
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setPriority('interest')}
-          className={`rounded-full px-4 py-2 text-sm font-semibold ${
-            state.priority === 'interest'
-              ? 'bg-[#0f3a5a] text-white'
-              : 'border border-[#0f3a5a]/20 bg-white/80 text-[#0f2a44]'
-          }`}
-        >
-          Prioritize by Interest Rate
-        </button>
+          <button
+            type="button"
+            onClick={() => setPriority('interest')}
+            className={`rounded-full px-4 py-2 text-sm font-semibold ${
+              state.priority === 'interest'
+                ? 'bg-[#0f3a5a] text-white'
+                : 'border border-[#0f3a5a]/20 bg-white/80 text-[#0f2a44]'
+            }`}
+          >
+            Prioritize by Interest Rate
+          </button>
+        </div>
+
+        <p className="text-xs text-[#5a7690]">
+          Priority affects where your extra payment goes. If extra payment is $0, both strategies will behave the same.
+        </p>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -202,6 +217,54 @@ export default function MyFreedomDateTool() {
       </div>
 
       {results && (
+        <div className="rounded-2xl border border-[#2b5676]/20 bg-white/85 p-5">
+          <h3 className="text-lg font-semibold text-[#0f2a44]">
+            Freedom Timeline
+          </h3>
+
+          {(() => {
+            const baselineMonths = Math.max(results.baseline.monthsToFreedom, 1);
+            const planMonths = Math.max(results.plan.monthsToFreedom, 1);
+
+            const progress = 1 - planMonths / baselineMonths;
+            const clamped = Math.max(0, Math.min(progress, 1));
+
+            const leftPercent = `${(1 - clamped) * 100}%`;
+            const dotSize = 14 + clamped * 18;
+
+            return (
+              <div className="mt-6">
+                <div className="relative h-12">
+                  <div className="absolute left-0 right-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-[#c6ddeb]" />
+
+                  <div
+                    className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-white bg-[#b8742a] shadow-[0_0_18px_rgba(184,116,42,0.35)] transition-all duration-300"
+                    style={{
+                      left: leftPercent,
+                      width: `${dotSize}px`,
+                      height: `${dotSize}px`,
+                    }}
+                  />
+
+                  <div className="absolute left-0 top-full mt-2 text-xs text-[#5a7690]">
+                    Soon
+                  </div>
+                  <div className="absolute right-0 top-full mt-2 text-xs text-[#5a7690]">
+                    Later
+                  </div>
+                </div>
+
+                <p className="mt-6 text-sm text-[#325672]">
+                  The closer your Freedom Date moves to the left, the bigger the
+                  target gets.
+                </p>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {results && (
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-2xl border border-[#2b5676]/20 bg-white/85 p-5">
             <p className="text-sm text-[#5a7690]">Baseline Freedom Date</p>
@@ -260,60 +323,6 @@ export default function MyFreedomDateTool() {
               </div>
             ))}
           </div>
-        </div>
-      )}
-
-      {results && (
-        <div className="rounded-2xl border border-[#2b5676]/20 bg-white/85 p-5">
-          <h3 className="text-lg font-semibold text-[#0f2a44]">
-            Freedom Timeline
-          </h3>
-
-          {(() => {
-            const baselineMonths = Math.max(results.baseline.monthsToFreedom, 1);
-            const planMonths = Math.max(results.plan.monthsToFreedom, 1);
-
-            const progress = 1 - planMonths / baselineMonths;
-            const clamped = Math.max(0, Math.min(progress, 1));
-
-            const leftPercent = `${clamped * 100}%`;
-            const dotSize = 14 + clamped * 18;
-
-            return (
-              <div className="mt-6">
-                <div className="relative h-12">
-                  <div className="absolute left-0 right-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-[#c6ddeb]" />
-
-                  <div
-                    className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-white bg-[#b8742a] shadow-[0_0_18px_rgba(184,116,42,0.35)] transition-all duration-300"
-                    style={{
-                      left: leftPercent,
-                      width: `${dotSize}px`,
-                      height: `${dotSize}px`,
-                    }}
-                  />
-
-                  <div className="absolute left-0 top-full mt-2 text-xs text-[#5a7690]">
-                    Soon
-                  </div>
-                  <div className="absolute right-0 top-full mt-2 text-xs text-[#5a7690]">
-                    Later
-                  </div>
-                </div>
-
-                <p className="mt-6 text-sm text-[#325672]">
-                  The closer your Freedom Date moves to the left, the bigger the
-                  target gets.
-                </p>
-              </div>
-            );
-          })()}
-        </div>
-      )}
-
-      {results?.plan.warning && (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
-          {results.plan.warning}
         </div>
       )}
     </div>
