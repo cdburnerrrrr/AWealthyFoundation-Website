@@ -22,49 +22,72 @@ export default function MyFreedomDateTool() {
             key={debt.id}
             className="rounded-2xl border border-[#2b5676]/20 bg-white/78 p-4"
           >
+            <p className="mb-2 text-xs uppercase tracking-[0.18em] text-[#b8742a]">
+  Debt Details
+</p>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <input
-                type="text"
-                value={debt.name}
-                onChange={(e) => updateDebt(debt.id, 'name', e.target.value)}
-                placeholder="Debt name"
-                className="rounded-xl border border-[#2b5676]/20 bg-white/90 px-3 py-2 text-sm text-[#153b58]"
-              />
+  <div>
+    <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#5a7690]">
+      Debt Name
+    </label>
+    <input
+      type="text"
+      value={debt.name}
+      onChange={(e) => updateDebt(debt.id, 'name', e.target.value)}
+      placeholder="Visa"
+      className="w-full rounded-xl border border-[#2b5676]/20 bg-white/90 px-3 py-2 text-sm text-[#153b58]"
+    />
+  </div>
 
-              <input
-                type="number"
-                value={debt.balance}
-                onChange={(e) =>
-                  updateDebt(debt.id, 'balance', Number(e.target.value) || 0)
-                }
-                placeholder="Balance"
-                className="rounded-xl border border-[#2b5676]/20 bg-white/90 px-3 py-2 text-sm text-[#153b58]"
-              />
+  <div>
+    <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#5a7690]">
+      Balance
+    </label>
+    <input
+      type="number"
+      value={debt.balance}
+      onChange={(e) =>
+        updateDebt(debt.id, 'balance', Number(e.target.value) || 0)
+      }
+      placeholder="1200"
+      className="w-full rounded-xl border border-[#2b5676]/20 bg-white/90 px-3 py-2 text-sm text-[#153b58]"
+    />
+  </div>
 
-              <input
-                type="number"
-                value={debt.apr}
-                onChange={(e) =>
-                  updateDebt(debt.id, 'apr', Number(e.target.value) || 0)
-                }
-                placeholder="Interest Rate"
-                className="rounded-xl border border-[#2b5676]/20 bg-white/90 px-3 py-2 text-sm text-[#153b58]"
-              />
+  <div>
+    <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#5a7690]">
+      Interest Rate
+    </label>
+    <input
+      type="number"
+      value={debt.apr}
+      onChange={(e) =>
+        updateDebt(debt.id, 'apr', Number(e.target.value) || 0)
+      }
+      placeholder="24.99"
+      className="w-full rounded-xl border border-[#2b5676]/20 bg-white/90 px-3 py-2 text-sm text-[#153b58]"
+    />
+  </div>
 
-              <input
-                type="number"
-                value={debt.minPayment ?? ''}
-                onChange={(e) =>
-                  updateDebt(
-                    debt.id,
-                    'minPayment',
-                    e.target.value === '' ? undefined : Number(e.target.value) || 0
-                  )
-                }
-                placeholder="Minimum Payment (optional)"
-                className="rounded-xl border border-[#2b5676]/20 bg-white/90 px-3 py-2 text-sm text-[#153b58]"
-              />
-            </div>
+  <div>
+    <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#5a7690]">
+      Minimum Payment
+    </label>
+    <input
+      type="number"
+      value={debt.minPayment ?? ''}
+      onChange={(e) =>
+        updateDebt(
+          debt.id,
+          'minPayment',
+          e.target.value === '' ? undefined : Number(e.target.value) || 0
+        )
+      }
+      placeholder="optional"
+      className="w-full rounded-xl border border-[#2b5676]/20 bg-white/90 px-3 py-2 text-sm text-[#153b58]"
+    />
+  </div>
+</div>
 
             <div className="mt-3 flex items-center justify-between">
               <p className="text-xs text-[#5a7690]">
