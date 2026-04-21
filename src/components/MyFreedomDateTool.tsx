@@ -150,6 +150,10 @@ export default function MyFreedomDateTool() {
           </button>
         </div>
 
+        <p className="text-sm text-rose-700">
+  Debug priority: {state.priority}
+</p>
+
         <p className="text-xs text-[#5a7690]">
           Priority affects where your extra payment goes. If extra payment is $0, both strategies will behave the same.
         </p>
