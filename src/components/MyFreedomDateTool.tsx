@@ -6,6 +6,7 @@ export default function MyFreedomDateTool() {
     results,
     effectiveExtraPayment,
     derivedTargetMonths,
+    attackOrder,
     addDebt,
     removeDebt,
     updateDebt,
@@ -152,6 +153,15 @@ export default function MyFreedomDateTool() {
         <p className="text-xs text-[#5a7690]">
           Priority affects where your extra payment goes. If extra payment is $0, both strategies will behave the same.
         </p>
+
+        {attackOrder.length > 0 && (
+          <div className="rounded-2xl border border-[#2b5676]/20 bg-white/78 p-4">
+            <p className="text-sm font-medium text-[#153b58]">Current first target</p>
+            <p className="mt-1 text-lg font-semibold text-[#0f2a44]">
+              {attackOrder[0]?.debtName}
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

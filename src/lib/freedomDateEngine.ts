@@ -113,6 +113,30 @@ function sortDebts(
   });
 }
 
+export function getAttackOrder(
+  debtInputs: DebtInput[],
+  priority: PayoffPriority
+) {
+  return debtInputs
+    .map(normalizeDebt)
+    .filter((d) => d.balance > 0)
+    .sort((a, b) => {
+      if (priority === 'balance') {
+        if (a.balance !== b.balance) return a.balance - b.balance;
+        if (a.apr !== b.apr) return b.apr - a.apr;
+        return a.name.localeCompare(b.name);
+      }
+
+      if (a.apr !== b.apr) return b.apr - a.apr;
+      if (a.balance !== b.balance) return a.balance - b.balance;
+      return a.name.localeCompare(b.name);
+    })
+    .map((d) => ({
+      debtId: d.id,
+      debtName: d.name,
+    }));
+}
+
 function addMonths(date: Date, months: number): Date {
   const copy = new Date(date);
   copy.setMonth(copy.getMonth() + months);
@@ -152,7 +176,6 @@ export function simulateFreedomDate(
 
     let paymentThisMonth = 0;
 
-    // 1) Accrue interest
     for (const debt of openDebts) {
       const monthlyRate = debt.apr / 100 / 12;
       const interest = round2(debt.balance * monthlyRate);
@@ -160,14 +183,12 @@ export function simulateFreedomDate(
       totalInterestPaid = round2(totalInterestPaid + interest);
     }
 
-    // 2) Pay minimums
     for (const debt of debts.filter((d) => d.balance > 0)) {
       const minPayment = Math.min(debt.minPayment, debt.balance);
       debt.balance = round2(debt.balance - minPayment);
       paymentThisMonth = round2(paymentThisMonth + minPayment);
     }
 
-    // 3) Apply extra payment to prioritized debt
     let extraPool = round2(clampNonNegative(settings.extraPayment));
 
     while (extraPool > 0.009) {
@@ -184,7 +205,6 @@ export function simulateFreedomDate(
 
     totalPaid = round2(totalPaid + paymentThisMonth);
 
-    // 4) Record payoff events
     for (const debt of debts) {
       if (
         debt.balance <= 0 &&
@@ -199,7 +219,6 @@ export function simulateFreedomDate(
       }
     }
 
-    // 5) Timeline snapshot
     const totalBalance = round2(
       debts.reduce((sum, debt) => sum + debt.balance, 0)
     );
@@ -253,7 +272,6 @@ export function solveExtraPaymentForTargetMonths(
   let low = 0;
   let high = 10000;
 
-  // Expand high if needed
   for (let i = 0; i < 12; i++) {
     const test = simulateFreedomDate(
       debtInputs,
@@ -268,7 +286,6 @@ export function solveExtraPaymentForTargetMonths(
     high *= 2;
   }
 
-  // Binary search
   for (let i = 0; i < 32; i++) {
     const mid = (low + high) / 2;
 
