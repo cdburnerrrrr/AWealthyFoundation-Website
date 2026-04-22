@@ -1,8 +1,11 @@
+import { useMemo } from 'react';
+import { buildBaselineVsPlan } from '../lib/freedomDateEngine';
 import { useFreedomDatePlanner } from '../hooks/useFreedomDatePlanner';
 
 export default function MyFreedomDateTool() {
   const {
     state,
+    validDebts,
     results,
     effectiveExtraPayment,
     derivedTargetMonths,
@@ -15,8 +18,37 @@ export default function MyFreedomDateTool() {
     setTargetMonths,
   } = useFreedomDatePlanner();
 
+  const strategyImpact = useMemo(() => {
+    if (validDebts.length === 0) return null;
+
+    const balancePlan = buildBaselineVsPlan(validDebts, 'balance', effectiveExtraPayment);
+    const interestPlan = buildBaselineVsPlan(validDebts, 'interest', effectiveExtraPayment);
+
+    const sameOrder =
+      JSON.stringify(balancePlan.plan.payoffOrder.map((d) => d.debtId)) ===
+      JSON.stringify(interestPlan.plan.payoffOrder.map((d) => d.debtId));
+
+    const sameMonths =
+      balancePlan.plan.monthsToFreedom === interestPlan.plan.monthsToFreedom;
+
+    const sameInterest =
+      Math.abs(balancePlan.plan.totalInterestPaid - interestPlan.plan.totalInterestPaid) < 0.01;
+
+    if (sameOrder && sameMonths && sameInterest) {
+      return {
+        label: 'Minimal',
+        text: 'Both strategies lead to nearly the same result at this payment level.',
+      };
+    }
+
+    return {
+      label: 'Significant',
+      text: 'Your strategy meaningfully changes the payoff path at this payment level.',
+    };
+  }, [validDebts, effectiveExtraPayment]);
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div className="space-y-4">
         {state.debts.map((debt, index) => (
           <div
@@ -123,49 +155,95 @@ export default function MyFreedomDateTool() {
         </button>
       </div>
 
-      <div className="space-y-3">
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={() => setPriority('balance')}
-            className={`rounded-full px-4 py-2 text-sm font-semibold ${
-              state.priority === 'balance'
-                ? 'bg-[#0f3a5a] text-white'
-                : 'border border-[#0f3a5a]/20 bg-white/80 text-[#0f2a44]'
-            }`}
-          >
-            Prioritize by Balance
-          </button>
+      <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="rounded-2xl border border-[#2b5676]/20 bg-white/85 p-5">
+          <h3 className="text-lg font-semibold text-[#0f2a44]">
+            Projected Debt Finish Order
+          </h3>
+          <p className="mt-1 text-xs text-[#5a7690]">
+            This shows the order debts are expected to reach zero. It can differ from your first target depending on balances, minimums, and payment level.
+          </p>
 
-          <button
-            type="button"
-            onClick={() => setPriority('interest')}
-            className={`rounded-full px-4 py-2 text-sm font-semibold ${
-              state.priority === 'interest'
-                ? 'bg-[#0f3a5a] text-white'
-                : 'border border-[#0f3a5a]/20 bg-white/80 text-[#0f2a44]'
-            }`}
-          >
-            Prioritize by Interest Rate
-          </button>
+          {results ? (
+            <div className="mt-4 space-y-3">
+              {results.plan.payoffOrder.map((item, index) => (
+                <div
+                  key={item.debtId}
+                  className="flex items-center justify-between rounded-xl border border-[#2b5676]/12 bg-white/70 px-4 py-3"
+                >
+                  <p className="font-medium text-[#153b58]">
+                    {index + 1}. {item.debtName}
+                  </p>
+                  <p className="text-sm font-semibold text-[#8a5a24]">
+                    {item.payoffMonth} months
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-4 text-sm text-[#5a7690]">
+              Add at least one debt to project your payoff order.
+            </p>
+          )}
         </div>
 
-        <p className="text-sm text-rose-700">
-  Debug priority: {state.priority}
-</p>
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-[#2b5676]/20 bg-white/85 p-5">
+            <h3 className="text-lg font-semibold text-[#0f2a44]">
+              Payoff Priority
+            </h3>
 
-        <p className="text-xs text-[#5a7690]">
-          Priority affects where your extra payment goes. If extra payment is $0, both strategies will behave the same.
-        </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => setPriority('balance')}
+                className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                  state.priority === 'balance'
+                    ? 'bg-[#0f3a5a] text-white'
+                    : 'border border-[#0f3a5a]/20 bg-white/80 text-[#0f2a44]'
+                }`}
+              >
+                Prioritize by Balance
+              </button>
 
-        {attackOrder.length > 0 && (
-          <div className="rounded-2xl border border-[#2b5676]/20 bg-white/78 p-4">
-            <p className="text-sm font-medium text-[#153b58]">Current first target</p>
-            <p className="mt-1 text-lg font-semibold text-[#0f2a44]">
-              {attackOrder[0]?.debtName}
+              <button
+                type="button"
+                onClick={() => setPriority('interest')}
+                className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                  state.priority === 'interest'
+                    ? 'bg-[#0f3a5a] text-white'
+                    : 'border border-[#0f3a5a]/20 bg-white/80 text-[#0f2a44]'
+                }`}
+              >
+                Prioritize by Interest Rate
+              </button>
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-[#2b5676]/20 bg-white/70 p-4">
+                <p className="text-sm font-medium text-[#153b58]">Current first target</p>
+                <p className="mt-1 text-lg font-semibold text-[#0f2a44]">
+                  {attackOrder[0]?.debtName ?? '—'}
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-[#2b5676]/20 bg-white/70 p-4">
+                <p className="text-sm font-medium text-[#153b58]">Strategy impact</p>
+                <p className="mt-1 text-lg font-semibold text-[#0f2a44]">
+                  {strategyImpact?.label ?? '—'}
+                </p>
+              </div>
+            </div>
+
+            <p className="mt-3 text-xs text-[#5a7690]">
+              Priority affects where your extra payment goes first. If extra payment is $0, both strategies will behave the same.
             </p>
+
+            {strategyImpact && (
+              <p className="mt-2 text-xs text-[#5a7690]">{strategyImpact.text}</p>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -175,11 +253,9 @@ export default function MyFreedomDateTool() {
               Extra Payment
             </span>
             <span className="text-sm font-semibold text-[#b8742a]">
-              $
-              {Math.round(
+              ${Math.round(
                 state.mode === 'payment' ? state.extraPayment : effectiveExtraPayment
-              )}
-              /mo
+              )}/mo
             </span>
           </div>
 
@@ -206,8 +282,7 @@ export default function MyFreedomDateTool() {
               Target Payoff Time
             </span>
             <span className="text-sm font-semibold text-[#b8742a]">
-              {state.mode === 'time' ? state.targetMonths : derivedTargetMonths}{' '}
-              months
+              {state.mode === 'time' ? state.targetMonths : derivedTargetMonths} months
             </span>
           </div>
 
@@ -224,8 +299,7 @@ export default function MyFreedomDateTool() {
           />
 
           <p className="mt-2 text-xs text-[#5a7690]">
-            Move this earlier to see the monthly payment needed to reach that
-            freedom date.
+            Move this earlier to see the monthly payment needed to reach that freedom date.
           </p>
         </div>
       </div>
@@ -269,8 +343,7 @@ export default function MyFreedomDateTool() {
                 </div>
 
                 <p className="mt-6 text-sm text-[#325672]">
-                  The closer your Freedom Date moves to the left, the bigger the
-                  target gets.
+                  The closer your Freedom Date moves to the left, the bigger the target gets.
                 </p>
               </div>
             );
@@ -279,12 +352,12 @@ export default function MyFreedomDateTool() {
       )}
 
       {results && (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-2xl border border-[#2b5676]/20 bg-white/85 p-5">
             <p className="text-sm text-[#5a7690]">Baseline Freedom Date</p>
-            <p className="mt-1 text-2xl font-semibold text-[#0f2a44]">
+            <p className="mt-1 text-xl font-semibold text-[#0f2a44]">
               {results.baseline.freedomDate.toLocaleDateString('en-US', {
-                month: 'long',
+                month: 'short',
                 year: 'numeric',
               })}
             </p>
@@ -292,9 +365,9 @@ export default function MyFreedomDateTool() {
 
           <div className="rounded-2xl border border-[#b8742a]/18 bg-[#b8742a]/10 p-5">
             <p className="text-sm text-[#7a4e1d]">Your Freedom Date</p>
-            <p className="mt-1 text-2xl font-semibold text-[#6d4318]">
+            <p className="mt-1 text-xl font-semibold text-[#6d4318]">
               {results.plan.freedomDate.toLocaleDateString('en-US', {
-                month: 'long',
+                month: 'short',
                 year: 'numeric',
               })}
             </p>
@@ -302,40 +375,16 @@ export default function MyFreedomDateTool() {
 
           <div className="rounded-2xl border border-[#2b5676]/20 bg-white/85 p-5">
             <p className="text-sm text-[#5a7690]">Months Saved</p>
-            <p className="mt-1 text-2xl font-semibold text-[#0f2a44]">
+            <p className="mt-1 text-xl font-semibold text-[#0f2a44]">
               {results.monthsSaved}
             </p>
           </div>
 
           <div className="rounded-2xl border border-[#2b5676]/20 bg-white/85 p-5">
             <p className="text-sm text-[#5a7690]">Interest Saved</p>
-            <p className="mt-1 text-2xl font-semibold text-[#0f2a44]">
+            <p className="mt-1 text-xl font-semibold text-[#0f2a44]">
               ${results.interestSaved.toLocaleString()}
             </p>
-          </div>
-        </div>
-      )}
-
-      {results && (
-        <div className="rounded-2xl border border-[#2b5676]/20 bg-white/85 p-5">
-          <h3 className="text-lg font-semibold text-[#0f2a44]">
-            Projected Payoff Order
-          </h3>
-
-          <div className="mt-4 space-y-3">
-            {results.plan.payoffOrder.map((item, index) => (
-              <div
-                key={item.debtId}
-                className="flex items-center justify-between rounded-xl border border-[#2b5676]/12 bg-white/70 px-4 py-3"
-              >
-                <p className="font-medium text-[#153b58]">
-                  {index + 1}. {item.debtName}
-                </p>
-                <p className="text-sm font-semibold text-[#8a5a24]">
-                  {item.payoffMonth} months
-                </p>
-              </div>
-            ))}
           </div>
         </div>
       )}
