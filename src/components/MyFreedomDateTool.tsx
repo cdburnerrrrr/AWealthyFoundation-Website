@@ -62,12 +62,12 @@ export default function MyFreedomDateTool() {
           <div />
         )}
 
-        {saveState !== 'idle' && (
-          <div className="rounded-full border border-[#2b5676]/15 bg-white/70 px-3 py-1 text-xs text-[#5a7690] shadow-sm">
-            {saveState === 'saving' && 'Saving...'}
-            {saveState === 'saved' && 'Saved'}
-          </div>
-        )}
+{saveState !== 'idle' && (
+  <div className="rounded-full border border-[#2b5676]/15 bg-white/70 px-3 py-1 text-xs text-[#5a7690] shadow-sm transition-opacity duration-300">
+    {saveState === 'saving' && 'Saving...'}
+    {saveState === 'saved' && 'Saved'}
+  </div>
+)}
       </div>
 
       <div className="space-y-4">

@@ -117,7 +117,7 @@ export function useFreedomDatePlanner() {
 
   const scenario = useMemo<FreedomDateScenario | null>(() => {
     if (!isAuthenticated || !userId) return null;
-
+  
     return {
       debts: state.debts,
       priority: state.priority,
@@ -135,7 +135,17 @@ export function useFreedomDatePlanner() {
         : null,
       updatedAt: new Date().toISOString(),
     };
-  }, [isAuthenticated, userId, state, results]);
+  }, [
+    isAuthenticated,
+    userId,
+    state.debts,
+    state.priority,
+    state.mode,
+    state.extraPayment,
+    state.targetMonths,
+    state.remindMonthly,
+    results,
+  ]);
 
   useEffect(() => {
     if (!scenario || !userId) return;
