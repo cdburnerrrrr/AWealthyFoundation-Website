@@ -1,3 +1,4 @@
+
 import { useMemo } from 'react';
 import { buildBaselineVsPlan } from '../lib/freedomDateEngine';
 import { useFreedomDatePlanner } from '../hooks/useFreedomDatePlanner';
@@ -51,12 +52,23 @@ export default function MyFreedomDateTool() {
 
   return (
     <div className="space-y-6">
-      {state.restoredAt && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
-          Freedom Date plan restored • Last updated{' '}
-          {new Date(state.restoredAt).toLocaleDateString()}
-        </div>
-      )}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        {state.restoredAt ? (
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
+            Freedom Date plan restored • Last updated{' '}
+            {new Date(state.restoredAt).toLocaleDateString()}
+          </div>
+        ) : (
+          <div />
+        )}
+
+        {saveState !== 'idle' && (
+          <div className="rounded-full border border-[#2b5676]/15 bg-white/70 px-3 py-1 text-xs text-[#5a7690] shadow-sm">
+            {saveState === 'saving' && 'Saving...'}
+            {saveState === 'saved' && 'Saved'}
+          </div>
+        )}
+      </div>
 
       <div className="space-y-4">
         {state.debts.map((debt, index) => (
@@ -315,15 +327,9 @@ export default function MyFreedomDateTool() {
 
       {results && (
         <div className="rounded-2xl border border-[#2b5676]/20 bg-white/85 p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h3 className="text-lg font-semibold text-[#0f2a44]">
-              Freedom Timeline
-            </h3>
-            <p className="text-xs text-[#5a7690]">
-              {saveState === 'saving' && 'Saving...'}
-              {saveState === 'saved' && 'Saved'}
-            </p>
-          </div>
+          <h3 className="text-lg font-semibold text-[#0f2a44]">
+            Freedom Timeline
+          </h3>
 
           {(() => {
             const baselineMonths = Math.max(results.baseline.monthsToFreedom, 1);
