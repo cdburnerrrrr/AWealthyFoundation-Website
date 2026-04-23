@@ -421,7 +421,7 @@ export default function MyFreedomDateTool() {
 
                     <div className="grid gap-2.5 sm:grid-cols-2">
                       <div className="rounded-xl bg-white/72 p-3.5 ring-1 ring-[#2b5676]/10">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#7c95ab]">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8a5a24]">
                           Months Saved
                         </p>
                         <p className="mt-1.5 text-xl font-semibold text-[#0f2a44] sm:text-2xl">
@@ -430,7 +430,7 @@ export default function MyFreedomDateTool() {
                       </div>
 
                       <div className="rounded-xl bg-white/72 p-3.5 ring-1 ring-[#2b5676]/10">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#7c95ab]">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8a5a24]">
                           Interest Saved
                         </p>
                         <p className="mt-1.5 text-xl font-semibold text-[#0f2a44] sm:text-2xl">
