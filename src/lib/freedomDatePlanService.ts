@@ -1,4 +1,4 @@
-import { client } from '../api/client';
+import { supabase } from '../lib/supabase';
 import type { DebtInput } from './freedomDateEngine';
 
 export type FreedomDateScenario = {
@@ -32,7 +32,7 @@ export type FreedomDatePlanRecord = {
 };
 
 export async function loadFreedomDatePlan(userId: string) {
-  const { data, error } = await client
+  const { data, error } = await supabase
     .from('freedom_date_plans')
     .select('*')
     .eq('user_id', userId)
@@ -63,7 +63,7 @@ export async function saveFreedomDatePlan(
       : null,
   };
 
-  const { data, error } = await client
+  const { data, error } = await supabase
     .from('freedom_date_plans')
     .upsert(payload, { onConflict: 'user_id' })
     .select('*')
