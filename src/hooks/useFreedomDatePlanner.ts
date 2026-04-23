@@ -56,6 +56,7 @@ export function useFreedomDatePlanner() {
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [loadState, setLoadState] = useState<LoadState>('idle');
   const hasLoadedRef = useRef(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const validDebts = useMemo(() => {
@@ -155,11 +156,16 @@ export function useFreedomDatePlanner() {
     saveTimeoutRef.current = setTimeout(() => {
       saveFreedomDatePlan(userId, scenario)
         .then((record) => {
+          setSaveError(null);
           setSaveState('saved');
           setState((prev) => ({ ...prev, restoredAt: record.updated_at }));
           window.setTimeout(() => setSaveState('idle'), 1500);
         })
-        .catch(() => setSaveState('error'));
+        .catch((err) => {
+          console.error('SAVE FAILED FULL ERROR:', err);
+          setSaveError(err instanceof Error ? err.message : 'Unknown save error');
+          setSaveState('error');
+        });
     }, 700);
 
     return () => {
@@ -204,6 +210,7 @@ export function useFreedomDatePlanner() {
     derivedTargetMonths,
     attackOrder,
     saveState,
+    saveError,
     loadState,
     userId,
     isAuthenticated,

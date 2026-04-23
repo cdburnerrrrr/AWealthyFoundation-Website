@@ -3,6 +3,10 @@ import { buildBaselineVsPlan } from '../lib/freedomDateEngine';
 import { useFreedomDatePlanner } from '../hooks/useFreedomDatePlanner';
 
 export default function MyFreedomDateTool() {
+  const planner = useFreedomDatePlanner() as ReturnType<typeof useFreedomDatePlanner> & {
+    saveError?: string | null;
+  };
+
   const {
     state,
     validDebts,
@@ -21,7 +25,8 @@ export default function MyFreedomDateTool() {
     setExtraPayment,
     setTargetMonths,
     setRemindMonthly,
-  } = useFreedomDatePlanner();
+    saveError,
+  } = planner;
 
   const strategyImpact = useMemo(() => {
     if (validDebts.length === 0) return null;
@@ -67,6 +72,12 @@ export default function MyFreedomDateTool() {
         <div>loadState: {loadState}</div>
         <div>saveState: {saveState}</div>
       </div>
+
+      {saveError && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
+          saveError: {saveError}
+        </div>
+      )}
 
       <div className="space-y-4">
         {state.debts.map((debt, index) => (

@@ -40,7 +40,7 @@ export async function loadFreedomDatePlan(userId: string) {
 
   if (error) {
     console.error('loadFreedomDatePlan error', error);
-    throw error;
+    throw new Error(error.message || 'Failed to load Freedom Date plan');
   }
 
   return data as FreedomDatePlanRecord | null;
@@ -71,7 +71,7 @@ export async function saveFreedomDatePlan(
 
   if (error) {
     console.error('saveFreedomDatePlan error', error);
-    throw error;
+    throw new Error(error.message || 'Failed to save Freedom Date plan');
   }
 
   return data as FreedomDatePlanRecord;
