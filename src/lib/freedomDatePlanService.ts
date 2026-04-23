@@ -38,11 +38,18 @@ export async function loadFreedomDatePlan(userId: string) {
     .eq('user_id', userId)
     .maybeSingle();
 
-  if (error) throw error;
-  return (data as FreedomDatePlanRecord | null) ?? null;
+  if (error) {
+    console.error('loadFreedomDatePlan error', error);
+    throw error;
+  }
+
+  return data as FreedomDatePlanRecord | null;
 }
 
-export async function saveFreedomDatePlan(userId: string, scenario: FreedomDateScenario) {
+export async function saveFreedomDatePlan(
+  userId: string,
+  scenario: FreedomDateScenario
+) {
   const payload = {
     user_id: userId,
     scenario_json: scenario,
@@ -62,6 +69,10 @@ export async function saveFreedomDatePlan(userId: string, scenario: FreedomDateS
     .select('*')
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error('saveFreedomDatePlan error', error);
+    throw error;
+  }
+
   return data as FreedomDatePlanRecord;
 }
