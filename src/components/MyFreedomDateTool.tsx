@@ -3,10 +3,6 @@ import { buildBaselineVsPlan } from '../lib/freedomDateEngine';
 import { useFreedomDatePlanner } from '../hooks/useFreedomDatePlanner';
 
 export default function MyFreedomDateTool() {
-  const planner = useFreedomDatePlanner() as ReturnType<typeof useFreedomDatePlanner> & {
-    saveError?: string | null;
-  };
-
   const {
     state,
     validDebts,
@@ -15,9 +11,6 @@ export default function MyFreedomDateTool() {
     derivedTargetMonths,
     attackOrder,
     saveState,
-    loadState,
-    userId,
-    isAuthenticated,
     addDebt,
     removeDebt,
     updateDebt,
@@ -25,8 +18,7 @@ export default function MyFreedomDateTool() {
     setExtraPayment,
     setTargetMonths,
     setRemindMonthly,
-    saveError,
-  } = planner;
+  } = useFreedomDatePlanner();
 
   const strategyImpact = useMemo(() => {
     if (validDebts.length === 0) return null;
@@ -63,19 +55,6 @@ export default function MyFreedomDateTool() {
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
           Freedom Date plan restored • Last updated{' '}
           {new Date(state.restoredAt).toLocaleDateString()}
-        </div>
-      )}
-
-      <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-        <div>isAuthenticated: {String(isAuthenticated)}</div>
-        <div>userId: {userId ?? 'null'}</div>
-        <div>loadState: {loadState}</div>
-        <div>saveState: {saveState}</div>
-      </div>
-
-      {saveError && (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
-          saveError: {saveError}
         </div>
       )}
 
@@ -343,7 +322,6 @@ export default function MyFreedomDateTool() {
             <p className="text-xs text-[#5a7690]">
               {saveState === 'saving' && 'Saving...'}
               {saveState === 'saved' && 'Saved'}
-              {saveState === 'error' && 'Save failed'}
             </p>
           </div>
 

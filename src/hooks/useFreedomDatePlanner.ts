@@ -15,7 +15,6 @@ import { useAppStore } from '../store/appStore';
 
 type FreedomMode = 'payment' | 'time';
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
-type LoadState = 'idle' | 'loading' | 'loaded' | 'error';
 
 type FreedomDateUiState = {
   debts: DebtInput[];
@@ -54,9 +53,7 @@ export function useFreedomDatePlanner() {
 
   const [state, setState] = useState<FreedomDateUiState>(DEFAULT_STATE);
   const [saveState, setSaveState] = useState<SaveState>('idle');
-  const [loadState, setLoadState] = useState<LoadState>('idle');
   const hasLoadedRef = useRef(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const validDebts = useMemo(() => {
@@ -96,14 +93,10 @@ export function useFreedomDatePlanner() {
     if (!isAuthenticated || !userId || hasLoadedRef.current) return;
 
     hasLoadedRef.current = true;
-    setLoadState('loading');
 
     loadFreedomDatePlan(userId)
       .then((record) => {
-        if (!record?.scenario_json) {
-          setLoadState('loaded');
-          return;
-        }
+        if (!record?.scenario_json) return;
 
         const scenario = record.scenario_json;
         setState({
@@ -115,9 +108,10 @@ export function useFreedomDatePlanner() {
           remindMonthly: scenario.remindMonthly,
           restoredAt: record.updated_at,
         });
-        setLoadState('loaded');
       })
-      .catch(() => setLoadState('error'));
+      .catch((error) => {
+        console.error('loadFreedomDatePlan error', error);
+      });
   }, [isAuthenticated, userId]);
 
   const scenario = useMemo<FreedomDateScenario | null>(() => {
@@ -143,27 +137,20 @@ export function useFreedomDatePlanner() {
   }, [isAuthenticated, userId, state, results]);
 
   useEffect(() => {
-    if (!scenario || !userId || loadState === 'loading') return;
+    if (!scenario || !userId) return;
 
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     setSaveState('saving');
 
-    console.log('Saving Freedom Plan:', {
-      isAuthenticated,
-      userId,
-    });
-
     saveTimeoutRef.current = setTimeout(() => {
       saveFreedomDatePlan(userId, scenario)
         .then((record) => {
-          setSaveError(null);
           setSaveState('saved');
           setState((prev) => ({ ...prev, restoredAt: record.updated_at }));
           window.setTimeout(() => setSaveState('idle'), 1500);
         })
-        .catch((err) => {
-          console.error('SAVE FAILED FULL ERROR:', err);
-          setSaveError(err instanceof Error ? err.message : 'Unknown save error');
+        .catch((error) => {
+          console.error('saveFreedomDatePlan error', error);
           setSaveState('error');
         });
     }, 700);
@@ -171,7 +158,7 @@ export function useFreedomDatePlanner() {
     return () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     };
-  }, [scenario, userId, loadState, isAuthenticated]);
+  }, [scenario, userId]);
 
   const addDebt = () => {
     setState((prev) => ({ ...prev, debts: [...prev.debts, createEmptyDebt()] }));
@@ -187,18 +174,36 @@ export function useFreedomDatePlanner() {
     });
   };
 
-  const updateDebt = <K extends keyof DebtInput>(id: string, key: K, value: DebtInput[K]) => {
+  const updateDebt = <K extends keyof DebtInput>(
+    id: string,
+    key: K,
+    value: DebtInput[K]
+  ) => {
     setState((prev) => ({
       ...prev,
-      debts: prev.debts.map((debt) => (debt.id === id ? { ...debt, [key]: value } : debt)),
+      debts: prev.debts.map((debt) =>
+        debt.id === id ? { ...debt, [key]: value } : debt
+      ),
     }));
   };
 
-  const setPriority = (priority: PayoffPriority) => setState((prev) => ({ ...prev, priority }));
+  const setPriority = (priority: PayoffPriority) =>
+    setState((prev) => ({ ...prev, priority }));
+
   const setExtraPayment = (extraPayment: number) =>
-    setState((prev) => ({ ...prev, mode: 'payment', extraPayment: Math.max(0, extraPayment) }));
+    setState((prev) => ({
+      ...prev,
+      mode: 'payment',
+      extraPayment: Math.max(0, extraPayment),
+    }));
+
   const setTargetMonths = (targetMonths: number) =>
-    setState((prev) => ({ ...prev, mode: 'time', targetMonths: Math.max(1, Math.floor(targetMonths)) }));
+    setState((prev) => ({
+      ...prev,
+      mode: 'time',
+      targetMonths: Math.max(1, Math.floor(targetMonths)),
+    }));
+
   const setRemindMonthly = (remindMonthly: boolean) =>
     setState((prev) => ({ ...prev, remindMonthly }));
 
@@ -210,10 +215,6 @@ export function useFreedomDatePlanner() {
     derivedTargetMonths,
     attackOrder,
     saveState,
-    saveError,
-    loadState,
-    userId,
-    isAuthenticated,
     addDebt,
     removeDebt,
     updateDebt,
