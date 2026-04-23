@@ -71,95 +71,110 @@ export default function MyFreedomDateTool() {
       </div>
 
       <div className="space-y-4">
-        {state.debts.map((debt, index) => (
-          <div
-            key={debt.id}
-            className="rounded-2xl border border-[#2b5676]/20 bg-white/78 p-4"
-          >
-            {index === 0 && (
-              <p className="mb-2 text-xs uppercase tracking-[0.18em] text-[#b8742a]">
-                Debt Details
-              </p>
-            )}
-
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <div>
-                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#5a7690]">
-                  Debt Name
-                </label>
-                <input
-                  type="text"
-                  value={debt.name}
-                  onChange={(e) => updateDebt(debt.id, 'name', e.target.value)}
-                  placeholder="Visa"
-                  className="w-full rounded-xl border border-[#2b5676]/20 bg-white/90 px-3 py-2 text-sm text-[#153b58]"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#5a7690]">
-                  Balance
-                </label>
-                <input
-                  type="number"
-                  value={debt.balance}
-                  onChange={(e) =>
-                    updateDebt(debt.id, 'balance', Number(e.target.value) || 0)
-                  }
-                  placeholder="1200"
-                  className="w-full rounded-xl border border-[#2b5676]/20 bg-white/90 px-3 py-2 text-sm text-[#153b58]"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#5a7690]">
-                  Interest Rate
-                </label>
-                <input
-                  type="number"
-                  value={debt.apr}
-                  onChange={(e) =>
-                    updateDebt(debt.id, 'apr', Number(e.target.value) || 0)
-                  }
-                  placeholder="24.99"
-                  className="w-full rounded-xl border border-[#2b5676]/20 bg-white/90 px-3 py-2 text-sm text-[#153b58]"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#5a7690]">
-                  Minimum Payment
-                </label>
-                <input
-                  type="number"
-                  value={debt.minPayment ?? ''}
-                  onChange={(e) =>
-                    updateDebt(
-                      debt.id,
-                      'minPayment',
-                      e.target.value === '' ? undefined : Number(e.target.value) || 0
-                    )
-                  }
-                  placeholder="optional"
-                  className="w-full rounded-xl border border-[#2b5676]/20 bg-white/90 px-3 py-2 text-sm text-[#153b58]"
-                />
-              </div>
-            </div>
-
-            <div className="mt-3 flex items-center justify-between">
-              <p className="text-xs text-[#5a7690]">
-                Leave minimum payment blank to use an estimate.
-              </p>
-              <button
-                type="button"
-                onClick={() => removeDebt(debt.id)}
-                className="text-sm font-semibold text-[#8a5a24] hover:text-[#6d4318]"
-              >
-                Remove
-              </button>
-            </div>
+        <div className="rounded-2xl border border-[#2b5676]/16 bg-white/65 p-3">
+          <div className="hidden items-end gap-3 border-b border-[#2b5676]/12 pb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#5a7690] md:grid md:grid-cols-[1.2fr_1fr_1fr_1fr_auto]">
+            <span>Debt Name</span>
+            <span>Balance</span>
+            <span>Interest Rate</span>
+            <span>Minimum Payment</span>
+            <span className="text-right">&nbsp;</span>
           </div>
-        ))}
+
+          <div className="space-y-3 pt-0 md:pt-3">
+            {state.debts.map((debt, index) => (
+              <div
+                key={debt.id}
+                className="rounded-2xl border border-[#2b5676]/14 bg-white/78 p-3"
+              >
+                {index === 0 && (
+                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#5a7690] md:hidden">
+                    Debt Details
+                  </p>
+                )}
+
+                {index === 0 && (
+                  <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.14em] text-[#6f8aa3] md:mb-0 md:pb-1">
+                    Leave Blank For Estimate
+                  </p>
+                )}
+
+                <div className="grid gap-3 md:grid-cols-[1.2fr_1fr_1fr_1fr_auto] md:items-center">
+                  <div>
+                    <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em] text-[#5a7690] md:hidden">
+                      Debt Name
+                    </label>
+                    <input
+                      type="text"
+                      value={debt.name}
+                      onChange={(e) => updateDebt(debt.id, 'name', e.target.value)}
+                      placeholder="Visa"
+                      className="w-full rounded-xl border border-[#2b5676]/16 bg-white/90 px-3 py-2 text-sm text-[#153b58]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em] text-[#5a7690] md:hidden">
+                      Balance
+                    </label>
+                    <input
+                      type="number"
+                      value={debt.balance}
+                      onChange={(e) =>
+                        updateDebt(debt.id, 'balance', Number(e.target.value) || 0)
+                      }
+                      placeholder="1200"
+                      className="w-full rounded-xl border border-[#2b5676]/16 bg-white/90 px-3 py-2 text-sm text-[#153b58]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em] text-[#5a7690] md:hidden">
+                      Interest Rate
+                    </label>
+                    <input
+                      type="number"
+                      value={debt.apr}
+                      onChange={(e) =>
+                        updateDebt(debt.id, 'apr', Number(e.target.value) || 0)
+                      }
+                      placeholder="24.99"
+                      className="w-full rounded-xl border border-[#2b5676]/16 bg-white/90 px-3 py-2 text-sm text-[#153b58]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em] text-[#5a7690] md:hidden">
+                      Minimum Payment
+                    </label>
+                    <input
+                      type="number"
+                      value={debt.minPayment ?? ''}
+                      onChange={(e) =>
+                        updateDebt(
+                          debt.id,
+                          'minPayment',
+                          e.target.value === '' ? undefined : Number(e.target.value) || 0
+                        )
+                      }
+                      placeholder="optional"
+                      className="w-full rounded-xl border border-[#2b5676]/16 bg-white/90 px-3 py-2 text-sm text-[#153b58]"
+                    />
+                  </div>
+
+                  <div className="flex justify-end md:pt-5">
+                    <button
+                      type="button"
+                      onClick={() => removeDebt(debt.id)}
+                      className="text-sm font-semibold text-[#8a5a24] hover:text-[#6d4318]"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {results?.plan.warning && (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
