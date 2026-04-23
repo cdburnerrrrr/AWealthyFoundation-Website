@@ -50,6 +50,8 @@ const DEFAULT_STATE: FreedomDateUiState = {
 
 export function useFreedomDatePlanner() {
   const { user, isAuthenticated } = useAppStore();
+  const userId = (user as any)?.id || (user as any)?.user_id || null;
+
   const [state, setState] = useState<FreedomDateUiState>(DEFAULT_STATE);
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [loadState, setLoadState] = useState<LoadState>('idle');
@@ -90,12 +92,12 @@ export function useFreedomDatePlanner() {
   const derivedTargetMonths = results?.plan.monthsToFreedom ?? state.targetMonths;
 
   useEffect(() => {
-    if (!isAuthenticated || !user?.id || hasLoadedRef.current) return;
+    if (!isAuthenticated || !userId || hasLoadedRef.current) return;
 
     hasLoadedRef.current = true;
     setLoadState('loading');
 
-    loadFreedomDatePlan(user.id)
+    loadFreedomDatePlan(userId)
       .then((record) => {
         if (!record?.scenario_json) {
           setLoadState('loaded');
@@ -115,10 +117,10 @@ export function useFreedomDatePlanner() {
         setLoadState('loaded');
       })
       .catch(() => setLoadState('error'));
-  }, [isAuthenticated, user?.id]);
+  }, [isAuthenticated, userId]);
 
   const scenario = useMemo<FreedomDateScenario | null>(() => {
-    if (!isAuthenticated || !user?.id) return null;
+    if (!isAuthenticated || !userId) return null;
 
     return {
       debts: state.debts,
@@ -137,16 +139,21 @@ export function useFreedomDatePlanner() {
         : null,
       updatedAt: new Date().toISOString(),
     };
-  }, [isAuthenticated, user?.id, state, results]);
+  }, [isAuthenticated, userId, state, results]);
 
   useEffect(() => {
-    if (!scenario || !user?.id || loadState === 'loading') return;
+    if (!scenario || !userId || loadState === 'loading') return;
 
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     setSaveState('saving');
 
+    console.log('Saving Freedom Plan:', {
+      isAuthenticated,
+      userId,
+    });
+
     saveTimeoutRef.current = setTimeout(() => {
-      saveFreedomDatePlan(user.id, scenario)
+      saveFreedomDatePlan(userId, scenario)
         .then((record) => {
           setSaveState('saved');
           setState((prev) => ({ ...prev, restoredAt: record.updated_at }));
@@ -158,7 +165,7 @@ export function useFreedomDatePlanner() {
     return () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     };
-  }, [scenario, user?.id, loadState]);
+  }, [scenario, userId, loadState, isAuthenticated]);
 
   const addDebt = () => {
     setState((prev) => ({ ...prev, debts: [...prev.debts, createEmptyDebt()] }));
