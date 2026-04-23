@@ -205,6 +205,8 @@ export function useFreedomDatePlanner() {
     attackOrder,
     saveState,
     loadState,
+    userId,
+    isAuthenticated,
     addDebt,
     removeDebt,
     updateDebt,

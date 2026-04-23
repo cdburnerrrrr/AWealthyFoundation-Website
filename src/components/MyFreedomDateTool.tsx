@@ -11,6 +11,9 @@ export default function MyFreedomDateTool() {
     derivedTargetMonths,
     attackOrder,
     saveState,
+    loadState,
+    userId,
+    isAuthenticated,
     addDebt,
     removeDebt,
     updateDebt,
@@ -57,6 +60,13 @@ export default function MyFreedomDateTool() {
           {new Date(state.restoredAt).toLocaleDateString()}
         </div>
       )}
+
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+        <div>isAuthenticated: {String(isAuthenticated)}</div>
+        <div>userId: {userId ?? 'null'}</div>
+        <div>loadState: {loadState}</div>
+        <div>saveState: {saveState}</div>
+      </div>
 
       <div className="space-y-4">
         {state.debts.map((debt, index) => (
