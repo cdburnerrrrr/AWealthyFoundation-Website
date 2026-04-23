@@ -76,7 +76,12 @@ export default function MyFreedomDateTool() {
             <span>Debt Name</span>
             <span>Balance</span>
             <span>Interest Rate</span>
-            <span>Minimum Payment</span>
+            <div>
+              <span>Minimum Payment</span>
+              <p className="mt-1 text-[10px] font-medium tracking-[0.12em] normal-case text-[#6f8aa3]">
+                Leave Blank For Estimate
+              </p>
+            </div>
             <span className="text-right">&nbsp;</span>
           </div>
 
@@ -87,13 +92,7 @@ export default function MyFreedomDateTool() {
                 className="rounded-2xl border border-[#2b5676]/14 bg-white/78 p-3"
               >
                 {index === 0 && (
-                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#5a7690] md:hidden">
-                    Debt Details
-                  </p>
-                )}
-
-                {index === 0 && (
-                  <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.14em] text-[#6f8aa3] md:mb-0 md:pb-1">
+                  <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.14em] text-[#6f8aa3] md:hidden">
                     Leave Blank For Estimate
                   </p>
                 )}
@@ -388,39 +387,43 @@ export default function MyFreedomDateTool() {
       )}
 
       {results && (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-2xl border border-[#2b5676]/20 bg-white/85 p-5">
-            <p className="text-sm text-[#5a7690]">Baseline Freedom Date</p>
-            <p className="mt-1 text-xl font-semibold text-[#0f2a44]">
-              {results.baseline.freedomDate.toLocaleDateString('en-US', {
-                month: 'short',
-                year: 'numeric',
-              })}
-            </p>
-          </div>
+        <div className="rounded-2xl border border-[#2b5676]/18 bg-white/82 p-4">
+          <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
+            <div className="rounded-2xl border border-[#b8742a]/16 bg-[#b8742a]/8 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#7a4e1d]">
+                Your Freedom Date
+              </p>
+              <p className="mt-2 text-2xl font-semibold text-[#6d4318] sm:text-3xl">
+                {results.plan.freedomDate.toLocaleDateString('en-US', {
+                  month: 'short',
+                  year: 'numeric',
+                })}
+              </p>
+              <p className="mt-2 text-sm text-[#7a4e1d]/85">
+                Baseline: {results.baseline.freedomDate.toLocaleDateString('en-US', {
+                  month: 'short',
+                  year: 'numeric',
+                })}
+              </p>
+            </div>
 
-          <div className="rounded-2xl border border-[#b8742a]/18 bg-[#b8742a]/10 p-5">
-            <p className="text-sm text-[#7a4e1d]">Your Freedom Date</p>
-            <p className="mt-1 text-xl font-semibold text-[#6d4318]">
-              {results.plan.freedomDate.toLocaleDateString('en-US', {
-                month: 'short',
-                year: 'numeric',
-              })}
-            </p>
-          </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl bg-white/72 p-4 ring-1 ring-[#2b5676]/12">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6f8aa3]">
+                  Months Saved
+                </p>
+                <p className="mt-2 text-2xl font-semibold text-[#0f2a44]">{results.monthsSaved}</p>
+              </div>
 
-          <div className="rounded-2xl border border-[#2b5676]/20 bg-white/85 p-5">
-            <p className="text-sm text-[#5a7690]">Months Saved</p>
-            <p className="mt-1 text-xl font-semibold text-[#0f2a44]">
-              {results.monthsSaved}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-[#2b5676]/20 bg-white/85 p-5">
-            <p className="text-sm text-[#5a7690]">Interest Saved</p>
-            <p className="mt-1 text-xl font-semibold text-[#0f2a44]">
-              ${results.interestSaved.toLocaleString()}
-            </p>
+              <div className="rounded-2xl bg-white/72 p-4 ring-1 ring-[#2b5676]/12">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6f8aa3]">
+                  Interest Saved
+                </p>
+                <p className="mt-2 text-2xl font-semibold text-[#0f2a44]">
+                  ${results.interestSaved.toLocaleString()}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       )}
