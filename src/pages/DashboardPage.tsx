@@ -32,6 +32,7 @@ import logoImage from '../assets/house-icon.png';
 import { useUserPlan } from '../hooks/useUserPlan';
 import { getEntitlements } from '../lib/entitlements';
 import { useTrackEvent } from '../hooks/useTrackEvent';
+import FreedomDateDashboardCard from '../components/FreedomDateDashboardCard';
 import { getScoreBand } from '../types/assessment';
 
 interface DashboardPageProps {

@@ -10,12 +10,14 @@ export default function MyFreedomDateTool() {
     effectiveExtraPayment,
     derivedTargetMonths,
     attackOrder,
+    saveState,
     addDebt,
     removeDebt,
     updateDebt,
     setPriority,
     setExtraPayment,
     setTargetMonths,
+    setRemindMonthly,
   } = useFreedomDatePlanner();
 
   const strategyImpact = useMemo(() => {
@@ -49,6 +51,13 @@ export default function MyFreedomDateTool() {
 
   return (
     <div className="space-y-6">
+      {state.restoredAt && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
+          Freedom Date plan restored • Last updated{' '}
+          {new Date(state.restoredAt).toLocaleDateString()}
+        </div>
+      )}
+
       <div className="space-y-4">
         {state.debts.map((debt, index) => (
           <div
@@ -306,9 +315,16 @@ export default function MyFreedomDateTool() {
 
       {results && (
         <div className="rounded-2xl border border-[#2b5676]/20 bg-white/85 p-5">
-          <h3 className="text-lg font-semibold text-[#0f2a44]">
-            Freedom Timeline
-          </h3>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h3 className="text-lg font-semibold text-[#0f2a44]">
+              Freedom Timeline
+            </h3>
+            <p className="text-xs text-[#5a7690]">
+              {saveState === 'saving' && 'Saving...'}
+              {saveState === 'saved' && 'Saved'}
+              {saveState === 'error' && 'Save failed'}
+            </p>
+          </div>
 
           {(() => {
             const baselineMonths = Math.max(results.baseline.monthsToFreedom, 1);
@@ -388,6 +404,24 @@ export default function MyFreedomDateTool() {
           </div>
         </div>
       )}
+
+      <div className="rounded-2xl border border-[#2b5676]/20 bg-white/85 p-5">
+        <label className="flex items-start gap-3 text-sm text-[#153b58]">
+          <input
+            type="checkbox"
+            checked={state.remindMonthly}
+            onChange={(e) => setRemindMonthly(e.target.checked)}
+            className="mt-1"
+          />
+          <span>
+            Remind me monthly to check back in and update my Freedom Date
+          </span>
+        </label>
+
+        <p className="mt-2 text-xs text-[#5a7690]">
+          We’ll save this plan to your account so you can pick up where you left off.
+        </p>
+      </div>
     </div>
   );
 }
