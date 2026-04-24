@@ -48,7 +48,7 @@ export default function MyFreedomDateTool() {
 
     return {
       label: 'Meaningful',
-      text: 'Your strategy changes the payoff path in a noticeable way.',
+      text: 'Changing strategy can noticeably shift the payoff path.',
     };
   }, [validDebts, effectiveExtraPayment]);
 
@@ -247,11 +247,97 @@ export default function MyFreedomDateTool() {
         </div>
       </section>
 
+      {results && (
+        <section className="space-y-2.5">
+          <div>
+            <h3 className="text-lg font-semibold text-[#0f2a44]">3. Your Freedom Plan</h3>
+            <p className="mt-1 text-sm text-[#6f8aa3]">See where this plan lands and what it saves.</p>
+          </div>
+
+          <div className="rounded-2xl bg-white/84 p-4 ring-1 ring-[#2b5676]/12 sm:p-4.5">
+            {(() => {
+              const baselineMonths = Math.max(results.baseline.monthsToFreedom, 1);
+              const planMonths = Math.max(results.plan.monthsToFreedom, 1);
+
+              const progress = 1 - planMonths / baselineMonths;
+              const clamped = Math.max(0, Math.min(progress, 1));
+
+              const leftPercent = `${(1 - clamped) * 100}%`;
+              const dotSize = 14 + clamped * 18;
+
+              return (
+                <div>
+                  <div className="relative h-11">
+                    <div className="absolute left-0 right-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-[#c6ddeb]" />
+
+                    <div
+                      className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-white bg-[#b8742a] shadow-[0_0_18px_rgba(184,116,42,0.28)] transition-all duration-300"
+                      style={{
+                        left: leftPercent,
+                        width: `${dotSize}px`,
+                        height: `${dotSize}px`,
+                      }}
+                    />
+
+                    <div className="absolute left-0 top-full mt-2 text-[11px] text-[#7c95ab]">
+                      Soon
+                    </div>
+                    <div className="absolute right-0 top-full mt-2 text-[11px] text-[#7c95ab]">
+                      Later
+                    </div>
+                  </div>
+
+                  <div className="mt-7 grid gap-3 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
+                    <div className="rounded-2xl bg-[#b8742a]/8 p-4 ring-1 ring-[#b8742a]/14">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8a5a24]">
+                        Your Freedom Date
+                      </p>
+                      <p className="mt-2 text-2xl font-semibold text-[#6d4318] sm:text-[2rem]">
+                        {results.plan.freedomDate.toLocaleDateString('en-US', {
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </p>
+                      <p className="mt-2 text-sm text-[#8a5a24]/85">
+                        Baseline {results.baseline.freedomDate.toLocaleDateString('en-US', {
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </p>
+                    </div>
+
+                    <div className="grid gap-2.5 sm:grid-cols-2">
+                      <div className="rounded-xl bg-white/72 p-3.5 ring-1 ring-[#2b5676]/10">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8a5a24]">
+                          Months Saved
+                        </p>
+                        <p className="mt-1.5 text-xl font-semibold text-[#0f2a44] sm:text-2xl">
+                          {results.monthsSaved}
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl bg-white/72 p-3.5 ring-1 ring-[#2b5676]/10">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8a5a24]">
+                          Interest Saved
+                        </p>
+                        <p className="mt-1.5 text-xl font-semibold text-[#0f2a44] sm:text-2xl">
+                          ${results.interestSaved.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </section>
+      )}
+
       <section className="space-y-2.5">
         <div>
-          <h3 className="text-lg font-semibold text-[#0f2a44]">3. Strategy</h3>
+          <h3 className="text-lg font-semibold text-[#0f2a44]">4. Strategy</h3>
           <p className="mt-1 text-sm text-[#6f8aa3]">
-            Usually a smaller decision. Open this only if you want the details.
+            Usually a smaller decision. Open this if you want to compare the mechanics.
           </p>
         </div>
 
@@ -359,92 +445,6 @@ export default function MyFreedomDateTool() {
           )}
         </div>
       </section>
-
-      {results && (
-        <section className="space-y-2.5">
-          <div>
-            <h3 className="text-lg font-semibold text-[#0f2a44]">4. Your Freedom Plan</h3>
-            <p className="mt-1 text-sm text-[#6f8aa3]">See where this plan lands and what it saves.</p>
-          </div>
-
-          <div className="rounded-2xl bg-white/84 p-4 ring-1 ring-[#2b5676]/12 sm:p-4.5">
-            {(() => {
-              const baselineMonths = Math.max(results.baseline.monthsToFreedom, 1);
-              const planMonths = Math.max(results.plan.monthsToFreedom, 1);
-
-              const progress = 1 - planMonths / baselineMonths;
-              const clamped = Math.max(0, Math.min(progress, 1));
-
-              const leftPercent = `${(1 - clamped) * 100}%`;
-              const dotSize = 14 + clamped * 18;
-
-              return (
-                <div>
-                  <div className="relative h-11">
-                    <div className="absolute left-0 right-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-[#c6ddeb]" />
-
-                    <div
-                      className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-white bg-[#b8742a] shadow-[0_0_18px_rgba(184,116,42,0.28)] transition-all duration-300"
-                      style={{
-                        left: leftPercent,
-                        width: `${dotSize}px`,
-                        height: `${dotSize}px`,
-                      }}
-                    />
-
-                    <div className="absolute left-0 top-full mt-2 text-[11px] text-[#7c95ab]">
-                      Soon
-                    </div>
-                    <div className="absolute right-0 top-full mt-2 text-[11px] text-[#7c95ab]">
-                      Later
-                    </div>
-                  </div>
-
-                  <div className="mt-7 grid gap-3 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
-                    <div className="rounded-2xl bg-[#b8742a]/8 p-4 ring-1 ring-[#b8742a]/14">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8a5a24]">
-                        Your Freedom Date
-                      </p>
-                      <p className="mt-2 text-2xl font-semibold text-[#6d4318] sm:text-[2rem]">
-                        {results.plan.freedomDate.toLocaleDateString('en-US', {
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </p>
-                      <p className="mt-2 text-sm text-[#8a5a24]/85">
-                        Baseline {results.baseline.freedomDate.toLocaleDateString('en-US', {
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </p>
-                    </div>
-
-                    <div className="grid gap-2.5 sm:grid-cols-2">
-                      <div className="rounded-xl bg-white/72 p-3.5 ring-1 ring-[#2b5676]/10">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8a5a24]">
-                          Months Saved
-                        </p>
-                        <p className="mt-1.5 text-xl font-semibold text-[#0f2a44] sm:text-2xl">
-                          {results.monthsSaved}
-                        </p>
-                      </div>
-
-                      <div className="rounded-xl bg-white/72 p-3.5 ring-1 ring-[#2b5676]/10">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8a5a24]">
-                          Interest Saved
-                        </p>
-                        <p className="mt-1.5 text-xl font-semibold text-[#0f2a44] sm:text-2xl">
-                          ${results.interestSaved.toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-        </section>
-      )}
 
       <div className="rounded-2xl bg-white/78 p-3.5 ring-1 ring-[#2b5676]/12">
         <label className="flex items-start gap-3 text-sm text-[#153b58]">
