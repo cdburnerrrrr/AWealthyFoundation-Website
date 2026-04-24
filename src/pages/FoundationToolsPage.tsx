@@ -236,14 +236,13 @@ const categoryMeta: Record<
     heroGlow: 'bg-emerald-300/14',
     tools: [
       {
-        to: '#',
+        to: '/tools/emergency-fund-target',
         title: 'Emergency Fund Target',
         description:
           'Estimate the cushion that would help protect you from job interruptions, surprises, and the next expensive month.',
         bestFor: 'figuring out how much savings would actually feel safe',
         icon: <PiggyBank size={22} />,
-        badge: 'Coming Soon',
-        disabled: true,
+        
       },
       {
         to: '#',
