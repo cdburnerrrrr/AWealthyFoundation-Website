@@ -25,7 +25,7 @@ export default function EmergencyFundTargetTool() {
       {/* INPUTS */}
       <section>
         <h3 className="text-lg font-semibold text-[#0f2a44]">
-          1. Your Monthly Needs
+          1. Monthly Needs
         </h3>
 
         <div className="mt-3 grid gap-3 md:grid-cols-3">
@@ -89,30 +89,42 @@ export default function EmergencyFundTargetTool() {
       {/* RESULT */}
       <section>
         <h3 className="text-lg font-semibold text-[#0f2a44]">
-          3. Your Emergency Fund
+          3. Your Target
         </h3>
 
         <div className="mt-3 rounded-2xl bg-[#b8742a]/10 p-4">
-          <p className="text-sm text-[#8a5a24] uppercase">
-            Recommended Range
-          </p>
+        <p className="text-xs uppercase tracking-[0.18em] text-[#8a5a24]/80">
+  Your Emergency Fund Target
+</p>
 
-          <p className="text-2xl font-semibold text-[#6d4318] mt-1">
-            ${result.minTarget.toLocaleString()} – ${result.maxTarget.toLocaleString()}
-          </p>
+<p className="text-3xl font-semibold text-[#6d4318] mt-1">
+  ${result.minTarget.toLocaleString()} – ${result.maxTarget.toLocaleString()}
+</p>
 
-          <p className="mt-2 text-sm text-[#8a5a24]">
-            You currently have ${inputs.currentSavings.toLocaleString()}
-          </p>
+<p className="mt-3 text-sm text-[#8a5a24]">
+  You have ${inputs.currentSavings.toLocaleString()} saved
+</p>
 
-          <p className="mt-1 text-sm text-[#8a5a24]">
-            Gap: ${result.gapMin.toLocaleString()} – ${result.gapMax.toLocaleString()}
-          </p>
+<p className="mt-1 text-sm text-[#8a5a24]">
+  You need ${result.gapMin.toLocaleString()} – ${result.gapMax.toLocaleString()} more
+</p>
+
+<p className="mt-3 text-sm text-[#5a7690]">
+  This covers about {(inputs.currentSavings / inputs.monthlyExpenses).toFixed(1)} months of expenses
+</p>
+
+<p className="mt-1 text-sm text-[#5a7690]">
+  Target: {result.minMonths}–{result.maxMonths} months
+</p>
+
+<p className="mt-3 text-xs text-[#5a7690]">
+  This is your financial buffer — not your spending account.
+</p>
         </div>
       </section>
 
       {/* DETAILS (COLLAPSED) */}
-      <section className="rounded-2xl bg-white/80 ring-1 ring-[#2b5676]/12">
+      <section className="rounded-2xl bg-white/70 ring-1 ring-[#2b5676]/6">
         <button
           onClick={() => setExpanded(!expanded)}
           className="flex w-full items-center justify-between px-4 py-3"

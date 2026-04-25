@@ -1080,6 +1080,10 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     () => getStructuralSnapshot(assessment?.metrics ?? latestHistoryReport?.metrics),
     [assessment?.metrics, latestHistoryReport?.metrics]
   );
+  const runwayMonths =
+  snapshot && snapshot.fixedCosts > 0
+    ? snapshot.totalSavings / snapshot.fixedCosts
+    : 0;
 
   const weakestPillar = useMemo(() => {
     const entries = Object.entries(pillarScores)
@@ -1661,11 +1665,25 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                           {formatCurrency(snapshot.income)} is already committed.
                         </p>
                       </div>
+                      <div className="rounded-3xl border border-[#d7e3f0] bg-white p-5">
+                        <div className="text-sm text-gray-500 mb-2">
+                          Savings Runway
+                        </div>
+
+                        <div className="text-3xl font-bold text-navy-900">
+                          {runwayMonths.toFixed(1)} months
+                        </div>
+
+                        <p className="mt-2 text-sm text-gray-500">
+                          Based on your current fixed monthly costs
+                        </p>
+                      </div>
 
                       <div className="rounded-3xl border border-[#d7e3f0] bg-white p-5">
                         <div className="text-sm text-gray-500 mb-2">
                           Monthly Breathing Room
                         </div>
+
                         <div
                           className={`text-3xl font-bold ${getMarginTone(
                             snapshot.monthlyMargin
@@ -1673,6 +1691,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                         >
                           {formatCurrency(snapshot.monthlyMargin)}
                         </div>
+
                         <p className="mt-2 text-sm text-gray-500">
                           Income minus housing, utilities, childcare, and debt.
                         </p>

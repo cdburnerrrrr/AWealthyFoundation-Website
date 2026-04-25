@@ -245,14 +245,13 @@ const categoryMeta: Record<
         
       },
       {
-        to: '#',
+        to: '/tools/savings-runway',
         title: 'Savings Runway',
         description:
           'See how many months of essential expenses your current savings could cover if life suddenly changed.',
         bestFor: 'understanding how long your cash buffer really lasts',
         icon: <Shield size={22} />,
-        badge: 'Coming Soon',
-        disabled: true,
+        badge: 'New',
       },
     ],
   },
