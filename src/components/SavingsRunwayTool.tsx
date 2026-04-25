@@ -1,21 +1,24 @@
 import { useState } from 'react';
 import { calculateRunway } from '../lib/savingsRunwayEngine';
+import { useAppStore } from '../store/appStore';
 
 export default function SavingsRunwayTool() {
-  import { useAppStore } from '../store/appStore';
+ 
 
 const { currentAssessment } = useAppStore();
 
-const initialSavings = currentAssessment?.metrics?.totalSavings ?? 0;
-const initialExpenses =
-  currentAssessment?.metrics?.monthlyFixedCosts ??
-  (
-    (currentAssessment?.metrics?.monthlyHousingCost ?? 0) +
-    (currentAssessment?.metrics?.monthlyUtilities ?? 0) +
-    (currentAssessment?.metrics?.monthlyChildcareCost ?? 0) +
-    (currentAssessment?.metrics?.monthlyDebtPayments ?? 0)
-  );
+const metrics = (currentAssessment as any)?.metrics ?? {};
 
+const initialSavings = metrics.totalSavings ?? 0;
+
+const initialExpenses =
+  metrics.monthlyFixedCosts ??
+  (
+    (metrics.monthlyHousingCost ?? 0) +
+    (metrics.monthlyUtilities ?? 0) +
+    (metrics.monthlyChildcareCost ?? 0) +
+    (metrics.monthlyDebtPayments ?? 0)
+  );
 const [savings, setSavings] = useState(initialSavings);
 const [expenses, setExpenses] = useState(initialExpenses);
 
