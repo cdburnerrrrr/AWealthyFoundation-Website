@@ -2,8 +2,22 @@ import { useState } from 'react';
 import { calculateRunway } from '../lib/savingsRunwayEngine';
 
 export default function SavingsRunwayTool() {
-  const [savings, setSavings] = useState(5000);
-  const [expenses, setExpenses] = useState(3000);
+  import { useAppStore } from '../store/appStore';
+
+const { currentAssessment } = useAppStore();
+
+const initialSavings = currentAssessment?.metrics?.totalSavings ?? 0;
+const initialExpenses =
+  currentAssessment?.metrics?.monthlyFixedCosts ??
+  (
+    (currentAssessment?.metrics?.monthlyHousingCost ?? 0) +
+    (currentAssessment?.metrics?.monthlyUtilities ?? 0) +
+    (currentAssessment?.metrics?.monthlyChildcareCost ?? 0) +
+    (currentAssessment?.metrics?.monthlyDebtPayments ?? 0)
+  );
+
+const [savings, setSavings] = useState(initialSavings);
+const [expenses, setExpenses] = useState(initialExpenses);
 
   const months = calculateRunway(savings, expenses);
   const years = months / 12;
