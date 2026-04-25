@@ -16,23 +16,49 @@ export default function SavingsRunwayTool() {
           Your Savings Position
         </h3>
 
-        <div className="grid gap-3 md:grid-cols-2 mt-3">
-          <input
-            type="number"
-            value={savings}
-            onChange={(e) => setSavings(Number(e.target.value))}
-            placeholder="Total Savings"
-            className="input"
-          />
+        <div className="grid gap-4 md:grid-cols-2 mt-4">
 
-          <input
-            type="number"
-            value={expenses}
-            onChange={(e) => setExpenses(Number(e.target.value))}
-            placeholder="Monthly Expenses"
-            className="input"
-          />
-        </div>
+  {/* Savings */}
+  <div>
+    <label className="block text-sm font-medium text-[#325672] mb-1">
+      Total Savings
+    </label>
+
+    <div className="relative">
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5a7690]">
+        $
+      </span>
+      <input
+        type="number"
+        value={savings}
+        onChange={(e) => setSavings(Number(e.target.value))}
+        placeholder="0"
+        className="input pl-7"
+      />
+    </div>
+  </div>
+
+  {/* Expenses */}
+  <div>
+    <label className="block text-sm font-medium text-[#325672] mb-1">
+      Monthly Expenses
+    </label>
+
+    <div className="relative">
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5a7690]">
+        $
+      </span>
+      <input
+        type="number"
+        value={expenses}
+        onChange={(e) => setExpenses(Number(e.target.value))}
+        placeholder="0"
+        className="input pl-7"
+      />
+    </div>
+  </div>
+
+</div>
       </section>
 
       <section>
