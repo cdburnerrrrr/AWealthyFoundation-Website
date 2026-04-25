@@ -3,79 +3,71 @@ import { calculateRunway } from '../lib/savingsRunwayEngine';
 import { useAppStore } from '../store/appStore';
 
 export default function SavingsRunwayTool() {
- 
+  const { currentAssessment } = useAppStore();
 
-const { currentAssessment } = useAppStore();
+  const metrics = (currentAssessment as any)?.metrics ?? {};
 
-const metrics = (currentAssessment as any)?.metrics ?? {};
+  const initialSavings = metrics.totalSavings ?? 0;
 
-const initialSavings = metrics.totalSavings ?? 0;
-
-const initialExpenses =
-  metrics.monthlyFixedCosts ??
-  (
+  const initialExpenses =
+    metrics.monthlyFixedCosts ??
     (metrics.monthlyHousingCost ?? 0) +
-    (metrics.monthlyUtilities ?? 0) +
-    (metrics.monthlyChildcareCost ?? 0) +
-    (metrics.monthlyDebtPayments ?? 0)
-  );
-const [savings, setSavings] = useState(initialSavings);
-const [expenses, setExpenses] = useState(initialExpenses);
+      (metrics.monthlyUtilities ?? 0) +
+      (metrics.monthlyChildcareCost ?? 0) +
+      (metrics.monthlyDebtPayments ?? 0);
+
+  const [savings, setSavings] = useState(initialSavings);
+  const [expenses, setExpenses] = useState(initialExpenses);
 
   const months = calculateRunway(savings, expenses);
   const years = months / 12;
 
   return (
     <div className="space-y-5">
-
-      <section>
+      <section className="space-y-4">
         <h3 className="text-lg font-semibold text-[#0f2a44]">
           Your Savings Position
         </h3>
 
-        <div className="grid gap-4 md:grid-cols-2 mt-4">
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-[#325672]">
+              Total Savings
+            </label>
 
-  {/* Savings */}
-  <div>
-    <label className="block text-sm font-medium text-[#325672] mb-1">
-      Total Savings
-    </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5a7690]">
+                $
+              </span>
+              <input
+                type="number"
+                value={savings}
+                onChange={(e) => setSavings(Number(e.target.value))}
+                placeholder="0"
+                className="input pl-7"
+              />
+            </div>
+          </div>
 
-    <div className="relative">
-      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5a7690]">
-        $
-      </span>
-      <input
-        type="number"
-        value={savings}
-        onChange={(e) => setSavings(Number(e.target.value))}
-        placeholder="0"
-        className="input pl-7"
-      />
-    </div>
-  </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-[#325672]">
+              Monthly Expenses
+            </label>
 
-  {/* Expenses */}
-  <div>
-    <label className="block text-sm font-medium text-[#325672] mb-1">
-      Monthly Expenses
-    </label>
-
-    <div className="relative">
-      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5a7690]">
-        $
-      </span>
-      <input
-        type="number"
-        value={expenses}
-        onChange={(e) => setExpenses(Number(e.target.value))}
-        placeholder="0"
-        className="input pl-7"
-      />
-    </div>
-  </div>
-
-</div>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5a7690]">
+                $
+              </span>
+              <input
+                type="number"
+                value={expenses}
+                onChange={(e) => setExpenses(Number(e.target.value))}
+                placeholder="0"
+                className="input pl-7"
+              />
+            </div>
+          </div>
+        </div>
       </section>
 
       <section>
@@ -84,7 +76,7 @@ const [expenses, setExpenses] = useState(initialExpenses);
             Your Runway
           </p>
 
-          <p className="text-4xl font-semibold text-[#6d4318] mt-1">
+          <p className="mt-1 text-4xl font-semibold text-[#6d4318]">
             {months.toFixed(1)} months
           </p>
 
@@ -109,7 +101,6 @@ const [expenses, setExpenses] = useState(initialExpenses);
           </p>
         </div>
       </section>
-
     </div>
   );
 }
