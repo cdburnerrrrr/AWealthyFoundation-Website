@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppStore } from '../store/appStore';
-
+import { getEntitlements } from '../lib/entitlements';
 import { exportReportPdf } from '../utils/pdfExport';
+import { useUserPlan } from '../hooks/useUserPlan';
 
 import {
   AlertCircle,
@@ -29,8 +30,6 @@ import {
 } from 'lucide-react';
 
 import logoImage from '../assets/house-icon.png';
-import { useUserPlan } from '../hooks/useUserPlan';
-import { getEntitlements } from '../lib/entitlements';
 import { useTrackEvent } from '../hooks/useTrackEvent';
 import FreedomDateDashboardCard from '../components/FreedomDateDashboardCard';
 import { getScoreBand } from '../types/assessment';
@@ -1013,10 +1012,14 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
   const { track, trackLockedFeature, trackUpgradeClick, trackTabViewed } =
     useTrackEvent();
-  const actualPlan = useUserPlan();
+
+  const actualPlan = useUserPlan() as unknown as string;
+
   const currentPlan: PlanTier =
     actualPlan === 'standard' || actualPlan === 'premium' ? actualPlan : 'free';
-  const entitlements = getEntitlements(currentPlan);
+
+  const entitlements = getEntitlements(currentPlan as any);
+
   const [showSuccess, setShowSuccess] = useState(false);
 
   const rawAssessment = (currentAssessment as (CurrentAssessmentShape & { report?: CurrentAssessmentShape }) | null) ?? null;
@@ -1083,6 +1086,19 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const runwayMonths =
   snapshot && snapshot.fixedCosts > 0
     ? snapshot.totalSavings / snapshot.fixedCosts
+    : 0;
+
+
+  const emergencyMinMonths = 3;
+  const emergencyTarget = snapshot?.fixedCosts
+  ? snapshot.fixedCosts * emergencyMinMonths
+  : 0;
+
+  const currentSavings = snapshot?.totalSavings ?? 0;
+
+  const emergencyPercent =
+  emergencyTarget > 0
+    ? Math.min(100, (currentSavings / emergencyTarget) * 100)
     : 0;
 
   const weakestPillar = useMemo(() => {
