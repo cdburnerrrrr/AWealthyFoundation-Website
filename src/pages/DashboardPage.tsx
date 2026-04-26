@@ -1101,6 +1101,50 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     ? Math.min(100, (currentSavings / emergencyTarget) * 100)
     : 0;
 
+  const cushionScore = snapshot
+    ? Math.round(
+        Math.max(
+          0,
+          Math.min(
+            100,
+            Math.min(runwayMonths, 6) * 7.5 +
+              emergencyPercent * 0.35 +
+              Math.max(0, 70 - snapshot.fixedCostLoad) * 0.3
+          )
+        )
+      )
+    : 0;
+
+  const cushionLevel: 'weak' | 'developing' | 'strong' =
+    cushionScore >= 70 ? 'strong' : cushionScore >= 40 ? 'developing' : 'weak';
+
+  const cushionTone = {
+    weak: {
+      label: 'Weak Cushion',
+      text: 'text-red-700',
+      bg: 'bg-red-50',
+      border: 'border-red-200',
+      bar: 'bg-red-500',
+      message: 'A disruption could quickly force debt or major lifestyle cuts.',
+    },
+    developing: {
+      label: 'Developing Cushion',
+      text: 'text-amber-700',
+      bg: 'bg-amber-50',
+      border: 'border-amber-200',
+      bar: 'bg-amber-500',
+      message: 'You have some protection, but a longer disruption would still be challenging.',
+    },
+    strong: {
+      label: 'Strong Cushion',
+      text: 'text-emerald-700',
+      bg: 'bg-emerald-50',
+      border: 'border-emerald-200',
+      bar: 'bg-emerald-500',
+      message: 'You have a solid buffer in place to handle most financial disruptions.',
+    },
+  }[cushionLevel];
+
   const weakestPillar = useMemo(() => {
     const entries = Object.entries(pillarScores)
       .map(([key, value]) => [key, Number(value)] as [string, number])
@@ -1648,105 +1692,134 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
               />
 
               <div className="grid xl:grid-cols-[1fr_1fr] gap-6 mb-6">
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-4">
                   {snapshot ? (
                     <>
-                      <div
-                        className={`rounded-3xl border p-5 ${fixedCostTone.bg} ${fixedCostTone.border}`}
-                      >
-                        <div className="text-sm text-gray-500 mb-2">
-                          Fixed Cost Load
+                      <div className={`rounded-[2rem] border p-5 md:p-6 shadow-sm ${cushionTone.bg} ${cushionTone.border}`}>
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <div className="text-sm text-gray-500 mb-2">
+                              Financial Cushion
+                            </div>
+                            <div className={`text-3xl font-bold ${cushionTone.text}`}>
+                              {cushionTone.label}
+                            </div>
+                            <p className="mt-2 text-sm text-gray-600 leading-6">
+                              {cushionTone.message}
+                            </p>
+                          </div>
+
+                          <div className="shrink-0 rounded-2xl bg-white/80 px-4 py-3 text-center shadow-sm">
+                            <div className={`text-2xl font-bold ${cushionTone.text}`}>
+                              {cushionScore}
+                            </div>
+                            <div className="text-[11px] uppercase tracking-[0.16em] text-gray-500">
+                              score
+                            </div>
+                          </div>
                         </div>
-                        <div className={`text-3xl font-bold ${fixedCostTone.text}`}>
-                          {formatPercent(snapshot.fixedCostLoad)}
-                        </div>
-                        <div
-                          className={`mt-2 inline-flex px-3 py-1 rounded-full text-xs font-semibold ${fixedCostTone.bg} ${fixedCostTone.text}`}
-                        >
-                          {fixedCostTone.badge}
-                        </div>
-                        <div className="mt-4 h-3 bg-white rounded-full overflow-hidden">
+
+                        <div className="mt-5 h-3 rounded-full bg-white overflow-hidden">
                           <div
-                            className={`h-full ${fixedCostTone.bar}`}
-                            style={{
-                              width: `${Math.max(
-                                6,
-                                Math.min(100, snapshot.fixedCostLoad)
-                              )}%`,
-                            }}
+                            className={`h-full ${cushionTone.bar}`}
+                            style={{ width: `${Math.max(6, cushionScore)}%` }}
                           />
                         </div>
-                        <p className="mt-3 text-sm text-gray-600">
-                          {formatCurrency(snapshot.fixedCosts)} of{' '}
-                          {formatCurrency(snapshot.income)} is already committed.
-                        </p>
-                      </div>
-                      <div className="rounded-3xl border border-[#d7e3f0] bg-white p-5">
-                        <div className="text-sm text-gray-500 mb-2">
-                          Savings Runway
+
+                        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                          <div className="rounded-2xl bg-white/80 p-3 shadow-sm">
+                            <div className="text-xs text-gray-500">Runway</div>
+                            <div className="mt-1 text-lg font-bold text-navy-900">
+                              {runwayMonths.toFixed(1)} mo
+                            </div>
+                          </div>
+
+                          <div className="rounded-2xl bg-white/80 p-3 shadow-sm">
+                            <div className="text-xs text-gray-500">Emergency Fund</div>
+                            <div className="mt-1 text-lg font-bold text-navy-900">
+                              {emergencyPercent.toFixed(0)}% funded
+                            </div>
+                          </div>
+
+                          <div className="rounded-2xl bg-white/80 p-3 shadow-sm">
+                            <div className="text-xs text-gray-500">Fixed Cost Load</div>
+                            <div className="mt-1 text-lg font-bold text-navy-900">
+                              {formatPercent(snapshot.fixedCostLoad)}
+                            </div>
+                          </div>
                         </div>
-
-                        <div className="text-3xl font-bold text-navy-900">
-                          {runwayMonths.toFixed(1)} months
-                        </div>
-
-                        <p className="mt-2 text-sm text-gray-500">
-                          Based on your current fixed monthly costs
-                        </p>
-                      </div>
-
-                      <div className="rounded-3xl border border-[#d7e3f0] bg-white p-5">
-                        <div className="text-sm text-gray-500 mb-2">
-                          Monthly Breathing Room
-                        </div>
-
-                        <div
-                          className={`text-3xl font-bold ${getMarginTone(
-                            snapshot.monthlyMargin
-                          )}`}
-                        >
-                          {formatCurrency(snapshot.monthlyMargin)}
-                        </div>
-
-                        <p className="mt-2 text-sm text-gray-500">
-                          Income minus housing, utilities, childcare, and debt.
-                        </p>
                       </div>
 
-                      <div className="rounded-3xl border border-[#d7e3f0] bg-white p-5">
-                        <div className="text-sm text-gray-500 mb-2">
-                          Savings / Investing Base
-                        </div>
-                        <div className="text-3xl font-bold text-navy-900">
-                          {formatCurrency(
-                            (snapshot.totalSavings ?? 0) +
-                              (snapshot.totalInvestments ?? 0)
-                          )}
-                        </div>
-                        <p className="mt-2 text-sm text-gray-500">
-                          Cash reserves plus long-term investment assets.
-                        </p>
-                      </div>
-
-                      <div className="rounded-3xl border border-[#d7e3f0] bg-white p-5 ring-1 ring-copper-100">
-                        <div className="text-sm text-gray-500 mb-2">
-                          Net Worth
-                        </div>
-                        <div className="text-3xl font-bold text-navy-900">
-                          {snapshot.netWorth ? formatCurrency(snapshot.netWorth) : '—'}
-                        </div>
-                        <p className="mt-2 text-sm text-gray-500">
-                          Built from savings, investments, home equity, and debt inputs currently in your profile.
-                        </p>
-                        {(snapshot.totalDebtBalance ?? 0) > 0 ? (
-                          <p className="mt-2 text-xs text-slate-500">
-                            Non-mortgage debt in the picture: {formatCurrency(snapshot.totalDebtBalance)}
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className={`rounded-3xl border p-5 ${fixedCostTone.bg} ${fixedCostTone.border}`}>
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <div className="text-sm text-gray-500 mb-1">
+                                Fixed Cost Load
+                              </div>
+                              <div className={`text-3xl font-bold ${fixedCostTone.text}`}>
+                                {formatPercent(snapshot.fixedCostLoad)}
+                              </div>
+                            </div>
+                            <div className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${fixedCostTone.bg} ${fixedCostTone.text}`}>
+                              {fixedCostTone.badge}
+                            </div>
+                          </div>
+                          <div className="mt-4 h-2.5 bg-white rounded-full overflow-hidden">
+                            <div
+                              className={`h-full ${fixedCostTone.bar}`}
+                              style={{
+                                width: `${Math.max(
+                                  6,
+                                  Math.min(100, snapshot.fixedCostLoad)
+                                )}%`,
+                              }}
+                            />
+                          </div>
+                          <p className="mt-3 text-xs text-gray-600 leading-5">
+                            {formatCurrency(snapshot.fixedCosts)} of {formatCurrency(snapshot.income)} is committed.
                           </p>
-                        ) : null}
+                        </div>
+
+                        <div className="rounded-3xl border border-[#d7e3f0] bg-white p-5">
+                          <div className="text-sm text-gray-500 mb-1">
+                            Monthly Breathing Room
+                          </div>
+                          <div className={`text-3xl font-bold ${getMarginTone(snapshot.monthlyMargin)}`}>
+                            {formatCurrency(snapshot.monthlyMargin)}
+                          </div>
+                          <p className="mt-3 text-xs text-gray-500 leading-5">
+                            Income left after housing, utilities, childcare, and debt.
+                          </p>
+                        </div>
+
+                        <div className="rounded-3xl border border-[#d7e3f0] bg-white p-5">
+                          <div className="text-sm text-gray-500 mb-1">
+                            Savings + Investments
+                          </div>
+                          <div className="text-3xl font-bold text-navy-900">
+                            {formatCurrency((snapshot.totalSavings ?? 0) + (snapshot.totalInvestments ?? 0))}
+                          </div>
+                          <p className="mt-3 text-xs text-gray-500 leading-5">
+                            Cash reserves plus long-term investment assets.
+                          </p>
+                        </div>
+
+                        <div className="rounded-3xl border border-[#d7e3f0] bg-white p-5 ring-1 ring-copper-100">
+                          <div className="text-sm text-gray-500 mb-1">
+                            Net Worth
+                          </div>
+                          <div className="text-3xl font-bold text-navy-900">
+                            {snapshot.netWorth ? formatCurrency(snapshot.netWorth) : '—'}
+                          </div>
+                          <p className="mt-3 text-xs text-gray-500 leading-5">
+                            Savings, investments, home equity, and debt in one number.
+                          </p>
+                        </div>
                       </div>
                     </>
                   ) : (
-                    <div className="col-span-full rounded-3xl border border-[#d7e3f0] bg-white p-6">
+                    <div className="rounded-3xl border border-[#d7e3f0] bg-white p-6">
                       <p className="text-gray-600">
                         Your structural metrics will appear here after your full
                         report is generated.
