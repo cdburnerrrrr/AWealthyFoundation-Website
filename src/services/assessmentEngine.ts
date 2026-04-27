@@ -197,12 +197,15 @@ function getLiquidSavings(answers: Record<string, any>) {
 function getInvestmentTotal(answers: Record<string, any>) {
   const itemized =
     toNumber(answers.retirement401kIraBalance) +
+    toNumber(answers.retirementAccounts) +
     toNumber(answers.k401Balance) +
     toNumber(answers.iraBalance) +
     toNumber(answers.rothBalance) +
     toNumber(answers.brokerageBalance) +
+    toNumber(answers.brokerageAccounts) +
     toNumber(answers.pensionBalance) +
-    toNumber(answers.otherInvestmentAssets);
+    toNumber(answers.otherInvestmentAssets) +
+    toNumber(answers.otherInvestments);
 
   const legacy = firstNumber(answers, ['totalInvestments', 'investmentBalance']);
 
@@ -245,9 +248,12 @@ function getRealEstateAssets(answers: Record<string, any>) {
 function getMortgageDebt(answers: Record<string, any>) {
   return (
     toNumber(answers.primaryMortgageBalance) +
+    toNumber(answers.primaryMortgage) +
     toNumber(answers.mortgageBalance) +
     toNumber(answers.rentalMortgageBalance) +
-    toNumber(answers.otherPropertyMortgageBalance)
+    toNumber(answers.rentalMortgage) +
+    toNumber(answers.otherPropertyMortgageBalance) +
+    toNumber(answers.otherPropertyDebt)
   );
 }
 
@@ -256,7 +262,11 @@ function getOtherAssets(answers: Record<string, any>) {
 }
 
 function getOtherLiabilities(answers: Record<string, any>) {
-  return toNumber(answers.otherLiabilities) + toNumber(answers.otherDebtNotListed);
+  return (
+    toNumber(answers.otherLiabilities) +
+    toNumber(answers.otherDebtNotListed) +
+    toNumber(answers.additionalDebt)
+  );
 }
 
 function hasDependents(answers: Record<string, any>) {
@@ -270,13 +280,26 @@ function hasDependents(answers: Record<string, any>) {
 }
 
 function hasCoverage(answers: Record<string, any>, key: string, legacyKey?: string) {
-  const coverage = answers.protectionCoverages ?? answers.insuranceCoverages;
-  return (
-    yes(answers[key]) ||
-    (legacyKey ? yes(answers[legacyKey]) : false) ||
-    includesValue(coverage, key) ||
-    (legacyKey ? includesValue(coverage, legacyKey) : false)
-  );
+  const coverage =
+    answers.protectionCoverage ??
+    answers.protectionCoverages ??
+    answers.insuranceCoverages ??
+    [];
+
+  const aliases: Record<string, string[]> = {
+    hasHealthInsurance: ['health', 'health_insurance', 'good_coverage', 'basic_coverage'],
+    hasAutoInsurance: ['auto', 'auto_insurance', 'full', 'basic'],
+    hasHomeInsurance: ['home_or_renters', 'home', 'renters', 'property', 'solid', 'basic'],
+    hasLifeInsurance: ['life', 'life_insurance', 'enough', 'some'],
+    hasDisabilityInsurance: ['disability', 'income_interruption', 'very_prepared', 'somewhat_prepared'],
+    hasUmbrellaPolicy: ['umbrella', 'umbrella_policy'],
+  };
+
+  const accepted = [key, legacyKey, ...(aliases[key] ?? []), ...(legacyKey ? aliases[legacyKey] ?? [] : [])]
+    .filter(Boolean) as string[];
+
+  return accepted.some((item) => yes(answers[item]) || includesValue(coverage, item)) ||
+    (legacyKey ? yes(answers[legacyKey]) : false);
 }
 
 export function buildV2FinancialMetrics(
@@ -300,21 +323,23 @@ export function buildV2FinancialMetrics(
   const hysaBalance = toNumber(answers.hysaBalance);
   const retirement401kIraBalance =
     toNumber(answers.retirement401kIraBalance) +
+    toNumber(answers.retirementAccounts) +
     toNumber(answers.k401Balance) +
     toNumber(answers.iraBalance);
   const rothBalance = toNumber(answers.rothBalance);
-  const brokerageBalance = toNumber(answers.brokerageBalance);
+  const brokerageBalance = toNumber(answers.brokerageBalance) + toNumber(answers.brokerageAccounts);
   const pensionBalance = toNumber(answers.pensionBalance);
-  const otherInvestmentAssets = toNumber(answers.otherInvestmentAssets);
+  const otherInvestmentAssets = toNumber(answers.otherInvestmentAssets) + toNumber(answers.otherInvestments);
 
   const totalInvestments = getInvestmentTotal(answers);
   const primaryHomeValue = toNumber(answers.primaryHomeValue) || toNumber(answers.homeValue);
   const primaryMortgageBalance =
-    toNumber(answers.primaryMortgageBalance) || toNumber(answers.mortgageBalance);
+    toNumber(answers.primaryMortgageBalance) || toNumber(answers.primaryMortgage) || toNumber(answers.mortgageBalance);
   const rentalPropertyValue = toNumber(answers.rentalPropertyValue);
-  const rentalMortgageBalance = toNumber(answers.rentalMortgageBalance);
+  const rentalMortgageBalance = toNumber(answers.rentalMortgageBalance) || toNumber(answers.rentalMortgage);
   const otherPropertyValue = toNumber(answers.otherPropertyValue);
-  const otherPropertyMortgageBalance = toNumber(answers.otherPropertyMortgageBalance);
+  const otherPropertyMortgageBalance =
+    toNumber(answers.otherPropertyMortgageBalance) || toNumber(answers.otherPropertyDebt);
 
   const realEstateAssets = getRealEstateAssets(answers);
   const mortgageDebt = getMortgageDebt(answers);
@@ -459,15 +484,15 @@ function scoreIncome(answers: Record<string, any>, metrics: V2FinancialMetrics) 
   if (metrics.monthlyIncome > 0) score += 10;
 
   const consistency = answers.incomeConsistency;
-  if (consistency === 'very_stable' || consistency === 'stable') score += 20;
-  else if (consistency === 'mostly_stable') score += 12;
+  if (consistency === 'very_consistent' || consistency === 'very_stable' || consistency === 'stable') score += 20;
+  else if (consistency === 'mostly_consistent' || consistency === 'mostly_stable') score += 12;
   else if (consistency === 'variable') score += 4;
-  else if (consistency === 'unstable') score -= 10;
+  else if (consistency === 'highly_unpredictable' || consistency === 'unstable') score -= 10;
 
   const growth = answers.incomeGrowthPotential;
   if (growth === 'high') score += 10;
   else if (growth === 'moderate') score += 6;
-  else if (growth === 'low') score += 1;
+  else if (growth === 'limited' || growth === 'low') score += 1;
 
   if (metrics.monthlyIncome >= 6000) score += 5;
   if (metrics.monthlyIncome <= 0) score -= 15;
@@ -507,6 +532,15 @@ function scoreInvesting(answers: Record<string, any>, metrics: V2FinancialMetric
   else if (rate >= 10) score = 78;
   else if (rate >= 5) score = 62;
 
+  // If the user gave strong balances but no contribution percentage, avoid treating
+  // missing rate data as weak investing.
+  if (rate === 0) {
+    if (metrics.totalInvestments >= 500000) score = 88;
+    else if (metrics.totalInvestments >= 250000) score = 82;
+    else if (metrics.totalInvestments >= 100000) score = 74;
+    else if (metrics.totalInvestments >= 50000) score = 66;
+  }
+
   if (answers.investingStatus === 'yes_consistently') score += 8;
   if (answers.employerMatch === 'maximizing_match') score += 5;
 
@@ -515,7 +549,7 @@ function scoreInvesting(answers: Record<string, any>, metrics: V2FinancialMetric
   else if (metrics.totalInvestments >= 100000) score += 6;
   else if (metrics.totalInvestments >= 50000) score += 4;
 
-  if (metrics.totalInvestments === 0 && rate === 0) score = 25;
+  if (metrics.totalInvestments === 0 && rate === 0 && answers.investingStatus !== 'yes_consistently') score = 25;
 
   return clamp(round(score));
 }
@@ -563,9 +597,9 @@ function scoreProtection(answers: Record<string, any>, signals: V2Signals) {
 function scoreVision(answers: Record<string, any>) {
   let score = 50;
 
-  if (answers.financialDirection === 'clear_goals') score += 25;
-  else if (answers.financialDirection === 'some_goals') score += 15;
-  else if (answers.financialDirection === 'figuring_it_out') score += 5;
+  if (answers.financialDirection === 'very_clear' || answers.financialDirection === 'clear_goals') score += 25;
+  else if (answers.financialDirection === 'fairly_clear' || answers.financialDirection === 'some_goals') score += 15;
+  else if (answers.financialDirection === 'unclear' || answers.financialDirection === 'figuring_it_out') score += 5;
 
   if (answers.primaryFinancialPriority) score += 10;
 
@@ -573,6 +607,7 @@ function scoreVision(answers: Record<string, any>) {
   if (confidence === 'very_confident') score += 15;
   else if (confidence === 'somewhat_confident') score += 8;
   else if (confidence === 'low' || confidence === 'not_confident') score -= 5;
+  else if (confidence === 'overwhelmed') score -= 10;
 
   return clamp(round(score));
 }

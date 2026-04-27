@@ -57,6 +57,29 @@ type MetricsShape = {
   monthlyUtilities?: number;
   monthlyChildcareCost?: number;
   monthlyFixedCosts?: number;
+  cashSavings?: number;
+  retirement401kIraBalance?: number;
+  rothBalance?: number;
+  brokerageBalance?: number;
+  pensionBalance?: number;
+  otherInvestmentAssets?: number;
+  otherAssets?: number;
+  primaryHomeValue?: number;
+  primaryMortgageBalance?: number;
+  rentalPropertyValue?: number;
+  rentalMortgageBalance?: number;
+  otherPropertyValue?: number;
+  otherPropertyMortgageBalance?: number;
+  realEstateAssets?: number;
+  mortgageDebt?: number;
+  consumerDebt?: number;
+  otherLiabilities?: number;
+  totalAssets?: number;
+  totalLiabilities?: number;
+  emergencyFundMonths?: number;
+  cappedEmergencyFundMonths?: number;
+  cushionScore?: number;
+  excessCashEstimate?: number;
 };
 
 type ActionPlanStep = {
@@ -548,11 +571,34 @@ function getStructuralSnapshot(metrics?: MetricsShape | null) {
     monthlyMargin,
     debtToIncomeRatio: Number(metrics.debtToIncomeRatio ?? 0),
     savingsRate: Number(metrics.savingsRate ?? 0),
-    totalSavings: Number(metrics.totalSavings ?? 0),
+    totalSavings: Number(metrics.totalSavings ?? metrics.cashSavings ?? 0),
     totalInvestments: Number(metrics.totalInvestments ?? 0),
-    totalDebtBalance: Number(metrics.totalDebtBalance ?? 0),
+    totalDebtBalance: Number(metrics.totalDebtBalance ?? metrics.consumerDebt ?? 0),
     netWorth: Number(metrics.netWorth ?? 0),
     homeEquity: Number(metrics.homeEquity ?? 0),
+    cashSavings: Number(metrics.cashSavings ?? metrics.totalSavings ?? 0),
+    retirement401kIraBalance: Number(metrics.retirement401kIraBalance ?? 0),
+    rothBalance: Number(metrics.rothBalance ?? 0),
+    brokerageBalance: Number(metrics.brokerageBalance ?? 0),
+    pensionBalance: Number(metrics.pensionBalance ?? 0),
+    otherInvestmentAssets: Number(metrics.otherInvestmentAssets ?? 0),
+    otherAssets: Number(metrics.otherAssets ?? 0),
+    primaryHomeValue: Number(metrics.primaryHomeValue ?? 0),
+    primaryMortgageBalance: Number(metrics.primaryMortgageBalance ?? 0),
+    rentalPropertyValue: Number(metrics.rentalPropertyValue ?? 0),
+    rentalMortgageBalance: Number(metrics.rentalMortgageBalance ?? 0),
+    otherPropertyValue: Number(metrics.otherPropertyValue ?? 0),
+    otherPropertyMortgageBalance: Number(metrics.otherPropertyMortgageBalance ?? 0),
+    realEstateAssets: Number(metrics.realEstateAssets ?? 0),
+    mortgageDebt: Number(metrics.mortgageDebt ?? 0),
+    consumerDebt: Number(metrics.consumerDebt ?? metrics.totalDebtBalance ?? 0),
+    otherLiabilities: Number(metrics.otherLiabilities ?? 0),
+    totalAssets: Number(metrics.totalAssets ?? 0),
+    totalLiabilities: Number(metrics.totalLiabilities ?? 0),
+    emergencyFundMonths: Number(metrics.emergencyFundMonths ?? 0),
+    cappedEmergencyFundMonths: Number(metrics.cappedEmergencyFundMonths ?? 0),
+    cushionScore: Number(metrics.cushionScore ?? 0),
+    excessCashEstimate: Number(metrics.excessCashEstimate ?? 0),
   };
 }
 
@@ -1208,6 +1254,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const [showSuccess, setShowSuccess] = useState(false);
   const [whatIf, setWhatIf] = useState({ income: 500, housing: 300, debt: 0 });
   const [guidanceTab, setGuidanceTab] = useState<GuidanceTab>('roadmap');
+  const [activeDetail, setActiveDetail] = useState<'financial' | 'netWorth' | 'assetAllocation' | null>(null);
   const [freedomDateScenario, setFreedomDateScenario] = useState<FreedomDateScenario | null>(null);
   const [freedomPlanUpdatedAt, setFreedomPlanUpdatedAt] = useState<string | null>(null);
 
@@ -1427,10 +1474,24 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   );
 
   const assetRows = useMemo(() => {
+    const detailedInvestmentTotal =
+      (snapshot?.retirement401kIraBalance ?? 0) +
+      (snapshot?.rothBalance ?? 0) +
+      (snapshot?.brokerageBalance ?? 0) +
+      (snapshot?.pensionBalance ?? 0) +
+      (snapshot?.otherInvestmentAssets ?? 0);
+
+    const investmentFallback = Math.max(0, (snapshot?.totalInvestments ?? 0) - detailedInvestmentTotal);
+
     const rows = [
-      { label: 'Cash / Savings', value: snapshot?.totalSavings ?? 0, color: '#a78bfa', dot: 'bg-violet-400' },
-      { label: 'Investments', value: snapshot?.totalInvestments ?? 0, color: '#22d3ee', dot: 'bg-cyan-400' },
+      { label: 'Cash / Savings', value: snapshot?.cashSavings ?? snapshot?.totalSavings ?? 0, color: '#a78bfa', dot: 'bg-violet-400' },
+      { label: '401k / IRA', value: snapshot?.retirement401kIraBalance ?? 0, color: '#22d3ee', dot: 'bg-cyan-400' },
+      { label: 'Roth', value: snapshot?.rothBalance ?? 0, color: '#818cf8', dot: 'bg-indigo-400' },
+      { label: 'Brokerage', value: snapshot?.brokerageBalance ?? 0, color: '#f59e0b', dot: 'bg-amber-400' },
+      { label: 'Pension', value: snapshot?.pensionBalance ?? 0, color: '#14b8a6', dot: 'bg-teal-400' },
+      { label: 'Other Investments', value: (snapshot?.otherInvestmentAssets ?? 0) + investmentFallback, color: '#38bdf8', dot: 'bg-sky-400' },
       { label: 'Home Equity', value: snapshot?.homeEquity ?? 0, color: '#34d399', dot: 'bg-emerald-400' },
+      { label: 'Other Assets', value: snapshot?.otherAssets ?? 0, color: '#f472b6', dot: 'bg-pink-400' },
     ].filter((row) => row.value > 0);
 
     if (!rows.length) {
@@ -1660,16 +1721,20 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Freedom Date</div>
+                          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Debt Status</div>
                           <div className="mt-4 text-2xl font-bold text-violet-300">
-                            {freedomDateScenario?.results?.freedomDate
-                              ? new Date(freedomDateScenario.results.freedomDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-                              : 'Not Set'}
+                            {(snapshot?.consumerDebt ?? snapshot?.totalDebtBalance ?? 0) <= 0
+                              ? 'No Consumer Debt'
+                              : freedomDateScenario?.results?.freedomDate
+                                ? new Date(freedomDateScenario.results.freedomDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                                : 'Use Debt Tool'}
                           </div>
                           <div className="mt-1 text-sm text-slate-400">
-                            {freedomDateScenario?.results?.monthsSaved
-                              ? `${freedomDateScenario.results.monthsSaved} months saved`
-                              : 'Open payoff planner'}
+                            {(snapshot?.consumerDebt ?? snapshot?.totalDebtBalance ?? 0) <= 0
+                              ? (snapshot?.mortgageDebt ?? 0) > 0 ? 'Mortgage only' : 'Debt-free'
+                              : freedomDateScenario?.results?.monthsSaved
+                                ? `${freedomDateScenario.results.monthsSaved} months saved`
+                                : 'Open payoff planner'}
                           </div>
                         </div>
                         <Calendar className="h-10 w-10 text-violet-300/80" />
@@ -1781,7 +1846,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                       <div className="mt-1 text-xl font-bold text-cyan-300">{formatPercent(snapshot?.debtToIncomeRatio ?? 0)}</div>
                     </div>
                   </div>
-                  <button onClick={() => navigate('/results')} className="mt-4 flex items-center gap-2 text-sm font-semibold text-cyan-300">View Details <ArrowRight className="h-4 w-4" /></button>
+                  <button onClick={() => setActiveDetail('financial')} className="mt-4 flex items-center gap-2 text-sm font-semibold text-cyan-300">View Details <ArrowRight className="h-4 w-4" /></button>
                 </DashboardPanel>
 
                 <DashboardPanel className="p-5">
@@ -1795,7 +1860,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                     </div>
                   </div>
                   <NetWorthMiniChart scoreHistory={scoreHistory} />
-                  <button onClick={() => navigate('/results')} className="mt-4 flex items-center gap-2 text-sm font-semibold text-cyan-300">View Details <ArrowRight className="h-4 w-4" /></button>
+                  <button onClick={() => setActiveDetail('netWorth')} className="mt-4 flex items-center gap-2 text-sm font-semibold text-cyan-300">View Details <ArrowRight className="h-4 w-4" /></button>
                 </DashboardPanel>
 
                 <DashboardPanel className="p-5">
@@ -1822,9 +1887,94 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                       );
                     })}
                   </div>
-                  <button onClick={() => navigate('/results')} className="mt-4 flex items-center gap-2 text-sm font-semibold text-cyan-300">View Details <ArrowRight className="h-4 w-4" /></button>
+                  <button onClick={() => setActiveDetail('assetAllocation')} className="mt-4 flex items-center gap-2 text-sm font-semibold text-cyan-300">View Details <ArrowRight className="h-4 w-4" /></button>
                 </DashboardPanel>
               </section>
+
+
+
+              {activeDetail && snapshot ? (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-8 backdrop-blur-sm">
+                  <div className="w-full max-w-2xl rounded-[1.6rem] border border-cyan-200/15 bg-[#081a2f] p-6 text-slate-100 shadow-[0_30px_90px_rgba(0,0,0,.45)]">
+                    <div className="mb-5 flex items-start justify-between gap-4">
+                      <div>
+                        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">
+                          {activeDetail === 'financial' ? 'Financial Snapshot' : activeDetail === 'netWorth' ? 'Net Worth Breakdown' : 'Asset Allocation'}
+                        </div>
+                        <h3 className="mt-2 text-2xl font-bold">
+                          {activeDetail === 'financial' ? 'How your monthly structure is calculated' : activeDetail === 'netWorth' ? 'How we calculated your net worth' : 'Where your assets are currently allocated'}
+                        </h3>
+                      </div>
+                      <button onClick={() => setActiveDetail(null)} className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xl leading-none text-slate-300 hover:bg-white/10">×</button>
+                    </div>
+
+                    {activeDetail === 'financial' ? (
+                      <div className="space-y-3 text-sm">
+                        {[
+                          ['Monthly income', snapshot.income],
+                          ['Housing / rent / mortgage payment', snapshot.housing],
+                          ['Utilities', snapshot.utilities],
+                          ['Childcare', snapshot.childcare],
+                          ['Consumer debt payments', snapshot.debt],
+                          ['Total fixed costs', snapshot.fixedCosts],
+                          ['Monthly breathing room', snapshot.monthlyMargin],
+                        ].map(([label, value]) => (
+                          <div key={label as string} className="flex justify-between rounded-xl bg-white/[0.04] px-4 py-3">
+                            <span className="text-slate-400">{label}</span>
+                            <span className="font-semibold">{formatCurrency(value as number)}</span>
+                          </div>
+                        ))}
+                        <div className="rounded-xl border border-cyan-300/15 bg-cyan-300/8 px-4 py-3 text-cyan-100">Fixed cost load: {formatPercent(snapshot.fixedCostLoad)} of take-home pay.</div>
+                      </div>
+                    ) : null}
+
+                    {activeDetail === 'netWorth' ? (
+                      <div className="space-y-3 text-sm">
+                        {[
+                          ['Cash / savings', snapshot.cashSavings],
+                          ['Investments', snapshot.totalInvestments],
+                          ['Real estate value', snapshot.realEstateAssets],
+                          ['Other assets', snapshot.otherAssets],
+                          ['Mortgage debt', -snapshot.mortgageDebt],
+                          ['Consumer debt', -snapshot.consumerDebt],
+                          ['Other liabilities', -snapshot.otherLiabilities],
+                        ].map(([label, value]) => (
+                          <div key={label as string} className="flex justify-between rounded-xl bg-white/[0.04] px-4 py-3">
+                            <span className="text-slate-400">{label}</span>
+                            <span className={`font-semibold ${(value as number) < 0 ? 'text-red-300' : ''}`}>{formatCurrency(value as number)}</span>
+                          </div>
+                        ))}
+                        <div className="flex justify-between rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-lg">
+                          <span className="font-bold text-emerald-200">Estimated net worth</span>
+                          <span className="font-bold text-emerald-200">{formatCurrency(snapshot.netWorth)}</span>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {activeDetail === 'assetAllocation' ? (
+                      <div className="space-y-3 text-sm">
+                        {assetRows.map((row) => {
+                          const percent = totalAssets > 0 ? (row.value / totalAssets) * 100 : 0;
+                          return (
+                            <div key={row.label} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 rounded-xl bg-white/[0.04] px-4 py-3">
+                              <div className="flex items-center gap-2 text-slate-300">
+                                <span className={`h-2.5 w-2.5 rounded-full ${row.dot}`} />
+                                {row.label}
+                              </div>
+                              <div className="text-slate-400">{percent.toFixed(0)}%</div>
+                              <div className="font-semibold">{formatCurrency(row.value)}</div>
+                            </div>
+                          );
+                        })}
+                        <div className="flex justify-between rounded-xl border border-cyan-300/15 bg-cyan-300/8 px-4 py-3">
+                          <span className="font-semibold text-cyan-100">Total shown assets</span>
+                          <span className="font-bold text-cyan-100">{formatCurrency(totalAssets)}</span>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
 
               <div className="hidden">
                 <span>{dashboardWhyThisMatters}</span>
