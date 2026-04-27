@@ -32,7 +32,7 @@ import {
 
 import logoImage from '../assets/house-icon.png';
 import { useTrackEvent } from '../hooks/useTrackEvent';
-import FreedomDateDashboardCard from '../components/FreedomDateDashboardCard';
+import { loadFreedomDatePlan, type FreedomDateScenario } from '../lib/freedomDatePlanService';
 import { getScoreBand } from '../types/assessment';
 
 interface DashboardPageProps {
@@ -1200,17 +1200,39 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const { track, trackLockedFeature, trackUpgradeClick, trackTabViewed } =
     useTrackEvent();
 
-  const actualPlan = useUserPlan() as unknown as string;
+  const userPlanState = useUserPlan();
+  const currentPlan: PlanTier = userPlanState.plan;
+  const planIsActive = Boolean(userPlanState.isActive);
 
-  const currentPlan: PlanTier =
-    actualPlan === 'standard' || actualPlan === 'premium' ? actualPlan : 'free';
-
-  const entitlements = getEntitlements(currentPlan as any);
+  const entitlements = getEntitlements(currentPlan, planIsActive);
   const [showSuccess, setShowSuccess] = useState(false);
   const [whatIf, setWhatIf] = useState({ income: 500, housing: 300, debt: 0 });
   const [guidanceTab, setGuidanceTab] = useState<GuidanceTab>('roadmap');
+  const [freedomDateScenario, setFreedomDateScenario] = useState<FreedomDateScenario | null>(null);
+  const [freedomPlanUpdatedAt, setFreedomPlanUpdatedAt] = useState<string | null>(null);
 
   const rawAssessment = (currentAssessment as (CurrentAssessmentShape & { report?: CurrentAssessmentShape }) | null) ?? null;
+
+  useEffect(() => {
+    const userId = (user as any)?.id || (user as any)?.user_id;
+    if (!userId) return;
+
+    let isMounted = true;
+
+    loadFreedomDatePlan(userId)
+      .then((record) => {
+        if (!isMounted) return;
+        setFreedomDateScenario(record?.scenario_json ?? null);
+        setFreedomPlanUpdatedAt(record?.updated_at ?? null);
+      })
+      .catch((error) => {
+        console.error('Failed to load Freedom Date plan for dashboard', error);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   useEffect(() => {
     async function handleCheckoutSuccess() {
@@ -1631,16 +1653,28 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                       </div>
                     </div>
 
-                    <div className="p-2">
+                    <button
+                      type="button"
+                      onClick={() => navigate('/foundation-tools/my-freedom-date')}
+                      className="p-2 text-left"
+                    >
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Freedom Date</div>
-                          <div className="mt-4 text-2xl font-bold text-violet-300">Debt Tool</div>
-                          <div className="mt-1 text-sm text-slate-400">Open payoff planner</div>
+                          <div className="mt-4 text-2xl font-bold text-violet-300">
+                            {freedomDateScenario?.results?.freedomDate
+                              ? new Date(freedomDateScenario.results.freedomDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                              : 'Not Set'}
+                          </div>
+                          <div className="mt-1 text-sm text-slate-400">
+                            {freedomDateScenario?.results?.monthsSaved
+                              ? `${freedomDateScenario.results.monthsSaved} months saved`
+                              : 'Open payoff planner'}
+                          </div>
                         </div>
                         <Calendar className="h-10 w-10 text-violet-300/80" />
                       </div>
-                    </div>
+                    </button>
                   </div>
                 </DashboardPanel>
               </section>
