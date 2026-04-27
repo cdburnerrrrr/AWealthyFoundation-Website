@@ -19,8 +19,7 @@ import {
 } from 'lucide-react';
 import {
   BUILDING_BLOCK_LABELS,
-  generateReport,
-  getMilestonesForStage,
+    getMilestonesForStage,
   type BuildingBlockKey,
   type Question,
 } from '../types/assessment';
@@ -28,6 +27,7 @@ import { getDetailedQuestions, getSnapshotQuestions } from '../types/optimized_q
 import { useAppStore } from '../store/appStore';
 import { useUserPlan } from '../hooks/useUserPlan';
 import NetWorthActivity from '../components/activities/NetWorthActivity';
+import { generateV2Report } from '../services/assessmentEngine';
 import CarPaymentActivity from '../components/activities/CarPaymentActivity';
 
 type ResponseValue = string | string[] | number | null;
@@ -1199,7 +1199,7 @@ export default function ComprehensiveQuestionnaire() {
         ? { ...baseContinueAnswers, ...responses }
         : responses;
 
-      const report = generateReport(mergedAnswers, 'detailed');
+        const report = generateV2Report(mergedAnswers, 'detailed');
       setCurrentAssessment({
         foundationScore: report.foundationScore,
         scoreBand: report.scoreBand,

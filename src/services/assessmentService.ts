@@ -3,13 +3,13 @@ import { useAppStore } from '../store/appStore';
 
 export async function loadAssessmentsFromSupabase() {
   try {
-    // ✅ Get user from Zustand (NOT Supabase auth)
+    // ✅ Get user from Supabase session
     const {
       data: { session },
     } = await supabase.auth.getSession();
-    
+
     const userId = session?.user?.id;
-    
+
     if (!userId) return [];
 
     const { data, error } = await supabase
