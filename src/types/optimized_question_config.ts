@@ -125,6 +125,49 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
   },
 
+     {
+      key: 'primaryHomeValue',
+      question: 'Primary home value',
+      type: 'number',
+      section: 'spending',
+      tags: { modes: ['detailed'], priority: 'core' },
+    },
+    {
+      key: 'primaryMortgage',
+      question: 'Primary mortgage balance',
+      type: 'number',
+      section: 'spending',
+      tags: { modes: ['detailed'], priority: 'core' },
+    },
+    {
+      key: 'rentalPropertyValue',
+      question: 'Rental property value',
+      type: 'number',
+      section: 'spending',
+      tags: { modes: ['detailed'], priority: 'core' },
+    },
+    {
+      key: 'rentalMortgage',
+      question: 'Rental mortgage balance',
+      type: 'number',
+      section: 'spending',
+      tags: { modes: ['detailed'], priority: 'core' },
+    },
+    {
+      key: 'otherPropertyValue',
+      question: 'Other property value',
+      type: 'number',
+      section: 'spending',
+      tags: { modes: ['detailed'], priority: 'core' },
+    },
+    {
+      key: 'otherPropertyDebt',
+      question: 'Other property debt',
+      type: 'number',
+      section: 'spending',
+      tags: { modes: ['detailed'], priority: 'core' },
+    },
+
   // INCOME
   {
     key: 'monthlyTakeHomeIncome',
@@ -554,6 +597,16 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
         (Array.isArray(a.otherDebt) && !a.otherDebt.includes('none')),
     },
   },
+
+  {
+    key: 'additionalDebt',
+    question: 'Any additional debt not already included?',
+    type: 'number',
+    section: 'debt',
+    placeholder: 'e.g. 5000',
+    tags: { modes: ['detailed'], priority: 'core' },
+  },
+
   {
     key: 'monthlyDebtPayments',
     question: 'About how much do you pay toward debt each month?',
@@ -663,56 +716,29 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
   },
 
   // HOMEOWNER DETAIL
-  {
-    key: 'mortgageBalance',
-    question: 'What is your approximate mortgage balance?',
-    type: 'number',
-    section: 'debt',
-    required: true,
-    placeholder: 'e.g. 185000',
-    conditions: [{ key: 'housingStatus', operator: 'equals', value: 'own_with_mortgage' }],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) => a.housingStatus === 'own_with_mortgage',
-    },
-  },
-  {
-    key: 'homeValue',
-    question: 'What is your home worth today?',
-    type: 'number',
-    section: 'spending',
-    required: true,
-    placeholder: 'e.g. 260000',
-    helperText: 'A Zillow estimate or best reasonable estimate is fine.',
-    conditions: [{ key: 'housingStatus', operator: 'equals', value: 'own_with_mortgage' }],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) => a.housingStatus === 'own_with_mortgage',
-    },
-  },
-  {
-    key: 'mortgageImpact',
-    question: 'How does your mortgage affect your overall financial progress right now?',
-    type: 'single',
-    section: 'spending',
-    required: true,
-    conditions: [{ key: 'housingStatus', operator: 'equals', value: 'own_with_mortgage' }],
-    options: [
-      { value: 'very_manageable', label: 'Very manageable' },
-      { value: 'manageable', label: 'Manageable' },
-      { value: 'slows_me_down', label: 'It slows me down some' },
-      { value: 'major_pressure', label: 'It is a major source of pressure' },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) => a.housingStatus === 'own_with_mortgage',
-    },
-  },
+      
+  
 
   // PROTECTION
+
+  {
+    key: 'protectionCoverage',
+    question: 'Which protections do you have in place?',
+    helperText: 'Check everything that applies. Leave anything unchecked if you do not have it or are unsure.',
+    type: 'multiple',
+    section: 'protection',
+    required: true,
+    options: [
+      { value: 'health', label: 'Health insurance' },
+      { value: 'auto', label: 'Auto insurance' },
+      { value: 'home_or_renters', label: 'Homeowners / renters insurance' },
+      { value: 'life', label: 'Life insurance' },
+      { value: 'disability', label: 'Disability / income interruption coverage' },
+      { value: 'umbrella', label: 'Umbrella policy' },
+    ],
+    tags: { modes: ['detailed'], priority: 'core' },
+  },
+
   {
     key: 'incomeInterruptionCoverage',
     question: 'If your income stopped for a while, how prepared would you be?',
@@ -895,6 +921,42 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
         priority: 'conditional',
         askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
       },
+    },
+
+    {
+      key: 'cashSavings',
+      question: 'Cash / savings balance',
+      type: 'number',
+      section: 'investing',
+      tags: { modes: ['detailed'], priority: 'core' },
+    },
+    {
+      key: 'retirementAccounts',
+      question: '401k / IRA balance',
+      type: 'number',
+      section: 'investing',
+      tags: { modes: ['detailed'], priority: 'core' },
+    },
+    {
+      key: 'brokerageAccounts',
+      question: 'Brokerage account balance',
+      type: 'number',
+      section: 'investing',
+      tags: { modes: ['detailed'], priority: 'core' },
+    },
+    {
+      key: 'otherInvestments',
+      question: 'Other investments',
+      type: 'number',
+      section: 'investing',
+      tags: { modes: ['detailed'], priority: 'core' },
+    },
+    {
+      key: 'otherAssets',
+      question: 'Other assets (optional)',
+      type: 'number',
+      section: 'investing',
+      tags: { modes: ['detailed'], priority: 'core' },
     },
 
 {
