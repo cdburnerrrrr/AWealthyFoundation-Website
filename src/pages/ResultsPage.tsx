@@ -39,8 +39,14 @@ type ActionPlanStep = {
 };
 
 type StructuralWarning = {
-  type: 'housing_pressure' | 'income_constraint' | 'structural_pressure';
-  severity: 'high' | 'critical';
+  type:
+    | 'housing_pressure'
+    | 'income_constraint'
+    | 'structural_pressure'
+    | 'excess_cash'
+    | 'protection_gap'
+    | 'net_worth_data_gap';
+  severity: 'medium' | 'high' | 'critical';
 };
 
 type ResultShape = {
@@ -70,6 +76,15 @@ type ResultShape = {
     monthlyChildcareCost?: number;
     monthlyDebtPayments?: number;
     monthlyFixedCosts?: number;
+    emergencyFundMonths?: number;
+    excessCashEstimate?: number;
+    cashExcessMonths?: number;
+    monthlyInvestmentContribution?: number;
+    investmentContributionRate?: number;
+    liquidAssets?: number;
+    illiquidAssets?: number;
+    liquidAssetRatio?: number;
+    illiquidAssetRatio?: number;
   };
   actionPlan?: {
     immediate?: ActionPlanStep[];
@@ -241,6 +256,58 @@ function getBestNextMoveCard(
 ): BestNextMoveCard {
   const fixedCost = formatPercent(metrics?.fixedCostPressureRatio);
   const debtToIncome = formatPercent(metrics?.debtToIncomeRatio);
+
+  const cashMonths = Number(metrics?.emergencyFundMonths ?? 0);
+  const excessCash = Number(metrics?.excessCashEstimate ?? 0);
+  const netWorth = Number(metrics?.netWorth ?? 0);
+  const investments = Number(metrics?.totalInvestments ?? 0);
+  const investingRate = Number(metrics?.investmentContributionRate ?? metrics?.savingsRate ?? 0);
+
+  if ((cashMonths >= 24 || excessCash > 0) && (netWorth >= 250000 || investments >= 100000)) {
+    return {
+      title: 'Optimize your excess cash',
+      intro:
+        'Your foundation is strong. The next opportunity is less about survival and more about making sure the money you already have is working efficiently.',
+      rightNow: [
+        cashMonths > 0
+          ? `Your cash cushion covers about ${cashMonths.toFixed(1)} months of core expenses.`
+          : 'Your cash reserve appears stronger than a typical emergency fund target.',
+        excessCash > 0
+          ? `Roughly ${formatCurrency(excessCash)} may be above a 12-month cash reserve target.`
+          : 'Some cash may be better positioned in higher-yield savings, investments, or another priority.',
+      ],
+      whyThisMatters:
+        'Cash creates safety, but excess idle cash can quietly slow long-term growth. The goal is not to drain your cushion — it is to define enough and put the rest to work intentionally.',
+      nextStep:
+        'Choose the cash reserve target that still feels safe, then redirect excess cash in stages toward higher-yield savings, investments, or another high-priority goal.',
+      thisWeek: [
+        'Decide how many months of expenses you want to keep in cash.',
+        'Identify how much is above that target.',
+        'Choose one staged move for the excess: HYSA, brokerage, Roth, debt, or another priority.',
+      ],
+    };
+  }
+
+  if (netWorth >= 250000 && investingRate >= 10) {
+    return {
+      title: 'Move from building to optimizing',
+      intro:
+        'You already have a strong foundation. The next move is making sure your cash, tax buckets, investments, and real estate are working together efficiently.',
+      rightNow: [
+        investments > 0 ? `Investments are about ${formatCurrency(investments)}.` : 'Your investing habit appears strong.',
+        investingRate > 0 ? `You are investing roughly ${Math.round(investingRate)}% of take-home income.` : 'Your next opportunity is allocation and efficiency.',
+      ],
+      whyThisMatters:
+        'At this stage, small allocation and tax-location improvements can matter more than another generic budgeting tip.',
+      nextStep:
+        'Review your cash target, Roth/pre-tax/taxable mix, and asset allocation before adding more complexity.',
+      thisWeek: [
+        'Review how much sits in cash versus investments and home equity.',
+        'Check whether your Roth, pre-tax, and taxable balances are aligned with your goals.',
+        'Choose one optimization move for the next 90 days.',
+      ],
+    };
+  }
 
   if (warnings.some((warning) => warning.type === 'income_constraint')) {
     return {
@@ -784,6 +851,58 @@ function getStructuralBestNextMove(
   const fixedCost = formatPercent(metrics?.fixedCostPressureRatio);
   const debtToIncome = formatPercent(metrics?.debtToIncomeRatio);
 
+  const cashMonths = Number(metrics?.emergencyFundMonths ?? 0);
+  const excessCash = Number(metrics?.excessCashEstimate ?? 0);
+  const netWorth = Number(metrics?.netWorth ?? 0);
+  const investments = Number(metrics?.totalInvestments ?? 0);
+  const investingRate = Number(metrics?.investmentContributionRate ?? metrics?.savingsRate ?? 0);
+
+  if ((cashMonths >= 24 || excessCash > 0) && (netWorth >= 250000 || investments >= 100000)) {
+    return {
+      title: 'Optimize your excess cash',
+      intro:
+        'Your foundation is strong. The next opportunity is less about survival and more about making sure the money you already have is working efficiently.',
+      rightNow: [
+        cashMonths > 0
+          ? `Your cash cushion covers about ${cashMonths.toFixed(1)} months of core expenses.`
+          : 'Your cash reserve appears stronger than a typical emergency fund target.',
+        excessCash > 0
+          ? `Roughly ${formatCurrency(excessCash)} may be above a 12-month cash reserve target.`
+          : 'Some cash may be better positioned in higher-yield savings, investments, or another priority.',
+      ],
+      whyThisMatters:
+        'Cash creates safety, but excess idle cash can quietly slow long-term growth. The goal is not to drain your cushion — it is to define enough and put the rest to work intentionally.',
+      nextStep:
+        'Choose the cash reserve target that still feels safe, then redirect excess cash in stages toward higher-yield savings, investments, or another high-priority goal.',
+      thisWeek: [
+        'Decide how many months of expenses you want to keep in cash.',
+        'Identify how much is above that target.',
+        'Choose one staged move for the excess: HYSA, brokerage, Roth, debt, or another priority.',
+      ],
+    };
+  }
+
+  if (netWorth >= 250000 && investingRate >= 10) {
+    return {
+      title: 'Move from building to optimizing',
+      intro:
+        'You already have a strong foundation. The next move is making sure your cash, tax buckets, investments, and real estate are working together efficiently.',
+      rightNow: [
+        investments > 0 ? `Investments are about ${formatCurrency(investments)}.` : 'Your investing habit appears strong.',
+        investingRate > 0 ? `You are investing roughly ${Math.round(investingRate)}% of take-home income.` : 'Your next opportunity is allocation and efficiency.',
+      ],
+      whyThisMatters:
+        'At this stage, small allocation and tax-location improvements can matter more than another generic budgeting tip.',
+      nextStep:
+        'Review your cash target, Roth/pre-tax/taxable mix, and asset allocation before adding more complexity.',
+      thisWeek: [
+        'Review how much sits in cash versus investments and home equity.',
+        'Check whether your Roth, pre-tax, and taxable balances are aligned with your goals.',
+        'Choose one optimization move for the next 90 days.',
+      ],
+    };
+  }
+
   if (warnings.some((warning) => warning.type === 'income_constraint')) {
     return fixedCost
       ? `Your fixed costs are about ${fixedCost} of take-home pay. That is high enough that budgeting alone may not solve the problem. Your highest-leverage move is to raise income, lower a major fixed cost, or do both.`
@@ -1318,7 +1437,7 @@ export default function ResultsPage() {
             <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
               <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
                 <div className="text-sm text-white/70 mb-2">Foundation Score</div>
-                <div className="inline-flex items-center justify-center w-28 h-28 rounded-full bg-gradient-to-br from-[#ffcf9e] to-[#b87333] shadow-[0_20px_60px_rgba(194,120,58,0.45)] border border-white/30 text-5xl font-bold text-white">
+                <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-[#ffcf9e] to-[#b87333] shadow-[0_20px_60px_rgba(194,120,58,0.45)] border border-white/30 text-4xl font-bold text-white">
                   {score}
                 </div>
                 <div
@@ -1354,6 +1473,42 @@ export default function ResultsPage() {
                 <div className="mt-2 text-sm text-white/70">
                   {financialPositionLabel}
                 </div>
+              </div>
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5">
+              <div className="mb-4 flex items-center justify-between gap-4">
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-copper-200">Building Blocks</div>
+                  <div className="mt-1 text-sm text-white/65">A compact view of the seven blocks supporting your foundation.</div>
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-3">
+                {pillarEntries.map(([pillar, pillarScore]) => {
+                  const tone = getPillarTone(pillarScore);
+                  const Icon = PILLAR_ICONS[pillar] || CheckCircle2;
+
+                  return (
+                    <div key={`hero-block-${pillar}`} className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="h-8 w-8 rounded-lg bg-white/10 flex items-center justify-center">
+                            <Icon className={`h-4 w-4 ${tone.text}`} />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-sm font-bold text-white truncate">{formatPillarName(pillar)}</div>
+                            <div className="text-xs text-white/55">{pillarScore}/100</div>
+                          </div>
+                        </div>
+                        <span className={`shrink-0 px-2 py-1 rounded-full text-[10px] font-semibold ${tone.badge}`}>{tone.label}</span>
+                      </div>
+                      <div className="mt-3 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div className={`h-full ${tone.bar}`} style={{ width: `${Math.max(4, pillarScore)}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -1747,48 +1902,6 @@ export default function ResultsPage() {
                 ))}
               </ul>
             </div>
-          </div>
-        </SectionShell>
-
-        <SectionShell icon={TrendingUp} title="Pillar Breakdown" className="mb-8 pdf-avoid-break">
-          <div className="grid md:grid-cols-2 gap-4">
-            {pillarEntries.map(([pillar, pillarScore]) => {
-              const tone = getPillarTone(pillarScore);
-              const Icon = PILLAR_ICONS[pillar] || CheckCircle2;
-
-              return (
-                <div key={pillar} className={`rounded-2xl border p-5 ${tone.bg}`}>
-                  <div className="flex items-center justify-between gap-4 mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-white/80 border border-white flex items-center justify-center">
-                        <Icon className={`w-5 h-5 ${tone.text}`} />
-                      </div>
-                      <div>
-                        <div className="font-bold text-navy-900">
-                          {formatPillarName(pillar)}
-                        </div>
-                        <div className="text-sm text-gray-600">{pillarScore}/100</div>
-                      </div>
-                    </div>
-
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${tone.badge}`}>
-                      {tone.label}
-                    </span>
-                  </div>
-
-                  <div className="h-2 bg-white rounded-full overflow-hidden mb-3">
-                    <div
-                      className={`h-full ${tone.bar}`}
-                      style={{ width: `${Math.max(4, pillarScore)}%` }}
-                    />
-                  </div>
-
-                  <p className="text-sm text-gray-700 leading-7">
-                    {getPillarBreakdownMicrocopy(pillar, pillarScore)}
-                  </p>
-                </div>
-              );
-            })}
           </div>
         </SectionShell>
 

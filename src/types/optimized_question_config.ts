@@ -47,9 +47,12 @@ export const QUESTION_STRATEGY = {
     'childcarePressure',
     'carLoanBalance',
     'monthlyVehiclePayment',
-    'mortgageBalance',
-    'homeValue',
-    'mortgageImpact',
+    'primaryHomeValue',
+    'primaryMortgage',
+    'rentalPropertyValue',
+    'rentalMortgage',
+    'otherPropertyValue',
+    'otherPropertyDebt',
     'creditCardBehavior',
     'incomeInterruptionCoverage',
     'lifeInsurance',
@@ -58,9 +61,17 @@ export const QUESTION_STRATEGY = {
     'investmentAccounts',
     'investmentConfidence',
     'totalInvestments',
+    'monthlyInvestmentContribution',
+    'cashSavings',
+    'retirementAccounts',
+    'rothBalance',
+    'brokerageAccounts',
+    'otherInvestments',
+    'otherAssets',
     'investmentMix',
     'savingsAutomation',
     'totalDebtBalance',
+    'additionalDebt',
     'monthlyVehiclePayment',
     'fixedCostPressureReview',
     'emergencyFundReview',
@@ -125,48 +136,66 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
   },
 
-     {
-      key: 'primaryHomeValue',
-      question: 'Primary home value',
-      type: 'number',
-      section: 'spending',
-      tags: { modes: ['detailed'], priority: 'core' },
-    },
-    {
-      key: 'primaryMortgage',
-      question: 'Primary mortgage balance',
-      type: 'number',
-      section: 'spending',
-      tags: { modes: ['detailed'], priority: 'core' },
-    },
-    {
-      key: 'rentalPropertyValue',
-      question: 'Rental property value',
-      type: 'number',
-      section: 'spending',
-      tags: { modes: ['detailed'], priority: 'core' },
-    },
-    {
-      key: 'rentalMortgage',
-      question: 'Rental mortgage balance',
-      type: 'number',
-      section: 'spending',
-      tags: { modes: ['detailed'], priority: 'core' },
-    },
-    {
-      key: 'otherPropertyValue',
-      question: 'Other property value',
-      type: 'number',
-      section: 'spending',
-      tags: { modes: ['detailed'], priority: 'core' },
-    },
-    {
-      key: 'otherPropertyDebt',
-      question: 'Other property debt',
-      type: 'number',
-      section: 'spending',
-      tags: { modes: ['detailed'], priority: 'core' },
-    },
+  {
+    key: 'primaryHomeValue',
+    question: 'Primary home value',
+    type: 'number',
+    section: 'spending',
+    required: false,
+    placeholder: 'e.g. 350000',
+    helperText: 'Leave blank if this does not apply.',
+    tags: { modes: ['detailed'], priority: 'core' },
+  },
+  {
+    key: 'primaryMortgage',
+    question: 'Primary mortgage balance',
+    type: 'number',
+    section: 'spending',
+    required: false,
+    placeholder: 'e.g. 185000',
+    helperText: 'Leave blank if this does not apply.',
+    tags: { modes: ['detailed'], priority: 'core' },
+  },
+  {
+    key: 'rentalPropertyValue',
+    question: 'Rental property value',
+    type: 'number',
+    section: 'spending',
+    required: false,
+    placeholder: 'e.g. 250000',
+    helperText: 'Use the combined value if you own more than one rental.',
+    tags: { modes: ['detailed'], priority: 'core' },
+  },
+  {
+    key: 'rentalMortgage',
+    question: 'Rental mortgage balance',
+    type: 'number',
+    section: 'spending',
+    required: false,
+    placeholder: 'e.g. 175000',
+    helperText: 'Use the combined balance if you own more than one rental.',
+    tags: { modes: ['detailed'], priority: 'core' },
+  },
+  {
+    key: 'otherPropertyValue',
+    question: 'Other property value',
+    type: 'number',
+    section: 'spending',
+    required: false,
+    placeholder: 'e.g. 225000',
+    helperText: 'Land, second homes, or other property not listed above.',
+    tags: { modes: ['detailed'], priority: 'core' },
+  },
+  {
+    key: 'otherPropertyDebt',
+    question: 'Other property mortgage or debt',
+    type: 'number',
+    section: 'spending',
+    required: false,
+    placeholder: 'e.g. 0',
+    helperText: 'Leave blank if the property is paid off.',
+    tags: { modes: ['detailed'], priority: 'core' },
+  },
 
   // INCOME
   {
@@ -603,7 +632,9 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     question: 'Any additional debt not already included?',
     type: 'number',
     section: 'debt',
+    required: false,
     placeholder: 'e.g. 5000',
+    helperText: 'Optional catch-all for debts not already captured above.',
     tags: { modes: ['detailed'], priority: 'core' },
   },
 
@@ -716,8 +747,8 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
   },
 
   // HOMEOWNER DETAIL
-      
-  
+  // Replaced by V2 real estate fields above.
+
 
   // PROTECTION
 
@@ -860,26 +891,6 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     ],
     tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
   },
-
-  {
-    key: 'monthlyInvestmentContribution',
-    question: 'About how much are you investing each month?',
-    type: 'number',
-    section: 'investing',
-    required: true,
-    placeholder: 'e.g. 500',
-    helperText:
-      'Include 401(k), IRA, brokerage, HSA investments, and any automatic retirement contributions. A good estimate is fine.',
-    conditions: [
-      { key: 'investingStatus', operator: 'in', value: ['yes_consistently', 'yes_irregularly'] },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
-    },
-  },
-
   {
     key: 'investmentAccounts',
     question: 'Which investment accounts do you currently have?',
@@ -944,10 +955,31 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     },
 
     {
+      key: 'monthlyInvestmentContribution',
+      question: 'About how much are you investing each month?',
+      type: 'number',
+      section: 'investing',
+      required: true,
+      placeholder: 'e.g. 500',
+      helperText:
+        'Include 401(k), IRA, brokerage, HSA investments, and any automatic retirement contributions. A good estimate is fine.',
+      conditions: [
+        { key: 'investingStatus', operator: 'in', value: ['yes_consistently', 'yes_irregularly'] },
+      ],
+      tags: {
+        modes: ['detailed'],
+        priority: 'conditional',
+        askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
+      },
+    },
+    {
       key: 'cashSavings',
       question: 'Cash / savings balance',
       type: 'number',
       section: 'investing',
+      required: false,
+      placeholder: 'e.g. 25000',
+      helperText: 'Leave blank if you already entered this and the amount has not changed.',
       tags: { modes: ['detailed'], priority: 'core' },
     },
     {
@@ -955,13 +987,27 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       question: '401k / IRA balance',
       type: 'number',
       section: 'investing',
+      required: false,
+      placeholder: 'e.g. 150000',
+      tags: { modes: ['detailed'], priority: 'core' },
+    },
+    {
+      key: 'rothBalance',
+      question: 'Roth IRA / Roth 401k balance',
+      type: 'number',
+      section: 'investing',
+      required: false,
+      placeholder: 'e.g. 25000',
+      helperText: 'Leave blank if this does not apply.',
       tags: { modes: ['detailed'], priority: 'core' },
     },
     {
       key: 'brokerageAccounts',
-      question: 'Brokerage account balance',
+      question: 'Taxable brokerage account balance',
       type: 'number',
       section: 'investing',
+      required: false,
+      placeholder: 'e.g. 50000',
       tags: { modes: ['detailed'], priority: 'core' },
     },
     {
@@ -969,6 +1015,8 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       question: 'Other investments',
       type: 'number',
       section: 'investing',
+      required: false,
+      placeholder: 'e.g. 10000',
       tags: { modes: ['detailed'], priority: 'core' },
     },
     {
@@ -976,6 +1024,9 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       question: 'Other assets (optional)',
       type: 'number',
       section: 'investing',
+      required: false,
+      placeholder: 'e.g. 5000',
+      helperText: 'Anything valuable we have not included elsewhere.',
       tags: { modes: ['detailed'], priority: 'core' },
     },
 

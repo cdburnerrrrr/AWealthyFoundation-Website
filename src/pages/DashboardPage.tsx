@@ -51,6 +51,15 @@ type MetricsShape = {
   totalSavings?: number;
   totalInvestments?: number;
   totalDebtBalance?: number;
+  emergencyFundMonths?: number;
+  excessCashEstimate?: number;
+  cashExcessMonths?: number;
+  monthlyInvestmentContribution?: number;
+  investmentContributionRate?: number;
+  liquidAssets?: number;
+  illiquidAssets?: number;
+  liquidAssetRatio?: number;
+  illiquidAssetRatio?: number;
   monthlyIncome?: number;
   monthlyDebtPayments?: number;
   monthlyHousingCost?: number;
@@ -187,6 +196,36 @@ function getDashboardNextMoveCard(
 
   const highSavingsBase =
     (snapshot?.totalSavings ?? 0) >= 10000 || (snapshot?.monthlyMargin ?? 0) >= 500;
+
+  const foundationScore = normalizeCurrentScore(assessment);
+  const cashMonths = snapshot?.emergencyFundMonths ||
+    ((snapshot?.fixedCosts ?? 0) > 0 ? (snapshot?.totalSavings ?? 0) / (snapshot?.fixedCosts ?? 1) : 0);
+  const excessCashEstimate = snapshot?.excessCashEstimate ?? 0;
+  const investingRate = snapshot?.investmentContributionRate ?? 0;
+
+  if (foundationScore >= 80 && (cashMonths >= 24 || excessCashEstimate > 0)) {
+    return {
+      title: 'Optimize your excess cash',
+      body: `Your foundation is strong. With roughly ${cashMonths.toFixed(1)} months of runway, the next move is less about survival and more about making sure extra cash is working efficiently without weakening your safety cushion.`,
+      checklist: [
+        'Choose the cash reserve target that still lets you sleep at night.',
+        'Move excess cash into higher-yield savings, investments, or another priority in stages.',
+        'Review your asset mix so cash, investments, and home equity are working together.',
+      ],
+    };
+  }
+
+  if (foundationScore >= 80 && investingRate >= 10) {
+    return {
+      title: 'Move from building to optimizing',
+      body: 'You already have strong habits and a solid base. The next opportunity is reviewing tax buckets, account mix, cash targets, and allocation so the money you have works harder.',
+      checklist: [
+        'Review whether your cash reserve is larger than it needs to be.',
+        'Check your mix of pre-tax, Roth, taxable, and real estate assets.',
+        'Choose one optimization move for the next 90 days.',
+      ],
+    };
+  }
 
   if (snapshot && snapshot.fixedCostLoad >= 65) {
     return {

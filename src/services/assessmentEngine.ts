@@ -42,6 +42,10 @@ export type V2FinancialMetrics = {
   monthlyFixedCosts: number;
   monthlyInvestmentContribution: number;
   investmentContributionRate: number;
+  liquidAssets: number;
+  illiquidAssets: number;
+  liquidAssetRatio: number;
+  illiquidAssetRatio: number;
 
   // V2 asset/liability detail
   cashSavings: number;
@@ -203,6 +207,7 @@ function getInvestmentTotal(answers: Record<string, any>) {
     toNumber(answers.k401Balance) +
     toNumber(answers.iraBalance) +
     toNumber(answers.rothBalance) +
+    toNumber(answers.rothAccounts) +
     toNumber(answers.brokerageBalance) +
     toNumber(answers.brokerageAccounts) +
     toNumber(answers.pensionBalance) +
@@ -335,7 +340,7 @@ export function buildV2FinancialMetrics(
     toNumber(answers.retirementAccounts) +
     toNumber(answers.k401Balance) +
     toNumber(answers.iraBalance);
-  const rothBalance = toNumber(answers.rothBalance);
+  const rothBalance = toNumber(answers.rothBalance) + toNumber(answers.rothAccounts);
   const brokerageBalance = toNumber(answers.brokerageBalance) + toNumber(answers.brokerageAccounts);
   const pensionBalance = toNumber(answers.pensionBalance);
   const otherInvestmentAssets = toNumber(answers.otherInvestmentAssets) + toNumber(answers.otherInvestments);
@@ -360,6 +365,10 @@ export function buildV2FinancialMetrics(
   const totalLiabilities = mortgageDebt + consumerDebt + otherLiabilities;
   const netWorth = totalAssets - totalLiabilities;
   const homeEquity = Math.max(0, realEstateAssets - mortgageDebt);
+  const liquidAssets = cashSavings + brokerageBalance;
+  const illiquidAssets = retirement401kIraBalance + rothBalance + pensionBalance + otherInvestmentAssets + homeEquity;
+  const liquidAssetRatio = totalAssets > 0 ? (liquidAssets / totalAssets) * 100 : 0;
+  const illiquidAssetRatio = totalAssets > 0 ? (illiquidAssets / totalAssets) * 100 : 0;
 
   const fixedCostPressureRatio =
     monthlyIncome > 0 ? (monthlyFixedCosts / monthlyIncome) * 100 : 0;
@@ -406,6 +415,10 @@ export function buildV2FinancialMetrics(
     monthlyFixedCosts,
     monthlyInvestmentContribution,
     investmentContributionRate,
+    liquidAssets,
+    illiquidAssets,
+    liquidAssetRatio,
+    illiquidAssetRatio,
 
     cashSavings,
     hysaBalance,
@@ -476,6 +489,7 @@ export function deriveV2Signals(
       metrics.investmentContributionRate >= 10 ||
       toNumber(answers.investingPercent) >= 15 ||
       toNumber(answers.retirementContributionPercent) >= 15 ||
+      metrics.investmentContributionRate >= 10 ||
       answers.investingStatus === 'yes_consistently',
     excessCashLikely: metrics.emergencyFundMonths > 24 || metrics.excessCashEstimate > 0,
     eliteCashCushion: metrics.emergencyFundMonths >= 24,
@@ -801,7 +815,7 @@ function buildPriorities(
 
 function buildSummary(score: number, biggestOpportunity: BuildingBlockKey, metrics: V2FinancialMetrics) {
   if (score >= 80) {
-    return `Your financial foundation is strong. The next opportunity is optimization: make sure your cash, investments, housing, and protection are working together efficiently.`;
+    return `Your financial foundation is strong. The next opportunity is optimization: make sure your cash, investments, housing, protection, and tax buckets are working together efficiently.`;
   }
 
   if (metrics.fixedCostPressureRatio >= 60) {
@@ -812,11 +826,20 @@ function buildSummary(score: number, biggestOpportunity: BuildingBlockKey, metri
 }
 
 function buildNextStep(biggestOpportunity: BuildingBlockKey, metrics: V2FinancialMetrics, signals: V2Signals) {
-  if (signals.excessCashLikely && metrics.excessCashEstimate > 0) {
-    return 'Decide how much cash reserve you actually want to keep, then redirect excess cash toward higher-yield savings, investing, or another high-priority goal.';
+  const strongOverallPosition =
+    metrics.netWorth >= 250000 ||
+    metrics.totalInvestments >= 100000 ||
+    signals.eliteCashCushion;
+
+  if (strongOverallPosition && signals.excessCashLikely && metrics.excessCashEstimate > 0) {
+    return 'Optimize your cash position. Keep the reserve that gives you confidence, then decide how much excess cash should move into higher-yield savings, investments, or another priority that can work harder for your household.';
   }
 
-  if (signals.housePoorRisk) {
+  if (strongOverallPosition && metrics.investmentContributionRate >= 10) {
+    return 'Move from building to optimizing. Review your cash target, account mix, tax buckets, and asset allocation so the money you already have is working as efficiently as your habits.';
+  }
+
+  if (signals.housePoorRisk && metrics.fixedCostPressureRatio >= 60) {
     return 'Review housing, utilities, and fixed obligations together before making smaller spending cuts elsewhere.';
   }
 
