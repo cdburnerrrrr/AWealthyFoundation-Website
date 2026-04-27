@@ -1080,7 +1080,7 @@ export const DETAILED_ASSESSMENT_QUESTIONS: Question[] = [
     section: 'income',
     required: true,
     placeholder: 'e.g. 5000',
-    helperText: 'Use take-home pay, not gross income.',
+    helperText: 'This is the amount on your check. After 401K, takes and any other contributions. NOT gross income.',
   },
   {
     key: 'incomeConsistency',

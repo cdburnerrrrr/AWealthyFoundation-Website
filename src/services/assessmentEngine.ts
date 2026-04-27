@@ -40,6 +40,8 @@ export type V2FinancialMetrics = {
   monthlyUtilities: number;
   monthlyChildcareCost: number;
   monthlyFixedCosts: number;
+  monthlyInvestmentContribution: number;
+  investmentContributionRate: number;
 
   // V2 asset/liability detail
   cashSavings: number;
@@ -314,6 +316,13 @@ export function buildV2FinancialMetrics(
   const monthlyUtilities = firstNumber(answers, ['monthlyUtilities']);
   const monthlyChildcareCost = firstNumber(answers, ['monthlyChildcareCost']);
   const monthlyDebtPayments = getConsumerDebtPayments(answers);
+  const monthlyInvestmentContribution = firstNumber(answers, [
+    'monthlyInvestmentContribution',
+    'monthly401kContribution',
+    'monthlyRetirementContribution',
+    'monthlyInvestingAmount',
+    'monthlyInvestmentAmount',
+  ]);
 
   const monthlyFixedCosts =
     firstNumber(answers, ['monthlyFixedCosts']) ||
@@ -359,10 +368,12 @@ export function buildV2FinancialMetrics(
   const housingRatio = monthlyIncome > 0 ? (monthlyHousingCost / monthlyIncome) * 100 : 0;
   const mortgageDebtToAssetRatio =
     realEstateAssets > 0 ? (mortgageDebt / realEstateAssets) * 100 : 0;
+  const investmentContributionRate =
+    monthlyIncome > 0 ? (monthlyInvestmentContribution / monthlyIncome) * 100 : 0;
 
   const savingsRate =
     monthlyIncome > 0
-      ? (firstNumber(answers, ['monthlySavings', 'monthlyInvestingAmount']) / monthlyIncome) *
+      ? (firstNumber(answers, ['monthlySavings', 'monthlyInvestmentContribution', 'monthly401kContribution', 'monthlyRetirementContribution', 'monthlyInvestingAmount']) / monthlyIncome) *
         100
       : toNumber(answers.investingPercent) || toNumber(answers.retirementContributionPercent);
 
@@ -393,6 +404,8 @@ export function buildV2FinancialMetrics(
     monthlyUtilities,
     monthlyChildcareCost,
     monthlyFixedCosts,
+    monthlyInvestmentContribution,
+    investmentContributionRate,
 
     cashSavings,
     hysaBalance,
@@ -460,6 +473,7 @@ export function deriveV2Signals(
     hasMortgageOnlyDebt: metrics.mortgageDebt > 0 && metrics.consumerDebt === 0,
     hasMeaningfulInvestments: metrics.totalInvestments >= 50000,
     strongInvestmentHabit:
+      metrics.investmentContributionRate >= 10 ||
       toNumber(answers.investingPercent) >= 15 ||
       toNumber(answers.retirementContributionPercent) >= 15 ||
       answers.investingStatus === 'yes_consistently',
@@ -523,10 +537,12 @@ function scoreSaving(metrics: V2FinancialMetrics) {
 function scoreInvesting(answers: Record<string, any>, metrics: V2FinancialMetrics) {
   let score = 35;
 
-  const rate =
+  const percentRate =
     toNumber(answers.investingPercent) ||
     toNumber(answers.retirementContributionPercent) ||
     toNumber(answers.investmentContributionPercent);
+
+  const rate = percentRate || metrics.investmentContributionRate;
 
   if (rate >= 15) score = 90;
   else if (rate >= 10) score = 78;
@@ -719,6 +735,12 @@ export function buildV2Insights(
       `Your estimated net worth is ${formatCurrency(
         metrics.netWorth
       )}, based on the assets and liabilities included in the assessment.`
+    );
+  }
+
+  if (metrics.monthlyInvestmentContribution > 0) {
+    insights.push(
+      `You are investing about ${formatCurrency(metrics.monthlyInvestmentContribution)} per month, which is roughly ${round(metrics.investmentContributionRate)}% of your take-home income.`
     );
   }
 

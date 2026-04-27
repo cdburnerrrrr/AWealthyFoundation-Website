@@ -860,6 +860,26 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     ],
     tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
   },
+
+  {
+    key: 'monthlyInvestmentContribution',
+    question: 'About how much are you investing each month?',
+    type: 'number',
+    section: 'investing',
+    required: true,
+    placeholder: 'e.g. 500',
+    helperText:
+      'Include 401(k), IRA, brokerage, HSA investments, and any automatic retirement contributions. A good estimate is fine.',
+    conditions: [
+      { key: 'investingStatus', operator: 'in', value: ['yes_consistently', 'yes_irregularly'] },
+    ],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
+    },
+  },
+
   {
     key: 'investmentAccounts',
     question: 'Which investment accounts do you currently have?',
