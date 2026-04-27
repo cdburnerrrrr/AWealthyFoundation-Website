@@ -21,6 +21,7 @@ import {
   LineChart,
   LogOut,
   PiggyBank,
+  PieChart,
   Shield,
   Sparkles,
   Target,
@@ -1002,6 +1003,192 @@ function ActionButtonCard({
 }
 
 
+function DashboardPanel({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`rounded-[1.6rem] border border-cyan-200/10 bg-white/[0.045] shadow-[0_20px_70px_rgba(0,0,0,.24)] backdrop-blur-xl ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+function ScoreRing({ value }: { value: number }) {
+  const radius = 34;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (Math.max(0, Math.min(100, value)) / 100) * circumference;
+
+  return (
+    <div className="relative h-24 w-24 shrink-0">
+      <svg viewBox="0 0 88 88" className="h-24 w-24 -rotate-90">
+        <defs>
+          <linearGradient id="scoreGradientLive" x1="0" x2="1">
+            <stop offset="0%" stopColor="#18d5ff" />
+            <stop offset="100%" stopColor="#b87333" />
+          </linearGradient>
+        </defs>
+        <circle cx="44" cy="44" r={radius} stroke="rgba(255,255,255,.10)" strokeWidth="8" fill="none" />
+        <circle
+          cx="44"
+          cy="44"
+          r={radius}
+          stroke="url(#scoreGradientLive)"
+          strokeWidth="8"
+          fill="none"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center text-2xl font-bold text-white">{value}</div>
+    </div>
+  );
+}
+
+function DashboardHouseVisual({ pillarScores }: { pillarScores: Record<string, number> }) {
+  const getScore = (key: string) => Math.max(0, Math.min(100, Number(pillarScores[key] ?? 0)));
+  const blocks = [
+    { key: 'vision', label: 'VISION', color: '#a78bfa', x: 198, y: 66, w: 124, h: 22 },
+    { key: 'investing', label: 'INVESTING', color: '#34d399', x: 122, y: 100, w: 130, h: 38 },
+    { key: 'protection', label: 'PROTECTION', color: '#fbbf24', x: 258, y: 100, w: 130, h: 38 },
+    { key: 'spending', label: 'SPENDING', color: '#f59e0b', x: 122, y: 144, w: 130, h: 38 },
+    { key: 'saving', label: 'SAVING', color: '#22d3ee', x: 258, y: 144, w: 130, h: 38 },
+    { key: 'income', label: 'INCOME', color: '#38bdf8', x: 122, y: 188, w: 130, h: 38 },
+    { key: 'debt', label: 'DEBT', color: '#34d399', x: 258, y: 188, w: 130, h: 38 },
+  ];
+
+  return (
+    <div className="relative h-[360px] overflow-hidden rounded-[2rem] border border-cyan-300/10 bg-[radial-gradient(circle_at_50%_42%,rgba(18,199,255,.18),transparent_46%),linear-gradient(180deg,rgba(8,26,47,.96),rgba(5,16,31,.96))] p-6">
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(18,199,255,.08)_1px,transparent_1px),linear-gradient(90deg,rgba(18,199,255,.08)_1px,transparent_1px)] bg-[size:42px_42px] opacity-30" />
+      <svg viewBox="0 0 520 300" className="relative z-10 h-full w-full scale-[1.12]">
+        <defs>
+          <filter id="blockGlowLive" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#18d5ff" floodOpacity="0.18" />
+          </filter>
+          <linearGradient id="roofLineLive" x1="0" x2="1">
+            <stop offset="0%" stopColor="#18d5ff" />
+            <stop offset="55%" stopColor="#a78bfa" />
+            <stop offset="100%" stopColor="#fbbf24" />
+          </linearGradient>
+        </defs>
+
+        <path d="M92 236 H430" stroke="rgba(18,213,255,.22)" strokeWidth="2" />
+        <path d="M128 252 H394" stroke="rgba(18,213,255,.13)" strokeWidth="2" />
+        <path d="M84 110 L260 20 L436 110" fill="none" stroke="url(#roofLineLive)" strokeWidth="4" strokeLinecap="round" />
+        <path d="M122 110 L260 52 L398 110" fill="rgba(18,213,255,.06)" stroke="rgba(77,220,255,.38)" strokeWidth="1.5" />
+        <rect x="110" y="92" width="300" height="144" rx="14" fill="rgba(4,17,31,.42)" stroke="rgba(77,220,255,.25)" />
+
+        {blocks.map((block) => {
+          const score = getScore(block.key);
+          return (
+            <g key={block.key} filter="url(#blockGlowLive)">
+              <rect
+                x={block.x}
+                y={block.y}
+                width={block.w}
+                height={block.h}
+                rx="8"
+                fill={`${block.color}22`}
+                stroke={block.color}
+                strokeWidth="2"
+              />
+              <rect
+                x={block.x}
+                y={block.y + block.h - 6}
+                width={(block.w * score) / 100}
+                height="6"
+                rx="3"
+                fill={block.color}
+                opacity="0.95"
+              />
+              <text x={block.x + 12} y={block.y + (block.key === 'vision' ? 15 : 24)} fill="rgba(226,232,240,.9)" fontSize={block.key === 'vision' ? '11' : '12'} fontWeight="700">
+                {block.label}
+              </text>
+              <text x={block.x + block.w - 12} y={block.y + (block.key === 'vision' ? 15 : 24)} fill={block.color} fontSize={block.key === 'vision' ? '11' : '13'} fontWeight="800" textAnchor="end">
+                {score}
+              </text>
+            </g>
+          );
+        })}
+
+        <path d="M108 236 H412" stroke="#4ddcff" strokeOpacity=".42" strokeWidth="2" />
+        <text x="260" y="274" fill="rgba(226,232,240,.55)" fontSize="12" fontWeight="700" textAnchor="middle" letterSpacing="2">
+          FINANCIAL FOUNDATION
+        </text>
+      </svg>
+    </div>
+  );
+}
+
+function IncomeExpenseChart({ income, fixedCosts, margin }: { income: number; fixedCosts: number; margin: number }) {
+  const max = Math.max(income, fixedCosts, margin, 1);
+  const incomeH = Math.max(8, (income / max) * 120);
+  const fixedH = Math.max(8, (fixedCosts / max) * 120);
+  const marginH = Math.max(8, (Math.max(0, margin) / max) * 120);
+
+  return (
+    <div className="h-44 w-full rounded-2xl border border-white/5 bg-white/[0.025] p-4">
+      <div className="flex h-full items-end justify-around gap-5">
+        {[
+          { label: 'Income', value: income, h: incomeH, color: 'from-cyan-300 to-cyan-600' },
+          { label: 'Fixed', value: fixedCosts, h: fixedH, color: 'from-amber-300 to-amber-600' },
+          { label: 'Margin', value: margin, h: marginH, color: 'from-emerald-300 to-emerald-600' },
+        ].map((bar) => (
+          <div key={bar.label} className="flex flex-1 flex-col items-center justify-end gap-2">
+            <div className="text-xs font-semibold text-slate-400">{formatCurrency(bar.value)}</div>
+            <div className={`w-full max-w-[54px] rounded-t-xl bg-gradient-to-t ${bar.color}`} style={{ height: `${bar.h}px` }} />
+            <div className="text-xs text-slate-500">{bar.label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function NetWorthMiniChart({ scoreHistory }: { scoreHistory: { score: number }[] }) {
+  const points = scoreHistory.length
+    ? scoreHistory.map((item, index) => ({ x: 14 + index * (280 / Math.max(1, scoreHistory.length - 1)), y: 140 - item.score * 1.1 }))
+    : [
+        { x: 14, y: 120 },
+        { x: 85, y: 100 },
+        { x: 150, y: 105 },
+        { x: 220, y: 75 },
+        { x: 294, y: 52 },
+      ];
+
+  const line = points.map((p) => `${p.x},${p.y}`).join(' ');
+
+  return (
+    <svg viewBox="0 0 320 170" className="h-44 w-full overflow-visible">
+      {[0, 1, 2, 3].map((i) => (
+        <line key={i} x1="0" x2="320" y1={36 + i * 34} y2={36 + i * 34} stroke="rgba(148,163,184,.13)" />
+      ))}
+      <polyline points={line} fill="none" stroke="#18d5ff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      {points.map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r="4" fill="#18d5ff" />
+      ))}
+    </svg>
+  );
+}
+
+function AssetDonut({ rows, total }: { rows: { label: string; value: number; color: string }[]; total: number }) {
+  const gradient = rows.length && total > 0
+    ? rows.reduce((parts, row, index) => {
+        const start = rows.slice(0, index).reduce((sum, item) => sum + item.value, 0) / total * 100;
+        const end = (rows.slice(0, index + 1).reduce((sum, item) => sum + item.value, 0) / total) * 100;
+        return `${parts}${index ? ',' : ''}${row.color} ${start.toFixed(1)}% ${end.toFixed(1)}%`;
+      }, '')
+    : '#334155 0% 100%';
+
+  return (
+    <div className="relative mx-auto h-44 w-44 rounded-full shadow-[0_0_36px_rgba(34,211,238,.20)]" style={{ background: `conic-gradient(${gradient})` }}>
+      <div className="absolute inset-8 rounded-full bg-[#06172b] shadow-inner" />
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+        <div className="text-xl font-bold text-white">{formatCurrency(total)}</div>
+        <div className="text-xs text-slate-400">Total Assets</div>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const navigate = useNavigate();
   const printRef = useRef<HTMLDivElement>(null);
@@ -1019,8 +1206,9 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     actualPlan === 'standard' || actualPlan === 'premium' ? actualPlan : 'free';
 
   const entitlements = getEntitlements(currentPlan as any);
-
   const [showSuccess, setShowSuccess] = useState(false);
+  const [whatIf, setWhatIf] = useState({ income: 500, housing: 300, debt: 0 });
+  const [guidanceTab, setGuidanceTab] = useState<GuidanceTab>('roadmap');
 
   const rawAssessment = (currentAssessment as (CurrentAssessmentShape & { report?: CurrentAssessmentShape }) | null) ?? null;
 
@@ -1057,9 +1245,6 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const showAssessment = foundationScore > 0;
   const scoreBand = foundationScore > 0 ? getScoreBand(foundationScore) : null;
 
-  const [whatIf, setWhatIf] = useState({ income: 500, housing: 300, debt: 0 });
-  const [guidanceTab, setGuidanceTab] = useState<GuidanceTab>('roadmap');
-
   const latestAssessmentType = latestHistoryRecord?.assessmentType ?? rawAssessment?.assessmentType ?? assessment?.assessmentType ?? null;
   const latestPaidType = latestAssessmentType === 'detailed' || latestAssessmentType === 'premium';
   const currentAssessmentType = rawAssessment?.assessmentType ?? assessment?.assessmentType;
@@ -1072,34 +1257,19 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     currentAssessmentType === 'premium';
   const canExportPdf = entitlements.canDownloadPdf || latestPaidType;
 
-  const pillarScores = (assessment?.pillarScores ?? assessment?.pillars ?? latestHistoryReport?.pillarScores ?? latestHistoryReport?.pillars ?? {}) as Record<
-    string,
-    number
-  >;
+  const pillarScores = (assessment?.pillarScores ?? assessment?.pillars ?? latestHistoryReport?.pillarScores ?? latestHistoryReport?.pillars ?? {}) as Record<string, number>;
   const priorities = safeArray(assessment?.priorities ?? assessment?.topFocusAreas);
-  const insights = safeArray(assessment?.insights);
   const warnings = safeArray(assessment?.structuralWarnings);
   const snapshot = useMemo(
     () => getStructuralSnapshot(assessment?.metrics ?? latestHistoryReport?.metrics),
     [assessment?.metrics, latestHistoryReport?.metrics]
   );
-  const runwayMonths =
-  snapshot && snapshot.fixedCosts > 0
-    ? snapshot.totalSavings / snapshot.fixedCosts
-    : 0;
 
-
+  const runwayMonths = snapshot && snapshot.fixedCosts > 0 ? snapshot.totalSavings / snapshot.fixedCosts : 0;
   const emergencyMinMonths = 3;
-  const emergencyTarget = snapshot?.fixedCosts
-  ? snapshot.fixedCosts * emergencyMinMonths
-  : 0;
-
+  const emergencyTarget = snapshot?.fixedCosts ? snapshot.fixedCosts * emergencyMinMonths : 0;
   const currentSavings = snapshot?.totalSavings ?? 0;
-
-  const emergencyPercent =
-  emergencyTarget > 0
-    ? Math.min(100, (currentSavings / emergencyTarget) * 100)
-    : 0;
+  const emergencyPercent = emergencyTarget > 0 ? Math.min(100, (currentSavings / emergencyTarget) * 100) : 0;
 
   const cushionScore = snapshot
     ? Math.round(
@@ -1107,9 +1277,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
           0,
           Math.min(
             100,
-            Math.min(runwayMonths, 6) * 7.5 +
-              emergencyPercent * 0.35 +
-              Math.max(0, 70 - snapshot.fixedCostLoad) * 0.3
+            Math.min(runwayMonths, 6) * 7.5 + emergencyPercent * 0.35 + Math.max(0, 70 - snapshot.fixedCostLoad) * 0.3
           )
         )
       )
@@ -1121,26 +1289,26 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const cushionTone = {
     weak: {
       label: 'Weak Cushion',
-      text: 'text-red-700',
-      bg: 'bg-red-50',
-      border: 'border-red-200',
-      bar: 'bg-red-500',
+      text: 'text-red-300',
+      bg: 'bg-red-400/10',
+      border: 'border-red-300/20',
+      bar: 'bg-red-400',
       message: 'A disruption could quickly force debt or major lifestyle cuts.',
     },
     developing: {
-      label: 'Developing Cushion',
-      text: 'text-amber-700',
-      bg: 'bg-amber-50',
-      border: 'border-amber-200',
-      bar: 'bg-amber-500',
+      label: 'Developing',
+      text: 'text-amber-300',
+      bg: 'bg-amber-300/10',
+      border: 'border-amber-300/20',
+      bar: 'bg-gradient-to-r from-amber-400 to-cyan-300',
       message: 'You have some protection, but a longer disruption would still be challenging.',
     },
     strong: {
       label: 'Strong Cushion',
-      text: 'text-emerald-700',
-      bg: 'bg-emerald-50',
-      border: 'border-emerald-200',
-      bar: 'bg-emerald-500',
+      text: 'text-emerald-300',
+      bg: 'bg-emerald-300/10',
+      border: 'border-emerald-300/20',
+      bar: 'bg-emerald-400',
       message: 'You have a solid buffer in place to handle most financial disruptions.',
     },
   }[cushionLevel];
@@ -1180,13 +1348,6 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     void trackTabViewed(guidanceTab, 'premium_guidance');
   }, [guidanceTab, trackTabViewed]);
 
-  const pillarEntries = useMemo(() => {
-    return Object.entries(pillarScores)
-      .map(([key, value]) => [key, Number(value)] as [string, number])
-      .filter(([, value]) => !Number.isNaN(value))
-      .sort((a, b) => b[1] - a[1]);
-  }, [pillarScores]);
-
   const scoreHistory = useMemo(() => {
     return (assessmentHistory || [])
       .map((item: any) => {
@@ -1206,26 +1367,62 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
         const bTime = b.createdAt ?? 0;
         return aTime - bTime;
       })
-      .slice(-6) as {
-      id: string | number;
-      score: number;
-      createdAt?: number;
-      assessmentType?: string;
-    }[];
+      .slice(-6) as { id: string | number; score: number; createdAt?: number; assessmentType?: string }[];
   }, [assessmentHistory]);
 
-  const latestHistoryItem = scoreHistory.length
-    ? scoreHistory[scoreHistory.length - 1]
-    : null;
-  const previousScore =
-    scoreHistory.length > 1 ? scoreHistory[scoreHistory.length - 2]?.score ?? null : null;
+  const latestHistoryItem = scoreHistory.length ? scoreHistory[scoreHistory.length - 1] : null;
+  const previousScore = scoreHistory.length > 1 ? scoreHistory[scoreHistory.length - 2]?.score ?? null : null;
+
+  const scenarioResult = useMemo(() => {
+    if (!snapshot) return null;
+
+    const adjustedIncome = snapshot.income + Number(whatIf.income || 0);
+    const adjustedFixedCosts =
+      Math.max(0, snapshot.housing - Number(whatIf.housing || 0)) +
+      snapshot.utilities +
+      snapshot.childcare +
+      Math.max(0, snapshot.debt - Number(whatIf.debt || 0));
+
+    const adjustedLoad = adjustedIncome > 0 ? (adjustedFixedCosts / adjustedIncome) * 100 : 0;
+    const adjustedMargin = adjustedIncome - adjustedFixedCosts;
+
+    return {
+      adjustedLoad,
+      adjustedMargin,
+      adjustedIncome,
+      adjustedFixedCosts,
+    };
+  }, [snapshot, whatIf]);
+
+  const fixedCostTone = getLoadTone(snapshot?.fixedCostLoad || 0);
+  const dashboardNextMoveCard = useMemo(
+    () => getDashboardNextMoveCard(assessment, snapshot, weakestPillar ?? undefined),
+    [assessment, snapshot, weakestPillar]
+  );
+  const dashboardWhyThisMatters = useMemo(
+    () => getDashboardWhyThisMatters(assessment, snapshot, weakestPillar ?? undefined),
+    [assessment, snapshot, weakestPillar]
+  );
+
+  const assetRows = useMemo(() => {
+    const rows = [
+      { label: 'Cash / Savings', value: snapshot?.totalSavings ?? 0, color: '#a78bfa', dot: 'bg-violet-400' },
+      { label: 'Investments', value: snapshot?.totalInvestments ?? 0, color: '#22d3ee', dot: 'bg-cyan-400' },
+      { label: 'Home Equity', value: snapshot?.homeEquity ?? 0, color: '#34d399', dot: 'bg-emerald-400' },
+    ].filter((row) => row.value > 0);
+
+    if (!rows.length) {
+      return [{ label: 'No asset breakdown yet', value: 0, color: '#334155', dot: 'bg-slate-500' }];
+    }
+
+    return rows;
+  }, [snapshot]);
+
+  const totalAssets = assetRows.reduce((sum, row) => sum + row.value, 0);
+  const welcomeName = user?.name || user?.email?.split('@')?.[0] || 'there';
 
   const handleViewLatestReport = () => {
-    void track(
-      'view_latest_report_clicked',
-      { source: 'hero', latestAssessmentType },
-      'navigation'
-    );
+    void track('view_latest_report_clicked', { source: 'dashboard_command_center', latestAssessmentType }, 'navigation');
 
     if (latestAssessmentType === 'free') {
       navigate('/results/snapshot');
@@ -1246,60 +1443,9 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   };
 
   const handleRetakeAssessment = () => {
-    void track('retake_assessment_clicked', { source: 'hero' }, 'assessment');
+    void track('retake_assessment_clicked', { source: 'dashboard_command_center' }, 'assessment');
     navigate('/assessment/comprehensive?mode=retake');
   };
-
-  const chart = useMemo(() => {
-    const width = 720;
-    const height = 200;
-    const padding = 18;
-
-    const points = scoreHistory.map((point, index) => {
-      const x =
-        scoreHistory.length <= 1
-          ? width / 2
-          : padding +
-            (index / (scoreHistory.length - 1)) * (width - padding * 2);
-      const y = height - padding - (point.score / 100) * (height - padding * 2);
-
-      return { ...point, x, y };
-    });
-
-    return {
-      width,
-      height,
-      points,
-      polyline: points.map((p) => `${p.x},${p.y}`).join(' '),
-    };
-  }, [scoreHistory]);
-
-  const trustedExperts = useMemo(
-    () => getTrustedExperts(pillarScores, snapshot, warnings),
-    [pillarScores, snapshot, warnings]
-  );
-
-  const scenarioResult = useMemo(() => {
-    if (!snapshot) return null;
-
-    const adjustedIncome = snapshot.income + Number(whatIf.income || 0);
-    const adjustedFixedCosts =
-      Math.max(0, snapshot.housing - Number(whatIf.housing || 0)) +
-      snapshot.utilities +
-      snapshot.childcare +
-      Math.max(0, snapshot.debt - Number(whatIf.debt || 0));
-
-    const adjustedLoad =
-      adjustedIncome > 0 ? (adjustedFixedCosts / adjustedIncome) * 100 : 0;
-    const adjustedMargin = adjustedIncome - adjustedFixedCosts;
-
-    return {
-      adjustedLoad,
-      adjustedMargin,
-      adjustedIncome,
-      adjustedFixedCosts,
-    };
-  }, [snapshot, whatIf]);
 
   async function handlePrintPDF() {
     if (!canExportPdf) {
@@ -1324,1519 +1470,340 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     }
   }
 
-  const welcomeName = user?.name || user?.email?.split('@')?.[0] || 'there';
-  const fixedCostTone = getLoadTone(snapshot?.fixedCostLoad || 0);
-  const dashboardNextMoveCard = useMemo(
-    () => getDashboardNextMoveCard(assessment, snapshot, weakestPillar ?? undefined),
-    [assessment, snapshot, weakestPillar]
-  );
-  const dashboardWhyThisMatters = useMemo(
-    () => getDashboardWhyThisMatters(assessment, snapshot, weakestPillar ?? undefined),
-    [assessment, snapshot, weakestPillar]
-  );
-
   return (
-    <div className="min-h-screen bg-[#f6f9fc] flex flex-col">
-      
-
-      <main ref={printRef} className="max-w-7xl mx-auto px-4 py-8 flex-1 w-full">
-        {showSuccess && currentPlan !== 'free' && (
-          <div
-            data-pdf-ignore="true"
-            className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 shadow-sm"
-          >
-            <div className="flex items-start gap-3">
-              <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-600" />
-              <div>
-                <p className="text-sm font-semibold text-emerald-900">
-                  You’ve unlocked {PLAN_FEATURES[currentPlan].name}
-                </p>
-                <p className="mt-1 text-sm text-emerald-800">
-                  Your dashboard and report now reflect your upgraded access.
-                </p>
-              </div>
+    <div className="min-h-screen bg-[#04111f] text-slate-100">
+      <div className="flex min-h-screen">
+        <aside className="hidden w-64 shrink-0 border-r border-white/10 bg-[#06172b]/90 p-4 xl:block">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#b87333] to-amber-300 text-[#06172b] shadow-lg">
+              <img src={logoImage} alt="A Wealthy Foundation" className="h-7 w-7 object-contain" />
             </div>
-          </div>
-        )}
-
-        <section className="grid xl:grid-cols-[1.1fr_0.9fr] gap-6 mb-6">
-          <div className="bg-gradient-to-br from-[#17385a] to-[#21456d] rounded-3xl border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.15)] p-6 md:p-8 text-white">
-            <div className="mb-5 flex items-start justify-between gap-4">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-copper-50 text-copper-700 text-sm font-semibold">
-                <Sparkles className="w-4 h-4" />
-                Welcome back, {welcomeName}
-              </div>
-
-              {PLAN_FEATURES[currentPlan].badgeLabel ? (
-                <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold tracking-wide ${getPlanBadgeClass(currentPlan)}`}>
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  {PLAN_FEATURES[currentPlan].badgeLabel}
-                </span>
-              ) : null}
-            </div>
-
-            <h2 className="text-3xl md:text-4xl font-bold leading-tight mb-3">
-              {showAssessment ? 'Your dashboard is ready.' : 'Start building your dashboard.'}
-            </h2>
-
-            <p className="text-white/85 leading-7 max-w-3xl">
-              {showAssessment
-                ? assessment?.summary || scoreNarrative(foundationScore)
-                : 'Complete your first assessment to unlock your Foundation Score, dashboard insights, and action plan.'}
-            </p>
-
-            <div data-pdf-ignore="true" className="mt-6 flex flex-wrap gap-3">
-  <button
-    onClick={handleViewLatestReport}
-    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-navy-900 font-medium hover:bg-[#f8fbff]"
-  >
-    <Eye className="w-4 h-4" />
-    {latestAssessmentType === 'free' ? 'View Snapshot Report' : 'View Latest Report'}
-  </button>
-
-  <button
-    onClick={handleRetakeAssessment}
-    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-white/20 bg-transparent text-white font-medium hover:bg-white/10"
-  >
-    <ArrowRight className="w-4 h-4" />
-    Retake Assessment
-  </button>
-
-  <button
-    onClick={handlePrintPDF}
-    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-white/20 bg-white/10 text-white font-medium hover:bg-white/15"
-  >
-    <Download className="w-4 h-4" />
-    {canExportPdf ? 'Save as PDF' : 'Unlock PDF'}
-  </button>
-
-  <button
-    onClick={onLogout}
-    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-white/20 bg-transparent text-white font-medium hover:bg-white/10"
-  >
-    <LogOut className="w-4 h-4" />
-    Logout
-  </button>
-</div>
-
-<div className="mt-4 flex flex-wrap gap-3">
-              {showAssessment && scoreBand ? (
-                <span
-                  className={`inline-flex px-3 py-1 rounded-full text-sm font-semibold ${scoreBand.bg} ${scoreBand.color}`}
-                >
-                  {scoreBand.label}
-                </span>
-              ) : null}
+            <div>
+              <div className="text-lg font-bold leading-5">A Wealthy</div>
+              <div className="text-lg font-bold leading-5 text-[#d18a3a]">Foundation</div>
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl border border-[#d7e3f0] shadow-sm p-6 md:p-8">
-            {showAssessment ? (
-              <>
-                <div className="text-sm uppercase tracking-[0.18em] text-copper-600 mb-3">
-                  Foundation Score
-                </div>
+          <nav className="space-y-1.5">
+            {[
+              { label: 'Dashboard', icon: Home, onClick: () => navigate('/my-foundation'), active: true },
+              { label: 'Foundation', icon: Shield, onClick: () => navigate('/foundation-score') },
+              { label: 'Financial Picture', icon: BarChart3, onClick: () => navigate('/results') },
+              { label: 'Action Plan', icon: Target, onClick: () => navigate('/results') },
+              { label: 'Tools', icon: Zap, onClick: () => navigate('/foundation-tools') },
+              { label: 'Reports', icon: FileText, onClick: handleViewLatestReport },
+            ].map(({ label, icon: Icon, onClick, active }) => (
+              <button
+                key={label}
+                onClick={onClick}
+                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
+                  active ? 'bg-cyan-400/16 text-cyan-100 shadow-[0_0_24px_rgba(34,211,238,.12)]' : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                <Icon className="h-5 w-5" />
+                {label}
+              </button>
+            ))}
+          </nav>
 
-                <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-                  <div className="inline-flex items-center justify-center w-36 h-36 rounded-full bg-gradient-to-br from-[#ffcf9e] to-[#b87333] text-white text-5xl font-bold shadow-[0_20px_60px_rgba(194,120,58,0.25)] shrink-0">
-                    {foundationScore}
-                  </div>
+          <div className="mt-6 space-y-3">
+            <div className="rounded-2xl border border-cyan-300/12 bg-cyan-300/6 p-3">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-200/70">Next Check-In</div>
+              <div className="mt-2 text-sm font-semibold text-white">Review your cushion</div>
+              <div className="mt-1 text-xs leading-5 text-slate-400">Most users update their Foundation Score every 90 days.</div>
+              <button onClick={handleRetakeAssessment} className="mt-3 w-full rounded-xl border border-cyan-300/20 bg-cyan-300/8 px-3 py-2 text-xs font-bold text-cyan-200">
+                Retake Assessment
+              </button>
+            </div>
 
-                  <div className="flex-1">
-                    {scoreBand ? (
-                      <div
-                        className={`inline-flex px-3 py-1 rounded-full text-sm font-semibold ${scoreBand.bg} ${scoreBand.color}`}
-                      >
-                        {scoreBand.label}
-                      </div>
-                    ) : null}
-
-                    <p className="mt-3 text-gray-600 leading-7">
-                      {scoreNarrative(foundationScore)}
-                    </p>
-
-                    {previousScore !== null ? (
-                      <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-copper-50 border border-copper-100 px-3 py-1 text-sm font-medium text-copper-700">
-                        <Clock3 className="w-4 h-4" />
-                        Last score: {previousScore} → Now: {foundationScore}
-                      </div>
-                    ) : null}
-
-                    {latestHistoryItem?.createdAt ? (
-                      <div className="mt-2 text-sm text-gray-500">
-                        Latest report saved {formatHistoryDate(latestHistoryItem.createdAt)}
-                      </div>
-                    ) : null}
-
-                    <div className="mt-4 rounded-2xl bg-[#f8fbff] border border-[#d7e3f0] p-4">
-                      <div className="text-sm font-semibold text-navy-900 mb-2">
-                        Best Next Move
-                      </div>
-                      <p className="text-gray-700 leading-7">
-                        {getDashboardNextMove(
-                          assessment,
-                          snapshot,
-                          weakestPillar ?? undefined
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="w-16 h-16 rounded-2xl bg-[#f8fbff] border border-[#d7e3f0] flex items-center justify-center mb-4">
-                  <Shield className="w-8 h-8 text-copper-600" />
-                </div>
-
-                <h3 className="text-2xl font-bold text-navy-900 mb-2">
-                  No Assessment Yet
-                </h3>
-
-                <p className="text-gray-600 leading-7 mb-6">
-                  Complete your first assessment to start building your dashboard.
-                </p>
-
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    onClick={() => {
-                      void track(
-                        'quick_assessment_clicked',
-                        { source: 'empty_state' },
-                        'assessment'
-                      );
-                      navigate('/assessment/snapshot');
-                    }}
-                    className="px-5 py-3 rounded-xl bg-copper-600 text-white font-semibold hover:bg-copper-700"
-                  >
-                    Start Snapshot
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      void track(
-                        'pricing_viewed_clicked',
-                        { source: 'empty_state' },
-                        'conversion'
-                      );
-                      navigate('/pricing');
-                    }}
-                    className="px-5 py-3 rounded-xl border border-[#d7e3f0] text-navy-900 font-semibold hover:bg-[#f8fbff]"
-                  >
-                    View Plans
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </section>
-
-        {showAssessment ? (
-          <>
-            <section className="rounded-3xl border border-copper-100 bg-copper-50/35 p-4 md:p-5 mb-6">
-              <SectionHeader
-                icon={Sparkles}
-                label="Section 1"
-                title="Your Foundation"
-                description="Where you stand right now, what is strongest, and what needs attention next."
-                theme="foundation"
-              />
-
-              <div className="grid lg:grid-cols-[1.15fr_0.85fr] gap-6 items-start">
-                <div className="bg-white rounded-3xl border border-[#d7e3f0] shadow-sm p-6 md:p-8 self-start">
-                  <div className="flex items-center gap-2 mb-5">
-                    <Target className="w-5 h-5 text-copper-600" />
-                    <h3 className="text-2xl font-bold text-navy-900">
-                      Current Priorities
-                    </h3>
-                  </div>
-
-                  <div className="space-y-3">
-                    {safeArray(priorities)
-                      .slice(0, 3)
-                      .map((priority, index) => (
-                        <div
-                          key={index}
-                          className="rounded-2xl bg-[#f8fbff] border border-[#d7e3f0] p-4"
-                        >
-                          <div className="text-sm font-semibold text-copper-600 mb-1">
-                            Priority {index + 1}
-                          </div>
-                          <p className="text-gray-700 leading-7">{priority}</p>
-                        </div>
-                      ))}
-
-                    {!priorities.length && (
-                      <div className="rounded-2xl bg-[#f8fbff] border border-[#d7e3f0] p-4">
-                        <p className="text-gray-700 leading-7">
-                          {assessment?.nextStep || 'Your next priorities will appear here after your report is generated.'}
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="rounded-2xl border border-copper-200 bg-copper-50/45 p-5">
-                      <div className="text-sm font-semibold text-copper-700 mb-2">
-                        Best Next Move
-                      </div>
-                      <div className="font-semibold text-navy-900 mb-2">
-                        {dashboardNextMoveCard.title}
-                      </div>
-                      <p className="text-gray-700 leading-7 mb-4">
-                        {dashboardNextMoveCard.body}
-                      </p>
-                      <ul className="space-y-2">
-                        {dashboardNextMoveCard.checklist.map((item, index) => (
-                          <li
-                            key={`dashboard-next-move-${index}`}
-                            className="flex items-start gap-2 text-sm text-gray-700"
-                          >
-                            <span className="mt-1 h-1.5 w-1.5 rounded-full bg-copper-600" />
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-5">
-                      <div className="text-sm font-semibold text-navy-900 mb-2">
-                        Why this matters now
-                      </div>
-                      <p className="text-gray-700 leading-7">
-                        {dashboardWhyThisMatters}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-white border border-[#d7e3f0] rounded-2xl p-4 shadow-sm">
-                      <div className="text-sm text-gray-500 mb-1">Top strength</div>
-                      <div className="font-semibold text-navy-900">
-                        {strongestPillar ? formatPillarName(strongestPillar) : '—'}
-                      </div>
-                    </div>
-
-                    <div className="bg-white border border-[#d7e3f0] rounded-2xl p-4 shadow-sm">
-                      <div className="text-sm text-gray-500 mb-1">
-                        Biggest opportunity
-                      </div>
-                      <div className="font-semibold text-navy-900">
-                        {weakestPillar ? formatPillarName(weakestPillar) : '—'}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-3xl border border-[#d7e3f0] shadow-sm p-6 md:p-8">
-                    <div className="flex items-center gap-2 mb-5">
-                      <TrendingUp className="w-5 h-5 text-copper-600" />
-                      <h3 className="text-2xl font-bold text-navy-900">
-                        Pillar Breakdown
-                      </h3>
-                    </div>
-
-                    <div className="space-y-4">
-                      {pillarEntries.map(([pillar, score]) => {
-                        const tone = getPillarTone(score);
-                        const Icon = PILLAR_ICONS[pillar] || CheckCircle2;
-
-                        return (
-                          <div
-                            key={pillar}
-                            className={`rounded-2xl border p-5 ${tone.bg}`}
-                          >
-                            <div className="flex items-center justify-between gap-4 mb-3">
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-white/80 border border-white flex items-center justify-center">
-                                  <Icon className={`w-5 h-5 ${tone.text}`} />
-                                </div>
-                                <div>
-                                  <div className="font-bold text-navy-900">
-                                    {formatPillarName(pillar)}
-                                  </div>
-                                  <div className="text-sm text-gray-600">
-                                    {score}/100
-                                  </div>
-                                </div>
-                              </div>
-
-                              <span
-                                className={`px-3 py-1 rounded-full text-xs font-semibold ${tone.badge}`}
-                              >
-                                {tone.label}
-                              </span>
-                            </div>
-
-                            <div className="h-2 bg-white rounded-full overflow-hidden">
-                              <div
-                                className={`h-full ${tone.bar}`}
-                                style={{ width: `${Math.max(4, score)}%` }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
+            <div className="rounded-2xl border border-amber-300/12 bg-amber-300/6 p-3">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-200/70">Focus Area</div>
+              <div className="mt-2 text-sm font-semibold text-white">
+                {weakestPillar ? formatPillarName(weakestPillar) : 'Create breathing room'}
               </div>
-            </section>
+              <div className="mt-1 h-2 rounded-full bg-white/10">
+                <div className="h-2 rounded-full bg-amber-300" style={{ width: `${Math.max(8, Math.min(100, weakestPillar ? Number(pillarScores[weakestPillar] ?? 0) : 48))}%` }} />
+              </div>
+              <div className="mt-2 text-xs text-slate-400">
+                {weakestPillar ? `${Math.round(Number(pillarScores[weakestPillar] ?? 0))}/100 current score` : 'Start with your highest-leverage next step'}
+              </div>
+            </div>
+          </div>
 
-            <section className="rounded-3xl border border-blue-100 bg-blue-50/35 p-4 md:p-5 mb-6">
-              <SectionHeader
-                icon={BarChart3}
-                label="Section 2"
-                title="Your Financial Picture"
-                description="A closer look at the structural numbers shaping your progress."
-                theme="picture"
-              />
+          <button onClick={onLogout} className="mt-5 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-400 hover:bg-white/5 hover:text-white">
+            <LogOut className="h-5 w-5" />
+            Log Out
+          </button>
+        </aside>
 
-              <div className="grid xl:grid-cols-[1fr_1fr] gap-6 mb-6">
-                <div className="space-y-4">
-                  {snapshot ? (
-                    <>
-                      <div className={`rounded-[2rem] border p-5 md:p-6 shadow-sm ${cushionTone.bg} ${cushionTone.border}`}>
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <div className="text-sm text-gray-500 mb-2">
-                              Financial Cushion
-                            </div>
-                            <div className={`text-3xl font-bold ${cushionTone.text}`}>
-                              {cushionTone.label}
-                            </div>
-                            <p className="mt-2 text-sm text-gray-600 leading-6">
-                              {cushionTone.message}
-                            </p>
+        <main ref={printRef} className="flex-1 overflow-hidden p-3 md:p-4 xl:p-6">
+          {showSuccess && currentPlan !== 'free' && (
+            <div data-pdf-ignore="true" className="mb-4 rounded-2xl border border-emerald-300/20 bg-emerald-300/10 px-5 py-4 text-emerald-100 shadow-sm">
+              You’ve unlocked {PLAN_FEATURES[currentPlan].name}. Your dashboard and report now reflect your upgraded access.
+            </div>
+          )}
+
+          <header className="mb-4 flex items-center justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/15 bg-cyan-300/8 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200">
+                <Sparkles className="h-3.5 w-3.5" />
+                Dashboard
+              </div>
+              <h1 className="mt-2 text-3xl font-bold md:text-4xl">Good morning, {welcomeName}</h1>
+              <p className="mt-0.5 text-sm text-slate-400">
+                {showAssessment ? 'Your financial foundation at a glance.' : 'Start your assessment to build your dashboard.'}
+              </p>
+            </div>
+
+            <div data-pdf-ignore="true" className="hidden items-center gap-3 md:flex">
+              <button onClick={handleViewLatestReport} className="rounded-2xl border border-cyan-300/20 bg-cyan-300/8 px-4 py-2 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/12">
+                View Report
+              </button>
+              <button onClick={handlePrintPDF} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-white/10">
+                {canExportPdf ? 'Save PDF' : 'Unlock PDF'}
+              </button>
+              <button onClick={handleRetakeAssessment} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-white/10">
+                Retake
+              </button>
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-700/80 font-bold">
+                {(welcomeName || 'M').charAt(0).toUpperCase()}
+              </div>
+            </div>
+          </header>
+
+          {!showAssessment ? (
+            <DashboardPanel className="p-8 text-center">
+              <Shield className="mx-auto mb-4 h-12 w-12 text-cyan-300" />
+              <h2 className="text-2xl font-bold">No assessment yet</h2>
+              <p className="mx-auto mt-2 max-w-xl text-slate-400">Complete your first assessment to unlock your Foundation Score, financial picture, and action plan.</p>
+              <button onClick={() => navigate('/assessment/snapshot')} className="mt-6 rounded-2xl bg-cyan-300 px-5 py-3 font-bold text-[#06172b]">
+                Start Snapshot
+              </button>
+            </DashboardPanel>
+          ) : (
+            <>
+              <section className="mb-6">
+                <DashboardPanel className="p-5">
+                  <div className="grid gap-4 lg:grid-cols-4">
+                    <div className="p-2">
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Foundation Score</div>
+                          <div className="mt-4 flex items-end gap-2">
+                            <span className="text-4xl font-bold text-cyan-300">{foundationScore}</span>
+                            <span className="pb-1 text-slate-500">/100</span>
                           </div>
-
-                          <div className="shrink-0 rounded-2xl bg-white/80 px-4 py-3 text-center shadow-sm">
-                            <div className={`text-2xl font-bold ${cushionTone.text}`}>
-                              {cushionScore}
-                            </div>
-                            <div className="text-[11px] uppercase tracking-[0.16em] text-gray-500">
-                              score
-                            </div>
-                          </div>
+                          <div className="mt-2 text-sm font-semibold text-cyan-200">{scoreBand?.label ?? 'Foundation Score'}</div>
                         </div>
-
-                        <div className="mt-5 h-3 rounded-full bg-white overflow-hidden">
-                          <div
-                            className={`h-full ${cushionTone.bar}`}
-                            style={{ width: `${Math.max(6, cushionScore)}%` }}
-                          />
-                        </div>
-
-                        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                          <div className="rounded-2xl bg-white/80 p-3 shadow-sm">
-                            <div className="text-xs text-gray-500">Runway</div>
-                            <div className="mt-1 text-lg font-bold text-navy-900">
-                              {runwayMonths.toFixed(1)} mo
-                            </div>
-                          </div>
-
-                          <div className="rounded-2xl bg-white/80 p-3 shadow-sm">
-                            <div className="text-xs text-gray-500">Emergency Fund</div>
-                            <div className="mt-1 text-lg font-bold text-navy-900">
-                              {emergencyPercent.toFixed(0)}% funded
-                            </div>
-                          </div>
-
-                          <div className="rounded-2xl bg-white/80 p-3 shadow-sm">
-                            <div className="text-xs text-gray-500">Fixed Cost Load</div>
-                            <div className="mt-1 text-lg font-bold text-navy-900">
-                              {formatPercent(snapshot.fixedCostLoad)}
-                            </div>
-                          </div>
-                        </div>
+                        <ScoreRing value={foundationScore} />
                       </div>
-
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <div className={`rounded-3xl border p-5 ${fixedCostTone.bg} ${fixedCostTone.border}`}>
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <div className="text-sm text-gray-500 mb-1">
-                                Fixed Cost Load
-                              </div>
-                              <div className={`text-3xl font-bold ${fixedCostTone.text}`}>
-                                {formatPercent(snapshot.fixedCostLoad)}
-                              </div>
-                            </div>
-                            <div className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${fixedCostTone.bg} ${fixedCostTone.text}`}>
-                              {fixedCostTone.badge}
-                            </div>
-                          </div>
-                          <div className="mt-4 h-2.5 bg-white rounded-full overflow-hidden">
-                            <div
-                              className={`h-full ${fixedCostTone.bar}`}
-                              style={{
-                                width: `${Math.max(
-                                  6,
-                                  Math.min(100, snapshot.fixedCostLoad)
-                                )}%`,
-                              }}
-                            />
-                          </div>
-                          <p className="mt-3 text-xs text-gray-600 leading-5">
-                            {formatCurrency(snapshot.fixedCosts)} of {formatCurrency(snapshot.income)} is committed.
-                          </p>
-                        </div>
-
-                        <div className="rounded-3xl border border-[#d7e3f0] bg-white p-5">
-                          <div className="text-sm text-gray-500 mb-1">
-                            Monthly Breathing Room
-                          </div>
-                          <div className={`text-3xl font-bold ${getMarginTone(snapshot.monthlyMargin)}`}>
-                            {formatCurrency(snapshot.monthlyMargin)}
-                          </div>
-                          <p className="mt-3 text-xs text-gray-500 leading-5">
-                            Income left after housing, utilities, childcare, and debt.
-                          </p>
-                        </div>
-
-                        <div className="rounded-3xl border border-[#d7e3f0] bg-white p-5">
-                          <div className="text-sm text-gray-500 mb-1">
-                            Savings + Investments
-                          </div>
-                          <div className="text-3xl font-bold text-navy-900">
-                            {formatCurrency((snapshot.totalSavings ?? 0) + (snapshot.totalInvestments ?? 0))}
-                          </div>
-                          <p className="mt-3 text-xs text-gray-500 leading-5">
-                            Cash reserves plus long-term investment assets.
-                          </p>
-                        </div>
-
-                        <div className="rounded-3xl border border-[#d7e3f0] bg-white p-5 ring-1 ring-copper-100">
-                          <div className="text-sm text-gray-500 mb-1">
-                            Net Worth
-                          </div>
-                          <div className="text-3xl font-bold text-navy-900">
-                            {snapshot.netWorth ? formatCurrency(snapshot.netWorth) : '—'}
-                          </div>
-                          <p className="mt-3 text-xs text-gray-500 leading-5">
-                            Savings, investments, home equity, and debt in one number.
-                          </p>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="rounded-3xl border border-[#d7e3f0] bg-white p-6">
-                      <p className="text-gray-600">
-                        Your structural metrics will appear here after your full
-                        report is generated.
-                      </p>
                     </div>
-                  )}
-                </div>
 
-                <div className="space-y-6">
-                  {canViewFullReport ? (
-                    <div className="bg-white rounded-3xl border border-[#d7e3f0] shadow-sm p-6 md:p-8">
-                      <div className="flex items-center gap-2 mb-5">
-                        <Zap className="w-5 h-5 text-copper-600" />
-                        <h3 className="text-2xl font-bold text-navy-900">
-                          What-If Calculator
-                        </h3>
+                    <div className="p-2">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Financial Cushion</div>
+                          <div className={`mt-4 text-xl font-bold ${cushionTone.text}`}>{cushionTone.label}</div>
+                          <div className="mt-1 text-sm text-slate-400">{runwayMonths.toFixed(1)} months runway</div>
+                        </div>
+                        <div className={`rounded-full border ${cushionTone.border} ${cushionTone.bg} p-3 ${cushionTone.text}`}>
+                          <Shield className="h-6 w-6" />
+                        </div>
                       </div>
+                      <div className="mt-4 h-2 rounded-full bg-white/10">
+                        <div className={`h-2 rounded-full ${cushionTone.bar}`} style={{ width: `${Math.max(6, cushionScore)}%` }} />
+                      </div>
+                      <div className="mt-2 text-xs text-slate-400"><span className={cushionTone.text}>{cushionScore}%</span> cushion score</div>
+                    </div>
+
+                    <div className="p-2">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Monthly Margin</div>
+                          <div className={`mt-4 text-3xl font-bold ${snapshot && snapshot.monthlyMargin >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
+                            {formatCurrency(snapshot?.monthlyMargin ?? 0)}
+                          </div>
+                          <div className={`mt-2 inline-flex rounded-full px-2 py-1 text-xs font-semibold ${snapshot && snapshot.monthlyMargin >= 500 ? 'bg-emerald-400/10 text-emerald-300' : 'bg-amber-400/10 text-amber-300'}`}>
+                            {snapshot && snapshot.monthlyMargin >= 500 ? 'Healthy' : 'Tight'}
+                          </div>
+                        </div>
+                        <LineChart className="h-10 w-10 text-emerald-300/80" />
+                      </div>
+                    </div>
+
+                    <div className="p-2">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Freedom Date</div>
+                          <div className="mt-4 text-2xl font-bold text-violet-300">Debt Tool</div>
+                          <div className="mt-1 text-sm text-slate-400">Open payoff planner</div>
+                        </div>
+                        <Calendar className="h-10 w-10 text-violet-300/80" />
+                      </div>
+                    </div>
+                  </div>
+                </DashboardPanel>
+              </section>
+
+              <section className="mb-6 grid gap-4 xl:grid-cols-[1.35fr_.65fr]">
+                <DashboardPanel className="p-5 md:p-6">
+                  <div className="mb-4 flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Your Financial Foundation</div>
+                      <h2 className="mt-2 text-2xl font-bold">House View</h2>
+                    </div>
+                    <button onClick={() => navigate('/results')} className="inline-flex items-center gap-2 rounded-xl border border-cyan-300/20 px-3 py-2 text-sm font-semibold text-cyan-200">
+                      View Details <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="grid gap-5 lg:grid-cols-[1.15fr_.75fr]">
+                    <DashboardHouseVisual pillarScores={pillarScores} />
+
+                    <div className="rounded-[1.6rem] border border-cyan-200/10 bg-white/[0.045] p-5 backdrop-blur-xl">
+                      <div className="mb-3 flex items-center gap-2 text-cyan-300">
+                        <Zap className="h-4 w-4" />
+                        <div className="text-xs font-semibold uppercase tracking-[0.16em]">What-If Calculator</div>
+                      </div>
+
+                      <p className="mb-4 text-sm text-slate-400">See how small changes impact your financial foundation.</p>
 
                       {snapshot && scenarioResult ? (
                         <>
-                          <div className="grid sm:grid-cols-3 gap-3 mb-5">
-                            <label className="block">
-                              <div className="text-sm text-gray-500 mb-2">
-                                Extra income / mo
-                              </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <label className="rounded-xl bg-white/[0.04] p-3">
+                              <div className="text-xs text-slate-500">Extra Income</div>
                               <input
                                 type="number"
                                 value={whatIf.income}
-                                onChange={(e) =>
-                                  setWhatIf((prev) => ({
-                                    ...prev,
-                                    income: Number(e.target.value || 0),
-                                  }))
-                                }
-                                className="w-full rounded-xl border border-[#d7e3f0] px-4 py-2.5"
+                                onChange={(e) => setWhatIf((prev) => ({ ...prev, income: Number(e.target.value || 0) }))}
+                                className="mt-1 w-full bg-transparent text-lg font-bold text-emerald-300 outline-none"
                               />
                             </label>
-
-                            <label className="block">
-                              <div className="text-sm text-gray-500 mb-2">
-                                Lower housing / mo
-                              </div>
+                            <label className="rounded-xl bg-white/[0.04] p-3">
+                              <div className="text-xs text-slate-500">Lower Costs</div>
                               <input
                                 type="number"
                                 value={whatIf.housing}
-                                onChange={(e) =>
-                                  setWhatIf((prev) => ({
-                                    ...prev,
-                                    housing: Number(e.target.value || 0),
-                                  }))
-                                }
-                                className="w-full rounded-xl border border-[#d7e3f0] px-4 py-2.5"
+                                onChange={(e) => setWhatIf((prev) => ({ ...prev, housing: Number(e.target.value || 0) }))}
+                                className="mt-1 w-full bg-transparent text-lg font-bold text-emerald-300 outline-none"
                               />
                             </label>
-
-                            <label className="block">
-                              <div className="text-sm text-gray-500 mb-2">
-                                Lower debt / mo
-                              </div>
-                              <input
-                                type="number"
-                                value={whatIf.debt}
-                                onChange={(e) =>
-                                  setWhatIf((prev) => ({
-                                    ...prev,
-                                    debt: Number(e.target.value || 0),
-                                  }))
-                                }
-                                className="w-full rounded-xl border border-[#d7e3f0] px-4 py-2.5"
-                              />
-                            </label>
-                          </div>
-
-                          <div className="grid sm:grid-cols-2 gap-4">
-                            <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-4">
-                              <div className="text-sm text-gray-500 mb-1">
-                                Adjusted fixed cost load
-                              </div>
-                              <div className="text-2xl font-bold text-navy-900">
-                                {formatPercent(scenarioResult.adjustedLoad)}
-                              </div>
-                            </div>
-
-                            <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-4">
-                              <div className="text-sm text-gray-500 mb-1">
-                                Adjusted monthly breathing room
-                              </div>
-                              <div
-                                className={`text-2xl font-bold ${getMarginTone(
-                                  scenarioResult.adjustedMargin
-                                )}`}
-                              >
-                                {formatCurrency(scenarioResult.adjustedMargin)}
-                              </div>
+                            <div className="col-span-2 rounded-xl bg-white/[0.04] p-3">
+                              <div className="text-xs text-slate-500">New Monthly Margin</div>
+                              <div className="text-xl font-bold text-cyan-300">{formatCurrency(scenarioResult.adjustedMargin)}</div>
+                              <div className="mt-1 text-xs text-slate-500">Fixed load would become {formatPercent(scenarioResult.adjustedLoad)}</div>
                             </div>
                           </div>
                         </>
                       ) : (
-                        <p className="text-gray-600">
-                          Scenario modeling will appear here as soon as your structural metrics finish loading.
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="rounded-3xl border border-[#d7e3f0] bg-white shadow-sm overflow-hidden">
-                      <div className="p-6 md:p-8">
-                        <div className="flex items-center gap-2 mb-3">
-                          <AlertCircle className="w-5 h-5 text-copper-600" />
-                          <h3 className="text-2xl font-bold text-navy-900">
-                            What-If Calculator
-                          </h3>
-                        </div>
-
-                        <p className="text-gray-600 leading-7 mb-5">
-                          See how more income, lower housing, or less debt could change your monthly structure before you make the move.
-                        </p>
-
-                        {snapshot && scenarioResult ? (
-                          <>
-                            <div className="grid sm:grid-cols-3 gap-3 mb-5">
-                              <label className="block">
-                                <div className="text-sm text-gray-500 mb-2">
-                                  Extra income / mo
-                                </div>
-                                <input
-                                  type="number"
-                                  value={whatIf.income}
-                                  disabled
-                                  className="w-full rounded-xl border border-[#d7e3f0] bg-[#f8fbff] px-4 py-2.5 text-gray-500"
-                                />
-                              </label>
-
-                              <label className="block">
-                                <div className="text-sm text-gray-500 mb-2">
-                                  Lower housing / mo
-                                </div>
-                                <input
-                                  type="number"
-                                  value={whatIf.housing}
-                                  disabled
-                                  className="w-full rounded-xl border border-[#d7e3f0] bg-[#f8fbff] px-4 py-2.5 text-gray-500"
-                                />
-                              </label>
-
-                              <label className="block">
-                                <div className="text-sm text-gray-500 mb-2">
-                                  Lower debt / mo
-                                </div>
-                                <input
-                                  type="number"
-                                  value={whatIf.debt}
-                                  disabled
-                                  className="w-full rounded-xl border border-[#d7e3f0] bg-[#f8fbff] px-4 py-2.5 text-gray-500"
-                                />
-                              </label>
-                            </div>
-
-                            <div className="grid sm:grid-cols-2 gap-4 mb-5">
-                              <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-4">
-                                <div className="text-sm text-gray-500 mb-1">
-                                  Adjusted fixed cost load
-                                </div>
-                                <div className="text-2xl font-bold text-navy-900">
-                                  {formatPercent(scenarioResult.adjustedLoad)}
-                                </div>
-                              </div>
-
-                              <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-4">
-                                <div className="text-sm text-gray-500 mb-1">
-                                  Adjusted monthly breathing room
-                                </div>
-                                <div
-                                  className={`text-2xl font-bold ${getMarginTone(
-                                    scenarioResult.adjustedMargin
-                                  )}`}
-                                >
-                                  {formatCurrency(scenarioResult.adjustedMargin)}
-                                </div>
-                              </div>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="grid sm:grid-cols-2 gap-4 mb-5">
-                            <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-4">
-                              <div className="text-sm text-gray-500 mb-1">
-                                Adjusted fixed cost load
-                              </div>
-                              <div className="text-2xl font-bold text-navy-900">—</div>
-                            </div>
-
-                            <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-4">
-                              <div className="text-sm text-gray-500 mb-1">
-                                Adjusted monthly breathing room
-                              </div>
-                              <div className="text-2xl font-bold text-navy-900">—</div>
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="rounded-2xl border border-copper-200 bg-copper-50/40 p-5">
-                          <div className="font-semibold text-navy-900 mb-2">
-                            Try your own numbers with {currentPlan === 'free' ? 'Foundation Assessment' : 'Foundation Roadmap'}.
-                          </div>
-                          <p className="text-sm text-gray-700 leading-6 mb-4">
-                            This preview shows what the calculator does. Unlock it to test your own numbers and see how structural changes could affect your monthly breathing room.
-                          </p>
-                          <button
-                            onClick={() => {
-                              void trackLockedFeature('what_if_calculator', 'dashboard');
-                              void trackUpgradeClick(
-                                currentPlan === 'free' ? 'standard' : 'premium',
-                                'what_if_calculator',
-                                'dashboard'
-                              );
-                              navigate('/pricing');
-                            }}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-copper-600 text-white font-semibold hover:bg-copper-700"
-                          >
-                            {currentPlan === 'free' ? 'Unlock with Standard' : 'Unlock with Premium'}
-                            <ArrowRight className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="bg-white rounded-3xl border border-[#d7e3f0] shadow-sm p-6 md:p-8">
-                    <div className="flex items-center gap-2 mb-5">
-                      <Shield className="w-5 h-5 text-copper-600" />
-                      <h3 className="text-2xl font-bold text-navy-900">
-                        Stress Signals
-                      </h3>
-                    </div>
-
-                    <div className="space-y-4">
-                      {warnings.length ? (
-                        warnings.slice(0, 2).map((warning, index) => {
-                          const card = getWarningCard(warning, snapshot);
-                          return (
-                            <div
-                              key={index}
-                              className="rounded-2xl border border-amber-200 bg-amber-50 p-5"
-                            >
-                              <div className="text-sm font-semibold text-amber-800 mb-2">
-                                {card.title}
-                              </div>
-                              <p className="text-gray-700 leading-7">
-                                {card.body}
-                              </p>
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
-                          <div className="text-sm font-semibold text-emerald-800 mb-2">
-                            No major structural warning signs
-                          </div>
-                          <p className="text-gray-700 leading-7">
-                            Your current financial structure does not show a major
-                            fixed-cost or debt pressure alert. That gives you more
-                            room to focus on refinement and steady progress.
-                          </p>
-                        </div>
+                        <div className="rounded-xl bg-white/[0.04] p-3 text-sm text-slate-400">Metrics will appear after your full report is generated.</div>
                       )}
                     </div>
                   </div>
-                </div>
-              </div>
-            </section>
+                </DashboardPanel>
 
-            <section className="rounded-3xl border border-emerald-100 bg-emerald-50/35 p-4 md:p-5 mb-6">
-              <SectionHeader
-                icon={Calendar}
-                label="Section 3"
-                title="Your Action Plan"
-                description="What to do next, what to unlock, and how to keep moving forward."
-                theme="action"
-              />
-
-              <div className="grid lg:grid-cols-[1fr_1fr] gap-6 mb-6">
-                <div className="space-y-6">
-                  {canViewFullReport ? (
-                    <div className="bg-white rounded-3xl border border-[#d7e3f0] shadow-sm p-6 md:p-8">
-                      <div className="flex items-center gap-2 mb-5">
-                        <Calendar className="w-5 h-5 text-copper-600" />
-                        <h3 className="text-2xl font-bold text-navy-900">
-                          90-Day Action Plan
-                        </h3>
-                      </div>
-
-                      <div className="grid gap-4">
-                        <div className="rounded-2xl border border-copper-200 bg-copper-50/50 p-5">
-                          <div className="text-sm font-semibold text-copper-700 mb-2">
-                            Start Here
-                          </div>
-
-                          {(assessment?.actionPlan?.immediate || [])
-                            .slice(0, 1)
-                            .map((step, index) => (
-                              <div key={`immediate-${index}`}>
-                                <div className="font-semibold text-navy-900 mb-2">
-                                  {step.title}
-                                </div>
-                                <p className="text-navy-900 leading-7 mb-3">
-                                  {step.body}
-                                </p>
-                                <ul className="space-y-2">
-                                  {safeArray(step.checklist).map((item, itemIndex) => (
-                                    <li
-                                      key={itemIndex}
-                                      className="flex items-start gap-2 text-sm text-navy-900"
-                                    >
-                                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-copper-600" />
-                                      <span>{item}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            ))}
-
-                          {!assessment?.actionPlan?.immediate?.length && (
-                            <p className="text-gray-700 leading-7">
-                              Your first action step will appear here after your full report is generated.
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="grid md:grid-cols-2 gap-4">
-                          <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-5">
-                            <div className="text-sm font-semibold text-gray-500 mb-2">
-                              Then Focus Here
-                            </div>
-
-                            {(assessment?.actionPlan?.shortTerm || [])
-                              .slice(0, 1)
-                              .map((step, index) => (
-                                <div key={`short-${index}`}>
-                                  <div className="font-semibold text-navy-900 mb-2">
-                                    {step.title}
-                                  </div>
-                                  <p className="text-gray-700 leading-7">
-                                    {step.body}
-                                  </p>
-                                </div>
-                              ))}
-
-                            {!assessment?.actionPlan?.shortTerm?.length && (
-                              <p className="text-gray-700 leading-7">
-                                Your second phase will appear here after your full report is generated.
-                              </p>
-                            )}
-                          </div>
-
-                          <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-5">
-                            <div className="text-sm font-semibold text-gray-500 mb-2">
-                              After That
-                            </div>
-
-                            {(assessment?.actionPlan?.longTerm || [])
-                              .slice(0, 1)
-                              .map((step, index) => (
-                                <div key={`long-${index}`}>
-                                  <div className="font-semibold text-navy-900 mb-2">
-                                    {step.title}
-                                  </div>
-                                  <p className="text-gray-700 leading-7">
-                                    {step.body}
-                                  </p>
-                                </div>
-                              ))}
-
-                            {!assessment?.actionPlan?.longTerm?.length && (
-                              <p className="text-gray-700 leading-7">
-                                Longer-term milestones will appear here as your plan grows.
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <LockedPreview
-                      title="90-Day Action Plan"
-                      description="See your next moves laid out as a guided sequence of milestones and checkpoints."
-                      upgradeLabel={
-                        currentPlan === 'free'
-                          ? 'Unlock with Standard'
-                          : 'Unlock with Premium'
-                      }
-                      onUpgrade={() => {
-                        void trackLockedFeature('action_plan_90_day', 'dashboard');
-                        void trackUpgradeClick(
-                          currentPlan === 'free' ? 'standard' : 'premium',
-                          'action_plan_90_day',
-                          'dashboard'
-                        );
-                        navigate('/pricing');
-                      }}
-                    >
-                      <div className="grid gap-4">
-                        <div className="rounded-2xl border border-copper-200 bg-copper-50/50 p-5">
-                          <div className="text-sm font-semibold text-copper-700 mb-2">
-                            Start Here
-                          </div>
-                          <div className="font-semibold text-navy-900 mb-2">
-                            Tighten one weak area first
-                          </div>
-                          <p className="text-navy-900 leading-7">
-                            Review your biggest constraint, create breathing room,
-                            and build momentum with one specific next move.
-                          </p>
-                        </div>
-
-                        <div className="grid md:grid-cols-2 gap-4">
-                          <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-5">
-                            <div className="text-sm font-semibold text-gray-500 mb-2">
-                              Then Focus Here
-                            </div>
-                            <p className="text-gray-700 leading-7">
-                              Turn that early win into a repeatable system.
-                            </p>
-                          </div>
-
-                          <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-5">
-                            <div className="text-sm font-semibold text-gray-500 mb-2">
-                              After That
-                            </div>
-                            <p className="text-gray-700 leading-7">
-                              Shift from cleanup into long-term wealth-building.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </LockedPreview>
-                  )}
-
-                  <div className="bg-white rounded-3xl border border-[#d7e3f0] shadow-sm p-6 md:p-8">
-                    <div className="flex items-center gap-2 mb-5">
-                      <Sparkles className="w-5 h-5 text-copper-600" />
-                      <h3 className="text-2xl font-bold text-navy-900">
-                        Key Insights
-                      </h3>
-                    </div>
-
-                    <div className="space-y-4">
-                      {insights.length ? (
-                        insights.slice(0, 3).map((insight, index) => (
-                          <div
-                            key={index}
-                            className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-5"
-                          >
-                            <div className="text-sm uppercase tracking-[0.18em] text-copper-600 mb-3">
-                              Insight {index + 1}
-                            </div>
-                            <p className="text-gray-700 leading-8">{insight}</p>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-5">
-                          <p className="text-gray-700 leading-8">
-                            Your strongest habits are reinforcing each other. The
-                            next level of progress comes from tightening the few
-                            areas that still create drag.
-                          </p>
-                        </div>
-                      )}
-                    </div>
+                <DashboardPanel className="p-5 md:p-6">
+                  <div className="mb-4 flex items-center gap-2 text-cyan-300">
+                    <Sparkles className="h-5 w-5" />
+                    <div className="text-xs font-semibold uppercase tracking-[0.16em]">Your Best Next Move</div>
                   </div>
-                </div>
-
-                <div className="space-y-6">
-                  <div className="bg-white rounded-3xl border border-[#d7e3f0] shadow-sm p-6 md:p-8">
-                    <div className="flex items-center justify-between gap-4 mb-5">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <Zap className="w-5 h-5 text-copper-600" />
-                          <h3 className="text-2xl font-bold text-navy-900">
-                            Premium Guidance
-                          </h3>
-                        </div>
-                        <p className="text-sm text-gray-600 mt-1">
-                          A guided execution layer designed to help you follow
-                          through over 12 months.
-                        </p>
+                  <h2 className="text-2xl font-bold">{dashboardNextMoveCard.title}</h2>
+                  <p className="mt-3 text-sm leading-6 text-slate-400">{dashboardNextMoveCard.body}</p>
+                  <div className="mt-5 space-y-3">
+                    {dashboardNextMoveCard.checklist.slice(0, 3).map((item, index) => (
+                      <div key={index} className="flex items-center gap-3 text-sm text-slate-300">
+                        <CheckCircle2 className="h-5 w-5 text-cyan-300" />
+                        {item}
                       </div>
-
-                      {!canViewPremium && (
-                        <button
-                          onClick={() => {
-                            void trackLockedFeature(
-                              'premium_guidance_workspace',
-                              'dashboard'
-                            );
-                            void trackUpgradeClick(
-                              'premium',
-                              'premium_guidance_workspace',
-                              'dashboard'
-                            );
-                            navigate('/pricing');
-                          }}
-                          className="px-4 py-2 rounded-xl bg-copper-600 text-white font-semibold hover:bg-copper-700"
-                        >
-                          Unlock Premium
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 mb-5">
-                      {(
-                        [
-                          ['roadmap', '12-Month Roadmap'],
-                          ['workbook', 'Workbook'],
-                          ['checkins', 'Monthly Check-Ins'],
-                        ] as Array<[GuidanceTab, string]>
-                      ).map(([tab, label]) => (
-                        <button
-                          key={tab}
-                          onClick={() => setGuidanceTab(tab)}
-                          className={`px-4 py-2 rounded-lg text-sm font-semibold border ${
-                            guidanceTab === tab
-                              ? 'bg-navy-900 text-white border-navy-900'
-                              : 'bg-white border-[#d7e3f0] text-gray-700 hover:bg-[#f8fbff]'
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-
-                    {canViewPremium ? (
-                      <div className="space-y-4">
-                        {guidanceTab === 'roadmap' && (
-                          <>
-                            <div className="rounded-2xl border border-copper-200 bg-copper-50/50 p-5">
-                              <div className="text-sm font-semibold text-copper-700 mb-2">
-                                Months 1–3
-                              </div>
-                              <p className="text-gray-700 leading-7">
-                                Stabilize margin, strengthen weak pillars, and remove
-                                the biggest bottlenecks.
-                              </p>
-                            </div>
-
-                            <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-5">
-                              <div className="text-sm font-semibold text-gray-500 mb-2">
-                                Months 4–6
-                              </div>
-                              <p className="text-gray-700 leading-7">
-                                Turn your strongest habits into systems and close the
-                                next most important gap.
-                              </p>
-                            </div>
-
-                            <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-5">
-                              <div className="text-sm font-semibold text-gray-500 mb-2">
-                                Months 7–12
-                              </div>
-                              <p className="text-gray-700 leading-7">
-                                Shift toward growth, longer-term goals, and stronger
-                                consistency.
-                              </p>
-                            </div>
-                          </>
-                        )}
-
-                        {guidanceTab === 'workbook' && (
-                          <>
-                            <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-5">
-                              <div className="text-sm font-semibold text-copper-700 mb-2">
-                                Your top 2 goals
-                              </div>
-                              <div className="space-y-2">
-                                <div className="rounded-xl bg-white border border-[#d7e3f0] px-4 py-3">
-                                  Goal 1
-                                </div>
-                                <div className="rounded-xl bg-white border border-[#d7e3f0] px-4 py-3">
-                                  Goal 2
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-5">
-                              <div className="text-sm font-semibold text-copper-700 mb-2">
-                                30 / 60 / 90 day checklist
-                              </div>
-                              <div className="space-y-2">
-                                {[
-                                  'Define your next move',
-                                  'Set one measurable target',
-                                  'Review progress and adjust',
-                                ].map((item) => (
-                                  <div
-                                    key={item}
-                                    className="flex items-center gap-3 rounded-xl bg-white border border-[#d7e3f0] px-4 py-3"
-                                  >
-                                    <span className="inline-block h-4 w-4 rounded border border-[#d7e3f0]" />
-                                    <span className="text-gray-700">{item}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </>
-                        )}
-
-                        {guidanceTab === 'checkins' && (
-                          <>
-                            <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-5">
-                              <div className="text-sm font-semibold text-copper-700 mb-2">
-                                Next monthly check-in
-                              </div>
-                              <p className="text-gray-700 leading-7">
-                                Review what improved, what slipped, and what deserves
-                                your next 30-day focus.
-                              </p>
-                            </div>
-
-                            <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-5">
-                              <div className="text-sm font-semibold text-copper-700 mb-2">
-                                Progress prompts
-                              </div>
-                              <p className="text-gray-700 leading-7">
-                                What changed this month? What moved the score? What
-                                should happen next?
-                              </p>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {guidanceTab === 'roadmap' && (
-                          <>
-                            <div className="rounded-2xl border border-copper-200 bg-copper-50/50 p-5">
-                              <div className="text-sm font-semibold text-copper-700 mb-2">
-                                Months 1–3
-                              </div>
-                              <p className="text-gray-700 leading-7">
-                                Stabilize margin and create a stronger base.
-                              </p>
-                            </div>
-
-                            <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-5">
-                              <div className="text-sm font-semibold text-gray-500 mb-2">
-                                Months 4–6
-                              </div>
-                              <p className="text-gray-700 leading-7">
-                                Turn momentum into repeatable systems.
-                              </p>
-                            </div>
-                          </>
-                        )}
-
-                        {guidanceTab === 'workbook' && (
-                          <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-5">
-                            <div className="text-sm font-semibold text-copper-700 mb-2">
-                              Workbook Preview
-                            </div>
-                            <p className="text-gray-700 leading-7">
-                              Set your top goals, work through checklists, and keep
-                              visible progress in one place.
-                            </p>
-                          </div>
-                        )}
-
-                        {guidanceTab === 'checkins' && (
-                          <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-5">
-                            <div className="text-sm font-semibold text-copper-700 mb-2">
-                              Monthly Check-In Preview
-                            </div>
-                            <p className="text-gray-700 leading-7">
-                              Use recurring reviews to stay accountable and keep your
-                              roadmap moving forward.
-                            </p>
-                          </div>
-                        )}
-
-                        <div className="rounded-2xl border border-[#d7e3f0] bg-white p-5 text-center">
-                          <div className="font-semibold text-navy-900 mb-2">
-                            Visible preview. Full interaction is locked.
-                          </div>
-                          <button
-                            onClick={() => {
-                              void trackLockedFeature(
-                                'premium_guidance_workspace',
-                                'dashboard'
-                              );
-                              void trackUpgradeClick(
-                                'premium',
-                                'premium_guidance_workspace',
-                                'dashboard'
-                              );
-                              navigate('/pricing');
-                            }}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-copper-600 text-white font-semibold hover:bg-copper-700"
-                          >
-                            Unlock with Premium
-                            <ArrowRight className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    )}
+                    ))}
                   </div>
-
-                  {canViewPremium ? (
-                    trustedExperts.length > 0 && (
-                      <section className="bg-white border border-[#d7e3f0] rounded-3xl p-6 shadow-sm">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Users className="w-5 h-5 text-copper-600" />
-                          <h2 className="text-lg font-bold text-navy-900">
-                            Optional Expert Help
-                          </h2>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-5">
-                          Preview the kind of support that may help you move faster
-                          without revealing actual providers yet.
-                        </p>
-
-                        <div className="grid md:grid-cols-3 gap-4">
-                          {trustedExperts.map((expert) => {
-                            const Icon = expert.icon;
-
-                            return (
-                              <button
-                                key={expert.key}
-                                onClick={() => {
-                                  void track(
-                                    'trusted_experts_clicked',
-                                    {
-                                      source: 'expert_help_section',
-                                      expertKey: expert.key,
-                                    },
-                                    'navigation'
-                                  );
-                                  navigate('/trusted-experts');
-                                }}
-                                className={`rounded-2xl border p-5 text-left hover:bg-white transition-colors ${expert.tone}`}
-                              >
-                                <div className="flex items-center gap-3 mb-3">
-                                  <div className="w-11 h-11 rounded-xl bg-white border border-white/70 flex items-center justify-center">
-                                    <Icon className="w-5 h-5 text-copper-700" />
-                                  </div>
-                                  <div className="font-semibold text-navy-900">
-                                    {expert.title}
-                                  </div>
-                                </div>
-
-                                <p className="text-sm text-gray-700 leading-6 mb-4">
-                                  {expert.reason}
-                                </p>
-
-                                <div className="inline-flex items-center gap-2 text-sm font-semibold text-copper-700">
-                                  {expert.cta} <ArrowRight className="w-4 h-4" />
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </section>
-                    )
-                  ) : (
-                    <LockedPreview
-                      title="Optional Expert Help"
-                      description="See what kind of support could help you move faster without revealing actual service providers yet."
-                      upgradeLabel="Unlock with Premium"
-                      onUpgrade={() => {
-                        void trackLockedFeature('expert_help', 'dashboard');
-                        void trackUpgradeClick('premium', 'expert_help', 'dashboard');
-                        navigate('/pricing');
-                      }}
-                    >
-                      <div className="grid md:grid-cols-3 gap-4">
-                        {[
-                          'Take your investing to the next level',
-                          'Reduce your biggest expense',
-                          'Build a clearer long-term plan',
-                        ].map((title) => (
-                          <div
-                            key={title}
-                            className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-5"
-                          >
-                            <div className="font-semibold text-navy-900 mb-2">
-                              {title}
-                            </div>
-                            <p className="text-sm text-gray-700 leading-6">
-                              See what kind of expert guidance could help in this
-                              area before deciding whether to move forward.
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </LockedPreview>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid lg:grid-cols-[0.8fr_1.2fr] gap-6 mt-6">
-                <div className="bg-white rounded-3xl border border-[#d7e3f0] shadow-sm p-6 md:p-8">
-                  <div className="flex items-center gap-2 mb-5">
-                    <LineChart className="w-5 h-5 text-copper-600" />
-                    <h3 className="text-2xl font-bold text-navy-900">
-                      Score History
-                    </h3>
-                  </div>
-
-                  {chart.points.length > 0 ? (
-                    <>
-                      <div className="overflow-x-auto">
-                        <svg
-                          viewBox={`0 0 ${chart.width} ${chart.height}`}
-                          className="w-full min-w-[680px] h-[220px]"
-                        >
-                          <line
-                            x1="18"
-                            y1={chart.height - 18}
-                            x2={chart.width - 18}
-                            y2={chart.height - 18}
-                            stroke="#d7e3f0"
-                            strokeWidth="2"
-                          />
-                          <polyline
-                            fill="none"
-                            stroke="#b87333"
-                            strokeWidth="4"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            points={chart.polyline}
-                          />
-                          {chart.points.map((point) => (
-                            <g key={String(point.id)}>
-                              <circle
-                                cx={point.x}
-                                cy={point.y}
-                                r="5"
-                                fill="#17385a"
-                              />
-                              <text
-                                x={point.x}
-                                y={point.y - 12}
-                                textAnchor="middle"
-                                fontSize="12"
-                                fill="#183a63"
-                                fontWeight="bold"
-                              >
-                                {point.score}
-                              </text>
-                              <text
-                                x={point.x}
-                                y={chart.height - 2}
-                                textAnchor="middle"
-                                fontSize="11"
-                                fill="#64748b"
-                              >
-                                {formatHistoryDate(point.createdAt)}
-                              </text>
-                            </g>
-                          ))}
-                        </svg>
-                      </div>
-
-                      <div className="mt-4 grid grid-cols-3 gap-3">
-                        <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-4">
-                          <div className="text-sm text-gray-500 mb-1">Latest</div>
-                          <div className="text-2xl font-bold text-navy-900">
-                            {chart.points[chart.points.length - 1]?.score ?? '—'}
-                          </div>
-                        </div>
-
-                        <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-4">
-                          <div className="text-sm text-gray-500 mb-1">
-                            Starting
-                          </div>
-                          <div className="text-2xl font-bold text-navy-900">
-                            {chart.points[0]?.score ?? '—'}
-                          </div>
-                        </div>
-
-                        <div className="rounded-2xl border border-[#d7e3f0] bg-[#f8fbff] p-4">
-                          <div className="text-sm text-gray-500 mb-1">Change</div>
-                          <div
-                            className={`text-2xl font-bold ${
-                              (chart.points[chart.points.length - 1]?.score ?? 0) -
-                                (chart.points[0]?.score ?? 0) >=
-                              0
-                                ? 'text-emerald-600'
-                                : 'text-red-600'
-                            }`}
-                          >
-                            {((chart.points[chart.points.length - 1]?.score ?? 0) -
-                              (chart.points[0]?.score ?? 0)) >= 0
-                              ? '+'
-                              : ''}
-                            {(chart.points[chart.points.length - 1]?.score ?? 0) -
-                              (chart.points[0]?.score ?? 0)}
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <p className="text-gray-600">No assessment history yet.</p>
-                  )}
-                </div>
-
-                <ProfessionalHouse pillarScores={pillarScores} />
-              </div>
-            </section>
-
-            <section className="bg-white border border-[#d7e3f0] rounded-3xl p-6 shadow-sm mb-6">
-              <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Clock3 className="w-5 h-5 text-copper-600" />
-                    <h2 className="text-lg font-bold text-navy-900">Action Bar</h2>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Core actions should feel like actions, not floating feature tiles.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={() => {
-                    void track('view_full_report_clicked', { source: 'action_bar' }, 'navigation');
-                    navigate('/results');
-                  }}
-                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-[#d7e3f0] text-navy-900 font-semibold hover:bg-[#f8fbff]"
-                >
-                  <Eye className="w-4 h-4" />
-                  View Full Report
-                </button>
-
-                <button
-                  onClick={() => {
-                    void track('retake_assessment_clicked', { source: 'action_bar' }, 'assessment');
-                    navigate('/assessment/comprehensive');
-                  }}
-                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-[#d7e3f0] text-navy-900 font-semibold hover:bg-[#f8fbff]"
-                >
-                  <ArrowRight className="w-4 h-4" />
-                  Retake Assessment
-                </button>
-
-                <button
-                  onClick={handlePrintPDF}
-                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-[#d7e3f0] text-navy-900 font-semibold hover:bg-[#f8fbff]"
-                >
-                  <Download className="w-4 h-4" />
-                  {canExportPdf ? 'Download PDF' : 'Unlock PDF'}
-                </button>
-              </div>
-            </section>
-
-            {!canViewPremium && (
-              <section className="bg-gradient-to-br from-[#17385a] to-[#21456d] rounded-3xl border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.15)] p-6 md:p-8 text-white mb-6">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                  <div>
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-copper-50 text-copper-700 text-sm font-semibold mb-4">
-                      <Zap className="w-4 h-4" />
-                      Unlock More
-                    </div>
-                    <h2 className="text-2xl md:text-3xl font-bold mb-2">
-                      Premium Guidance turns insight into execution.
-                    </h2>
-                    <p className="text-white/85 leading-7 max-w-3xl">
-                      Unlock the interactive roadmap, workbook, monthly check-ins,
-                      What-If modeling, and expert-help previews in one place.
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      void trackUpgradeClick('premium', 'unlock_more_strip', 'dashboard');
-                      navigate('/pricing');
-                    }}
-                    className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-copper-600 text-white font-semibold hover:bg-copper-700"
-                  >
-                    Unlock Premium
-                    <ArrowRight className="w-4 h-4" />
+                  <button onClick={() => navigate('/results')} className="mt-6 inline-flex items-center gap-2 rounded-2xl border border-cyan-300/35 bg-cyan-300/8 px-4 py-3 text-sm font-bold text-cyan-200 shadow-[0_0_28px_rgba(34,211,238,.12)]">
+                    View Full Roadmap <ArrowRight className="h-4 w-4" />
                   </button>
-                </div>
+                </DashboardPanel>
               </section>
-            )}
 
-            <section className="grid md:grid-cols-3 gap-4">
-              <ActionButtonCard
-                icon={Home}
-                title="Quick Assessment"
-                body="Get a fresh snapshot of where your foundation stands right now."
-                onClick={() => {
-                  void track('quick_assessment_clicked', { source: 'resources' }, 'assessment');
-                  navigate('/assessment/snapshot');
-                }}
-              />
+              <section className="mb-6 grid gap-4 xl:grid-cols-[1.1fr_.8fr_.9fr]">
+                <DashboardPanel className="p-5">
+                  <div className="mb-3 flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Financial Snapshot</div>
+                      <div className="mt-1 text-sm text-slate-500">Income vs. fixed costs</div>
+                    </div>
+                    <LineChart className="h-5 w-5 text-cyan-300" />
+                  </div>
+                  <IncomeExpenseChart income={snapshot?.income ?? 0} fixedCosts={snapshot?.fixedCosts ?? 0} margin={snapshot?.monthlyMargin ?? 0} />
+                  <div className="mt-3 grid grid-cols-3 gap-3">
+                    <div className="rounded-2xl bg-white/[0.04] p-3">
+                      <div className="text-xs text-slate-500">Fixed Load</div>
+                      <div className="mt-1 text-xl font-bold text-amber-300">{formatPercent(snapshot?.fixedCostLoad ?? 0)}</div>
+                    </div>
+                    <div className="rounded-2xl bg-white/[0.04] p-3">
+                      <div className="text-xs text-slate-500">Savings Rate</div>
+                      <div className="mt-1 text-xl font-bold text-emerald-300">{formatPercent(snapshot?.savingsRate ?? 0)}</div>
+                    </div>
+                    <div className="rounded-2xl bg-white/[0.04] p-3">
+                      <div className="text-xs text-slate-500">Debt Ratio</div>
+                      <div className="mt-1 text-xl font-bold text-cyan-300">{formatPercent(snapshot?.debtToIncomeRatio ?? 0)}</div>
+                    </div>
+                  </div>
+                  <button onClick={() => navigate('/results')} className="mt-4 flex items-center gap-2 text-sm font-semibold text-cyan-300">View Details <ArrowRight className="h-4 w-4" /></button>
+                </DashboardPanel>
 
-              <ActionButtonCard
-                icon={Target}
-                title="Detailed Assessment"
-                body="Run the full assessment for deeper scoring, richer guidance, and stronger recommendations."
-                onClick={() => {
-                  void track('detailed_assessment_clicked', { source: 'resources' }, 'assessment');
-                  navigate('/assessment/comprehensive');
-                }}
-              />
+                <DashboardPanel className="p-5">
+                  <div className="mb-3 flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Net Worth</div>
+                      <div className="mt-3 text-4xl font-bold">{snapshot?.netWorth ? formatCurrency(snapshot.netWorth) : '—'}</div>
+                    </div>
+                    <div className="rounded-full bg-emerald-400/10 px-3 py-1 text-xs font-bold text-emerald-300">
+                      {previousScore !== null ? `${previousScore} → ${foundationScore}` : 'Latest'}
+                    </div>
+                  </div>
+                  <NetWorthMiniChart scoreHistory={scoreHistory} />
+                  <button onClick={() => navigate('/results')} className="mt-4 flex items-center gap-2 text-sm font-semibold text-cyan-300">View Details <ArrowRight className="h-4 w-4" /></button>
+                </DashboardPanel>
 
-              <ActionButtonCard
-                icon={FileText}
-                title="Articles & Education"
-                body="Explore more guidance, education, and next-step resources without cluttering the dashboard."
-                onClick={() => {
-                  void track('articles_clicked', { source: 'resources' }, 'navigation');
-                  navigate('/articles');
-                }}
-              />
-            </section>
-          </>
-        ) : null}
-      </main>
+                <DashboardPanel className="p-5">
+                  <div className="mb-4 flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Asset Allocation</div>
+                      <div className="mt-1 text-sm text-slate-500">Current available categories</div>
+                    </div>
+                    <PieChart className="h-5 w-5 text-cyan-300" />
+                  </div>
+                  <AssetDonut rows={assetRows} total={totalAssets} />
+                  <div className="mt-5 space-y-2">
+                    {assetRows.map((row) => {
+                      const percent = totalAssets > 0 ? (row.value / totalAssets) * 100 : 0;
+                      return (
+                        <div key={row.label} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 text-sm">
+                          <div className="flex items-center gap-2 text-slate-300">
+                            <span className={`h-2.5 w-2.5 rounded-full ${row.dot}`} />
+                            {row.label}
+                          </div>
+                          <div className="text-slate-400">{percent.toFixed(0)}%</div>
+                          <div className="font-semibold text-slate-200">{formatCurrency(row.value)}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <button onClick={() => navigate('/results')} className="mt-4 flex items-center gap-2 text-sm font-semibold text-cyan-300">View Details <ArrowRight className="h-4 w-4" /></button>
+                </DashboardPanel>
+              </section>
+
+              <div className="hidden">
+                <span>{dashboardWhyThisMatters}</span>
+                <span>{priorities.join(',')}</span>
+                <span>{warnings.length}</span>
+                <span>{strongestPillar}</span>
+                <span>{latestHistoryItem?.id}</span>
+                <span>{fixedCostTone.badge}</span>
+              </div>
+            </>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
