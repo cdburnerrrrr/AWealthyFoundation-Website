@@ -20,8 +20,7 @@ export function useUserPlan() {
 
     const isActive =
       plan !== 'free' &&
-      expiresAt &&
-      expiresAt > new Date();
+      (!expiresAt || expiresAt > new Date());
 
     return {
       plan,

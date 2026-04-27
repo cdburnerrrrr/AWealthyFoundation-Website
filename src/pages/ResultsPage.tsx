@@ -977,8 +977,9 @@ function LockIcon(props: React.ComponentProps<typeof Shield>) {
 
 export default function ResultsPage() {
   const navigate = useNavigate();
-  const { currentAssessment, assessmentHistory, profile } = useAppStore() as any;
-  const actualPlan = useUserPlan() as PlanTier;
+  const { currentAssessment, assessmentHistory } = useAppStore() as any;
+  const userPlan = useUserPlan();
+  const actualPlan: PlanTier = userPlan.plan;
 
   const latestHistoryRecord = useMemo(() => {
     return safeArray(assessmentHistory as any[])

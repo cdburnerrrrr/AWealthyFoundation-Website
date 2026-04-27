@@ -950,7 +950,6 @@ export default function ComprehensiveQuestionnaire() {
     snapshotAnswers,
     setSnapshotAnswers,
     currentAssessment,
-    profile,
   } = useAppStore();
 
   const isContinueMode = searchParams.get('mode') === 'continue';
@@ -959,11 +958,9 @@ export default function ComprehensiveQuestionnaire() {
     [assessmentHistory]
   );
 
-  const actualPlan = useUserPlan();
-  const plan = actualPlan === 'standard' || actualPlan === 'premium' ? actualPlan : 'free';
-  const planExpiresAt = profile?.plan_expires_at ? new Date(profile.plan_expires_at) : null;
-  const hasActivePaidAccess =
-    plan !== 'free' && !!planExpiresAt && planExpiresAt.getTime() > Date.now();
+  const userPlan = useUserPlan();
+  const plan = userPlan.plan;
+  const hasActivePaidAccess = plan !== 'free' && !!userPlan.isActive;
 
   const gateState = useMemo(() => {
     if (plan === 'free') {
