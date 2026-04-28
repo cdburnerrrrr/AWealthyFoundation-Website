@@ -1995,7 +1995,7 @@ export default function ResultsPage() {
               </div>
             </div>
 
-
+          </div>
 
           <div
             data-pdf-dark-card="true"
@@ -2033,14 +2033,14 @@ export default function ResultsPage() {
         </section>
 
         <section
-      data-pdf-dark-card="true"
-      data-pdf-page-break-avoid="true"
-      className="mb-8 rounded-3xl border border-copper-300/25 bg-gradient-to-br from-[#244462] via-[#2a4f70] to-[#17385a] p-5 md:p-7 shadow-[0_20px_60px_rgba(0,0,0,0.24)]"
-    >
+          data-pdf-dark-card="true"
+          data-pdf-page-break-avoid="true"
+          className="mb-8 rounded-3xl border border-copper-300/25 bg-gradient-to-br from-[#244462] via-[#2a4f70] to-[#17385a] p-5 md:p-7 shadow-[0_20px_60px_rgba(0,0,0,0.24)]"
+        >
           <div className="mb-3 flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-copper-300/25 bg-copper-300/12">
               <Target className="h-4 w-4 text-copper-200" />
-          </section>
+            </div>
             <div>
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-copper-200">Best Next Move</div>
               <div className="mt-1 text-xl font-bold text-white">{bestNextMoveCard.title}</div>
@@ -2067,9 +2067,7 @@ export default function ResultsPage() {
               <p className="text-sm leading-6 text-white/90">{bestNextMoveCard.nextStep}</p>
             </div>
           </div>
-        </div>
-      </div>
-
+        </section>
         <HouseholdComparisonSection
           profileLabel={comparisonProfileLabel}
           comparisonMetrics={comparisonMetrics}
