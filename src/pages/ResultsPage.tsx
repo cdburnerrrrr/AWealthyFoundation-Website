@@ -1527,7 +1527,7 @@ export default function ResultsPage() {
     </div>
   </div>
 
-        <section className="grid lg:grid-cols-[1.2fr_0.8fr] gap-6 mb-6">
+        <section className="grid items-start lg:grid-cols-[1.2fr_0.8fr] gap-6 mb-8">
           <div
             data-pdf-dark-card="true"
             data-pdf-page-break-avoid="true"
@@ -1639,41 +1639,27 @@ export default function ResultsPage() {
               </div>
             </div>
 
-            <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5">
-              <div className="mb-4 flex items-center justify-between gap-4">
-                <div>
-                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-copper-200">Building Blocks</div>
-                  <div className="mt-1 text-sm text-white/65">A compact view of the seven blocks supporting your foundation.</div>
+            <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-copper-200">Report Focus</div>
+              <p className="mt-2 text-sm leading-6 text-white/70">
+                The dashboard is built for quick decisions. This report is built to explain the why behind the numbers and help you choose the next move with confidence.
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+                  <div className="text-xs text-white/50">Primary lever</div>
+                  <div className="mt-1 text-sm font-bold text-white">{bestNextMoveCard.title}</div>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+                  <div className="text-xs text-white/50">Strongest block</div>
+                  <div className="mt-1 text-sm font-bold text-white">{strongest[0] ? formatPillarName(strongest[0][0]) : '—'}</div>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+                  <div className="text-xs text-white/50">Next block</div>
+                  <div className="mt-1 text-sm font-bold text-white">{weakestPillar ? formatPillarName(weakestPillar) : '—'}</div>
                 </div>
               </div>
-
-              <div className="grid sm:grid-cols-2 gap-3">
-                {pillarEntries.map(([pillar, pillarScore]) => {
-                  const tone = getPillarTone(pillarScore);
-                  const Icon = PILLAR_ICONS[pillar] || CheckCircle2;
-
-                  return (
-                    <div key={`hero-block-${pillar}`} className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className="h-8 w-8 rounded-lg bg-white/10 flex items-center justify-center">
-                            <Icon className={`h-4 w-4 ${tone.text}`} />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="text-sm font-bold text-white truncate">{formatPillarName(pillar)}</div>
-                            <div className="text-xs text-white/55">{pillarScore}/100</div>
-                          </div>
-                        </div>
-                        <span className={`shrink-0 px-2 py-1 rounded-full text-[10px] font-semibold ${tone.badge}`}>{tone.label}</span>
-                      </div>
-                      <div className="mt-3 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                        <div className={`h-full ${tone.bar}`} style={{ width: `${Math.max(4, pillarScore)}%` }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
             </div>
+
           </div>
 
           <div
