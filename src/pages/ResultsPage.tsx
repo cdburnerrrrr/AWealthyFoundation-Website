@@ -209,15 +209,15 @@ function getPillarTone(score: number) {
 
 function getBandNarrative(score: number) {
   if (score >= 80) {
-    return 'You have a strong base in place. The opportunity now is less about dramatic change and more about refining the weaker edges of your foundation.';
+    return 'You have built a strong financial base. The work now is not starting over — it is refining the parts that are slightly out of balance so everything works together more efficiently.';
   }
   if (score >= 60) {
-    return 'You are moving in the right direction. Several parts of your foundation are working, but a few weaker areas are still limiting your overall momentum.';
+    return 'You are making real progress. Several parts of your foundation are working, but one or two weaker areas are still holding everything else back.';
   }
   if (score >= 40) {
-    return 'You have some meaningful pieces in place, but there are still gaps creating drag. Strengthening the right areas now could noticeably change the next 12 months.';
+    return 'There is a workable foundation here, but it is not yet stable. The right improvements now can create noticeable momentum over the next year.';
   }
-  return 'Right now, your financial foundation needs reinforcement before growth becomes the priority. The good news is that the biggest progress usually starts with a few focused moves, not a total overhaul.';
+  return 'Right now, the priority is stability. Once the pressure eases and a basic rhythm is in place, growth becomes much easier and more predictable.';
 }
 
 function formatDebtPressure(score: number) {
@@ -228,10 +228,10 @@ function formatDebtPressure(score: number) {
 }
 
 function buildExecutiveHeadline(score: number) {
-  if (score >= 80) return 'You’re ahead of most. Now let’s make your money work harder.';
-  if (score >= 60) return 'Good momentum, but a few gaps are holding back full progress.';
-  if (score >= 40) return 'A workable base is forming, but reinforcement is needed.';
-  return 'Stability comes first. The foundation needs attention now.';
+  if (score >= 80) return 'You are in a strong position. Now it is time to make your money work more intentionally.';
+  if (score >= 60) return 'You are moving in the right direction, but one gap is holding back your full progress.';
+  if (score >= 40) return 'You have something to build on, but the foundation still needs reinforcement.';
+  return 'The priority right now is reducing pressure and creating stability.';
 }
 
 function getScoreContextLine(score: number) {
@@ -243,18 +243,18 @@ function getScoreContextLine(score: number) {
 
 function getHeroScoreSupportLine(score: number) {
   if (score >= 80) {
-    return 'At this level, progress comes from refining what is already working — not starting over.';
+    return 'At this level, progress comes from refining what is already working — not adding more complexity.';
   }
 
   if (score >= 60) {
-    return 'You do not need to fix everything. One focused improvement can create the next level of progress.';
+    return 'You do not need to fix everything. One focused improvement can move the entire system forward.';
   }
 
   if (score >= 40) {
     return 'The opportunity now is not perfection — it is creating breathing room and consistency first.';
   }
 
-  return 'The first goal is to reduce pressure and build one repeatable habit that makes next month easier.';
+  return 'The first step is not optimization — it is reducing pressure so progress becomes possible.';
 }
 
 function getConstraintLine(pillar: string) {
@@ -297,7 +297,7 @@ function getBestNextMoveCard(
     return {
       title: 'Optimize your excess cash',
       intro:
-        'Your foundation is strong. The next opportunity is less about survival and more about making sure the money you already have is working efficiently.',
+        'You are past the basics. The next step is making sure your money is working efficiently, not just sitting in the right places.',
       rightNow: [
         cashMonths > 0
           ? `Your cash cushion covers about ${cashMonths.toFixed(1)} months of core expenses.`
@@ -307,7 +307,7 @@ function getBestNextMoveCard(
           : 'Some cash may be better positioned in higher-yield savings, investments, or another priority.',
       ],
       whyThisMatters:
-        'Cash creates safety, but excess idle cash can quietly slow long-term growth. The goal is not to drain your cushion — it is to define enough and put the rest to work intentionally.',
+        'Cash creates safety, but excess idle cash can quietly slow long-term growth. The goal is not to reduce safety — it is to define what is enough and put the rest to work intentionally.',
       nextStep:
         'Choose the cash reserve target that still feels safe, then redirect excess cash in stages toward higher-yield savings, investments, or another high-priority goal.',
       thisWeek: [
@@ -565,36 +565,36 @@ function getPriorityBody(pillar: string, isBiggest: boolean) {
   switch (pillar) {
     case 'income':
       return isBiggest
-        ? 'Your Income building block is currently the weakest part of your foundation. Increasing earning power or stability will unlock faster progress across saving, investing, and long-term growth.'
-        : 'Strengthening your Income building block will support continued growth and open up more financial flexibility.';
+        ? 'Income is the part of your system creating the most friction right now. Improving earning power or income stability would make every other goal easier to fund.'
+        : 'A stronger income base gives the rest of your financial plan more room to work.';
     case 'spending':
       return isBiggest
-        ? 'Your Spending building block is currently the weakest part of your foundation. Better control here can free up margin that improves nearly every other area.'
-        : 'Refining your Spending habits will help you keep more of what you earn and direct it toward your goals.';
+        ? 'Spending is the part of your system creating the most friction right now. Improving it would free up margin that benefits nearly every other area.'
+        : 'Refining spending helps more of your income stay available for the goals that matter most.';
     case 'saving':
       return isBiggest
-        ? 'Your Saving building block is currently the weakest part of your foundation. A stronger buffer would make the whole system more stable and resilient.'
-        : 'Strengthening your Saving habits will improve stability and give you more breathing room.';
+        ? 'Saving is the weakest support layer right now. A stronger cash buffer would make the entire foundation feel more stable and less vulnerable to surprise expenses.'
+        : 'Improving savings gives you more breathing room and makes future decisions less reactive.';
     case 'investing':
       return isBiggest
-        ? 'Your Investing building block is currently the weakest part of your foundation. More consistent investing is how today’s stability becomes long-term wealth.'
-        : 'Improving your Investing consistency will strengthen your long-term financial growth.';
+        ? 'Investing is the area most limiting long-term growth. More consistency here is how today’s income becomes future freedom.'
+        : 'Improving investing consistency will strengthen the long-term side of your foundation.';
     case 'debt':
       return isBiggest
-        ? 'Your Debt building block is currently the weakest part of your foundation. Lowering pressure here can quickly improve flexibility, confidence, and momentum.'
-        : 'Reducing debt further will continue improving your flexibility and financial confidence.';
+        ? 'Debt is creating the most drag right now. Reducing payment pressure would quickly improve flexibility, confidence, and monthly breathing room.'
+        : 'Reducing debt further keeps more of your income available for saving, investing, and choice.';
     case 'protection':
       return isBiggest
-        ? 'Your Protection building block is currently the weakest part of your foundation. Closing the right gaps now helps preserve the progress you have already made.'
-        : 'Strengthening your Protection will help safeguard the progress you are making.';
+        ? 'Protection is the area most likely to expose the progress you have already made. Closing the right gap now helps prevent one setback from becoming a major interruption.'
+        : 'Strengthening protection helps preserve the foundation you are building.';
     case 'vision':
       return isBiggest
-        ? 'Your Vision building block is currently the weakest part of your foundation. Clearer direction will make your next financial decisions easier to align and follow through on.'
-        : 'Refining your Vision will help align your decisions with your long-term goals.';
+        ? 'Vision is the area most in need of clarity. Sharper direction will make saving, spending, and investing decisions easier to align and follow through on.'
+        : 'Refining your vision helps connect daily decisions to the life you are actually trying to build.';
     default:
       return isBiggest
-        ? 'This is currently the weakest part of your foundation and the best place to focus first.'
-        : 'This is an area that could still be strengthened to support your overall progress.';
+        ? 'This is the area most likely to create the biggest lift if it improves first.'
+        : 'This is an area that could still be strengthened to support the full foundation.';
   }
 }
 
@@ -718,26 +718,26 @@ function getWarningTitle(type: StructuralWarning['type']) {
 function getWarningBody(type: StructuralWarning['type']) {
   switch (type) {
     case 'housing_pressure':
-      return 'A large share of your income is going toward housing and other must-pay bills. At this level, even good day-to-day budgeting may still feel tight.';
+      return 'Housing and other must-pay bills are taking a large share of monthly income. At this level, even good day-to-day budgeting may still feel tight because too much money is already committed.';
     case 'income_constraint':
-      return 'This looks more like a math problem than a discipline problem. Increasing income or lowering a major must-pay bill may create the biggest overall lift.';
+      return 'This looks more like a math problem than a discipline problem. Increasing income or lowering a major required bill may create the biggest overall lift.';
     case 'structural_pressure':
-      return 'Multiple required payments are competing for limited income. That kind of pressure can make saving, investing, and progress much harder.';
+      return 'Right now, too much of your income is already committed before you make any decisions. That limits flexibility and slows progress across everything else.';
     default:
-      return 'One or more fixed-cost pressures are limiting your flexibility right now.';
+      return 'Right now, too much of your income is already committed before you make any decisions. That limits flexibility and slows progress across everything else.';
   }
 }
 
 function getWarningAction(type: StructuralWarning['type']) {
   switch (type) {
     case 'housing_pressure':
-      return 'Review your housing picture first: rent or mortgage, utilities, and any other fixed obligations tied to your home.';
+      return 'Start with the housing picture: rent or mortgage, utilities, and any fixed obligations tied to the home. That is where the largest relief may be hiding.';
     case 'income_constraint':
-      return 'Look at the two highest-leverage paths: make more money, or reduce the biggest fixed cost in the system.';
+      return 'Focus on the two highest-leverage paths: increase income, reduce the largest required bill, or do both in a controlled way.';
     case 'structural_pressure':
-      return 'List your major fixed obligations in one place so you can see which pressure point needs to change first.';
+      return 'List every required monthly payment in one place. The goal is to find the payment that is creating the most pressure and address that first.';
     default:
-      return 'Start with the fixed cost putting the most pressure on your monthly cash flow.';
+      return 'Start with the fixed cost putting the most pressure on monthly cash flow.';
   }
 }
 
@@ -891,7 +891,7 @@ function getStructuralBestNextMove(
     return {
       title: 'Optimize your excess cash',
       intro:
-        'Your foundation is strong. The next opportunity is less about survival and more about making sure the money you already have is working efficiently.',
+        'You are past the basics. The next step is making sure your money is working efficiently, not just sitting in the right places.',
       rightNow: [
         cashMonths > 0
           ? `Your cash cushion covers about ${cashMonths.toFixed(1)} months of core expenses.`
@@ -901,7 +901,7 @@ function getStructuralBestNextMove(
           : 'Some cash may be better positioned in higher-yield savings, investments, or another priority.',
       ],
       whyThisMatters:
-        'Cash creates safety, but excess idle cash can quietly slow long-term growth. The goal is not to drain your cushion — it is to define enough and put the rest to work intentionally.',
+        'Cash creates safety, but excess idle cash can quietly slow long-term growth. The goal is not to reduce safety — it is to define what is enough and put the rest to work intentionally.',
       nextStep:
         'Choose the cash reserve target that still feels safe, then redirect excess cash in stages toward higher-yield savings, investments, or another high-priority goal.',
       thisWeek: [
@@ -994,17 +994,17 @@ function getWarningBodyWithMetrics(
   switch (warning.type) {
     case 'housing_pressure':
       if (fixedCost || housing || utilities) {
-        return `Your must-pay monthly bills are running at about ${fixedCost ?? 'a high share'} of take-home pay${housing ? `, with housing around ${housing}/month` : ''}${utilities ? ` and utilities around ${utilities}/month` : ''}. At this level, even good day-to-day budgeting may still feel tight because too much income is already committed.`;
+        return `Your must-pay monthly bills are running at about ${fixedCost ?? 'a high share'} of take-home pay${housing ? `, with housing around ${housing}/month` : ''}${utilities ? ` and utilities around ${utilities}/month` : ''}. At this level, even good day-to-day budgeting may still feel tight because too much income is already committed before the month begins.`;
       }
       return getWarningBody(warning.type);
     case 'income_constraint':
       if (fixedCost) {
-        return `Your mortgage/rent, utilities, and other must-pay bills are taking about ${fixedCost} of take-home pay. This looks more like a math problem than a discipline problem. Increasing income or lowering a major bill may create the biggest overall lift.`;
+        return `Your mortgage/rent, utilities, and other must-pay bills are taking about ${fixedCost} of take-home pay. This is less about discipline and more about math. Increasing income or lowering a major bill may create the biggest overall lift.`;
       }
       return getWarningBody(warning.type);
     case 'structural_pressure':
       if (debtToIncome || debtPayment) {
-        return `Debt payments and must-pay bills are stacking up. Non-housing debt payments are about ${debtPayment ?? 'a meaningful amount each month'}${debtToIncome ? `, or roughly ${debtToIncome} of take-home pay` : ''}. That kind of pressure can make saving, investing, and progress much harder.`;
+        return `Debt payments and must-pay bills are stacking up. Non-housing debt payments are about ${debtPayment ?? 'a meaningful amount each month'}${debtToIncome ? `, or roughly ${debtToIncome} of take-home pay` : ''}. That kind of pressure can make saving, investing, and progress feel harder than they should.`;
       }
       return getWarningBody(warning.type);
     default:
@@ -1133,7 +1133,7 @@ function getReportSummaryCards({
         ? `Mortgage/rent, utilities, and other must-pay bills are running around ${fixedCost} of take-home pay${debtPayments ? `, with debt payments near ${debtPayments}/month` : ''}. That shows how much room is left to save, invest, and absorb surprises.`
         : investments
           ? `Investments are about ${investments}. The question now is whether your current contribution habit and cash reserve are aligned with the future you want.`
-          : 'The numbers below provide context for the recommendation. The goal is not more information — it is choosing the next move with confidence.';
+          : 'The numbers below provide context for the recommendation. The value of the report is not more information — it is choosing the next move with confidence.';
 
   return [
     {
@@ -1306,18 +1306,18 @@ function getComparisonNarrative(metrics: ComparisonMetric[]) {
   const watchCount = metrics.filter((metric) => metric.status === 'watch').length;
 
   if (strongCount >= 4) {
-    return 'You are ahead of similar households in several key areas. The opportunity now is optimization: making sure the foundation you have built is working as efficiently as possible.';
+    return 'You are ahead of most households in several key areas. The opportunity now is not more effort — it is making sure what you have built is working as efficiently as possible.';
   }
 
   if (strongCount >= 2) {
-    return 'You are in a solid position compared to similar households, but one or two pressure points are still limiting the full strength of your foundation.';
+    return 'You are in a solid position compared to similar households. One or two pressure points are still limiting how strong this foundation could feel day to day.';
   }
 
   if (watchCount >= 3) {
-    return 'You are still building the foundation. The advantage is clarity: the gaps are visible now, which makes the next move easier to prioritize.';
+    return 'This comparison highlights where progress needs to start. The goal is not to catch up everywhere — it is to fix the one area that will make everything else easier.';
   }
 
-  return 'Your comparison profile is mixed, which is normal. Use the stronger areas as support while you focus on the one metric most likely to create breathing room.';
+  return 'Your numbers are mixed, which is normal. Use your stronger areas as support while you improve the one area that will create the most breathing room.';
 }
 
 function getComparisonPlainLabel(label: string) {
@@ -1385,8 +1385,9 @@ function getComparisonTakeaway(metrics: ComparisonMetric[]) {
       headline: 'You have more working than most people in your situation.',
       body: needsAttention
         ? `Your strongest signal is ${getComparisonPlainLabel(strongest.label)}. The area to keep an eye on is ${getComparisonPlainLabel(needsAttention.label)}.`
-        : `Your strongest signal is ${getComparisonPlainLabel(strongest.label)}. The next step is making the strong parts work together more efficiently.`,
-      nextMove: 'Do not chase every improvement at once. Pick the one area that creates the most room or growth over the next 90 days.',
+        : `Your strongest signal is ${getComparisonPlainLabel(strongest.label)}. The next step is making that strength work harder across your full financial picture.`,
+      nextMove:
+        'Do not try to improve everything at once. Focus on the one area that creates the most progress or relief over the next 90 days.',
       strongest,
       needsAttention,
     };
@@ -1394,22 +1395,24 @@ function getComparisonTakeaway(metrics: ComparisonMetric[]) {
 
   if (strongMetrics.length >= 2) {
     return {
-      headline: 'You are in a solid spot, but there is still one place holding things back.',
+      headline: 'You are in a solid spot, but one pressure point still deserves attention.',
       body: needsAttention
-        ? `You are doing well with ${getComparisonPlainLabel(strongest.label)}, but ${getComparisonPlainLabel(needsAttention.label)} deserves attention next.`
+        ? `You are doing well with ${getComparisonPlainLabel(strongest.label)}, but ${getComparisonPlainLabel(needsAttention.label)} is the area most likely to make day-to-day money feel easier.`
         : `You are doing well with ${getComparisonPlainLabel(strongest.label)}. The next step is turning that strength into more consistency across the full foundation.`,
-      nextMove: 'Use your stronger areas as the base, then focus on the one pressure point that would make day-to-day money feel easier.',
+      nextMove:
+        'Use your stronger areas as the base, then focus on the one pressure point that would create the most breathing room.',
       strongest,
       needsAttention,
     };
   }
 
   return {
-    headline: 'The comparison shows where to start, not that you are behind forever.',
+    headline: 'The foundation is still forming — but the next move is clear.',
     body: needsAttention
-      ? `The first area to improve is ${getComparisonPlainLabel(needsAttention.label)}. That is likely where progress will feel most noticeable.`
-      : 'Your numbers are mixed, which is normal. The goal now is to choose one place to build momentum.',
-    nextMove: 'Start with the area that creates the most breathing room, then build from there.',
+      ? `The first place to focus is ${getComparisonPlainLabel(needsAttention.label)}. Improving this will make the rest of your finances feel easier.`
+      : 'Your numbers are mixed, which is normal. The goal now is choosing one place to create momentum.',
+    nextMove:
+      'Start with the area that creates the most breathing room, then build from there.',
     strongest,
     needsAttention,
   };
@@ -1468,7 +1471,7 @@ function FoundationScoreBubble({
           {getScoreContextLine(score)}
         </div>
         <p className="mt-3 max-w-[15rem] text-sm leading-6 text-white/80">
-          This is the main number for the report — a quick read on the strength of your overall financial foundation.
+          This is the primary readout for your report — a clear signal of how well your financial foundation is working as a whole.
         </p>
       </div>
     </div>
@@ -1612,7 +1615,7 @@ function HouseholdComparisonSection({
             Here’s how you stack up against households in a similar stage of life.
           </h2>
           <p className="mt-3 text-sm leading-7 text-slate-600">
-            This section gives your numbers some real-world context. It is not a grade, and it is not meant to make you chase averages. It helps answer a simple question: where are you already doing well, and where would one improvement make life feel easier?
+            This section gives your numbers context. It is not a grade, and it is not meant to make you chase averages. It shows where you are already strong and where one focused improvement could make life feel easier.
           </p>
 
           <div className="mt-4 rounded-2xl border border-copper-200 bg-white/80 p-4">
