@@ -1650,9 +1650,9 @@ function HouseholdComparisonSection({
             </button>
           </div>
 
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <div className="mt-4 grid items-stretch gap-3 md:grid-cols-2">
             {comparisonTakeaway.strongest && (
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
+              <div className="flex h-full min-h-[190px] flex-col justify-between rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
                 <div className="flex items-center justify-between gap-2">
                   <div className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700">Working Well</div>
                   {strongestTone && (
@@ -1671,7 +1671,7 @@ function HouseholdComparisonSection({
               </div>
             )}
 
-            <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
+            <div className="flex h-full min-h-[190px] flex-col justify-between rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
               <div className="flex items-center justify-between gap-2">
                 <div className="text-xs font-bold uppercase tracking-[0.14em] text-amber-700">
                   {comparisonTakeaway.needsAttention ? 'Keep An Eye On' : 'Next Layer'}
@@ -1696,7 +1696,7 @@ function HouseholdComparisonSection({
             </div>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-copper-200 bg-copper-50/70 p-4">
+          <div className="mt-4 flex min-h-[120px] flex-col justify-between rounded-2xl border border-copper-200 bg-copper-50/70 p-4">
             <div className="text-xs font-bold uppercase tracking-[0.14em] text-copper-700">What to do with this</div>
             <p className="mt-2 text-sm font-semibold leading-7 text-navy-900">
               {comparisonTakeaway.nextMove}
@@ -1709,7 +1709,7 @@ function HouseholdComparisonSection({
         {comparisonMetrics.map((metric) => {
           const tone = getComparisonTone(metric.status);
           return (
-            <div key={metric.label} className="flex h-full min-h-[178px] flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
+            <div key={metric.label} className="flex h-full min-h-[205px] flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
               <div className="flex items-center justify-between gap-2">
                 <span className={`h-2.5 w-2.5 rounded-full ${tone.dot}`} />
                 <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${tone.badge}`}>
