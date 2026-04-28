@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { exportReportPdf } from '../utils/pdfExport';
+import ReportNewsletterCard from '../components/ReportNewsletterCard';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -1096,7 +1097,7 @@ function LockIcon(props: React.ComponentProps<typeof Shield>) {
 
 export default function ResultsPage() {
   const navigate = useNavigate();
-  const { currentAssessment, assessmentHistory } = useAppStore() as any;
+  const { user, currentAssessment, assessmentHistory } = useAppStore() as any;
   const userPlan = useUserPlan();
   const actualPlan: PlanTier = userPlan.plan;
 
@@ -1823,6 +1824,10 @@ export default function ResultsPage() {
           />
           </div>
         )}
+
+<div className="mt-8">
+  <ReportNewsletterCard userEmail={user?.email} />
+</div>
 
         <SectionShell icon={Clock3} title="Your 90-Day Plan" className="mb-6 pdf-avoid-break">
           <div className="grid lg:grid-cols-3 gap-4">
