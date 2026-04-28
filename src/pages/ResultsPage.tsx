@@ -1660,6 +1660,39 @@ export default function ResultsPage() {
               </div>
             </div>
 
+            <div className="mt-6 rounded-2xl border border-copper-300/20 bg-gradient-to-br from-white/[0.12] to-copper-300/[0.08] p-5 shadow-[0_18px_55px_rgba(0,0,0,0.18)]">
+              <div className="mb-3 flex items-center gap-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-copper-300/25 bg-copper-300/12">
+                  <Target className="h-4 w-4 text-copper-200" />
+                </div>
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-copper-200">Best Next Move</div>
+                  <div className="mt-1 text-xl font-bold text-white">{bestNextMoveCard.title}</div>
+                </div>
+              </div>
+
+              <p className="text-sm leading-7 text-white/82">{bestNextMoveCard.intro}</p>
+
+              <div className="mt-4 grid gap-3 md:grid-cols-[0.95fr_1.05fr]">
+                <div className="rounded-xl border border-white/10 bg-white/[0.05] p-4">
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-copper-200">Right now</div>
+                  <ul className="space-y-2">
+                    {bestNextMoveCard.rightNow.slice(0, 2).map((item, index) => (
+                      <li key={`hero-bnm-right-now-${index}`} className="flex items-start gap-2 text-sm leading-6 text-white/86">
+                        <span className="mt-2.5 h-1.5 w-1.5 rounded-full bg-copper-300" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="rounded-xl border border-copper-300/20 bg-copper-300/[0.08] p-4">
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-copper-200">Next step</div>
+                  <p className="text-sm leading-6 text-white/90">{bestNextMoveCard.nextStep}</p>
+                </div>
+              </div>
+            </div>
+
           </div>
 
           <div
@@ -1695,32 +1728,6 @@ export default function ResultsPage() {
 
             <ReportMiniBarChart entries={pillarEntries} />
 
-            <div className="mt-5 rounded-2xl bg-white/10 border border-white/10 p-5">
-              <div className="text-copper-300 text-sm font-semibold mb-2">Best Next Move</div>
-              <div className="space-y-4">
-                <div>
-                  <div className="font-semibold text-white mb-2">{bestNextMoveCard.title}</div>
-                  <p className="text-white/90 leading-7">{bestNextMoveCard.intro}</p>
-                </div>
-
-                <div>
-                  <div className="text-xs uppercase tracking-[0.18em] text-copper-200 mb-2">Right now</div>
-                  <ul className="space-y-2">
-                    {bestNextMoveCard.rightNow.map((item, index) => (
-                      <li key={`bnm-right-now-${index}`} className="flex items-start gap-2 text-white/90 leading-7">
-                        <span className="mt-3 h-1.5 w-1.5 rounded-full bg-copper-300" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
-                  <div className="text-xs uppercase tracking-[0.18em] text-copper-200 mb-2">Next step</div>
-                  <p className="text-white leading-7">{bestNextMoveCard.nextStep}</p>
-                </div>
-              </div>
-            </div>
           </div>
         </section>
 
