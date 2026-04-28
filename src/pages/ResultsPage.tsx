@@ -125,6 +125,13 @@ function getPlanBadgeMeta(plan: PlanTier) {
   return null;
 }
 
+
+function getHeroReportLabel(plan: PlanTier, reportTier: ReportTier) {
+  if (plan === 'premium' || reportTier === 'premium') return 'Foundation Roadmap ($79 Plan)';
+  if (plan === 'standard' || reportTier === 'standard') return 'Foundation Assessment ($29 Plan)';
+  return 'Snapshot (Free Plan)';
+}
+
 const PILLAR_ICONS: Record<string, React.ElementType> = {
   income: DollarSign,
   spending: CreditCard,
@@ -1408,15 +1415,13 @@ function getSnapshotFocus(bestNextMoveCard: BestNextMoveCard) {
 function FoundationScoreBubble({
   score,
   scoreBand,
-  adjustedScoreColor,
 }: {
   score: number;
   scoreBand: ReturnType<typeof getScoreBand>;
-  adjustedScoreColor: string;
 }) {
   return (
-    <div className="flex flex-col items-center lg:items-start">
-      <div className="relative flex h-40 w-40 items-center justify-center rounded-full bg-gradient-to-br from-[#ffe0b8] via-[#d79553] to-[#8f5427] p-1 shadow-[inset_0_2px_12px_rgba(255,255,255,0.55),inset_0_-18px_28px_rgba(85,38,12,0.38),0_24px_70px_rgba(194,120,58,0.46)] ring-1 ring-white/35 md:h-44 md:w-44">
+    <div className="flex flex-col items-center lg:items-start lg:pt-1">
+      <div className="relative flex h-40 w-40 items-center justify-center rounded-full bg-gradient-to-br from-[#ffe7c7] via-[#d79553] to-[#8f5427] p-1 shadow-[inset_0_3px_16px_rgba(255,255,255,0.62),inset_0_-20px_30px_rgba(85,38,12,0.4),0_24px_70px_rgba(194,120,58,0.46)] ring-1 ring-white/40 md:h-44 md:w-44">
         <div className="absolute left-8 top-7 h-12 w-20 rounded-full bg-white/35 blur-xl" />
         <div className="absolute inset-3 rounded-full border border-white/30 bg-gradient-to-br from-white/22 via-transparent to-black/12" />
         <div className="relative text-center">
@@ -1433,12 +1438,10 @@ function FoundationScoreBubble({
         <div className="text-xs font-semibold uppercase tracking-[0.18em] text-copper-200">
           Foundation Score
         </div>
-        <div
-          className={`mt-2 inline-flex rounded-full px-3 py-1 text-sm font-bold ${scoreBand.bg} ${adjustedScoreColor}`}
-        >
+        <div className="mt-2 inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-sm font-bold text-white/90 shadow-sm">
           {scoreBand.label}
         </div>
-        <p className="mt-3 max-w-[15rem] text-sm leading-6 text-white/72">
+        <p className="mt-3 max-w-[15rem] text-sm leading-6 text-white/78">
           This is the main number for the report — a quick read on the strength of your overall financial foundation.
         </p>
       </div>
@@ -1944,8 +1947,6 @@ export default function ResultsPage() {
   const warnings = result?.structuralWarnings || [];
   const metrics = result?.metrics;
   const scoreBand = useMemo(() => getScoreBand(result?.foundationScore ?? 0), [result]);
-  const adjustedScoreColor =
-    scoreBand.label === 'Needs Attention' ? 'text-copper-300' : scoreBand.color;
   const pillarScores = result?.pillarScores ?? result?.pillars ?? {};
 
   const currentAssessmentType =
@@ -2110,6 +2111,7 @@ export default function ResultsPage() {
   const assessmentAnswers = (((currentAssessment as any)?.answers ?? (latestHistoryRecord as any)?.answers ?? {}) as Record<string, any>);
   const comparisonProfileLabel = getBenchmarkProfileLabel(assessmentAnswers);
   const comparisonMetrics = getHouseholdComparisonMetrics(metrics, score, assessmentAnswers);
+  const heroReportLabel = getHeroReportLabel(actualPlan, reportTier);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0f2a44] via-[#132f4c] to-[#1e3a5f]">
@@ -2123,16 +2125,28 @@ export default function ResultsPage() {
             Back Home
           </button>
 
-          <div className="flex flex-col items-end">
-            <button
-              onClick={() => navigate('/my-foundation')}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-copper-600 text-white font-semibold shadow-sm hover:bg-copper-700 transition-colors"
-            >
-              Go to Dashboard
-              <ArrowRight className="w-4 h-4" />
-            </button>
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {features.showPdfButton && (
+                <button
+                  onClick={handlePdfClick}
+                  className="inline-flex items-center gap-2 rounded-xl border border-copper-200 bg-white px-4 py-2 text-sm font-semibold text-copper-700 shadow-sm transition-colors hover:bg-copper-50"
+                >
+                  Save as PDF
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
 
-            <div className="text-xs text-slate-500 mt-1 text-right">
+              <button
+                onClick={() => navigate('/my-foundation')}
+                className="inline-flex items-center gap-2 rounded-xl bg-copper-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-copper-700"
+              >
+                Go to Dashboard
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="text-xs text-slate-500 text-right">
               Track progress and view your full dashboard
             </div>
           </div>
@@ -2203,25 +2217,17 @@ export default function ResultsPage() {
               data-pdf-page-break-avoid="true"
               className="bg-gradient-to-br from-[#17385a] to-[#21456d] rounded-3xl border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.35)] p-6 md:p-8"
             >
-              <div className="flex flex-wrap items-center gap-3 mb-6">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-copper-50 text-copper-700 text-sm font-semibold">
-                  <Sparkles className="w-4 h-4" />
-                  Your Foundation Report
+              <div className="mb-6 flex flex-wrap items-center gap-3">
+                <div className="inline-flex items-center gap-2 rounded-full border border-copper-300/25 bg-white/10 px-3 py-1 text-sm font-semibold text-copper-100 shadow-sm">
+                  <Sparkles className="h-4 w-4 text-copper-200" />
+                  {heroReportLabel}
                 </div>
-
-                {planBadge && (
-                  <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold ${planBadge.className}`}>
-                    <CheckCircle2 className="w-4 h-4" />
-                    {planBadge.label}
-                  </div>
-                )}
               </div>
 
-              <div className="grid gap-7 lg:grid-cols-[auto_1fr] lg:items-center">
+              <div className="grid gap-7 lg:grid-cols-[auto_1fr] lg:items-start">
                 <FoundationScoreBubble
                   score={score}
                   scoreBand={scoreBand}
-                  adjustedScoreColor={adjustedScoreColor}
                 />
 
                 <div>
@@ -2249,25 +2255,15 @@ export default function ResultsPage() {
                     .
                   </p>
 
-                  <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-semibold leading-6 text-white/72">
+                  <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-semibold leading-6 text-white/82">
                     Most users revisit this every 90 days to see whether the score is improving and what should move next.
                   </div>
 
                   <div data-pdf-ignore="true" className="flex flex-wrap items-center gap-3 mt-6">
-                    {features.showPdfButton && (
-                      <button
-                        onClick={handlePdfClick}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-copper-600 text-white font-semibold shadow-sm hover:bg-copper-700 transition-colors"
-                      >
-                        Save as PDF
-                        <ArrowRight className="w-4 h-4" />
-                      </button>
-                    )}
-
-                    {reportTier !== 'premium' && (
+                    {actualPlan === 'free' && reportTier !== 'premium' && (
                       <button
                         onClick={() => navigate('/pricing')}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 text-white font-semibold border border-white/10 hover:bg-white/15 transition-colors"
+                        className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 py-2 font-semibold text-white transition-colors hover:bg-white/15"
                       >
                         Turn this into a step-by-step plan
                         <ArrowRight className="w-4 h-4" />
@@ -2620,7 +2616,7 @@ export default function ResultsPage() {
           </SectionShell>
         </section>
 
-        {!features.showPremiumGuidance && (
+        {actualPlan === 'free' && !features.showPremiumGuidance && (
           <section
             data-pdf-ignore="true"
             className="relative overflow-hidden rounded-3xl border border-copper-300/25 bg-gradient-to-r from-[#7c461c] via-[#b87333] to-[#d28b3c] p-5 md:p-7 mb-8 text-white shadow-[0_24px_70px_rgba(15,42,68,0.28)]"
