@@ -1094,135 +1094,321 @@ function getReportSummaryCards({
 }
 
 
-function getAgeBenchmarkLabel(source: any) {
-  const possibleAge = source?.age ?? source?.userAge ?? source?.currentAge;
-  const possibleRange = source?.ageRange ?? source?.age_group ?? source?.ageGroup;
+type ComparisonMetric = {
+  label: string;
+  status: 'ahead' | 'strong' | 'average' | 'watch';
+  headline: string;
+  detail: string;
+  myValue: number;
+  benchmarkValue: number;
+  myLabel: string;
+  benchmarkLabel: string;
+  unit: 'currency' | 'percent' | 'score';
+};
 
-  if (typeof possibleRange === 'string' && possibleRange.trim()) {
-    return possibleRange.replace(/_/g, ' ');
-  }
-
-  const numericAge = Number(possibleAge);
-  if (!Number.isNaN(numericAge) && numericAge > 0) {
-    if (numericAge < 30) return 'under 30';
-    if (numericAge < 40) return '30s';
-    if (numericAge < 50) return '40s';
-    if (numericAge < 60) return '50s';
-    if (numericAge < 70) return '60s';
-    return '70+';
-  }
-
-  return 'your life stage';
+function normalizePercentMetric(value?: number) {
+  if (value === undefined || value === null || Number.isNaN(Number(value))) return 0;
+  const numeric = Number(value);
+  return numeric > 1 ? numeric : numeric * 100;
 }
 
-function getBenchmarkTone(score: number) {
-  if (score >= 90) {
-    return {
-      headline: 'You are ahead of the pack',
-      label: 'Strong position',
-      note: 'Your score suggests a stronger foundation than the typical household that is still trying to get organized.',
-    };
-  }
+function getBenchmarkProfileLabel(answers?: Record<string, any>) {
+  const ageRange = answers?.ageRange || answers?.age || answers?.householdAgeRange || answers?.lifeStage;
+  const marital = answers?.maritalStatus || answers?.relationshipStatus;
+  const dependents = answers?.dependents || answers?.numberOfDependents || answers?.hasDependents;
 
-  if (score >= 80) {
-    return {
-      headline: 'You are building from strength',
-      label: 'Above average foundation',
-      note: 'Your foundation is strong enough that optimization matters more than basic stabilization.',
-    };
-  }
+  const pieces = [];
+  if (ageRange && typeof ageRange === 'string') pieces.push(String(ageRange).replaceAll('_', ' '));
+  if (marital && typeof marital === 'string') pieces.push(String(marital).replaceAll('_', ' '));
+  if (dependents === 0 || dependents === '0' || dependents === false || dependents === 'no') pieces.push('no dependents');
 
-  if (score >= 60) {
-    return {
-      headline: 'You have real momentum',
-      label: 'Building momentum',
-      note: 'You are past the starting line, but a few focused changes could create a visible jump.',
-    };
-  }
-
-  return {
-    headline: 'You have a clear starting point',
-    label: 'Rebuild opportunity',
-    note: 'The goal is not comparison for its own sake. The value is knowing which next move creates the biggest lift.',
-  };
+  return pieces.length ? pieces.join(' / ') : 'similar U.S. households';
 }
 
-function PeerBenchmarkCard({
-  score,
-  metrics,
-  ageLabel,
-}: {
-  score: number;
-  metrics?: ResultShape['metrics'];
-  ageLabel: string;
-}) {
-  const tone = getBenchmarkTone(score);
-  const cashMonths = Number(metrics?.emergencyFundMonths ?? 0);
+function getAgeBasedNetWorthBenchmark(answers?: Record<string, any>) {
+  const raw = String(answers?.ageRange || answers?.age || answers?.householdAgeRange || '').toLowerCase();
+  if (raw.includes('65') || raw.includes('retired')) return 410000;
+  if (raw.includes('55') || raw.includes('55-64') || raw.includes('55_64')) return 364000;
+  if (raw.includes('45') || raw.includes('45-54') || raw.includes('45_54')) return 250000;
+  if (raw.includes('35') || raw.includes('35-44') || raw.includes('35_44')) return 135000;
+  if (raw.includes('25') || raw.includes('25-34') || raw.includes('25_34')) return 40000;
+  return 192000;
+}
+
+function formatComparisonValue(value: number, unit: ComparisonMetric['unit']) {
+  if (unit === 'currency') return formatCurrency(value) || '$0';
+  if (unit === 'percent') return `${Math.round(value)}%`;
+  return `${Math.round(value)}/100`;
+}
+
+function getHouseholdComparisonMetrics(
+  metrics: ResultShape['metrics'] | undefined,
+  score: number,
+  answers?: Record<string, any>
+): ComparisonMetric[] {
   const netWorth = Number(metrics?.netWorth ?? 0);
-  const investingRate = Number(metrics?.investmentContributionRate ?? metrics?.savingsRate ?? 0);
+  const nonMortgageDebt = Number(metrics?.totalDebtBalance ?? 0);
+  const fixedCostRatio = normalizePercentMetric(metrics?.fixedCostPressureRatio);
+  const savingsRate = normalizePercentMetric(metrics?.savingsRate);
+  const investingRate = normalizePercentMetric(metrics?.investmentContributionRate);
+  const netWorthBenchmark = getAgeBasedNetWorthBenchmark(answers);
 
-  const rows = [
+  const debtBenchmark = 6500;
+  const savingsBenchmark = 5;
+  const investingBenchmark = 10;
+  const fixedCostBenchmark = 50;
+
+  return [
     {
-      label: 'Foundation Score',
-      value: `${score}/100`,
-      status: score >= 80 ? 'Ahead' : score >= 60 ? 'On track' : 'Needs lift',
-      width: Math.max(8, Math.min(100, score)),
+      label: 'Net Worth',
+      status: netWorth >= netWorthBenchmark * 1.5 ? 'ahead' : netWorth >= netWorthBenchmark ? 'strong' : netWorth >= netWorthBenchmark * 0.65 ? 'average' : 'watch',
+      headline:
+        netWorth >= netWorthBenchmark
+          ? 'Ahead of the typical household benchmark'
+          : 'Below the typical household benchmark',
+      detail: `Your estimated net worth is compared against a broad age-based U.S. household benchmark. This is directional, not a precise percentile.`,
+      myValue: netWorth,
+      benchmarkValue: netWorthBenchmark,
+      myLabel: 'You',
+      benchmarkLabel: 'Typical benchmark',
+      unit: 'currency',
     },
     {
-      label: 'Cash Cushion',
-      value: cashMonths > 0 ? `${cashMonths.toFixed(1)} months` : 'Not entered',
-      status: cashMonths >= 12 ? 'Very strong' : cashMonths >= 6 ? 'Stable' : 'Thin',
-      width: Math.max(8, Math.min(100, (cashMonths / 24) * 100)),
+      label: 'Consumer Debt',
+      status: nonMortgageDebt <= 0 ? 'ahead' : nonMortgageDebt <= debtBenchmark ? 'strong' : nonMortgageDebt <= debtBenchmark * 2 ? 'average' : 'watch',
+      headline:
+        nonMortgageDebt <= 0
+          ? 'Better than most: no consumer debt showing'
+          : nonMortgageDebt <= debtBenchmark
+            ? 'Consumer debt looks controlled'
+            : 'Consumer debt may be creating drag',
+      detail: 'This compares non-mortgage debt only. Mortgages belong in net worth and housing pressure, not consumer debt pressure.',
+      myValue: nonMortgageDebt,
+      benchmarkValue: debtBenchmark,
+      myLabel: 'You',
+      benchmarkLabel: 'Common benchmark',
+      unit: 'currency',
     },
     {
-      label: 'Net Worth Base',
-      value: netWorth ? formatCurrency(netWorth) || '—' : 'Not entered',
-      status: netWorth >= 500000 ? 'Strong' : netWorth >= 100000 ? 'Established' : 'Building',
-      width: Math.max(8, Math.min(100, netWorth / 10000)),
+      label: 'Savings Rate',
+      status: savingsRate >= 15 ? 'ahead' : savingsRate >= 10 ? 'strong' : savingsRate >= savingsBenchmark ? 'average' : 'watch',
+      headline:
+        savingsRate >= 10
+          ? 'Saving more aggressively than many households'
+          : 'Savings rate could use more lift',
+      detail: 'Savings rate is one of the clearest signs of monthly margin. This uses your reported or calculated savings behavior.',
+      myValue: savingsRate,
+      benchmarkValue: savingsBenchmark,
+      myLabel: 'You',
+      benchmarkLabel: 'Typical range',
+      unit: 'percent',
     },
     {
       label: 'Investing Rate',
-      value: investingRate > 0 ? `${Math.round(investingRate)}%` : 'Not entered',
-      status: investingRate >= 15 ? 'Strong' : investingRate >= 10 ? 'Solid' : 'Opportunity',
-      width: Math.max(8, Math.min(100, (investingRate / 20) * 100)),
+      status: investingRate >= 15 ? 'ahead' : investingRate >= investingBenchmark ? 'strong' : investingRate >= 5 ? 'average' : 'watch',
+      headline:
+        investingRate >= investingBenchmark
+          ? 'Investing habit looks stronger than average'
+          : 'Investing consistency is a growth lever',
+      detail: 'This includes your reported monthly investing contribution when available. It is compared to a practical contribution benchmark, not an official percentile.',
+      myValue: investingRate,
+      benchmarkValue: investingBenchmark,
+      myLabel: 'You',
+      benchmarkLabel: 'Strong target',
+      unit: 'percent',
+    },
+    {
+      label: 'Fixed Cost Load',
+      status: fixedCostRatio <= 45 ? 'ahead' : fixedCostRatio <= fixedCostBenchmark ? 'strong' : fixedCostRatio <= 70 ? 'watch' : 'watch',
+      headline:
+        fixedCostRatio <= fixedCostBenchmark
+          ? 'Fixed costs are near the healthy range'
+          : 'Fixed costs are higher than ideal',
+      detail: 'This is one of your unique Foundation metrics. Lower fixed costs usually create more flexibility for saving, investing, and handling surprises.',
+      myValue: fixedCostRatio,
+      benchmarkValue: fixedCostBenchmark,
+      myLabel: 'You',
+      benchmarkLabel: 'Healthy target',
+      unit: 'percent',
     },
   ];
+}
+
+function getComparisonTone(status: ComparisonMetric['status']) {
+  if (status === 'ahead') return { badge: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500', label: 'Ahead' };
+  if (status === 'strong') return { badge: 'bg-teal-100 text-teal-700', dot: 'bg-teal-500', label: 'Strong' };
+  if (status === 'average') return { badge: 'bg-amber-100 text-amber-700', dot: 'bg-amber-500', label: 'Typical' };
+  return { badge: 'bg-orange-100 text-orange-700', dot: 'bg-orange-500', label: 'Watch' };
+}
+
+function ComparisonBar({ metric }: { metric: ComparisonMetric }) {
+  const maxValue = Math.max(metric.myValue, metric.benchmarkValue, 1);
+  const myWidth = Math.max(4, Math.min(100, (metric.myValue / maxValue) * 100));
+  const benchmarkWidth = Math.max(4, Math.min(100, (metric.benchmarkValue / maxValue) * 100));
+  const lowerIsBetter = metric.label === 'Consumer Debt' || metric.label === 'Fixed Cost Load';
 
   return (
-    <div className="rounded-2xl border border-copper-300/20 bg-gradient-to-br from-copper-300/[0.13] via-white/[0.07] to-white/[0.035] p-4 shadow-[0_18px_55px_rgba(0,0,0,0.18)]">
-      <div className="mb-4 flex items-start justify-between gap-4">
+    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="mb-3 flex items-start justify-between gap-4">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-copper-200">
-            Compared to others {ageLabel !== 'your life stage' ? `in their ${ageLabel}` : 'at your stage'}
-          </div>
-          <div className="mt-2 text-xl font-bold text-white">{tone.headline}</div>
-          <p className="mt-2 text-sm leading-6 text-white/72">{tone.note}</p>
+          <div className="font-bold text-navy-900">{metric.label}</div>
+          <div className="mt-1 text-sm text-slate-600">{metric.headline}</div>
         </div>
-        <div className="shrink-0 rounded-2xl border border-white/10 bg-white/[0.08] px-3 py-2 text-right">
-          <div className="text-2xl font-bold text-copper-100">{score}</div>
-          <div className="text-[10px] uppercase tracking-[0.16em] text-white/55">Score</div>
-        </div>
+        <span className="rounded-full bg-copper-50 px-3 py-1 text-xs font-semibold text-copper-700">
+          {lowerIsBetter ? 'Lower is better' : 'Higher is better'}
+        </span>
       </div>
 
       <div className="space-y-3">
-        {rows.map((row) => (
-          <div key={row.label}>
-            <div className="mb-1 flex items-center justify-between gap-3 text-xs">
-              <span className="font-semibold text-white/82">{row.label}</span>
-              <span className="text-white/60">{row.value}</span>
-            </div>
-            <div className="h-2 overflow-hidden rounded-full bg-white/10">
-              <div className="h-full rounded-full bg-copper-300" style={{ width: `${row.width}%` }} />
-            </div>
-            <div className="mt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-copper-100/80">
-              {row.status}
-            </div>
+        <div>
+          <div className="mb-1 flex justify-between text-xs font-semibold text-copper-700">
+            <span>{metric.myLabel}</span>
+            <span>{formatComparisonValue(metric.myValue, metric.unit)}</span>
           </div>
-        ))}
+          <div className="h-3 rounded-full bg-slate-100 overflow-hidden">
+            <div className="h-full rounded-full bg-copper-600" style={{ width: `${myWidth}%` }} />
+          </div>
+        </div>
+
+        <div>
+          <div className="mb-1 flex justify-between text-xs font-semibold text-navy-800">
+            <span>{metric.benchmarkLabel}</span>
+            <span>{formatComparisonValue(metric.benchmarkValue, metric.unit)}</span>
+          </div>
+          <div className="h-3 rounded-full bg-slate-100 overflow-hidden">
+            <div className="h-full rounded-full bg-navy-800" style={{ width: `${benchmarkWidth}%` }} />
+          </div>
+        </div>
       </div>
 
-      <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.05] p-3 text-xs leading-5 text-white/62">
-        Benchmark language is a directional guide based on your reported numbers and Foundation Score, not a formal national percentile.
+      <p className="mt-3 text-sm leading-6 text-slate-600">{metric.detail}</p>
+    </div>
+  );
+}
+
+function HouseholdComparisonSection({
+  profileLabel,
+  comparisonMetrics,
+  onMoreInfo,
+}: {
+  profileLabel: string;
+  comparisonMetrics: ComparisonMetric[];
+  onMoreInfo: () => void;
+}) {
+  const aheadCount = comparisonMetrics.filter((item) => item.status === 'ahead' || item.status === 'strong').length;
+  const watchCount = comparisonMetrics.filter((item) => item.status === 'watch').length;
+
+  return (
+    <section
+      data-pdf-card="true"
+      className="mb-8 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/95 via-copper-50/95 to-white/95 p-5 md:p-7 shadow-[0_20px_60px_rgba(15,42,68,0.18)]"
+    >
+      <div className="grid gap-6 lg:grid-cols-[0.95fr_1.4fr] lg:items-center">
+        <div>
+          <div className="inline-flex items-center rounded-full bg-copper-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-copper-800">
+            How You Compare
+          </div>
+          <h2 className="mt-4 text-2xl md:text-3xl font-bold text-navy-900">
+            Compared to households like yours, here’s where you stand.
+          </h2>
+          <p className="mt-3 text-sm leading-7 text-slate-600">
+            This V1 benchmark uses broad U.S. household reference points and your assessment data. It is directional, but it helps answer the question most people quietly have: “Am I ahead, behind, or on track?”
+          </p>
+
+          <div className="mt-4 rounded-2xl border border-copper-200 bg-white/80 p-4">
+            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-copper-700">Comparison group</div>
+            <div className="mt-1 text-lg font-bold text-navy-900 capitalize">{profileLabel}</div>
+            <div className="mt-2 text-sm text-slate-600">
+              {aheadCount} of {comparisonMetrics.length} areas look strong or ahead. {watchCount ? `${watchCount} area${watchCount > 1 ? 's' : ''} deserve${watchCount === 1 ? 's' : ''} attention.` : 'No major comparison warnings triggered.'}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          {comparisonMetrics.map((metric) => {
+            const tone = getComparisonTone(metric.status);
+            return (
+              <div key={metric.label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`h-2.5 w-2.5 rounded-full ${tone.dot}`} />
+                  <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${tone.badge}`}>
+                    {tone.label}
+                  </span>
+                </div>
+                <div className="mt-3 text-sm font-bold text-navy-900">{metric.label}</div>
+                <div className="mt-2 text-xl font-black text-copper-700">
+                  {formatComparisonValue(metric.myValue, metric.unit)}
+                </div>
+                <div className="mt-1 text-xs leading-5 text-slate-500">
+                  vs {formatComparisonValue(metric.benchmarkValue, metric.unit)} benchmark
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="mt-5 flex flex-col gap-3 border-t border-copper-200 pt-4 md:flex-row md:items-center md:justify-between">
+        <p className="text-sm leading-6 text-slate-600">
+          Benchmarks are not a judgment. They are a context layer to help you decide what deserves attention now.
+        </p>
+        <button
+          type="button"
+          onClick={onMoreInfo}
+          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-copper-300 bg-white px-4 py-2 text-sm font-bold text-copper-700 hover:bg-copper-50 transition-colors"
+        >
+          More info
+          <ArrowRight className="h-4 w-4" />
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function HouseholdComparisonModal({
+  comparisonMetrics,
+  profileLabel,
+  onClose,
+}: {
+  comparisonMetrics: ComparisonMetric[];
+  profileLabel: string;
+  onClose: () => void;
+}) {
+  return (
+    <div data-pdf-ignore="true" className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4">
+      <div className="max-h-[88vh] w-full max-w-5xl overflow-y-auto rounded-3xl bg-slate-50 shadow-2xl">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white/95 p-5 backdrop-blur">
+          <div>
+            <div className="inline-flex rounded-full bg-copper-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-copper-700">
+              Comparison Details
+            </div>
+            <h3 className="mt-3 text-2xl font-bold text-navy-900">How the benchmarks are read</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Compared against {profileLabel}. These are broad, directional benchmarks for decision support — not exact percentile rankings.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-100"
+          >
+            Close
+          </button>
+        </div>
+
+        <div className="grid gap-4 p-5 md:grid-cols-2">
+          {comparisonMetrics.map((metric) => (
+            <ComparisonBar key={`modal-${metric.label}`} metric={metric} />
+          ))}
+        </div>
+
+        <div className="border-t border-slate-200 bg-white p-5">
+          <div className="rounded-2xl border border-copper-200 bg-copper-50 p-4">
+            <div className="font-bold text-navy-900">How to use this</div>
+            <p className="mt-2 text-sm leading-7 text-slate-700">
+              Use the comparison to find leverage, not shame. If you are ahead in net worth and debt but behind on fixed costs, your best opportunity is usually efficiency. If you are behind in savings or investing, the next move is consistency before complexity.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1444,6 +1630,7 @@ export default function ResultsPage() {
   const features = getReportFeatures(reportTier);
   const planBadge = getPlanBadgeMeta(shouldGateFullReport ? 'free' : actualPlan);
   const [showPdfUpgradeModal, setShowPdfUpgradeModal] = useState(false);
+  const [showComparisonModal, setShowComparisonModal] = useState(false);
 
   const handlePdfClick = async () => {
   if (!features.allowFullPdfExport) {
@@ -1576,12 +1763,9 @@ export default function ResultsPage() {
     score,
   });
   const ninetyDayPlanPhases = getNinetyDayPlanPhases(bestNextMoveCard, weakestPillar, metrics);
-  const answerSource =
-    (currentAssessment as any)?.answers ??
-    (latestHistoryRecord as any)?.answers ??
-    (rawCurrentResult as any)?.answers ??
-    {};
-  const ageBenchmarkLabel = getAgeBenchmarkLabel(answerSource);
+  const assessmentAnswers = (((currentAssessment as any)?.answers ?? (latestHistoryRecord as any)?.answers ?? {}) as Record<string, any>);
+  const comparisonProfileLabel = getBenchmarkProfileLabel(assessmentAnswers);
+  const comparisonMetrics = getHouseholdComparisonMetrics(metrics, score, assessmentAnswers);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0f2a44] via-[#132f4c] to-[#1e3a5f]">
@@ -1881,27 +2065,17 @@ export default function ResultsPage() {
             <div className="my-5 h-px bg-white/10" />
 
             <ReportMiniBarChart entries={pillarEntries} />
-
-            <div className="my-5 h-px bg-white/10" />
-
-            <PeerBenchmarkCard
-              score={score}
-              metrics={metrics}
-              ageLabel={ageBenchmarkLabel}
-            />
           </div>
         </section>
+
+        <HouseholdComparisonSection
+          profileLabel={comparisonProfileLabel}
+          comparisonMetrics={comparisonMetrics}
+          onMoreInfo={() => setShowComparisonModal(true)}
+        />
+
         <section className="grid lg:grid-cols-[0.95fr_1.05fr] gap-6 mb-6">
           <SectionShell icon={Target} title="Priority Opportunities">
-            <div className="mb-5 rounded-2xl border border-copper-200 bg-gradient-to-r from-copper-50 to-white p-4">
-              <div className="text-sm font-bold text-copper-800">
-                If you only fix one thing first, focus here: {bestNextMoveCard.title}
-              </div>
-              <p className="mt-2 text-sm leading-6 text-gray-700">
-                This is the move most likely to create the clearest lift before you spread attention across the rest of the foundation.
-              </p>
-            </div>
-
             {getStructuralContextNote(warnings, metrics) && (
               <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-900">
                 {getStructuralContextNote(warnings, metrics)}
@@ -2108,14 +2282,12 @@ export default function ResultsPage() {
                   Premium Roadmap
                 </div>
                 <h2 className="text-2xl md:text-3xl font-bold mb-2">
-                  Turn this into a 12-month execution plan.
+                  Turn this report into a guided execution plan.
                 </h2>
                 <p className="text-white/88 leading-7">
-                  Know exactly what to do next, what to ignore, and how to move forward without second-guessing every financial decision.
+                  Premium adds the missing layer: what to do first, what to ignore for now,
+                  and how to move through the next 12 months without trying to fix everything at once.
                 </p>
-                <div className="mt-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/70">
-                  Most users update their plan every 90 days to stay on track.
-                </div>
                 <div className="mt-4 grid gap-2 text-sm text-white/90 sm:grid-cols-3">
                   <div className="rounded-2xl border border-white/15 bg-white/10 p-3">Priority ladder</div>
                   <div className="rounded-2xl border border-white/15 bg-white/10 p-3">Quarterly action plan</div>
@@ -2153,7 +2325,7 @@ export default function ResultsPage() {
         <SectionShell icon={Clock3} title="Your 90-Day Plan" className="mb-6 pdf-avoid-break">
           <div className="mb-5 rounded-2xl border border-copper-200 bg-gradient-to-r from-copper-50 to-white p-4">
             <div className="text-sm font-semibold uppercase tracking-[0.18em] text-copper-700">
-              Your next 90 days should follow a sequence — not a scattershot of goals
+              Your next 90 days should be sequenced, not scattered
             </div>
             <p className="mt-2 text-sm leading-7 text-gray-700">
               The goal is not to attack every building block at once. Start with the highest-leverage move, turn it into a repeatable system, then reassess before choosing the next priority.
@@ -2224,6 +2396,14 @@ export default function ResultsPage() {
             Track progress, revisit your plan, and keep building momentum
           </p>
         </div>
+
+        {showComparisonModal && (
+          <HouseholdComparisonModal
+            comparisonMetrics={comparisonMetrics}
+            profileLabel={comparisonProfileLabel}
+            onClose={() => setShowComparisonModal(false)}
+          />
+        )}
 
         {showPdfUpgradeModal && (
           <div
