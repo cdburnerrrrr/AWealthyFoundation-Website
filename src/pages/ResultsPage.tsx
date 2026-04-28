@@ -1652,7 +1652,7 @@ function HouseholdComparisonSection({
 
           <div className="mt-4 grid items-stretch gap-3 md:grid-cols-2">
             {comparisonTakeaway.strongest && (
-              <div className="flex min-h-[190px] flex-col justify-between rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
+              <div className="flex h-full min-h-[190px] flex-col justify-between rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
                 <div className="flex items-center justify-between gap-2">
                   <div className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700">Working Well</div>
                   {strongestTone && (
@@ -1671,7 +1671,7 @@ function HouseholdComparisonSection({
               </div>
             )}
 
-            <div className="flex min-h-[190px] flex-col justify-between rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
+            <div className="flex h-full min-h-[190px] flex-col justify-between rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
               <div className="flex items-center justify-between gap-2">
                 <div className="text-xs font-bold uppercase tracking-[0.14em] text-amber-700">
                   {comparisonTakeaway.needsAttention ? 'Keep An Eye On' : 'Next Layer'}
@@ -1709,7 +1709,7 @@ function HouseholdComparisonSection({
         {comparisonMetrics.map((metric) => {
           const tone = getComparisonTone(metric.status);
           return (
-            <div key={metric.label} className="flex min-h-[205px] flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
+            <div key={metric.label} className="flex h-full min-h-[205px] flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
               <div className="flex items-center justify-between gap-2">
                 <span className={`h-2.5 w-2.5 rounded-full ${tone.dot}`} />
                 <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${tone.badge}`}>
@@ -2452,7 +2452,7 @@ export default function ResultsPage() {
           onMoreInfo={() => setShowComparisonModal(true)}
         />
 
-        <section className="grid lg:grid-cols-[0.95fr_1.05fr] gap-6 mb-6">
+        <section className="grid items-start gap-6 mb-6 lg:grid-cols-2">
           <SectionShell icon={Target} title="Priority Opportunities">
             {getStructuralContextNote(warnings, metrics) && (
               <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-900">
@@ -2576,7 +2576,7 @@ export default function ResultsPage() {
           </SectionShell>
         </section>
 
-        <section className="grid lg:grid-cols-2 gap-6 mb-6">
+        <section className="grid items-start gap-6 mb-6 lg:grid-cols-2">
           <SectionShell icon={Sparkles} title="Foundation Stress Test">
             {warnings.length > 0 ? (
               <div className="space-y-4">
