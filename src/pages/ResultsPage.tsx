@@ -2239,7 +2239,7 @@ export default function ResultsPage() {
                     {buildExecutiveHeadline(score)}
                   </h1>
 
-                  <p className="text-base md:text-lg text-white/82 max-w-3xl leading-8">
+                  <p className="text-base md:text-lg text-white/80 max-w-3xl leading-8">
                     {getBandNarrative(score)}
                   </p>
 
@@ -2255,7 +2255,7 @@ export default function ResultsPage() {
                     .
                   </p>
 
-                  <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-semibold leading-6 text-white/82">
+                  <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-semibold leading-6 text-white/80">
                     Most users revisit this every 90 days to see whether the score is improving and what should move next.
                   </div>
 
