@@ -1995,43 +1995,7 @@ export default function ResultsPage() {
               </div>
             </div>
 
-            <div
-              data-pdf-dark-card="true"
-              data-pdf-page-break-avoid="true"
-              className="rounded-3xl border border-copper-300/20 bg-gradient-to-br from-white/[0.12] to-copper-300/[0.08] p-5 md:p-6 shadow-[0_18px_55px_rgba(0,0,0,0.18)]"
-            >
-              <div className="mb-3 flex items-center gap-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-copper-300/25 bg-copper-300/12">
-                  <Target className="h-4 w-4 text-copper-200" />
-                </div>
-                <div>
-                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-copper-200">Best Next Move</div>
-                  <div className="mt-1 text-xl font-bold text-white">{bestNextMoveCard.title}</div>
-                </div>
-              </div>
 
-              <p className="text-sm leading-7 text-white/82">{bestNextMoveCard.intro}</p>
-
-              <div className="mt-4 grid gap-3 md:grid-cols-[0.95fr_1.05fr]">
-                <div className="rounded-xl border border-white/10 bg-white/[0.05] p-4">
-                  <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-copper-200">Right now</div>
-                  <ul className="space-y-2">
-                    {bestNextMoveCard.rightNow.slice(0, 2).map((item, index) => (
-                      <li key={`bnm-focus-${index}`} className="flex items-start gap-2 text-sm leading-6 text-white/82">
-                        <span className="mt-2 h-1.5 w-1.5 rounded-full bg-copper-300" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="rounded-xl border border-white/10 bg-white/[0.05] p-4">
-                  <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-copper-200">Next step</div>
-                  <p className="text-sm leading-6 text-white/90">{bestNextMoveCard.nextStep}</p>
-                </div>
-              </div>
-            </div>
-          </div>
 
           <div
             data-pdf-dark-card="true"
@@ -2067,6 +2031,44 @@ export default function ResultsPage() {
             <ReportMiniBarChart entries={pillarEntries} />
           </div>
         </section>
+
+        <section
+      data-pdf-dark-card="true"
+      data-pdf-page-break-avoid="true"
+      className="mb-8 rounded-3xl border border-copper-300/25 bg-gradient-to-br from-[#244462] via-[#2a4f70] to-[#17385a] p-5 md:p-7 shadow-[0_20px_60px_rgba(0,0,0,0.24)]"
+    >
+          <div className="mb-3 flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-copper-300/25 bg-copper-300/12">
+              <Target className="h-4 w-4 text-copper-200" />
+          </section>
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-copper-200">Best Next Move</div>
+              <div className="mt-1 text-xl font-bold text-white">{bestNextMoveCard.title}</div>
+            </div>
+          </div>
+
+          <p className="text-sm leading-7 text-white/82">{bestNextMoveCard.intro}</p>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-[0.95fr_1.05fr]">
+            <div className="rounded-xl border border-white/10 bg-white/[0.05] p-4">
+              <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-copper-200">Right now</div>
+              <ul className="space-y-2">
+                {bestNextMoveCard.rightNow.slice(0, 2).map((item, index) => (
+                  <li key={`bnm-focus-${index}`} className="flex items-start gap-2 text-sm leading-6 text-white/82">
+                    <span className="mt-2 h-1.5 w-1.5 rounded-full bg-copper-300" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="rounded-xl border border-white/10 bg-white/[0.05] p-4">
+              <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-copper-200">Next step</div>
+              <p className="text-sm leading-6 text-white/90">{bestNextMoveCard.nextStep}</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
         <HouseholdComparisonSection
           profileLabel={comparisonProfileLabel}
