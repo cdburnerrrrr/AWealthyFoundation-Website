@@ -1065,33 +1065,64 @@ function getReportSummaryCards({
   const netWorth = metrics?.netWorth || metrics?.netWorth === 0 ? formatCurrency(metrics.netWorth) : null;
   const fixedCost = formatPercent(metrics?.fixedCostPressureRatio);
   const savings = metrics?.totalSavings ? formatCurrency(metrics.totalSavings) : null;
+  const debtPayments = metrics?.monthlyDebtPayments ? formatCurrency(metrics.monthlyDebtPayments) : null;
+  const investments = metrics?.totalInvestments ? formatCurrency(metrics.totalInvestments) : null;
+
+  const positionTitle =
+    score >= 80
+      ? 'Your foundation is strong — now the work is optimization.'
+      : score >= 60
+        ? 'You have momentum, but one or two gaps are still creating drag.'
+        : score >= 40
+          ? 'The foundation is forming, but it still needs reinforcement.'
+          : 'Stability comes first before growth becomes the focus.';
+
+  const positionBody =
+    summary ||
+    (score >= 80
+      ? 'You are past the basics. The next level is making sure your cash, debt, investing, protection, and vision are working together efficiently instead of simply looking good in isolation.'
+      : score >= 60
+        ? 'The report suggests you are not starting from zero. Your best progress will come from focusing on the constraint that is limiting the rest of the system, rather than spreading effort across every category at once.'
+        : score >= 40
+          ? 'There are real pieces to build on, but the weak spots are still strong enough to affect day-to-day confidence. The priority now is creating breathing room and consistency before adding complexity.'
+          : 'The most important goal is to reduce pressure and create a small amount of control. The right first move can make the rest of the plan feel much more manageable.');
+
+  const numbersTitle =
+    netWorth
+      ? `${netWorth} estimated net worth`
+      : savings
+        ? `${savings} liquid savings`
+        : debtPayments
+          ? `${debtPayments}/month debt pressure`
+          : 'Your money picture';
+
+  const numbersBody =
+    cashMonths > 0
+      ? `Your cash cushion covers about ${cashMonths.toFixed(1)} months of core expenses${fixedCost ? `, while fixed costs are taking about ${fixedCost} of take-home pay` : ''}. That combination tells us whether the next move should focus on safety, margin, or optimization.`
+      : fixedCost
+        ? `Fixed costs are running around ${fixedCost} of take-home pay${debtPayments ? `, with debt payments near ${debtPayments}/month` : ''}. That structure shapes how much room you have to save, invest, and absorb surprises.`
+        : investments
+          ? `Investments are about ${investments}. The question now is whether your current contribution habit and cash reserve are aligned with the future you want.`
+          : 'The numbers below provide context for the recommendation. The goal is not more information — it is choosing the next move with confidence.';
 
   return [
     {
-      label: 'Your Position',
-      title: score >= 80 ? 'Strong base' : score >= 60 ? 'Building momentum' : 'Needs reinforcement',
-      body:
-        summary ||
-        'Your report is ready. The next level of progress will come from strengthening the weakest part of your foundation first.',
+      label: 'Executive Read',
+      title: positionTitle,
+      body: positionBody,
     },
     {
-      label: 'Key Numbers',
-      title: netWorth ? `${netWorth} net worth` : savings ? `${savings} saved` : 'Financial picture',
-      body:
-        cashMonths > 0
-          ? `Your cash cushion covers about ${cashMonths.toFixed(1)} months of core expenses${fixedCost ? `, while fixed costs are about ${fixedCost} of take-home pay` : ''}.`
-          : fixedCost
-            ? `Fixed costs are running around ${fixedCost} of take-home pay. That structure shapes how quickly the rest of the plan can improve.`
-            : 'Your numbers create the context for the recommendations below.',
+      label: 'What The Numbers Are Saying',
+      title: numbersTitle,
+      body: numbersBody,
     },
     {
-      label: 'Next Move',
+      label: 'Decision Point',
       title: bestNextMoveCard.title,
       body: bestNextMoveCard.nextStep,
     },
   ];
 }
-
 
 type ComparisonMetric = {
   label: string;
@@ -1240,6 +1271,25 @@ function getComparisonTone(status: ComparisonMetric['status']) {
   return { badge: 'bg-orange-100 text-orange-700', dot: 'bg-orange-500', label: 'Watch' };
 }
 
+function getComparisonNarrative(metrics: ComparisonMetric[]) {
+  const strongCount = metrics.filter((metric) => metric.status === 'ahead' || metric.status === 'strong').length;
+  const watchCount = metrics.filter((metric) => metric.status === 'watch').length;
+
+  if (strongCount >= 4) {
+    return 'You are ahead of similar households in several key areas. The opportunity now is optimization: making sure the foundation you have built is working as efficiently as possible.';
+  }
+
+  if (strongCount >= 2) {
+    return 'You are in a solid position compared to similar households, but one or two pressure points are still limiting the full strength of your foundation.';
+  }
+
+  if (watchCount >= 3) {
+    return 'You are still building the foundation. The advantage is clarity: the gaps are visible now, which makes the next move easier to prioritize.';
+  }
+
+  return 'Your comparison profile is mixed, which is normal. Use the stronger areas as support while you focus on the one metric most likely to create breathing room.';
+}
+
 function ComparisonBar({ metric }: { metric: ComparisonMetric }) {
   const maxValue = Math.max(metric.myValue, metric.benchmarkValue, 1);
   const myWidth = Math.max(4, Math.min(100, (metric.myValue / maxValue) * 100));
@@ -1311,11 +1361,11 @@ function HouseholdComparisonSection({
             Compared to households like yours, here’s where you stand.
           </h2>
           <p className="mt-3 text-sm leading-7 text-slate-600">
-            This V1 benchmark uses broad U.S. household reference points and your assessment data. It is directional, but it helps answer the question most people quietly have: “Am I ahead, behind, or on track?”
+            This section shows how your financial position compares to households in a similar stage of life. It is not about judgment — it is about context. Knowing where you are ahead, on track, or falling behind helps you focus your effort where it will actually move the needle.
           </p>
 
           <p className="mt-3 rounded-2xl border border-copper-200 bg-white/75 p-4 text-sm font-semibold leading-7 text-navy-900">
-            Most people in your position are still trying to catch up. You’re already in optimization mode.
+            {getComparisonNarrative(comparisonMetrics)}
           </p>
 
           <div className="mt-4 rounded-2xl border border-copper-200 bg-white/80 p-4">
@@ -1331,7 +1381,7 @@ function HouseholdComparisonSection({
           {comparisonMetrics.map((metric) => {
             const tone = getComparisonTone(metric.status);
             return (
-              <div key={metric.label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div key={metric.label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
                 <div className="flex items-center justify-between gap-2">
                   <span className={`h-2.5 w-2.5 rounded-full ${tone.dot}`} />
                   <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${tone.badge}`}>
@@ -1406,7 +1456,7 @@ function HouseholdComparisonModal({
           <div className="rounded-2xl border border-copper-200 bg-copper-50 p-4">
             <div className="font-bold text-navy-900">How to use this</div>
             <p className="mt-2 text-sm leading-7 text-slate-700">
-              Use the comparison to find leverage, not shame. If you are ahead in net worth and debt but behind on fixed costs, your best opportunity is usually efficiency. If you are behind in savings or investing, the next move is consistency before complexity.
+              This comparison helps you identify leverage. If you are ahead, focus on optimization and efficiency. If you are typical, focus on consistency. If you are behind, focus on the structural issue first. The goal is not to match averages — it is to know where your next move creates the most impact.
             </p>
           </div>
         </div>
@@ -1975,30 +2025,7 @@ export default function ResultsPage() {
               </div>
             </div>
 
-            <div
-              data-pdf-dark-card="true"
-              data-pdf-page-break-avoid="true"
-              className="rounded-3xl border border-white/10 bg-white/[0.055] p-5 md:p-6 shadow-[0_16px_46px_rgba(0,0,0,0.18)]"
-            >
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-copper-200">Report Focus</div>
-              <p className="mt-2 text-sm leading-6 text-white/70">
-                The dashboard is built for quick decisions. This report explains the why behind the numbers and helps you choose the next move with confidence.
-              </p>
-              <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
-                  <div className="text-xs text-white/50">Primary lever</div>
-                  <div className="mt-1 text-sm font-bold text-white">{bestNextMoveCard.title}</div>
-                </div>
-                <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
-                  <div className="text-xs text-white/50">Strongest block</div>
-                  <div className="mt-1 text-sm font-bold text-white">{strongest[0] ? formatPillarName(strongest[0][0]) : '—'}</div>
-                </div>
-                <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
-                  <div className="text-xs text-white/50">Next block</div>
-                  <div className="mt-1 text-sm font-bold text-white">{weakestPillar ? formatPillarName(weakestPillar) : '—'}</div>
-                </div>
-              </div>
-            </div>
+
 
           </div>
 
@@ -2040,26 +2067,29 @@ export default function ResultsPage() {
         <section
           data-pdf-dark-card="true"
           data-pdf-page-break-avoid="true"
-          className="mb-8 rounded-3xl border border-copper-300/25 bg-gradient-to-br from-[#244462] via-[#2a4f70] to-[#17385a] p-5 md:p-7 shadow-[0_20px_60px_rgba(0,0,0,0.24)]"
+          className="mb-8 rounded-3xl border border-white/10 bg-gradient-to-br from-[#17385a] to-[#21456d] p-6 md:p-8 text-white shadow-[0_20px_60px_rgba(0,0,0,0.35)]"
         >
-          <div className="mb-3 flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-copper-300/25 bg-copper-300/12">
-              <Target className="h-4 w-4 text-copper-200" />
-            </div>
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-copper-200">Best Next Move</div>
-              <div className="mt-1 text-xl font-bold text-white">{bestNextMoveCard.title}</div>
-            </div>
+          <div className="mb-4 flex items-center gap-2">
+            <Target className="h-5 w-5 text-copper-300" />
+            <h2 className="text-xl font-bold text-white md:text-2xl">Your Best Next Move</h2>
           </div>
 
-          <p className="text-sm leading-7 text-white/82">{bestNextMoveCard.intro}</p>
+          <h3 className="mb-3 text-2xl font-bold text-white md:text-3xl">
+            {bestNextMoveCard.title}
+          </h3>
 
-          <div className="mt-4 grid gap-3 md:grid-cols-[0.95fr_1.05fr]">
-            <div className="rounded-xl border border-white/10 bg-white/[0.05] p-4">
-              <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-copper-200">Right now</div>
-              <ul className="space-y-2">
+          <p className="max-w-3xl text-sm leading-7 text-white/85 md:text-base">
+            {bestNextMoveCard.intro}
+          </p>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-[0.95fr_1.05fr]">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
+              <div className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-copper-200">
+                Right Now
+              </div>
+              <ul className="space-y-3">
                 {bestNextMoveCard.rightNow.slice(0, 2).map((item, index) => (
-                  <li key={`bnm-focus-${index}`} className="flex items-start gap-2 text-sm leading-6 text-white/82">
+                  <li key={`bnm-right-now-${index}`} className="flex items-start gap-2 text-sm leading-6 text-white/90">
                     <span className="mt-2 h-1.5 w-1.5 rounded-full bg-copper-300" />
                     <span>{item}</span>
                   </li>
@@ -2067,10 +2097,23 @@ export default function ResultsPage() {
               </ul>
             </div>
 
-            <div className="rounded-xl border border-white/10 bg-white/[0.05] p-4">
-              <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-copper-200">Next step</div>
-              <p className="text-sm leading-6 text-white/90">{bestNextMoveCard.nextStep}</p>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
+              <div className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-copper-200">
+                Why This Matters
+              </div>
+              <p className="text-sm leading-7 text-white/85">
+                {bestNextMoveCard.whyThisMatters}
+              </p>
             </div>
+          </div>
+
+          <div className="mt-5 rounded-2xl border border-copper-300/20 bg-copper-300/10 p-4">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-copper-200">
+              Next Step
+            </div>
+            <p className="text-sm font-semibold leading-7 text-white/95 md:text-base">
+              {bestNextMoveCard.nextStep}
+            </p>
           </div>
         </section>
         <HouseholdComparisonSection
