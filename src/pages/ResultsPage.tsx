@@ -1528,30 +1528,30 @@ export default function ResultsPage() {
   </div>
 
         <section className="grid items-start lg:grid-cols-[1.2fr_0.8fr] gap-6 mb-8">
-          <div
-            data-pdf-dark-card="true"
-            data-pdf-page-break-avoid="true"
-            className="bg-gradient-to-br from-[#17385a] to-[#21456d] rounded-3xl border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.35)] p-6 md:p-8"
-          >
-            <div className="flex flex-wrap items-center gap-3 mb-5">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-copper-50 text-copper-700 text-sm font-semibold">
-                <Sparkles className="w-4 h-4" />
-                Your Foundation Report
+          <div className="space-y-4">
+            <div
+              data-pdf-dark-card="true"
+              data-pdf-page-break-avoid="true"
+              className="bg-gradient-to-br from-[#17385a] to-[#21456d] rounded-3xl border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.35)] p-6 md:p-8"
+            >
+              <div className="flex flex-wrap items-center gap-3 mb-5">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-copper-50 text-copper-700 text-sm font-semibold">
+                  <Sparkles className="w-4 h-4" />
+                  Your Foundation Report
+                </div>
+
+                {planBadge && (
+                  <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold ${planBadge.className}`}>
+                    <CheckCircle2 className="w-4 h-4" />
+                    {planBadge.label}
+                  </div>
+                )}
               </div>
 
-              {planBadge && (
-                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold ${planBadge.className}`}>
-                  <CheckCircle2 className="w-4 h-4" />
-                  {planBadge.label}
-                </div>
-              )}
-            </div>
+              <h1 className="text-3xl md:text-5xl font-bold text-white leading-tight mb-3">
+                {buildExecutiveHeadline(score)}
+              </h1>
 
-            <h1 className="text-3xl md:text-5xl font-bold text-white leading-tight mb-3">
-              {buildExecutiveHeadline(score)}
-            </h1>
-
-            <div className="mb-6">
               <p className="text-base md:text-lg text-white/80 max-w-3xl">
                 {getBandNarrative(score)}
               </p>
@@ -1567,82 +1567,92 @@ export default function ResultsPage() {
                       : 'a foundation that needs attention before growth becomes the priority'}
                 .
               </p>
-            </div>
 
-            <div data-pdf-ignore="true" className="flex flex-wrap items-center gap-3 mb-6">
-              {features.showPdfButton && (
-                <button
-                  onClick={handlePdfClick}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-copper-600 text-white font-semibold shadow-sm hover:bg-copper-700 transition-colors"
-                >
-                  Save as PDF
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              )}
+              <div data-pdf-ignore="true" className="flex flex-wrap items-center gap-3 mt-6">
+                {features.showPdfButton && (
+                  <button
+                    onClick={handlePdfClick}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-copper-600 text-white font-semibold shadow-sm hover:bg-copper-700 transition-colors"
+                  >
+                    Save as PDF
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                )}
 
-{reportTier !== 'premium' && (
-  <button
-    onClick={() => navigate('/pricing')}
-    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 text-white font-semibold border border-white/10 hover:bg-white/15 transition-colors"
-  >
-    Turn this into a step-by-step plan
-    <ArrowRight className="w-4 h-4" />
-  </button>
-)}
+                {reportTier !== 'premium' && (
+                  <button
+                    onClick={() => navigate('/pricing')}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 text-white font-semibold border border-white/10 hover:bg-white/15 transition-colors"
+                  >
+                    Turn this into a step-by-step plan
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                )}
 
-              {isDevReportOverrideEnabled() && (
-                <div className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/80 border border-white/10">
-                  Dev mode: all features visible
-                </div>
-              )}
-            </div>
-
-            <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                <div className="text-sm text-white/70 mb-2">Foundation Score</div>
-                <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-[#ffcf9e] to-[#b87333] shadow-[0_20px_60px_rgba(194,120,58,0.45)] border border-white/30 text-4xl font-bold text-white">
-                  {score}
-                </div>
-                <div
-                  className={`mt-3 inline-flex px-3 py-1 rounded-full text-sm font-semibold ${scoreBand.bg} ${adjustedScoreColor}`}
-                >
-                  {scoreBand.label}
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                <div className="text-sm text-white/70 mb-2">Top Strength</div>
-                <div className="text-2xl font-bold text-white">
-                  {strongest[0] ? formatPillarName(strongest[0][0]) : '—'}
-                </div>
-                <div className="mt-2 text-sm text-white/70">
-                  {strongest[0] ? `${strongest[0][1]}/100` : 'No data'}
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                <div className="text-sm text-white/70 mb-2">Debt Pressure</div>
-                <div className="text-2xl font-bold text-white">{debtPressure}</div>
-                <div className="mt-2 text-sm text-white/70">
-                  {getDebtSnapshotLine(metrics) || 'Lower debt pressure generally means more flexibility.'}
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                <div className="text-sm text-white/70 mb-2">Net Worth</div>
-                <div className="text-2xl font-bold text-white">
-                  {metrics?.netWorth || metrics?.netWorth === 0 ? formatCurrency(metrics.netWorth) : '—'}
-                </div>
-                <div className="mt-2 text-sm text-white/70">
-                  {financialPositionLabel}
-                </div>
+                {isDevReportOverrideEnabled() && (
+                  <div className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/80 border border-white/10">
+                    Dev mode: all features visible
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+            <div
+              data-pdf-dark-card="true"
+              data-pdf-page-break-avoid="true"
+              className="rounded-3xl border border-white/10 bg-white/[0.055] p-4 md:p-5 shadow-[0_16px_46px_rgba(0,0,0,0.18)]"
+            >
+              <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.055] p-5">
+                  <div className="text-sm text-white/70 mb-2">Foundation Score</div>
+                  <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-[#ffcf9e] to-[#b87333] shadow-[0_20px_60px_rgba(194,120,58,0.45)] border border-white/30 text-4xl font-bold text-white">
+                    {score}
+                  </div>
+                  <div
+                    className={`mt-3 inline-flex px-3 py-1 rounded-full text-sm font-semibold ${scoreBand.bg} ${adjustedScoreColor}`}
+                  >
+                    {scoreBand.label}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/[0.055] p-5">
+                  <div className="text-sm text-white/70 mb-2">Top Strength</div>
+                  <div className="text-2xl font-bold text-white">
+                    {strongest[0] ? formatPillarName(strongest[0][0]) : '—'}
+                  </div>
+                  <div className="mt-2 text-sm text-white/70">
+                    {strongest[0] ? `${strongest[0][1]}/100` : 'No data'}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/[0.055] p-5">
+                  <div className="text-sm text-white/70 mb-2">Debt Pressure</div>
+                  <div className="text-2xl font-bold text-white">{debtPressure}</div>
+                  <div className="mt-2 text-sm text-white/70">
+                    {getDebtSnapshotLine(metrics) || 'Lower debt pressure generally means more flexibility.'}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/[0.055] p-5">
+                  <div className="text-sm text-white/70 mb-2">Net Worth</div>
+                  <div className="text-2xl font-bold text-white">
+                    {metrics?.netWorth || metrics?.netWorth === 0 ? formatCurrency(metrics.netWorth) : '—'}
+                  </div>
+                  <div className="mt-2 text-sm text-white/70">
+                    {financialPositionLabel}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              data-pdf-dark-card="true"
+              data-pdf-page-break-avoid="true"
+              className="rounded-3xl border border-white/10 bg-white/[0.055] p-5 md:p-6 shadow-[0_16px_46px_rgba(0,0,0,0.18)]"
+            >
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-copper-200">Report Focus</div>
               <p className="mt-2 text-sm leading-6 text-white/70">
-                The dashboard is built for quick decisions. This report is built to explain the why behind the numbers and help you choose the next move with confidence.
+                The dashboard is built for quick decisions. This report explains the why behind the numbers and helps you choose the next move with confidence.
               </p>
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
@@ -1660,7 +1670,11 @@ export default function ResultsPage() {
               </div>
             </div>
 
-            <div className="mt-6 rounded-2xl border border-copper-300/20 bg-gradient-to-br from-white/[0.12] to-copper-300/[0.08] p-5 shadow-[0_18px_55px_rgba(0,0,0,0.18)]">
+            <div
+              data-pdf-dark-card="true"
+              data-pdf-page-break-avoid="true"
+              className="rounded-3xl border border-copper-300/20 bg-gradient-to-br from-white/[0.12] to-copper-300/[0.08] p-5 md:p-6 shadow-[0_18px_55px_rgba(0,0,0,0.18)]"
+            >
               <div className="mb-3 flex items-center gap-2">
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-copper-300/25 bg-copper-300/12">
                   <Target className="h-4 w-4 text-copper-200" />
@@ -1678,21 +1692,20 @@ export default function ResultsPage() {
                   <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-copper-200">Right now</div>
                   <ul className="space-y-2">
                     {bestNextMoveCard.rightNow.slice(0, 2).map((item, index) => (
-                      <li key={`hero-bnm-right-now-${index}`} className="flex items-start gap-2 text-sm leading-6 text-white/86">
-                        <span className="mt-2.5 h-1.5 w-1.5 rounded-full bg-copper-300" />
+                      <li key={`bnm-focus-${index}`} className="flex items-start gap-2 text-sm leading-6 text-white/82">
+                        <span className="mt-2 h-1.5 w-1.5 rounded-full bg-copper-300" />
                         <span>{item}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
 
-                <div className="rounded-xl border border-copper-300/20 bg-copper-300/[0.08] p-4">
+                <div className="rounded-xl border border-white/10 bg-white/[0.05] p-4">
                   <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-copper-200">Next step</div>
                   <p className="text-sm leading-6 text-white/90">{bestNextMoveCard.nextStep}</p>
                 </div>
               </div>
             </div>
-
           </div>
 
           <div
@@ -1713,7 +1726,7 @@ export default function ResultsPage() {
             </div>
 
             <div className="space-y-4">
-              {reportSummaryCards.map((card) => (
+              {reportSummaryCards.slice(0, 2).map((card) => (
                 <div key={card.label} className="rounded-2xl border border-white/10 bg-white/[0.07] p-4">
                   <div className="text-xs font-semibold uppercase tracking-[0.18em] text-copper-200 mb-2">
                     {card.label}
@@ -1727,10 +1740,8 @@ export default function ResultsPage() {
             <div className="my-5 h-px bg-white/10" />
 
             <ReportMiniBarChart entries={pillarEntries} />
-
           </div>
         </section>
-
         <section className="grid lg:grid-cols-[0.95fr_1.05fr] gap-6 mb-6">
           <SectionShell icon={Target} title="Priority Opportunities">
             {getStructuralContextNote(warnings, metrics) && (
