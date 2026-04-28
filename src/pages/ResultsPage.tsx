@@ -1009,6 +1009,169 @@ function SectionShell({
 }
 
 
+
+function ReportMiniBarChart({ entries }: { entries: [string, number][] }) {
+  const chartEntries = entries.slice(0, 7);
+
+  if (!chartEntries.length) return null;
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-copper-200">
+            Building Block Balance
+          </div>
+          <div className="mt-1 text-sm text-white/60">
+            Where the foundation is strongest and where the next lift comes from.
+          </div>
+        </div>
+        <TrendingUp className="h-5 w-5 text-copper-200" />
+      </div>
+
+      <div className="space-y-3">
+        {chartEntries.map(([pillar, value]) => {
+          const score = Math.max(0, Math.min(100, Number(value) || 0));
+          const tone = getPillarTone(score);
+
+          return (
+            <div key={`summary-chart-${pillar}`}>
+              <div className="mb-1 flex items-center justify-between gap-3 text-xs">
+                <span className="font-semibold text-white/85">{formatPillarName(pillar)}</span>
+                <span className="font-bold text-copper-100">{score}/100</span>
+              </div>
+              <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                <div className={`h-full ${tone.bar}`} style={{ width: `${Math.max(5, score)}%` }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function getReportSummaryCards({
+  summary,
+  metrics,
+  bestNextMoveCard,
+  score,
+}: {
+  summary: string;
+  metrics?: ResultShape['metrics'];
+  bestNextMoveCard: BestNextMoveCard;
+  score: number;
+}) {
+  const cashMonths = Number(metrics?.emergencyFundMonths ?? 0);
+  const netWorth = metrics?.netWorth || metrics?.netWorth === 0 ? formatCurrency(metrics.netWorth) : null;
+  const fixedCost = formatPercent(metrics?.fixedCostPressureRatio);
+  const savings = metrics?.totalSavings ? formatCurrency(metrics.totalSavings) : null;
+
+  return [
+    {
+      label: 'Your Position',
+      title: score >= 80 ? 'Strong base' : score >= 60 ? 'Building momentum' : 'Needs reinforcement',
+      body:
+        summary ||
+        'Your report is ready. The next level of progress will come from strengthening the weakest part of your foundation first.',
+    },
+    {
+      label: 'Key Numbers',
+      title: netWorth ? `${netWorth} net worth` : savings ? `${savings} saved` : 'Financial picture',
+      body:
+        cashMonths > 0
+          ? `Your cash cushion covers about ${cashMonths.toFixed(1)} months of core expenses${fixedCost ? `, while fixed costs are about ${fixedCost} of take-home pay` : ''}.`
+          : fixedCost
+            ? `Fixed costs are running around ${fixedCost} of take-home pay. That structure shapes how quickly the rest of the plan can improve.`
+            : 'Your numbers create the context for the recommendations below.',
+    },
+    {
+      label: 'Next Move',
+      title: bestNextMoveCard.title,
+      body: bestNextMoveCard.nextStep,
+    },
+  ];
+}
+
+function getNinetyDayPlanPhases(
+  bestNextMoveCard: BestNextMoveCard,
+  weakestPillar: string,
+  metrics?: ResultShape['metrics']
+): ActionPlanStep[] {
+  const cashMonths = Number(metrics?.emergencyFundMonths ?? 0);
+  const excessCash = Number(metrics?.excessCashEstimate ?? 0);
+  const fixedCost = formatPercent(metrics?.fixedCostPressureRatio);
+  const pillarLabel = formatPillarName(weakestPillar || 'your next priority');
+
+  if (bestNextMoveCard.title.toLowerCase().includes('excess cash')) {
+    return [
+      {
+        title: 'Phase 1: Define “enough” cash',
+        body: `Start by deciding how much cash reserve still feels safe. Your current cushion is about ${cashMonths.toFixed(1)} months, so the goal is not to drain safety — it is to separate safety money from idle money.`,
+        checklist: [
+          'Pick a cash reserve target in months of expenses.',
+          excessCash > 0 ? `Mark the estimated excess cash amount: ${formatCurrency(excessCash)}.` : 'Estimate how much cash sits above that target.',
+        ],
+      },
+      {
+        title: 'Phase 2: Move in stages',
+        body: 'Choose one staged move for excess cash instead of making one large emotional decision. The goal is controlled optimization, not unnecessary risk.',
+        checklist: [
+          'Move a first portion to HYSA, brokerage, Roth, debt, or another priority.',
+          'Set a simple date to review the result before moving more.',
+        ],
+      },
+      {
+        title: 'Phase 3: Rebalance the system',
+        body: 'After the first move, review how your cash, investments, and home equity fit together. Then rerun the score and choose the next optimization lever.',
+        checklist: [
+          'Compare cash vs. investments vs. real estate equity.',
+          'Rerun the assessment after meaningful changes.',
+        ],
+      },
+    ];
+  }
+
+  if (bestNextMoveCard.title.toLowerCase().includes('fixed') || bestNextMoveCard.title.toLowerCase().includes('breathing')) {
+    return [
+      {
+        title: 'Phase 1: Find the pressure point',
+        body: `Start with the fixed cost putting the most pressure on cash flow${fixedCost ? ` — fixed costs are around ${fixedCost} of take-home pay` : ''}. This is a structure problem before it is a budgeting problem.`,
+        checklist: ['List the top fixed costs in one place.', 'Circle the one cost with the biggest possible monthly impact.'],
+      },
+      {
+        title: 'Phase 2: Test one change',
+        body: 'Do not try to overhaul everything. Pick one cost, one negotiation, one income move, or one structural change and test it for 30 days.',
+        checklist: ['Choose one change to test this month.', 'Redirect any freed-up margin toward the next priority.'],
+      },
+      {
+        title: 'Phase 3: Protect the margin',
+        body: 'Once margin improves, keep it from disappearing into daily spending. Give the freed-up money a job before it gets absorbed.',
+        checklist: ['Assign new margin to savings, investing, or debt reduction.', 'Rerun the score after the change becomes normal.'],
+      },
+    ];
+  }
+
+  return [
+    {
+      title: `Phase 1: Start with ${pillarLabel}`,
+      body: bestNextMoveCard.nextStep || `Start with ${pillarLabel}. One focused improvement here should create the biggest ripple effect across your foundation.`,
+      checklist: bestNextMoveCard.thisWeek.slice(0, 2),
+    },
+    {
+      title: 'Phase 2: Turn it into a system',
+      body: 'The next step is making the first action repeatable. One good move helps, but one repeatable habit changes the foundation.',
+      checklist: ['Pick one number or behavior to track weekly.', 'Schedule a 15-minute check-in before the month ends.'],
+    },
+    {
+      title: 'Phase 3: Reassess and advance',
+      body: 'After the first 90 days, compare your score and building blocks. Keep what improved and move to the next highest-leverage area.',
+      checklist: ['Rerun the assessment after meaningful progress.', 'Choose the next building block to strengthen.'],
+    },
+  ];
+}
+
+
 function LockedResultsPreview({
   onUpgrade,
   onDashboard,
@@ -1267,18 +1430,17 @@ export default function ResultsPage() {
     : 'spending';
 
   const weakestPillar = weakest[0]?.[0] || '';
-  const secondWeakest = weakest[1]?.[0] || '';
-    const planStart = result?.actionPlan?.immediate?.[0];
-  const planAfter = result?.actionPlan?.longTerm?.[0];
-  const nextFocusStep =
-    result?.actionPlan?.shortTerm?.[0] ||
-    (secondWeakest ? getFallbackPlanStep(secondWeakest, 0) : null);
-
   const debtPressure = formatDebtPressure(Number((pillarScores as Record<string, number>)?.debt || 0));
   const bestNextMoveCard = getBestNextMoveCard(warnings, metrics, weakestPillar, result?.nextStep);
   const stabilizeItems = getFallbackStabilizeItems(warnings, weakestPillar);
   const financialPositionLabel = getFinancialPositionLabel(metrics?.netWorth);
-  const metricsCallout = getMetricsCallout(metrics);
+  const reportSummaryCards = getReportSummaryCards({
+    summary,
+    metrics,
+    bestNextMoveCard,
+    score,
+  });
+  const ninetyDayPlanPhases = getNinetyDayPlanPhases(bestNextMoveCard, weakestPillar, metrics);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0f2a44] via-[#132f4c] to-[#1e3a5f]">
@@ -1517,29 +1679,37 @@ export default function ResultsPage() {
           <div
             data-pdf-dark-card="true"
             data-pdf-page-break-avoid="true"
-            className="bg-navy-900 text-white rounded-3xl shadow-sm p-5 md:p-7"
+            className="bg-gradient-to-br from-[#071f36] via-[#09233c] to-[#123456] text-white rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.26)] p-5 md:p-7 border border-white/10"
           >
-            <div className="text-sm uppercase tracking-[0.18em] text-copper-300 mb-3">
-              Executive Summary
+            <div className="flex items-center justify-between gap-4 mb-5">
+              <div>
+                <div className="text-sm uppercase tracking-[0.18em] text-copper-300">
+                  Executive Summary
+                </div>
+                <h2 className="mt-2 text-2xl font-bold text-white">What this means</h2>
+              </div>
+              <div className="hidden h-12 w-12 items-center justify-center rounded-2xl border border-copper-300/20 bg-copper-300/10 md:flex">
+                <Sparkles className="h-5 w-5 text-copper-200" />
+              </div>
             </div>
-            <p className="text-lg leading-8 text-white/95 mb-6">
-              {summary ||
-                'Your report is ready. The next level of progress will come from strengthening the weakest part of your foundation first.'}
-            </p>
 
-            {metricsCallout ? (
-              <div className="mb-4 rounded-2xl bg-white/10 border border-white/10 p-4 text-sm leading-7 text-white/90">
-                {metricsCallout}
-              </div>
-            ) : null}
+            <div className="space-y-4">
+              {reportSummaryCards.map((card) => (
+                <div key={card.label} className="rounded-2xl border border-white/10 bg-white/[0.07] p-4">
+                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-copper-200 mb-2">
+                    {card.label}
+                  </div>
+                  <div className="text-lg font-bold text-white mb-2">{card.title}</div>
+                  <p className="text-sm leading-7 text-white/82">{card.body}</p>
+                </div>
+              ))}
+            </div>
 
-            {getNetWorthNarrative(metrics) ? (
-              <div className="mb-6 rounded-2xl bg-white/5 border border-white/10 p-4 text-sm leading-7 text-white/85">
-                {getNetWorthNarrative(metrics)}
-              </div>
-            ) : null}
+            <div className="my-5 h-px bg-white/10" />
 
-            <div className="rounded-2xl bg-white/10 border border-white/10 p-5">
+            <ReportMiniBarChart entries={pillarEntries} />
+
+            <div className="mt-5 rounded-2xl bg-white/10 border border-white/10 p-5">
               <div className="text-copper-300 text-sm font-semibold mb-2">Best Next Move</div>
               <div className="space-y-4">
                 <div>
@@ -1559,26 +1729,9 @@ export default function ResultsPage() {
                   </ul>
                 </div>
 
-                <div>
-                  <div className="text-xs uppercase tracking-[0.18em] text-copper-200 mb-2">Why this matters</div>
-                  <p className="text-white/90 leading-7">{bestNextMoveCard.whyThisMatters}</p>
-                </div>
-
                 <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
                   <div className="text-xs uppercase tracking-[0.18em] text-copper-200 mb-2">Next step</div>
                   <p className="text-white leading-7">{bestNextMoveCard.nextStep}</p>
-                </div>
-
-                <div>
-                  <div className="text-xs uppercase tracking-[0.18em] text-copper-200 mb-2">This week</div>
-                  <ul className="space-y-2">
-                    {bestNextMoveCard.thisWeek.map((item, index) => (
-                      <li key={`bnm-this-week-${index}`} className="flex items-start gap-2 text-white/90 leading-7">
-                        <span className="mt-3 h-1.5 w-1.5 rounded-full bg-copper-300" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
                 </div>
               </div>
             </div>
@@ -1783,31 +1936,35 @@ export default function ResultsPage() {
         {!features.showPremiumGuidance && (
           <section
             data-pdf-ignore="true"
-            className="bg-white/95 backdrop-blur rounded-3xl border border-copper-200 shadow-sm p-5 md:p-7 mb-6"
+            className="relative overflow-hidden rounded-3xl border border-copper-300/25 bg-gradient-to-r from-[#7c461c] via-[#b87333] to-[#d28b3c] p-5 md:p-7 mb-8 text-white shadow-[0_24px_70px_rgba(15,42,68,0.28)]"
           >
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div>
-                <div className="inline-flex items-center rounded-full bg-copper-50 px-3 py-1 text-sm font-semibold text-copper-700 mb-3">
-                  Premium Upgrade
+            <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+            <div className="absolute -bottom-24 left-1/3 h-56 w-56 rounded-full bg-navy-900/20 blur-2xl" />
+            <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+              <div className="max-w-3xl">
+                <div className="inline-flex items-center rounded-full border border-white/20 bg-white/15 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-white/85 mb-3">
+                  Premium Roadmap
                 </div>
-                <h2 className="text-2xl font-bold text-navy-900 mb-2">
-                  {reportTier === 'standard'
-                    ? 'Want guided implementation, not just the report?'
-                    : 'Want a step-by-step plan for the next 12 months?'}
+                <h2 className="text-2xl md:text-3xl font-bold mb-2">
+                  Turn this report into a guided execution plan.
                 </h2>
-                <p className="text-gray-700 leading-7 max-w-3xl">
-                  Upgrade to Premium to unlock your personalized roadmap, quarterly action
-                  plan, priority ladder, and guided prompts built around your weakest
-                  constraint.
+                <p className="text-white/88 leading-7">
+                  Premium adds the missing layer: what to do first, what to ignore for now,
+                  and how to move through the next 12 months without trying to fix everything at once.
                 </p>
+                <div className="mt-4 grid gap-2 text-sm text-white/90 sm:grid-cols-3">
+                  <div className="rounded-2xl border border-white/15 bg-white/10 p-3">Priority ladder</div>
+                  <div className="rounded-2xl border border-white/15 bg-white/10 p-3">Quarterly action plan</div>
+                  <div className="rounded-2xl border border-white/15 bg-white/10 p-3">Guided prompts</div>
+                </div>
               </div>
 
               <div className="shrink-0">
                 <button
                   onClick={() => navigate('/pricing')}
-                  className="inline-flex items-center gap-2 rounded-xl bg-copper-600 text-white px-5 py-3 font-semibold shadow-sm hover:bg-copper-700 transition-colors"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 font-bold text-navy-900 shadow-sm hover:bg-copper-50 transition-colors"
                 >
-                  Turn this into a step-by-step plan
+                  Unlock the roadmap
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
@@ -1825,88 +1982,55 @@ export default function ResultsPage() {
           </div>
         )}
 
-<div className="mt-8">
+<div data-pdf-ignore="true" className="my-10">
   <ReportNewsletterCard userEmail={user?.email} />
 </div>
 
         <SectionShell icon={Clock3} title="Your 90-Day Plan" className="mb-6 pdf-avoid-break">
+          <div className="mb-5 rounded-2xl border border-copper-200 bg-gradient-to-r from-copper-50 to-white p-4">
+            <div className="text-sm font-semibold uppercase tracking-[0.18em] text-copper-700">
+              Your next 90 days should be sequenced, not scattered
+            </div>
+            <p className="mt-2 text-sm leading-7 text-gray-700">
+              The goal is not to attack every building block at once. Start with the highest-leverage move, turn it into a repeatable system, then reassess before choosing the next priority.
+            </p>
+          </div>
+
           <div className="grid lg:grid-cols-3 gap-4">
-            <div className="rounded-2xl border border-copper-200 bg-copper-50/50 p-5">
-              <div className="text-sm font-semibold text-copper-700 mb-3">
-                {planStart?.title || 'Start Here'}
-              </div>
-              <p className="text-navy-900 leading-7 mb-4">
-                {planStart?.body ||
-                  (weakestPillar
-                    ? `Start with ${formatPillarName(weakestPillar)}. Improving this one area should create the biggest ripple effect across your foundation.`
-                    : result.nextStep ||
-                      'Start with the weakest part of your foundation and make one focused improvement this quarter.')}
-              </p>
-              <ul className="space-y-2">
-                {(planStart?.checklist?.length
-                  ? planStart.checklist.slice(0, 2)
-                  : [
-                      `Identify one concrete way to improve ${formatPillarName(
-                        weakestPillar || 'your next priority'
-                      )}.`,
-                      'Take one action this week.',
-                    ]).map((item, index) => (
-                  <li
-                    key={`immediate-check-${index}`}
-                    className="flex items-start gap-2 text-sm text-navy-900"
-                  >
-                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-copper-600" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {ninetyDayPlanPhases.map((phase, index) => {
+              const phaseStyles = [
+                'border-copper-200 bg-copper-50/70',
+                'border-blue-200 bg-blue-50/70',
+                'border-emerald-200 bg-emerald-50/70',
+              ];
+              const dotStyles = ['bg-copper-600', 'bg-blue-600', 'bg-emerald-600'];
 
-            {nextFocusStep && (
-              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
-                <div className="text-sm font-semibold text-gray-500 mb-3">
-                  {nextFocusStep.title}
+              return (
+                <div key={phase.title} className={`rounded-2xl border p-5 ${phaseStyles[index] ?? 'border-gray-200 bg-gray-50'}`}>
+                  <div className="mb-4 flex items-start gap-3">
+                    <div className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${dotStyles[index] ?? 'bg-copper-600'}`}>
+                      {index + 1}
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-navy-900">{phase.title}</div>
+                      <div className="mt-1 text-xs uppercase tracking-[0.16em] text-gray-500">
+                        {index === 0 ? 'Start here' : index === 1 ? 'Build momentum' : 'Strengthen the system'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-navy-900 leading-7 mb-4">{phase.body}</p>
+                  <ul className="space-y-2">
+                    {phase.checklist.slice(0, 3).map((item, itemIndex) => (
+                      <li key={`${phase.title}-${itemIndex}`} className="flex items-start gap-2 text-sm text-navy-900">
+                        <span className={`mt-1.5 h-1.5 w-1.5 rounded-full ${dotStyles[index] ?? 'bg-copper-600'}`} />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <p className="text-gray-700 leading-7 mb-4">{nextFocusStep.body}</p>
-                <ul className="space-y-2">
-                  {nextFocusStep.checklist.slice(0, 2).map((item, itemIndex) => (
-                    <li
-                      key={`${nextFocusStep.title}-${itemIndex}`}
-                      className="flex items-start gap-2 text-sm text-gray-700"
-                    >
-                      <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-copper-600" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
-              <div className="text-sm font-semibold text-gray-500 mb-3">
-                {planAfter?.title || 'After 90 Days'}
-              </div>
-              <p className="text-gray-700 leading-7 mb-4">
-                {planAfter?.body ||
-                  'Review your progress, keep what is working, and then move to the next weakest area.'}
-              </p>
-              <ul className="space-y-2">
-                {(planAfter?.checklist?.length
-                  ? planAfter.checklist.slice(0, 2)
-                  : [
-                      'Review what improved over the last 90 days.',
-                      'Choose the next area to strengthen.',
-                    ]).map((item, index) => (
-                  <li
-                    key={`after-check-${index}`}
-                    className="flex items-start gap-2 text-sm text-gray-700"
-                  >
-                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-copper-600" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+              );
+            })}
           </div>
         </SectionShell>
 
