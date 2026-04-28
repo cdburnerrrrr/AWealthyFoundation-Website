@@ -316,9 +316,9 @@ function getBestNextMoveCard(
         'Your assessment suggests this is more of a math problem than a discipline problem. Faster progress will likely come from more income, a lower major fixed cost, or both.',
       rightNow: [
         fixedCost
-          ? `Fixed costs are taking about ${fixedCost} of take-home pay.`
-          : 'Fixed costs are taking too much of monthly cash flow.',
-        'That leaves less room to save, invest, or absorb surprises.',
+          ? `Must-pay monthly bills are taking about ${fixedCost} of take-home pay.`
+          : 'Mortgage, rent, utilities, and required bills are taking too much of monthly cash flow.',
+        'That means too much of your income is already spoken for before you make any new decisions.',
       ],
       whyThisMatters:
         'Without more margin, progress in the rest of the foundation is likely to stall even if your habits improve.',
@@ -335,12 +335,12 @@ function getBestNextMoveCard(
     return {
       title: 'Reduce the biggest fixed-cost drag',
       intro:
-        'Your housing and core fixed costs are doing more damage than small day-to-day spending leaks right now.',
+        'Your mortgage/rent, utilities, and other must-pay bills are creating more pressure than small day-to-day spending leaks right now.',
       rightNow: [
         fixedCost
-          ? `Fixed costs are about ${fixedCost} of take-home pay.`
-          : 'Housing and fixed costs are consuming too much of monthly cash flow.',
-        'That makes the rest of the plan feel tighter than it should.',
+          ? `Mortgage/rent, utilities, and fixed bills are about ${fixedCost} of take-home pay.`
+          : 'Housing and required monthly bills are consuming too much of monthly cash flow.',
+        'That makes the rest of the plan feel tighter than it should because too much income is already committed.',
       ],
       whyThisMatters:
         'When the biggest pressure point is structural, solving that first creates more lift than trying to optimize around it.',
@@ -357,17 +357,17 @@ function getBestNextMoveCard(
     return {
       title: 'Create breathing room first',
       intro:
-        'Multiple fixed obligations are stacking pressure onto the same monthly cash flow.',
+        'Multiple required payments are stacking pressure onto the same monthly cash flow.',
       rightNow: [
         debtToIncome
           ? `Debt payments alone are about ${debtToIncome} of take-home pay.`
-          : 'Debt and fixed costs are combining to reduce flexibility.',
+          : 'Debt payments and must-pay bills are combining to reduce flexibility.',
         'That pressure makes saving, investing, and long-term progress much harder.',
       ],
       whyThisMatters:
         'Until the pressure eases, other improvements will feel slower and harder to sustain.',
       nextStep:
-        'Start with the fixed obligation or debt payment creating the most friction, then work outward from there.',
+        'Start with the required payment or debt bill creating the most friction, then work outward from there.',
       thisWeek: [
         'List every major fixed obligation and debt payment.',
         'Choose the one pressure point that deserves attention first.',
@@ -688,11 +688,11 @@ function getWarningTitle(type: StructuralWarning['type']) {
 function getWarningBody(type: StructuralWarning['type']) {
   switch (type) {
     case 'housing_pressure':
-      return 'A large share of your income is going toward housing and other fixed costs. At this level, even good day-to-day budgeting may still feel tight.';
+      return 'A large share of your income is going toward housing and other must-pay bills. At this level, even good day-to-day budgeting may still feel tight.';
     case 'income_constraint':
-      return 'This looks more like a math problem than a discipline problem. Increasing income or lowering a major fixed cost may create the biggest overall lift.';
+      return 'This looks more like a math problem than a discipline problem. Increasing income or lowering a major must-pay bill may create the biggest overall lift.';
     case 'structural_pressure':
-      return 'Multiple fixed obligations are competing for limited income. That kind of pressure can make saving, investing, and debt progress much harder.';
+      return 'Multiple required payments are competing for limited income. That kind of pressure can make saving, investing, and progress much harder.';
     default:
       return 'One or more fixed-cost pressures are limiting your flexibility right now.';
   }
@@ -905,20 +905,20 @@ function getStructuralBestNextMove(
 
   if (warnings.some((warning) => warning.type === 'income_constraint')) {
     return fixedCost
-      ? `Your fixed costs are about ${fixedCost} of take-home pay. That is high enough that budgeting alone may not solve the problem. Your highest-leverage move is to raise income, lower a major fixed cost, or do both.`
-      : 'This looks more like a math problem than a discipline problem. Your highest-leverage move is to raise income, lower a major fixed cost, or do both.';
+      ? `Your mortgage/rent, utilities, and other must-pay bills are about ${fixedCost} of take-home pay. That is high enough that budgeting alone may not solve the problem. Your highest-leverage move is to raise income, lower a major bill, or do both.`
+      : 'This looks more like a math problem than a discipline problem. Your highest-leverage move is to raise income, lower a major must-pay bill, or do both.';
   }
 
   if (warnings.some((warning) => warning.type === 'housing_pressure')) {
     return fixedCost
-      ? `Your fixed costs are about ${fixedCost} of take-home pay. Start by reducing the biggest fixed cost in the system, especially housing and utilities, before expecting small spending cuts to carry the load.`
-      : 'Start by reducing the biggest fixed cost in the system, especially housing and utilities, before expecting small spending cuts to carry the load.';
+      ? `Your mortgage/rent, utilities, and other must-pay bills are about ${fixedCost} of take-home pay. Start with the bill taking the biggest bite before expecting small spending cuts to carry the load.`
+      : 'Start with the must-pay bill taking the biggest bite, especially housing or utilities, before expecting small spending cuts to carry the load.';
   }
 
   if (warnings.some((warning) => warning.type === 'structural_pressure')) {
     return debtToIncome
-      ? `Your debt payments are about ${debtToIncome} of take-home pay on top of other fixed costs. Consolidate the pressure points first so cash flow can breathe again.`
-      : 'Multiple fixed obligations are competing for limited income. Consolidate the pressure points first so cash flow can breathe again.';
+      ? `Your debt payments are about ${debtToIncome} of take-home pay on top of your other must-pay bills. Reduce the stacked payments first so cash flow can breathe again.`
+      : 'Multiple required payments are competing for limited income. Reduce the stacked pressure points first so cash flow can breathe again.';
   }
 
   return fallbackPillar
@@ -938,7 +938,7 @@ function getStructuralContextNote(
   const debt = formatCurrency(metrics?.monthlyDebtPayments);
 
   const pieces = [
-    fixedCost ? `fixed costs are about ${fixedCost} of take-home pay` : null,
+    fixedCost ? `must-pay monthly bills are about ${fixedCost} of take-home pay` : null,
     housing ? `housing is about ${housing}/month` : null,
     utilities ? `utilities are about ${utilities}/month` : null,
     debt ? `non-housing debt payments are about ${debt}/month` : null,
@@ -964,17 +964,17 @@ function getWarningBodyWithMetrics(
   switch (warning.type) {
     case 'housing_pressure':
       if (fixedCost || housing || utilities) {
-        return `Your fixed costs are running at about ${fixedCost ?? 'a high share'} of take-home pay${housing ? `, with housing around ${housing}/month` : ''}${utilities ? ` and utilities around ${utilities}/month` : ''}. At this level, even good day-to-day budgeting may still feel tight.`;
+        return `Your must-pay monthly bills are running at about ${fixedCost ?? 'a high share'} of take-home pay${housing ? `, with housing around ${housing}/month` : ''}${utilities ? ` and utilities around ${utilities}/month` : ''}. At this level, even good day-to-day budgeting may still feel tight because too much income is already committed.`;
       }
       return getWarningBody(warning.type);
     case 'income_constraint':
       if (fixedCost) {
-        return `Your fixed costs are taking about ${fixedCost} of take-home pay. This looks more like a math problem than a discipline problem. Increasing income or lowering a major fixed cost may create the biggest overall lift.`;
+        return `Your mortgage/rent, utilities, and other must-pay bills are taking about ${fixedCost} of take-home pay. This looks more like a math problem than a discipline problem. Increasing income or lowering a major bill may create the biggest overall lift.`;
       }
       return getWarningBody(warning.type);
     case 'structural_pressure':
       if (debtToIncome || debtPayment) {
-        return `Debt and fixed obligations are stacking up. Non-housing debt payments are about ${debtPayment ?? 'a meaningful amount each month'}${debtToIncome ? `, or roughly ${debtToIncome} of take-home pay` : ''}. That kind of pressure can make saving, investing, and debt progress much harder.`;
+        return `Debt payments and must-pay bills are stacking up. Non-housing debt payments are about ${debtPayment ?? 'a meaningful amount each month'}${debtToIncome ? `, or roughly ${debtToIncome} of take-home pay` : ''}. That kind of pressure can make saving, investing, and progress much harder.`;
       }
       return getWarningBody(warning.type);
     default:
@@ -1093,14 +1093,14 @@ function getReportSummaryCards({
       : savings
         ? `${savings} liquid savings`
         : debtPayments
-          ? `${debtPayments}/month debt pressure`
+          ? `${debtPayments}/month debt payments`
           : 'Your money picture';
 
   const numbersBody =
     cashMonths > 0
-      ? `Your cash cushion covers about ${cashMonths.toFixed(1)} months of core expenses${fixedCost ? `, while fixed costs are taking about ${fixedCost} of take-home pay` : ''}. That combination tells us whether the next move should focus on safety, margin, or optimization.`
+      ? `Your cash cushion covers about ${cashMonths.toFixed(1)} months of core expenses${fixedCost ? `, while mortgage/rent, utilities, and must-pay bills are taking about ${fixedCost} of take-home pay` : ''}. That combination tells us whether the next move should focus on safety, margin, or optimization.`
       : fixedCost
-        ? `Fixed costs are running around ${fixedCost} of take-home pay${debtPayments ? `, with debt payments near ${debtPayments}/month` : ''}. That structure shapes how much room you have to save, invest, and absorb surprises.`
+        ? `Mortgage/rent, utilities, and other must-pay bills are running around ${fixedCost} of take-home pay${debtPayments ? `, with debt payments near ${debtPayments}/month` : ''}. That shows how much room is left to save, invest, and absorb surprises.`
         : investments
           ? `Investments are about ${investments}. The question now is whether your current contribution habit and cash reserve are aligned with the future you want.`
           : 'The numbers below provide context for the recommendation. The goal is not more information — it is choosing the next move with confidence.';
@@ -1210,9 +1210,9 @@ function getHouseholdComparisonMetrics(
         nonMortgageDebt <= 0
           ? 'Better than most: no consumer debt showing'
           : nonMortgageDebt <= debtBenchmark
-            ? 'Consumer debt looks controlled'
-            : 'Consumer debt may be creating drag',
-      detail: 'This compares non-mortgage debt only. Mortgages belong in net worth and housing pressure, not consumer debt pressure.',
+            ? 'Debt payments look manageable'
+            : 'Debt payments may be stealing room from your goals',
+      detail: 'This compares non-mortgage debt only — credit cards, car loans, personal loans, and similar balances. Lower debt usually means fewer monthly payments competing with saving, investing, and breathing room.',
       myValue: nonMortgageDebt,
       benchmarkValue: debtBenchmark,
       myLabel: 'You',
@@ -1224,9 +1224,9 @@ function getHouseholdComparisonMetrics(
       status: savingsRate >= 15 ? 'ahead' : savingsRate >= 10 ? 'strong' : savingsRate >= savingsBenchmark ? 'average' : 'watch',
       headline:
         savingsRate >= 10
-          ? 'Saving more aggressively than many households'
-          : 'Savings rate could use more lift',
-      detail: 'Savings rate is one of the clearest signs of monthly margin. This uses your reported or calculated savings behavior.',
+          ? 'You are keeping more of your income than many households'
+          : 'More of your income needs to stay with you',
+      detail: 'Savings rate means how much of your income you are actually keeping. A stronger savings rate creates more safety, more options, and more progress toward future goals.',
       myValue: savingsRate,
       benchmarkValue: savingsBenchmark,
       myLabel: 'You',
@@ -1238,9 +1238,9 @@ function getHouseholdComparisonMetrics(
       status: investingRate >= 15 ? 'ahead' : investingRate >= investingBenchmark ? 'strong' : investingRate >= 5 ? 'average' : 'watch',
       headline:
         investingRate >= investingBenchmark
-          ? 'Investing habit looks stronger than average'
-          : 'Investing consistency is a growth lever',
-      detail: 'This includes your reported monthly investing contribution when available. It is compared to a practical contribution benchmark, not an official percentile.',
+          ? 'Your investing habit looks stronger than average'
+          : 'Investing more consistently would help future growth',
+      detail: 'Investing rate means how much of today’s income is being sent toward future freedom. This uses your reported monthly investing contribution when available.',
       myValue: investingRate,
       benchmarkValue: investingBenchmark,
       myLabel: 'You',
@@ -1252,9 +1252,9 @@ function getHouseholdComparisonMetrics(
       status: fixedCostRatio <= 45 ? 'ahead' : fixedCostRatio <= fixedCostBenchmark ? 'strong' : fixedCostRatio <= 70 ? 'watch' : 'watch',
       headline:
         fixedCostRatio <= fixedCostBenchmark
-          ? 'Fixed costs are near the healthy range'
-          : 'Fixed costs are higher than ideal',
-      detail: 'This is one of your unique Foundation metrics. Lower fixed costs usually create more flexibility for saving, investing, and handling surprises.',
+          ? 'Your must-pay monthly bills are in a workable range'
+          : 'Your mortgage, rent, or fixed bills are taking too much room',
+      detail: 'Fixed Cost Load means the bills that are mostly spoken for before the month starts — housing, utilities, required payments, and other fixed obligations. When this is high, even good spending habits can still feel tight.',
       myValue: fixedCostRatio,
       benchmarkValue: fixedCostBenchmark,
       myLabel: 'You',
@@ -1290,6 +1290,182 @@ function getComparisonNarrative(metrics: ComparisonMetric[]) {
   return 'Your comparison profile is mixed, which is normal. Use the stronger areas as support while you focus on the one metric most likely to create breathing room.';
 }
 
+function getComparisonPlainLabel(label: string) {
+  switch (label) {
+    case 'Net Worth':
+      return 'net worth';
+    case 'Consumer Debt':
+      return 'consumer debt';
+    case 'Savings Rate':
+      return 'how much income you are keeping';
+    case 'Investing Rate':
+      return 'how much you are putting toward future growth';
+    case 'Fixed Cost Load':
+      return 'mortgage/rent, utilities, and other must-pay bills';
+    default:
+      return label.toLowerCase();
+  }
+}
+
+function getComparisonHelperLine(label: string) {
+  switch (label) {
+    case 'Net Worth':
+      return 'Assets minus what you owe';
+    case 'Consumer Debt':
+      return 'Credit cards, car loans, and other non-mortgage debt';
+    case 'Savings Rate':
+      return 'How much income stays with you';
+    case 'Investing Rate':
+      return 'How much goes toward future growth';
+    case 'Fixed Cost Load':
+      return 'Mortgage/rent, utilities, and must-pay bills';
+    default:
+      return 'Part of your overall financial picture';
+  }
+}
+
+function getComparisonWhyItMatters(metric?: ComparisonMetric) {
+  if (!metric) return 'Use the comparison as a guide for where to focus next, not as a grade.';
+
+  switch (metric.label) {
+    case 'Net Worth':
+      return 'This shows whether your assets are pulling ahead of what you owe. It is one of the clearest signs that your foundation is gaining strength.';
+    case 'Consumer Debt':
+      return 'Debt pressure is really about monthly payments. The lower those payments are, the more room you have for saving, investing, and choices.';
+    case 'Savings Rate':
+      return 'This shows how much of your income stays with you instead of leaving every month. Higher usually means faster progress and more safety.';
+    case 'Investing Rate':
+      return 'This shows how much of today’s income is being pointed toward future growth, especially important for households approaching retirement.';
+    case 'Fixed Cost Load':
+      return 'This is your mortgage or rent, utilities, and other bills that are hard to change quickly. When they take too much income, everything else feels tight.';
+    default:
+      return 'This area helps explain where your money has the most room to improve.';
+  }
+}
+
+function getComparisonTakeaway(metrics: ComparisonMetric[]) {
+  const strongMetrics = metrics.filter((metric) => metric.status === 'ahead' || metric.status === 'strong');
+  const watchMetrics = metrics.filter((metric) => metric.status === 'watch');
+  const typicalMetrics = metrics.filter((metric) => metric.status === 'average');
+  const strongest = strongMetrics[0] ?? metrics[0];
+  const needsAttention = watchMetrics[0] ?? typicalMetrics[0] ?? null;
+
+  if (strongMetrics.length >= 4) {
+    return {
+      headline: 'You have more working than most people in your situation.',
+      body: needsAttention
+        ? `Your strongest signal is ${getComparisonPlainLabel(strongest.label)}. The area to keep an eye on is ${getComparisonPlainLabel(needsAttention.label)}.`
+        : `Your strongest signal is ${getComparisonPlainLabel(strongest.label)}. The next step is making the strong parts work together more efficiently.`,
+      nextMove: 'Do not chase every improvement at once. Pick the one area that creates the most room or growth over the next 90 days.',
+      strongest,
+      needsAttention,
+    };
+  }
+
+  if (strongMetrics.length >= 2) {
+    return {
+      headline: 'You are in a solid spot, but there is still one place holding things back.',
+      body: needsAttention
+        ? `You are doing well with ${getComparisonPlainLabel(strongest.label)}, but ${getComparisonPlainLabel(needsAttention.label)} deserves attention next.`
+        : `You are doing well with ${getComparisonPlainLabel(strongest.label)}. The next step is turning that strength into more consistency across the full foundation.`,
+      nextMove: 'Use your stronger areas as the base, then focus on the one pressure point that would make day-to-day money feel easier.',
+      strongest,
+      needsAttention,
+    };
+  }
+
+  return {
+    headline: 'The comparison shows where to start, not that you are behind forever.',
+    body: needsAttention
+      ? `The first area to improve is ${getComparisonPlainLabel(needsAttention.label)}. That is likely where progress will feel most noticeable.`
+      : 'Your numbers are mixed, which is normal. The goal now is to choose one place to build momentum.',
+    nextMove: 'Start with the area that creates the most breathing room, then build from there.',
+    strongest,
+    needsAttention,
+  };
+}
+
+function getSnapshotPrimaryConstraint(
+  warnings: StructuralWarning[],
+  weakestPillar: string,
+  bestNextMoveCard: BestNextMoveCard
+) {
+  if (warnings.some((warning) => warning.type === 'income_constraint')) return 'Income or must-pay bills are limiting progress';
+  if (warnings.some((warning) => warning.type === 'housing_pressure')) return 'Mortgage/rent and fixed bills are taking too much room';
+  if (warnings.some((warning) => warning.type === 'structural_pressure')) return 'Too many required payments are stacking up';
+  if (bestNextMoveCard.title.toLowerCase().includes('excess cash')) return 'Idle cash may be slowing long-term growth';
+  if (weakestPillar) return `${formatPillarName(weakestPillar)} needs the most attention`;
+  return 'One focused move will create the clearest progress';
+}
+
+function getSnapshotFocus(bestNextMoveCard: BestNextMoveCard) {
+  if (bestNextMoveCard.title.toLowerCase().includes('excess cash')) return 'Define enough cash, then put excess money to work in stages';
+  if (bestNextMoveCard.title.toLowerCase().includes('breathing') || bestNextMoveCard.title.toLowerCase().includes('fixed')) return 'Create more monthly breathing room before adding complexity';
+  return bestNextMoveCard.nextStep;
+}
+
+function ReportSnapshotRow({
+  score,
+  metrics,
+  weakestPillar,
+  warnings,
+  bestNextMoveCard,
+}: {
+  score: number;
+  metrics?: ResultShape['metrics'];
+  weakestPillar: string;
+  warnings: StructuralWarning[];
+  bestNextMoveCard: BestNextMoveCard;
+}) {
+  const cashMonths = Number(metrics?.emergencyFundMonths ?? 0);
+  const fixedCost = formatPercent(metrics?.fixedCostPressureRatio);
+  const position = score >= 80 ? 'Strong base' : score >= 60 ? 'Building momentum' : score >= 40 ? 'Needs reinforcement' : 'Stabilize first';
+  const primaryConstraint = getSnapshotPrimaryConstraint(warnings, weakestPillar, bestNextMoveCard);
+  const ninetyDayFocus = getSnapshotFocus(bestNextMoveCard);
+
+  const snapshotItems = [
+    {
+      label: 'Your Position',
+      value: position,
+      helper: cashMonths > 0 ? `${cashMonths.toFixed(1)} months of cash cushion` : 'Based on your Foundation Score',
+    },
+    {
+      label: 'Main Pressure Point',
+      value: primaryConstraint,
+      helper: fixedCost ? `Must-pay monthly bills: ${fixedCost} of take-home pay` : 'This is where progress may feel stuck',
+    },
+    {
+      label: '90-Day Focus',
+      value: ninetyDayFocus,
+      helper: 'Keep the next step simple and visible',
+    },
+  ];
+
+  return (
+    <div
+      data-pdf-dark-card="true"
+      data-pdf-page-break-avoid="true"
+      className="rounded-3xl border border-white/10 bg-white/[0.055] p-4 md:p-5 shadow-[0_16px_46px_rgba(0,0,0,0.18)]"
+    >
+      <div className="mb-3 flex items-center gap-2">
+        <Clock3 className="h-4 w-4 text-copper-200" />
+        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-copper-200">
+          Report Snapshot
+        </div>
+      </div>
+      <div className="grid gap-3 md:grid-cols-3">
+        {snapshotItems.map((item) => (
+          <div key={item.label} className="rounded-2xl border border-white/10 bg-white/[0.055] p-4">
+            <div className="text-xs font-semibold uppercase tracking-[0.14em] text-white/55">{item.label}</div>
+            <div className="mt-2 text-sm font-bold leading-6 text-white md:text-base">{item.value}</div>
+            <div className="mt-2 text-xs leading-5 text-white/60">{item.helper}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ComparisonBar({ metric }: { metric: ComparisonMetric }) {
   const maxValue = Math.max(metric.myValue, metric.benchmarkValue, 1);
   const myWidth = Math.max(4, Math.min(100, (metric.myValue / maxValue) * 100));
@@ -1301,6 +1477,7 @@ function ComparisonBar({ metric }: { metric: ComparisonMetric }) {
       <div className="mb-3 flex items-start justify-between gap-4">
         <div>
           <div className="font-bold text-navy-900">{metric.label}</div>
+          <div className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">{getComparisonHelperLine(metric.label)}</div>
           <div className="mt-1 text-sm text-slate-600">{metric.headline}</div>
         </div>
         <span className="rounded-full bg-copper-50 px-3 py-1 text-xs font-semibold text-copper-700">
@@ -1346,71 +1523,145 @@ function HouseholdComparisonSection({
 }) {
   const aheadCount = comparisonMetrics.filter((item) => item.status === 'ahead' || item.status === 'strong').length;
   const watchCount = comparisonMetrics.filter((item) => item.status === 'watch').length;
+  const comparisonTakeaway = getComparisonTakeaway(comparisonMetrics);
+  const strongestTone = comparisonTakeaway.strongest ? getComparisonTone(comparisonTakeaway.strongest.status) : null;
+  const watchTone = comparisonTakeaway.needsAttention ? getComparisonTone(comparisonTakeaway.needsAttention.status) : null;
 
   return (
     <section
       data-pdf-card="true"
-      className="mb-8 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/95 via-copper-50/95 to-white/95 p-5 md:p-7 shadow-[0_20px_60px_rgba(15,42,68,0.18)]"
+      className="mb-8 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/95 via-copper-50/95 to-white/95 p-5 shadow-[0_20px_60px_rgba(15,42,68,0.18)] md:p-7"
     >
-      <div className="grid gap-6 lg:grid-cols-[0.95fr_1.4fr] lg:items-center">
-        <div>
-          <div className="inline-flex items-center rounded-full bg-copper-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-copper-800">
+      <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-stretch">
+        <div className="flex flex-col">
+          <div className="inline-flex w-fit items-center rounded-full bg-copper-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-copper-800">
             How You Compare
           </div>
-          <h2 className="mt-4 text-2xl md:text-3xl font-bold text-navy-900">
+          <h2 className="mt-4 text-2xl font-bold text-navy-900 md:text-3xl">
             Compared to households like yours, here’s where you stand.
           </h2>
           <p className="mt-3 text-sm leading-7 text-slate-600">
-            This section shows how your financial position compares to households in a similar stage of life. It is not about judgment — it is about context. Knowing where you are ahead, on track, or falling behind helps you focus your effort where it will actually move the needle.
-          </p>
-
-          <p className="mt-3 rounded-2xl border border-copper-200 bg-white/75 p-4 text-sm font-semibold leading-7 text-navy-900">
-            {getComparisonNarrative(comparisonMetrics)}
+            This section gives your numbers some real-world context. It is not a grade, and it is not meant to make you chase averages. It helps answer a simple question: where are you already doing well, and where would one improvement make life feel easier?
           </p>
 
           <div className="mt-4 rounded-2xl border border-copper-200 bg-white/80 p-4">
             <div className="text-xs font-semibold uppercase tracking-[0.16em] text-copper-700">Comparison group</div>
-            <div className="mt-1 text-lg font-bold text-navy-900 capitalize">{profileLabel}</div>
-            <div className="mt-2 text-sm text-slate-600">
-              {aheadCount} of {comparisonMetrics.length} areas look strong or ahead. {watchCount ? `${watchCount} area${watchCount > 1 ? 's' : ''} deserve${watchCount === 1 ? 's' : ''} attention.` : 'No major comparison warnings triggered.'}
+            <div className="mt-1 text-lg font-bold capitalize text-navy-900">{profileLabel}</div>
+            <div className="mt-2 text-sm leading-6 text-slate-600">
+              {aheadCount} of {comparisonMetrics.length} areas look strong or ahead. {watchCount ? `${watchCount} area${watchCount > 1 ? 's' : ''} could use attention.` : 'No major comparison warnings triggered.'}
             </div>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-copper-200 bg-white/75 p-4 text-sm font-semibold leading-7 text-navy-900">
+            {getComparisonNarrative(comparisonMetrics)}
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-          {comparisonMetrics.map((metric) => {
-            const tone = getComparisonTone(metric.status);
-            return (
-              <div key={metric.label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
-                <div className="flex items-center justify-between gap-2">
-                  <span className={`h-2.5 w-2.5 rounded-full ${tone.dot}`} />
-                  <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${tone.badge}`}>
-                    {tone.label}
-                  </span>
-                </div>
-                <div className="mt-3 text-sm font-bold text-navy-900">{metric.label}</div>
-                <div className="mt-2 text-xl font-black text-copper-700">
-                  {formatComparisonValue(metric.myValue, metric.unit)}
-                </div>
-                <div className="mt-1 text-xs leading-5 text-slate-500">
-                  vs {formatComparisonValue(metric.benchmarkValue, metric.unit)} benchmark
-                </div>
+        <div className="rounded-3xl border border-copper-200 bg-white/85 p-4 shadow-sm md:p-5">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+            <div>
+              <div className="text-xs font-bold uppercase tracking-[0.18em] text-copper-700">
+                Your Comparison Takeaway
               </div>
-            );
-          })}
+              <h3 className="mt-2 text-xl font-bold leading-tight text-navy-900">
+                {comparisonTakeaway.headline}
+              </h3>
+              <p className="mt-2 text-sm leading-7 text-slate-600">
+                {comparisonTakeaway.body}
+              </p>
+            </div>
+
+            <button
+              onClick={onMoreInfo}
+              className="inline-flex shrink-0 items-center justify-center rounded-full border border-copper-200 bg-copper-50 px-4 py-2 text-sm font-bold text-copper-800 shadow-sm transition-colors hover:bg-copper-100"
+            >
+              More Info →
+            </button>
+          </div>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            {comparisonTakeaway.strongest && (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700">Working Well</div>
+                  {strongestTone && (
+                    <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${strongestTone.badge}`}>
+                      {strongestTone.label}
+                    </span>
+                  )}
+                </div>
+                <div className="mt-2 text-lg font-black text-navy-900">
+                  {formatComparisonValue(comparisonTakeaway.strongest.myValue, comparisonTakeaway.strongest.unit)}
+                </div>
+                <div className="mt-1 text-sm font-semibold text-navy-900">{comparisonTakeaway.strongest.label}</div>
+                <p className="mt-2 text-xs leading-5 text-slate-600">
+                  {getComparisonWhyItMatters(comparisonTakeaway.strongest)}
+                </p>
+              </div>
+            )}
+
+            <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-xs font-bold uppercase tracking-[0.14em] text-amber-700">
+                  {comparisonTakeaway.needsAttention ? 'Keep An Eye On' : 'Next Layer'}
+                </div>
+                {watchTone && (
+                  <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${watchTone.badge}`}>
+                    {watchTone.label}
+                  </span>
+                )}
+              </div>
+              <div className="mt-2 text-lg font-black text-navy-900">
+                {comparisonTakeaway.needsAttention
+                  ? formatComparisonValue(comparisonTakeaway.needsAttention.myValue, comparisonTakeaway.needsAttention.unit)
+                  : 'Stay consistent'}
+              </div>
+              <div className="mt-1 text-sm font-semibold text-navy-900">
+                {comparisonTakeaway.needsAttention?.label ?? 'Keep building the strong parts'}
+              </div>
+              <p className="mt-2 text-xs leading-5 text-slate-600">
+                {getComparisonWhyItMatters(comparisonTakeaway.needsAttention ?? comparisonTakeaway.strongest)}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-copper-200 bg-copper-50/70 p-4">
+            <div className="text-xs font-bold uppercase tracking-[0.14em] text-copper-700">What to do with this</div>
+            <p className="mt-2 text-sm font-semibold leading-7 text-navy-900">
+              {comparisonTakeaway.nextMove}
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="mt-5 flex flex-col gap-3 border-t border-copper-200 pt-4 md:flex-row md:items-center md:justify-between">
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        {comparisonMetrics.map((metric) => {
+          const tone = getComparisonTone(metric.status);
+          return (
+            <div key={metric.label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
+              <div className="flex items-center justify-between gap-2">
+                <span className={`h-2.5 w-2.5 rounded-full ${tone.dot}`} />
+                <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${tone.badge}`}>
+                  {tone.label}
+                </span>
+              </div>
+              <div className="mt-3 text-sm font-bold text-navy-900">{metric.label}</div>
+              <div className="mt-1 text-[11px] leading-4 text-slate-500">{getComparisonHelperLine(metric.label)}</div>
+              <div className="mt-2 text-xl font-black text-copper-700">
+                {formatComparisonValue(metric.myValue, metric.unit)}
+              </div>
+              <div className="mt-1 text-xs leading-5 text-slate-500">
+                vs {formatComparisonValue(metric.benchmarkValue, metric.unit)} benchmark
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-5 border-t border-copper-200 pt-4">
         <p className="text-sm leading-6 text-slate-600">
-          Benchmarks are not a judgment. They are a context layer to help you decide what deserves attention now.
+          Benchmarks are a context layer. The goal is not to be average — it is to know which move gives you the most confidence and breathing room from here.
         </p>
-        <button
-          onClick={onMoreInfo}
-          className="inline-flex items-center justify-center rounded-full border border-copper-200 bg-white px-4 py-2 text-sm font-bold text-copper-700 shadow-sm transition-colors hover:bg-copper-50"
-        >
-          More Info →
-        </button>
       </div>
     </section>
   );
@@ -1508,8 +1759,8 @@ function getNinetyDayPlanPhases(
     return [
       {
         title: 'Phase 1: Find the pressure point',
-        body: `Start with the fixed cost putting the most pressure on cash flow${fixedCost ? ` — fixed costs are around ${fixedCost} of take-home pay` : ''}. This is a structure problem before it is a budgeting problem.`,
-        checklist: ['List the top fixed costs in one place.', 'Circle the one cost with the biggest possible monthly impact.'],
+        body: `Start with the must-pay bill putting the most pressure on cash flow${fixedCost ? ` — mortgage/rent, utilities, and fixed bills are around ${fixedCost} of take-home pay` : ''}. This is a structure problem before it is a budgeting problem.`,
+        checklist: ['List the top must-pay monthly bills in one place.', 'Circle the one bill with the biggest possible monthly impact.'],
       },
       {
         title: 'Phase 2: Test one change',
@@ -1977,6 +2228,14 @@ export default function ResultsPage() {
               </div>
             </div>
 
+            <ReportSnapshotRow
+              score={score}
+              metrics={metrics}
+              weakestPillar={weakestPillar}
+              warnings={warnings}
+              bestNextMoveCard={bestNextMoveCard}
+            />
+
             <div
               data-pdf-dark-card="true"
               data-pdf-page-break-avoid="true"
@@ -2009,7 +2268,7 @@ export default function ResultsPage() {
                   <div className="text-sm text-white/70 mb-2">Debt Pressure</div>
                   <div className="text-2xl font-bold text-white">{debtPressure}</div>
                   <div className="mt-2 text-sm text-white/70">
-                    {getDebtSnapshotLine(metrics) || 'Lower debt pressure generally means more flexibility.'}
+                    {getDebtSnapshotLine(metrics) || 'Lower monthly debt payments generally mean more flexibility.'}
                   </div>
                 </div>
 
