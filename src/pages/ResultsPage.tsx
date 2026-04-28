@@ -1404,6 +1404,48 @@ function getSnapshotFocus(bestNextMoveCard: BestNextMoveCard) {
   return bestNextMoveCard.nextStep;
 }
 
+
+function FoundationScoreBubble({
+  score,
+  scoreBand,
+  adjustedScoreColor,
+}: {
+  score: number;
+  scoreBand: ReturnType<typeof getScoreBand>;
+  adjustedScoreColor: string;
+}) {
+  return (
+    <div className="flex flex-col items-center lg:items-start">
+      <div className="relative flex h-40 w-40 items-center justify-center rounded-full bg-gradient-to-br from-[#ffe0b8] via-[#d79553] to-[#8f5427] p-1 shadow-[inset_0_2px_12px_rgba(255,255,255,0.55),inset_0_-18px_28px_rgba(85,38,12,0.38),0_24px_70px_rgba(194,120,58,0.46)] ring-1 ring-white/35 md:h-44 md:w-44">
+        <div className="absolute left-8 top-7 h-12 w-20 rounded-full bg-white/35 blur-xl" />
+        <div className="absolute inset-3 rounded-full border border-white/30 bg-gradient-to-br from-white/22 via-transparent to-black/12" />
+        <div className="relative text-center">
+          <div className="text-[3.4rem] font-black leading-none tracking-tight text-white drop-shadow-[0_5px_12px_rgba(65,31,10,0.42)] md:text-[4.35rem]">
+            {score}
+          </div>
+          <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.22em] text-white/80">
+            Score
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 text-center lg:text-left">
+        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-copper-200">
+          Foundation Score
+        </div>
+        <div
+          className={`mt-2 inline-flex rounded-full px-3 py-1 text-sm font-bold ${scoreBand.bg} ${adjustedScoreColor}`}
+        >
+          {scoreBand.label}
+        </div>
+        <p className="mt-3 max-w-[15rem] text-sm leading-6 text-white/72">
+          This is the main number for the report — a quick read on the strength of your overall financial foundation.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function ReportSnapshotRow({
   score,
   metrics,
@@ -2161,7 +2203,7 @@ export default function ResultsPage() {
               data-pdf-page-break-avoid="true"
               className="bg-gradient-to-br from-[#17385a] to-[#21456d] rounded-3xl border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.35)] p-6 md:p-8"
             >
-              <div className="flex flex-wrap items-center gap-3 mb-5">
+              <div className="flex flex-wrap items-center gap-3 mb-6">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-copper-50 text-copper-700 text-sm font-semibold">
                   <Sparkles className="w-4 h-4" />
                   Your Foundation Report
@@ -2175,56 +2217,70 @@ export default function ResultsPage() {
                 )}
               </div>
 
-              <h1 className="text-3xl md:text-5xl font-bold text-white leading-tight mb-3">
-                {buildExecutiveHeadline(score)}
-              </h1>
+              <div className="grid gap-7 lg:grid-cols-[auto_1fr] lg:items-center">
+                <FoundationScoreBubble
+                  score={score}
+                  scoreBand={scoreBand}
+                  adjustedScoreColor={adjustedScoreColor}
+                />
 
-              <p className="text-base md:text-lg text-white/80 max-w-3xl">
-                {getBandNarrative(score)}
-              </p>
-
-              <p className="mt-3 text-sm md:text-base text-copper-200 max-w-3xl leading-7">
-                Your score of {score} reflects{' '}
-                {score >= 80
-                  ? 'a strong foundation'
-                  : score >= 60
-                    ? 'good momentum with some remaining gaps'
-                    : score >= 40
-                      ? 'a workable base that still needs reinforcement'
-                      : 'a foundation that needs attention before growth becomes the priority'}
-                .
-              </p>
-
-              <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-semibold text-white/70">
-                Most users revisit this every 90 days to track progress and refine their plan.
-              </div>
-
-              <div data-pdf-ignore="true" className="flex flex-wrap items-center gap-3 mt-6">
-                {features.showPdfButton && (
-                  <button
-                    onClick={handlePdfClick}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-copper-600 text-white font-semibold shadow-sm hover:bg-copper-700 transition-colors"
-                  >
-                    Save as PDF
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                )}
-
-                {reportTier !== 'premium' && (
-                  <button
-                    onClick={() => navigate('/pricing')}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 text-white font-semibold border border-white/10 hover:bg-white/15 transition-colors"
-                  >
-                    Turn this into a step-by-step plan
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                )}
-
-                {isDevReportOverrideEnabled() && (
-                  <div className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/80 border border-white/10">
-                    Dev mode: all features visible
+                <div>
+                  <div className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-copper-200">
+                    Your Foundation Score
                   </div>
-                )}
+
+                  <h1 className="text-3xl md:text-5xl font-bold text-white leading-tight mb-4">
+                    {buildExecutiveHeadline(score)}
+                  </h1>
+
+                  <p className="text-base md:text-lg text-white/82 max-w-3xl leading-8">
+                    {getBandNarrative(score)}
+                  </p>
+
+                  <p className="mt-4 text-sm md:text-base text-copper-100/90 max-w-3xl leading-7">
+                    Your score of {score} reflects{' '}
+                    {score >= 80
+                      ? 'a strong financial foundation that is ready for refinement'
+                      : score >= 60
+                        ? 'good momentum with a few areas still holding back progress'
+                        : score >= 40
+                          ? 'a workable base that still needs reinforcement'
+                          : 'a foundation that needs attention before growth becomes the priority'}
+                    .
+                  </p>
+
+                  <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-semibold leading-6 text-white/72">
+                    Most users revisit this every 90 days to see whether the score is improving and what should move next.
+                  </div>
+
+                  <div data-pdf-ignore="true" className="flex flex-wrap items-center gap-3 mt-6">
+                    {features.showPdfButton && (
+                      <button
+                        onClick={handlePdfClick}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-copper-600 text-white font-semibold shadow-sm hover:bg-copper-700 transition-colors"
+                      >
+                        Save as PDF
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    )}
+
+                    {reportTier !== 'premium' && (
+                      <button
+                        onClick={() => navigate('/pricing')}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 text-white font-semibold border border-white/10 hover:bg-white/15 transition-colors"
+                      >
+                        Turn this into a step-by-step plan
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    )}
+
+                    {isDevReportOverrideEnabled() && (
+                      <div className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/80 border border-white/10">
+                        Dev mode: all features visible
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -2241,26 +2297,14 @@ export default function ResultsPage() {
               data-pdf-page-break-avoid="true"
               className="rounded-3xl border border-white/10 bg-white/[0.055] p-4 md:p-5 shadow-[0_16px_46px_rgba(0,0,0,0.18)]"
             >
-              <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                <div className="rounded-2xl border border-white/10 bg-white/[0.055] p-5">
-                  <div className="text-sm text-white/70 mb-2">Foundation Score</div>
-                  <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-[#ffcf9e] to-[#b87333] shadow-[0_20px_60px_rgba(194,120,58,0.45)] border border-white/30 text-4xl font-bold text-white">
-                    {score}
-                  </div>
-                  <div
-                    className={`mt-3 inline-flex px-3 py-1 rounded-full text-sm font-semibold ${scoreBand.bg} ${adjustedScoreColor}`}
-                  >
-                    {scoreBand.label}
-                  </div>
-                </div>
-
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 <div className="rounded-2xl border border-white/10 bg-white/[0.055] p-5">
                   <div className="text-sm text-white/70 mb-2">Top Strength</div>
                   <div className="text-2xl font-bold text-white">
                     {strongest[0] ? formatPillarName(strongest[0][0]) : '—'}
                   </div>
                   <div className="mt-2 text-sm text-white/70">
-                    {strongest[0] ? `${strongest[0][1]}/100` : 'No data'}
+                    {strongest[0] ? String(strongest[0][1]) + '/100' : 'No data'}
                   </div>
                 </div>
 
