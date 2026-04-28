@@ -1093,6 +1093,141 @@ function getReportSummaryCards({
   ];
 }
 
+
+function getAgeBenchmarkLabel(source: any) {
+  const possibleAge = source?.age ?? source?.userAge ?? source?.currentAge;
+  const possibleRange = source?.ageRange ?? source?.age_group ?? source?.ageGroup;
+
+  if (typeof possibleRange === 'string' && possibleRange.trim()) {
+    return possibleRange.replace(/_/g, ' ');
+  }
+
+  const numericAge = Number(possibleAge);
+  if (!Number.isNaN(numericAge) && numericAge > 0) {
+    if (numericAge < 30) return 'under 30';
+    if (numericAge < 40) return '30s';
+    if (numericAge < 50) return '40s';
+    if (numericAge < 60) return '50s';
+    if (numericAge < 70) return '60s';
+    return '70+';
+  }
+
+  return 'your life stage';
+}
+
+function getBenchmarkTone(score: number) {
+  if (score >= 90) {
+    return {
+      headline: 'You are ahead of the pack',
+      label: 'Strong position',
+      note: 'Your score suggests a stronger foundation than the typical household that is still trying to get organized.',
+    };
+  }
+
+  if (score >= 80) {
+    return {
+      headline: 'You are building from strength',
+      label: 'Above average foundation',
+      note: 'Your foundation is strong enough that optimization matters more than basic stabilization.',
+    };
+  }
+
+  if (score >= 60) {
+    return {
+      headline: 'You have real momentum',
+      label: 'Building momentum',
+      note: 'You are past the starting line, but a few focused changes could create a visible jump.',
+    };
+  }
+
+  return {
+    headline: 'You have a clear starting point',
+    label: 'Rebuild opportunity',
+    note: 'The goal is not comparison for its own sake. The value is knowing which next move creates the biggest lift.',
+  };
+}
+
+function PeerBenchmarkCard({
+  score,
+  metrics,
+  ageLabel,
+}: {
+  score: number;
+  metrics?: ResultShape['metrics'];
+  ageLabel: string;
+}) {
+  const tone = getBenchmarkTone(score);
+  const cashMonths = Number(metrics?.emergencyFundMonths ?? 0);
+  const netWorth = Number(metrics?.netWorth ?? 0);
+  const investingRate = Number(metrics?.investmentContributionRate ?? metrics?.savingsRate ?? 0);
+
+  const rows = [
+    {
+      label: 'Foundation Score',
+      value: `${score}/100`,
+      status: score >= 80 ? 'Ahead' : score >= 60 ? 'On track' : 'Needs lift',
+      width: Math.max(8, Math.min(100, score)),
+    },
+    {
+      label: 'Cash Cushion',
+      value: cashMonths > 0 ? `${cashMonths.toFixed(1)} months` : 'Not entered',
+      status: cashMonths >= 12 ? 'Very strong' : cashMonths >= 6 ? 'Stable' : 'Thin',
+      width: Math.max(8, Math.min(100, (cashMonths / 24) * 100)),
+    },
+    {
+      label: 'Net Worth Base',
+      value: netWorth ? formatCurrency(netWorth) || '—' : 'Not entered',
+      status: netWorth >= 500000 ? 'Strong' : netWorth >= 100000 ? 'Established' : 'Building',
+      width: Math.max(8, Math.min(100, netWorth / 10000)),
+    },
+    {
+      label: 'Investing Rate',
+      value: investingRate > 0 ? `${Math.round(investingRate)}%` : 'Not entered',
+      status: investingRate >= 15 ? 'Strong' : investingRate >= 10 ? 'Solid' : 'Opportunity',
+      width: Math.max(8, Math.min(100, (investingRate / 20) * 100)),
+    },
+  ];
+
+  return (
+    <div className="rounded-2xl border border-copper-300/20 bg-gradient-to-br from-copper-300/[0.13] via-white/[0.07] to-white/[0.035] p-4 shadow-[0_18px_55px_rgba(0,0,0,0.18)]">
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-copper-200">
+            Compared to others {ageLabel !== 'your life stage' ? `in their ${ageLabel}` : 'at your stage'}
+          </div>
+          <div className="mt-2 text-xl font-bold text-white">{tone.headline}</div>
+          <p className="mt-2 text-sm leading-6 text-white/72">{tone.note}</p>
+        </div>
+        <div className="shrink-0 rounded-2xl border border-white/10 bg-white/[0.08] px-3 py-2 text-right">
+          <div className="text-2xl font-bold text-copper-100">{score}</div>
+          <div className="text-[10px] uppercase tracking-[0.16em] text-white/55">Score</div>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {rows.map((row) => (
+          <div key={row.label}>
+            <div className="mb-1 flex items-center justify-between gap-3 text-xs">
+              <span className="font-semibold text-white/82">{row.label}</span>
+              <span className="text-white/60">{row.value}</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-white/10">
+              <div className="h-full rounded-full bg-copper-300" style={{ width: `${row.width}%` }} />
+            </div>
+            <div className="mt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-copper-100/80">
+              {row.status}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.05] p-3 text-xs leading-5 text-white/62">
+        Benchmark language is a directional guide based on your reported numbers and Foundation Score, not a formal national percentile.
+      </div>
+    </div>
+  );
+}
+
 function getNinetyDayPlanPhases(
   bestNextMoveCard: BestNextMoveCard,
   weakestPillar: string,
@@ -1441,6 +1576,12 @@ export default function ResultsPage() {
     score,
   });
   const ninetyDayPlanPhases = getNinetyDayPlanPhases(bestNextMoveCard, weakestPillar, metrics);
+  const answerSource =
+    (currentAssessment as any)?.answers ??
+    (latestHistoryRecord as any)?.answers ??
+    (rawCurrentResult as any)?.answers ??
+    {};
+  const ageBenchmarkLabel = getAgeBenchmarkLabel(answerSource);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0f2a44] via-[#132f4c] to-[#1e3a5f]">
@@ -1740,10 +1881,27 @@ export default function ResultsPage() {
             <div className="my-5 h-px bg-white/10" />
 
             <ReportMiniBarChart entries={pillarEntries} />
+
+            <div className="my-5 h-px bg-white/10" />
+
+            <PeerBenchmarkCard
+              score={score}
+              metrics={metrics}
+              ageLabel={ageBenchmarkLabel}
+            />
           </div>
         </section>
         <section className="grid lg:grid-cols-[0.95fr_1.05fr] gap-6 mb-6">
           <SectionShell icon={Target} title="Priority Opportunities">
+            <div className="mb-5 rounded-2xl border border-copper-200 bg-gradient-to-r from-copper-50 to-white p-4">
+              <div className="text-sm font-bold text-copper-800">
+                If you only fix one thing first, focus here: {bestNextMoveCard.title}
+              </div>
+              <p className="mt-2 text-sm leading-6 text-gray-700">
+                This is the move most likely to create the clearest lift before you spread attention across the rest of the foundation.
+              </p>
+            </div>
+
             {getStructuralContextNote(warnings, metrics) && (
               <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-900">
                 {getStructuralContextNote(warnings, metrics)}
@@ -1950,12 +2108,14 @@ export default function ResultsPage() {
                   Premium Roadmap
                 </div>
                 <h2 className="text-2xl md:text-3xl font-bold mb-2">
-                  Turn this report into a guided execution plan.
+                  Turn this into a 12-month execution plan.
                 </h2>
                 <p className="text-white/88 leading-7">
-                  Premium adds the missing layer: what to do first, what to ignore for now,
-                  and how to move through the next 12 months without trying to fix everything at once.
+                  Know exactly what to do next, what to ignore, and how to move forward without second-guessing every financial decision.
                 </p>
+                <div className="mt-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/70">
+                  Most users update their plan every 90 days to stay on track.
+                </div>
                 <div className="mt-4 grid gap-2 text-sm text-white/90 sm:grid-cols-3">
                   <div className="rounded-2xl border border-white/15 bg-white/10 p-3">Priority ladder</div>
                   <div className="rounded-2xl border border-white/15 bg-white/10 p-3">Quarterly action plan</div>
@@ -1993,7 +2153,7 @@ export default function ResultsPage() {
         <SectionShell icon={Clock3} title="Your 90-Day Plan" className="mb-6 pdf-avoid-break">
           <div className="mb-5 rounded-2xl border border-copper-200 bg-gradient-to-r from-copper-50 to-white p-4">
             <div className="text-sm font-semibold uppercase tracking-[0.18em] text-copper-700">
-              Your next 90 days should be sequenced, not scattered
+              Your next 90 days should follow a sequence — not a scattershot of goals
             </div>
             <p className="mt-2 text-sm leading-7 text-gray-700">
               The goal is not to attack every building block at once. Start with the highest-leverage move, turn it into a repeatable system, then reassess before choosing the next priority.
