@@ -134,7 +134,6 @@ const PILLAR_ICONS: Record<string, React.ElementType> = {
   protection: Shield,
   vision: Eye,
 };
-
 const strengthDescriptions: Record<string, string> = {
   income:
     'You have a workable income base in place. That gives the rest of your financial plan something solid to build on.',
@@ -222,7 +221,7 @@ function formatDebtPressure(score: number) {
 }
 
 function buildExecutiveHeadline(score: number) {
-  if (score >= 80) return 'Strong foundation. Now it’s time to optimize.';
+  if (score >= 80) return 'You’re ahead of most. Now let’s make your money work harder.';
   if (score >= 60) return 'Good momentum, but a few gaps are holding back full progress.';
   if (score >= 40) return 'A workable base is forming, but reinforcement is needed.';
   return 'Stability comes first. The foundation needs attention now.';
@@ -1315,6 +1314,10 @@ function HouseholdComparisonSection({
             This V1 benchmark uses broad U.S. household reference points and your assessment data. It is directional, but it helps answer the question most people quietly have: “Am I ahead, behind, or on track?”
           </p>
 
+          <p className="mt-3 rounded-2xl border border-copper-200 bg-white/75 p-4 text-sm font-semibold leading-7 text-navy-900">
+            Most people in your position are still trying to catch up. You’re already in optimization mode.
+          </p>
+
           <div className="mt-4 rounded-2xl border border-copper-200 bg-white/80 p-4">
             <div className="text-xs font-semibold uppercase tracking-[0.16em] text-copper-700">Comparison group</div>
             <div className="mt-1 text-lg font-bold text-navy-900 capitalize">{profileLabel}</div>
@@ -1353,12 +1356,10 @@ function HouseholdComparisonSection({
           Benchmarks are not a judgment. They are a context layer to help you decide what deserves attention now.
         </p>
         <button
-          type="button"
           onClick={onMoreInfo}
-          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-copper-300 bg-white px-4 py-2 text-sm font-bold text-copper-700 hover:bg-copper-50 transition-colors"
+          className="inline-flex items-center justify-center rounded-full border border-copper-200 bg-white px-4 py-2 text-sm font-bold text-copper-700 shadow-sm transition-colors hover:bg-copper-50"
         >
-          More info
-          <ArrowRight className="h-4 w-4" />
+          More Info →
         </button>
       </div>
     </section>
@@ -1893,6 +1894,10 @@ export default function ResultsPage() {
                 .
               </p>
 
+              <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-semibold text-white/70">
+                Most users revisit this every 90 days to track progress and refine their plan.
+              </div>
+
               <div data-pdf-ignore="true" className="flex flex-wrap items-center gap-3 mt-6">
                 {features.showPdfButton && (
                   <button
@@ -2282,7 +2287,7 @@ export default function ResultsPage() {
                   Premium Roadmap
                 </div>
                 <h2 className="text-2xl md:text-3xl font-bold mb-2">
-                  Turn this report into a guided execution plan.
+                  Turn this into a step-by-step plan you can actually follow.
                 </h2>
                 <p className="text-white/88 leading-7">
                   Premium adds the missing layer: what to do first, what to ignore for now,
@@ -2325,7 +2330,7 @@ export default function ResultsPage() {
         <SectionShell icon={Clock3} title="Your 90-Day Plan" className="mb-6 pdf-avoid-break">
           <div className="mb-5 rounded-2xl border border-copper-200 bg-gradient-to-r from-copper-50 to-white p-4">
             <div className="text-sm font-semibold uppercase tracking-[0.18em] text-copper-700">
-              Your next 90 days should be sequenced, not scattered
+              Your next 90 days should follow a sequence — not a scattershot of goals
             </div>
             <p className="mt-2 text-sm leading-7 text-gray-700">
               The goal is not to attack every building block at once. Start with the highest-leverage move, turn it into a repeatable system, then reassess before choosing the next priority.
