@@ -234,6 +234,29 @@ function buildExecutiveHeadline(score: number) {
   return 'Stability comes first. The foundation needs attention now.';
 }
 
+function getScoreContextLine(score: number) {
+  if (score >= 80) return 'Stronger than most households at this stage';
+  if (score >= 60) return 'A solid base with clear room to improve';
+  if (score >= 40) return 'A foundation that can improve quickly with focus';
+  return 'A starting point for rebuilding stability';
+}
+
+function getHeroScoreSupportLine(score: number) {
+  if (score >= 80) {
+    return 'At this level, progress comes from refining what is already working — not starting over.';
+  }
+
+  if (score >= 60) {
+    return 'You do not need to fix everything. One focused improvement can create the next level of progress.';
+  }
+
+  if (score >= 40) {
+    return 'The opportunity now is not perfection — it is creating breathing room and consistency first.';
+  }
+
+  return 'The first goal is to reduce pressure and build one repeatable habit that makes next month easier.';
+}
+
 function getConstraintLine(pillar: string) {
   switch (pillar) {
     case 'income':
@@ -1441,6 +1464,9 @@ function FoundationScoreBubble({
         <div className="mt-2 inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-sm font-bold text-white/90 shadow-sm">
           {scoreBand.label}
         </div>
+        <div className="mt-2 text-xs font-semibold leading-5 text-copper-100/90">
+          {getScoreContextLine(score)}
+        </div>
         <p className="mt-3 max-w-[15rem] text-sm leading-6 text-white/80">
           This is the main number for the report — a quick read on the strength of your overall financial foundation.
         </p>
@@ -1583,7 +1609,7 @@ function HouseholdComparisonSection({
             How You Compare
           </div>
           <h2 className="mt-4 text-2xl font-bold text-navy-900 md:text-3xl">
-            Compared to households like yours, here’s where you stand.
+            Here’s how you stack up against households in a similar stage of life.
           </h2>
           <p className="mt-3 text-sm leading-7 text-slate-600">
             This section gives your numbers some real-world context. It is not a grade, and it is not meant to make you chase averages. It helps answer a simple question: where are you already doing well, and where would one improvement make life feel easier?
@@ -1683,19 +1709,24 @@ function HouseholdComparisonSection({
         {comparisonMetrics.map((metric) => {
           const tone = getComparisonTone(metric.status);
           return (
-            <div key={metric.label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
+            <div key={metric.label} className="flex h-full min-h-[178px] flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
               <div className="flex items-center justify-between gap-2">
                 <span className={`h-2.5 w-2.5 rounded-full ${tone.dot}`} />
                 <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${tone.badge}`}>
                   {tone.label}
                 </span>
               </div>
-              <div className="mt-3 text-sm font-bold text-navy-900">{metric.label}</div>
-              <div className="mt-1 text-[11px] leading-4 text-slate-500">{getComparisonHelperLine(metric.label)}</div>
-              <div className="mt-2 text-xl font-black text-copper-700">
+
+              <div className="mt-3 min-h-[46px]">
+                <div className="text-sm font-bold text-navy-900">{metric.label}</div>
+                <div className="mt-1 text-[11px] leading-4 text-slate-500">{getComparisonHelperLine(metric.label)}</div>
+              </div>
+
+              <div className="mt-3 text-xl font-black text-copper-700">
                 {formatComparisonValue(metric.myValue, metric.unit)}
               </div>
-              <div className="mt-1 text-xs leading-5 text-slate-500">
+
+              <div className="mt-auto pt-3 text-xs leading-5 text-slate-500">
                 vs {formatComparisonValue(metric.benchmarkValue, metric.unit)} benchmark
               </div>
             </div>
@@ -2256,7 +2287,7 @@ export default function ResultsPage() {
                   </p>
 
                   <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-semibold leading-6 text-white/80">
-                    Most users revisit this every 90 days to see whether the score is improving and what should move next.
+                    {getHeroScoreSupportLine(score)}
                   </div>
 
                   <div data-pdf-ignore="true" className="flex flex-wrap items-center gap-3 mt-6">
@@ -2400,7 +2431,7 @@ export default function ResultsPage() {
               <div className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-copper-200">
                 Why This Matters
               </div>
-              <p className="text-sm leading-7 text-white/85">
+              <p className="text-sm leading-7 text-white/75">
                 {bestNextMoveCard.whyThisMatters}
               </p>
             </div>
@@ -2434,7 +2465,7 @@ export default function ResultsPage() {
                 const isBiggest = pillar === biggest;
 
                 return (
-                  <div key={pillar} className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
+                  <div key={pillar} className="rounded-2xl border border-gray-200 border-l-4 border-l-copper-500 bg-gradient-to-r from-copper-50/70 to-gray-50 p-5">
                     <div className="flex items-start justify-between gap-4 mb-3">
                       <div>
                         <div className="text-lg font-bold text-navy-900">
