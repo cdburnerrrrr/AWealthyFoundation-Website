@@ -85,10 +85,8 @@ type MetricsShape = {
   otherLiabilities?: number;
   totalAssets?: number;
   totalLiabilities?: number;
-  emergencyFundMonths?: number;
   cappedEmergencyFundMonths?: number;
   cushionScore?: number;
-  excessCashEstimate?: number;
 };
 
 type ActionPlanStep = {
@@ -1041,7 +1039,7 @@ function LockedPreview({
           <div className="absolute inset-0 bg-white/45 backdrop-blur-[1px] flex items-center justify-center rounded-2xl">
             <div className="text-center px-6">
               <div className="text-navy-900 font-semibold mb-2">
-                Visible preview. Full interaction is locked.
+                Preview visible. Unlock the roadmap to use this fully.
               </div>
               <button
                 onClick={onUpgrade}
@@ -1569,6 +1567,20 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     navigate('/assessment/comprehensive?mode=retake');
   };
 
+  const handleUpgradeClick = (source: string, targetPlan: 'standard' | 'premium' = 'premium') => {
+    void trackUpgradeClick(targetPlan, 'dashboard_upgrade', source);
+    navigate('/pricing');
+  };
+
+  const handleRoadmapClick = () => {
+    if (canViewPremium) {
+      handleViewLatestReport();
+      return;
+    }
+
+    handleUpgradeClick('best_next_move_roadmap', 'premium');
+  };
+
   async function handlePrintPDF() {
     if (!canExportPdf) {
       void trackLockedFeature('pdf_export', 'dashboard_header');
@@ -1661,7 +1673,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
         <main ref={printRef} className="flex-1 overflow-hidden p-3 md:p-4 xl:p-6">
           {showSuccess && currentPlan !== 'free' && (
             <div data-pdf-ignore="true" className="mb-4 rounded-2xl border border-emerald-300/20 bg-emerald-300/10 px-5 py-4 text-emerald-100 shadow-sm">
-              You’ve unlocked {PLAN_FEATURES[currentPlan].name}. Your dashboard and report now reflect your upgraded access.
+              You’re all set — {PLAN_FEATURES[currentPlan].name} is now unlocked. Your dashboard and report now reflect your upgraded access.
             </div>
           )}
 
@@ -1855,8 +1867,8 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                       </div>
                     ))}
                   </div>
-                  <button onClick={() => navigate('/results')} className="mt-6 inline-flex items-center gap-2 rounded-2xl border border-cyan-300/35 bg-cyan-300/8 px-4 py-3 text-sm font-bold text-cyan-200 shadow-[0_0_28px_rgba(34,211,238,.12)]">
-                    View Full Roadmap <ArrowRight className="h-4 w-4" />
+                  <button onClick={handleRoadmapClick} className="mt-6 inline-flex items-center gap-2 rounded-2xl border border-cyan-300/35 bg-cyan-300/8 px-4 py-3 text-sm font-bold text-cyan-200 shadow-[0_0_28px_rgba(34,211,238,.12)]">
+                    {canViewPremium ? 'View Full Roadmap' : 'Turn this into a step-by-step plan'} <ArrowRight className="h-4 w-4" />
                   </button>
                 </DashboardPanel>
               </section>

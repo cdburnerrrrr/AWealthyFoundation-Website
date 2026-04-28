@@ -189,6 +189,7 @@ function App() {
           <Route path="/tools/emergency-fund-target" element={<EmergencyFundTargetPage />} />
           <Route path="/results/snapshot" element={<SnapshotResultsPage />} />
           <Route path="/tools/savings-runway" element={<SavingsRunwayPage />} />
+          <Route path="/pricing" element={<PricingPage />} />
 
 
           <Route

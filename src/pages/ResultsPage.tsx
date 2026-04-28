@@ -1417,15 +1417,15 @@ export default function ResultsPage() {
                 </button>
               )}
 
-              {reportTier !== 'premium' && (
-                <button
-                  onClick={() => navigate('/pricing')}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 text-white font-semibold border border-white/10 hover:bg-white/15 transition-colors"
-                >
-                  Unlock Premium Guidance
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              )}
+{reportTier !== 'premium' && (
+  <button
+    onClick={() => navigate('/pricing')}
+    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 text-white font-semibold border border-white/10 hover:bg-white/15 transition-colors"
+  >
+    Turn this into a step-by-step plan
+    <ArrowRight className="w-4 h-4" />
+  </button>
+)}
 
               {isDevReportOverrideEnabled() && (
                 <div className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/80 border border-white/10">
@@ -1806,7 +1806,7 @@ export default function ResultsPage() {
                   onClick={() => navigate('/pricing')}
                   className="inline-flex items-center gap-2 rounded-xl bg-copper-600 text-white px-5 py-3 font-semibold shadow-sm hover:bg-copper-700 transition-colors"
                 >
-                  Unlock Premium Guidance
+                  Turn this into a step-by-step plan
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
