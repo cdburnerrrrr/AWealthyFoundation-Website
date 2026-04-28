@@ -1441,7 +1441,7 @@ function FoundationScoreBubble({
         <div className="mt-2 inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-sm font-bold text-white/90 shadow-sm">
           {scoreBand.label}
         </div>
-        <p className="mt-3 max-w-[15rem] text-sm leading-6 text-white/78">
+        <p className="mt-3 max-w-[15rem] text-sm leading-6 text-white/80">
           This is the main number for the report — a quick read on the strength of your overall financial foundation.
         </p>
       </div>
