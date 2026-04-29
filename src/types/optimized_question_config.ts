@@ -71,6 +71,12 @@ export const QUESTION_STRATEGY = {
     'otherAssets',
     'investmentMix',
     'savingsAutomation',
+    'creditCardDebt',
+    'studentLoans',
+    'personalLoans',
+    'bnplDebt',
+    'paydayDebt',
+    'medicalDebt',
     'totalDebtBalance',
     'additionalDebt',
     'monthlyVehiclePayment',
@@ -609,17 +615,19 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
 },
 {
   key: 'carPaymentOpportunityReview',
-  question: 'See what your car payment may be costing your future',
+  question: 'See how this vehicle payment affects your financial foundation',
   type: 'single',
   section: 'debt',
   required: false,
-  options: [{ value: 'review', label: 'Show me the long-term impact' }],
+  helperText: 'This quick activity shows the monthly breathing room and long-term opportunity tied to your vehicle payment.',
+  options: [{ value: 'review', label: 'Show me the impact' }],
   conditions: [
     {
       operator: 'custom',
       fn: (r) =>
         (r.vehicleDebt === 'car_loan' || r.vehicleDebt === 'car_lease') &&
-        Number(r.monthlyVehiclePayment || 0) >= 250,
+        Number(r.monthlyVehiclePayment || 0) >= 250 &&
+        r.carPaymentOpportunityReview !== 'reviewed',
     },
   ],
   tags: {
@@ -627,7 +635,8 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     priority: 'conditional',
     askIf: (a) =>
       (a.vehicleDebt === 'car_loan' || a.vehicleDebt === 'car_lease') &&
-      Number(a.monthlyVehiclePayment || 0) >= 250,
+      Number(a.monthlyVehiclePayment || 0) >= 250 &&
+      a.carPaymentOpportunityReview !== 'reviewed',
   },
 },
   {
@@ -648,14 +657,116 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
   },
   {
-    key: 'totalDebtBalance',
-    question: 'About how much total non-mortgage debt do you have right now?',
+    key: 'creditCardDebt',
+    question: 'About how much credit card debt do you have?',
     type: 'number',
     section: 'debt',
     required: true,
+    placeholder: 'e.g. 8500',
+    helperText: 'Use the current balance you are carrying, not the monthly payment.',
+    conditions: [{ key: 'otherDebt', operator: 'includes', value: 'credit_card' }],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => Array.isArray(a.otherDebt) && a.otherDebt.includes('credit_card'),
+    },
+  },
+  {
+    key: 'studentLoans',
+    question: 'About how much student loan debt do you have?',
+    type: 'number',
+    section: 'debt',
+    required: true,
+    placeholder: 'e.g. 12000',
+    conditions: [{ key: 'otherDebt', operator: 'includes', value: 'student_loan' }],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => Array.isArray(a.otherDebt) && a.otherDebt.includes('student_loan'),
+    },
+  },
+  {
+    key: 'personalLoans',
+    question: 'About how much personal loan debt do you have?',
+    type: 'number',
+    section: 'debt',
+    required: true,
+    placeholder: 'e.g. 5000',
+    conditions: [{ key: 'otherDebt', operator: 'includes', value: 'personal_loan' }],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => Array.isArray(a.otherDebt) && a.otherDebt.includes('personal_loan'),
+    },
+  },
+  {
+    key: 'bnplDebt',
+    question: 'About how much buy now, pay later debt do you have?',
+    type: 'number',
+    section: 'debt',
+    required: true,
+    placeholder: 'e.g. 600',
+    conditions: [{ key: 'otherDebt', operator: 'includes', value: 'bnpl' }],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => Array.isArray(a.otherDebt) && a.otherDebt.includes('bnpl'),
+    },
+  },
+  {
+    key: 'paydayDebt',
+    question: 'About how much payday or cash advance debt do you have?',
+    type: 'number',
+    section: 'debt',
+    required: true,
+    placeholder: 'e.g. 300',
+    conditions: [{ key: 'otherDebt', operator: 'includes', value: 'payday' }],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => Array.isArray(a.otherDebt) && a.otherDebt.includes('payday'),
+    },
+  },
+  {
+    key: 'medicalDebt',
+    question: 'About how much medical debt do you have?',
+    type: 'number',
+    section: 'debt',
+    required: true,
+    placeholder: 'e.g. 1500',
+    conditions: [{ key: 'otherDebt', operator: 'includes', value: 'medical' }],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => Array.isArray(a.otherDebt) && a.otherDebt.includes('medical'),
+    },
+  },
+
+  {
+    key: 'totalDebtBalance',
+    question: 'Legacy total non-mortgage debt balance',
+    type: 'number',
+    section: 'debt',
+    required: false,
     placeholder: 'e.g. 24000',
     helperText:
       'Include credit cards, car loans, student loans, personal loans, and other non-mortgage debt. A quick estimate is fine.',
+    conditions: [{ operator: 'custom', fn: () => false }],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: () => false,
+    },
+  },
+
+  {
+    key: 'additionalDebt',
+    question: 'Any additional debt not already included?',
+    type: 'number',
+    section: 'debt',
+    required: false,
+    placeholder: 'e.g. 5000',
+    helperText: 'Optional catch-all for debts not already captured above.',
     conditions: [
       {
         operator: 'custom',
@@ -673,17 +784,6 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
         a.vehicleDebt === 'car_lease' ||
         (Array.isArray(a.otherDebt) && !a.otherDebt.includes('none')),
     },
-  },
-
-  {
-    key: 'additionalDebt',
-    question: 'Any additional debt not already included?',
-    type: 'number',
-    section: 'debt',
-    required: false,
-    placeholder: 'e.g. 5000',
-    helperText: 'Optional catch-all for debts not already captured above.',
-    tags: { modes: ['detailed'], priority: 'core' },
   },
 
   {
@@ -1027,8 +1127,9 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       section: 'investing',
       required: false,
       placeholder: 'e.g. 25000',
-      helperText: 'Leave blank if you already entered this and the amount has not changed.',
-      tags: { modes: ['detailed'], priority: 'core' },
+      helperText: 'Legacy field. Current savings are captured earlier in liquid savings.',
+      conditions: [{ operator: 'custom', fn: () => false }],
+      tags: { modes: ['detailed'], priority: 'conditional', askIf: () => false },
     },
     {
       key: 'retirementAccounts',
@@ -1037,7 +1138,14 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       section: 'investing',
       required: false,
       placeholder: 'e.g. 150000',
-      tags: { modes: ['detailed'], priority: 'core' },
+      conditions: [
+      { key: 'investingStatus', operator: 'in', value: ['yes_consistently', 'yes_irregularly'] },
+    ],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
+    },
     },
     {
       key: 'rothBalance',
@@ -1047,7 +1155,14 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       required: false,
       placeholder: 'e.g. 25000',
       helperText: 'Leave blank if this does not apply.',
-      tags: { modes: ['detailed'], priority: 'core' },
+      conditions: [
+      { key: 'investingStatus', operator: 'in', value: ['yes_consistently', 'yes_irregularly'] },
+    ],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
+    },
     },
     {
       key: 'brokerageAccounts',
@@ -1056,7 +1171,14 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       section: 'investing',
       required: false,
       placeholder: 'e.g. 50000',
-      tags: { modes: ['detailed'], priority: 'core' },
+      conditions: [
+      { key: 'investingStatus', operator: 'in', value: ['yes_consistently', 'yes_irregularly'] },
+    ],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
+    },
     },
     {
       key: 'otherInvestments',
@@ -1065,7 +1187,14 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       section: 'investing',
       required: false,
       placeholder: 'e.g. 10000',
-      tags: { modes: ['detailed'], priority: 'core' },
+      conditions: [
+      { key: 'investingStatus', operator: 'in', value: ['yes_consistently', 'yes_irregularly'] },
+    ],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
+    },
     },
     {
       key: 'otherAssets',
@@ -1115,14 +1244,21 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       Boolean(a.totalLiquidSavings) &&
       (
         Boolean(a.totalInvestments) ||
-        Boolean(a.totalDebtBalance) ||
         Boolean(a.carLoanBalance) ||
+        Boolean(a.creditCardDebt) ||
+        Boolean(a.studentLoans) ||
+        Boolean(a.personalLoans) ||
+        Boolean(a.bnplDebt) ||
+        Boolean(a.paydayDebt) ||
+        Boolean(a.medicalDebt) ||
+        Boolean(a.additionalDebt) ||
         Boolean(a.primaryHomeValue) ||
         Boolean(a.primaryMortgage) ||
         Boolean(a.rentalPropertyValue) ||
         Boolean(a.rentalMortgage) ||
         Boolean(a.otherPropertyValue) ||
-        Boolean(a.otherPropertyDebt)
+        Boolean(a.otherPropertyDebt) ||
+        Boolean(a.otherAssets)
       ),
   },
 },

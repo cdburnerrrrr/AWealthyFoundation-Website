@@ -132,9 +132,10 @@ const SECTION_META: Record<
 
 const INLINE_GROUPS: Record<string, string[]> = {
   relationshipStatus: ['monthlyChildcareCost', 'childcarePressure', 'lifeInsurance'],
-  housingStatus: ['mortgageBalance', 'homeValue', 'mortgageImpact'],
+  housingStatus: [],
+  propertyOwnership: ['primaryHomeValue', 'primaryMortgage', 'rentalPropertyValue', 'rentalMortgage', 'otherPropertyValue', 'otherPropertyDebt'],
   vehicleDebt: ['carLoanBalance', 'leasePayment'],
-  otherDebt: ['creditCardBehavior'],
+  otherDebt: ['creditCardDebt', 'studentLoans', 'personalLoans', 'bnplDebt', 'paydayDebt', 'medicalDebt', 'additionalDebt', 'monthlyDebtPayments', 'debtManageability', 'debtPaydownStrategy', 'creditCardBehavior'],
   healthInsurance: ['incomeInterruptionCoverage', 'propertyCoverage', 'autoCoverage'],
   investingStatus: [
     'employerMatch',
@@ -461,9 +462,17 @@ function OptionGrid({ question, value, onChange }: OptionGridProps) {
                 key={option.value}
                 type="button"
                 onClick={() => {
-                  const next = selected
+                  let next = selected
                     ? selectedValues.filter((item) => item !== option.value)
                     : [...selectedValues, option.value];
+
+                  // Keep “none” mutually exclusive on multi-select questions like debts/property.
+                  if (option.value === 'none' && !selected) {
+                    next = ['none'];
+                  } else if (option.value !== 'none') {
+                    next = next.filter((item) => item !== 'none');
+                  }
+
                   onChange(next);
                 }}
                 className={`rounded-2xl border p-4 text-left transition ${
@@ -543,9 +552,6 @@ function NumberInput({ question, value, onChange, onEnter }: NumberInputProps) {
         }}
         className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-4 text-base text-slate-900 outline-none transition focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
       />
-      {question.helperText ? (
-        <p className="mt-2 text-sm text-slate-500">{question.helperText}</p>
-      ) : null}
     </div>
   );
 }

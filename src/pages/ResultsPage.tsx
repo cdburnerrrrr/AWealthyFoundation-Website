@@ -767,6 +767,35 @@ function formatCurrency(value?: number) {
   }).format(Number(value));
 }
 
+function getCarPaymentAnalysis(answers?: Record<string, any>) {
+  if (!answers) return null;
+
+  const payment = Number(answers.carPaymentMonthlyPayment ?? answers.monthlyVehiclePayment ?? 0);
+  if (!Number.isFinite(payment) || payment < 250) return null;
+
+  const annualCost = Number(answers.carPaymentAnnualCost ?? payment * 12);
+  const fiveYearCost = Number(answers.carPaymentFiveYearCost ?? payment * 60);
+  const monthlyRaise = Number(answers.carPaymentMonthlyRaise ?? Math.round(payment / 2));
+  const monthlyInvestment = Number(answers.carPaymentMonthlyInvestment ?? Math.max(0, payment - monthlyRaise));
+  const futureValue = Number(answers.carPaymentFutureValue ?? 0);
+  const reducedRedirect = Number(answers.carPaymentReducedRedirect ?? Math.max(100, Math.round(payment / 5)));
+  const reducedFutureValue = Number(answers.carPaymentReducedFutureValue ?? 0);
+  const balance = Number(answers.carLoanBalance ?? 0);
+
+  return {
+    payment,
+    annualCost,
+    fiveYearCost,
+    monthlyRaise,
+    monthlyInvestment,
+    futureValue,
+    reducedRedirect,
+    reducedFutureValue,
+    balance,
+    reviewed: answers.carPaymentOpportunityReview === 'reviewed',
+  };
+}
+
 function getFinancialPositionLabel(netWorth?: number | null) {
   if (netWorth === undefined || netWorth === null || Number.isNaN(Number(netWorth))) return 'In progress';
   if (Number(netWorth) < 0) return 'Shaky Foundation';
@@ -2192,6 +2221,7 @@ export default function ResultsPage() {
   });
   const ninetyDayPlanPhases = getNinetyDayPlanPhases(bestNextMoveCard, weakestPillar, metrics);
   const assessmentAnswers = (((currentAssessment as any)?.answers ?? (latestHistoryRecord as any)?.answers ?? {}) as Record<string, any>);
+  const carPaymentAnalysis = getCarPaymentAnalysis(assessmentAnswers);
   const comparisonProfileLabel = getBenchmarkProfileLabel(assessmentAnswers);
   const comparisonMetrics = getHouseholdComparisonMetrics(metrics, score, assessmentAnswers);
   const heroReportLabel = getHeroReportLabel(actualPlan, reportTier);
@@ -2498,6 +2528,58 @@ export default function ResultsPage() {
             </p>
           </div>
         </section>
+
+        {carPaymentAnalysis ? (
+          <section
+            data-pdf-card="true"
+            data-pdf-page-break-avoid="true"
+            className="mb-8 rounded-3xl border border-copper-300/25 bg-white/95 p-5 shadow-[0_18px_50px_rgba(15,42,68,0.16)] md:p-7"
+          >
+            <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+              <div className="max-w-2xl">
+                <div className="inline-flex rounded-full bg-copper-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-copper-700">
+                  Car Payment Opportunity
+                </div>
+                <h2 className="mt-3 text-2xl font-bold text-navy-900 md:text-3xl">
+                  Your vehicle payment is one of the clearest places to create future breathing room.
+                </h2>
+                <p className="mt-3 text-sm leading-7 text-slate-600">
+                  A {formatCurrency(carPaymentAnalysis.payment)}/month payment may fit inside the budget, but it represents about {formatCurrency(carPaymentAnalysis.annualCost)} per year and roughly {formatCurrency(carPaymentAnalysis.fiveYearCost)} over five years. When this payment is gone, the goal is to avoid replacing it with another payment right away.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-copper-200 bg-copper-50 p-4 md:min-w-[16rem]">
+                <div className="text-xs font-bold uppercase tracking-[0.16em] text-copper-700">Blueprint Move</div>
+                <p className="mt-2 text-sm font-semibold leading-6 text-navy-900">
+                  Keep about {formatCurrency(carPaymentAnalysis.monthlyRaise)}/month as breathing room and redirect about {formatCurrency(carPaymentAnalysis.monthlyInvestment)}/month toward debt, savings, or investing once the payment is gone.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-4 md:grid-cols-3">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="text-sm font-semibold text-slate-500">Monthly pressure</div>
+                <div className="mt-2 text-2xl font-bold text-navy-900">{formatCurrency(carPaymentAnalysis.payment)}</div>
+                <p className="mt-2 text-sm leading-6 text-slate-600">This is cash flow already committed before other goals get funded.</p>
+              </div>
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                <div className="text-sm font-semibold text-emerald-700">Future monthly margin</div>
+                <div className="mt-2 text-2xl font-bold text-navy-900">{formatCurrency(carPaymentAnalysis.monthlyRaise)}</div>
+                <p className="mt-2 text-sm leading-6 text-slate-600">A practical “instant raise” when the payment is gone.</p>
+              </div>
+              <div className="rounded-2xl border border-copper-200 bg-white p-4">
+                <div className="text-sm font-semibold text-copper-700">Long-term opportunity</div>
+                <div className="mt-2 text-2xl font-bold text-navy-900">
+                  {carPaymentAnalysis.futureValue > 0 ? formatCurrency(carPaymentAnalysis.futureValue) : formatCurrency(carPaymentAnalysis.reducedFutureValue)}
+                </div>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  Potential future value from redirecting part of the old payment over time.
+                </p>
+              </div>
+            </div>
+          </section>
+        ) : null}
+
         <HouseholdComparisonSection
           profileLabel={comparisonProfileLabel}
           comparisonMetrics={comparisonMetrics}
@@ -2675,8 +2757,18 @@ export default function ResultsPage() {
           </SectionShell>
 
           <SectionShell icon={Sparkles} title="Key Insights">
-            {insights.length ? (
+            {insights.length || carPaymentAnalysis ? (
               <div className="space-y-4">
+                {carPaymentAnalysis ? (
+                  <div className="rounded-2xl border border-copper-200 bg-copper-50 p-5">
+                    <div className="mb-3 text-sm uppercase tracking-[0.18em] text-copper-700">
+                      Car Payment Insight
+                    </div>
+                    <p className="leading-8 text-slate-700">
+                      Your vehicle payment is not just transportation; it is a monthly pressure point. Once it is gone, treating that freed-up payment as margin and progress can create a meaningful lift without adding another complicated strategy.
+                    </p>
+                  </div>
+                ) : null}
                 {insights.map((insight, index) => (
                   <div key={index} className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
                     <div className="text-sm uppercase tracking-[0.18em] text-copper-600 mb-3">

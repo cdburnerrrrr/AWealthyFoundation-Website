@@ -423,9 +423,19 @@ function getInvestmentEstimate(a: Record<string, any>): number {
 }
 
 function totalDebtBalanceEstimate(a: Record<string, any>): number {
+  const itemized =
+    toNumber(a.creditCardDebt) +
+    toNumber(a.carLoanBalance) +
+    toNumber(a.autoLoans) +
+    toNumber(a.studentLoans) +
+    toNumber(a.personalLoans) +
+    toNumber(a.bnplDebt) +
+    toNumber(a.paydayDebt) +
+    toNumber(a.medicalDebt) +
+    toNumber(a.additionalDebt);
+
   const numeric = toNumber(a.totalDebtBalance);
-  if (numeric > 0) return numeric;
-  return 0;
+  return Math.max(itemized, numeric);
 }
 
 function getEmergencyFundMonthsEstimate(a: Record<string, any>): number {

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Calculator, Home, PiggyBank, TrendingUp, CreditCard, ArrowRight } from 'lucide-react';
+import { Calculator, Home, PiggyBank, TrendingUp, CreditCard, ArrowRight, Landmark } from 'lucide-react';
 
 type NetWorthInputs = {
   totalLiquidSavings?: number;
@@ -7,11 +7,32 @@ type NetWorthInputs = {
   homeValue?: number;
   mortgageBalance?: number;
   totalDebtBalance?: number;
+  otherAssets?: number;
+  rentalPropertyValue?: number;
+  rentalMortgage?: number;
+  otherPropertyValue?: number;
+  otherPropertyDebt?: number;
+  propertyOwnership?: string[] | string;
+  housingStatus?: string;
 };
 
 type NetWorthActivityProps = {
   initialValues?: NetWorthInputs;
-  onComplete?: (payload: { netWorth: number; assets: number; liabilities: number; totalLiquidSavings: number; totalInvestments: number; homeValue: number; mortgageBalance: number; totalDebtBalance: number }) => void;
+  onComplete?: (payload: {
+    netWorth: number;
+    assets: number;
+    liabilities: number;
+    totalLiquidSavings: number;
+    totalInvestments: number;
+    homeValue: number;
+    mortgageBalance: number;
+    totalDebtBalance: number;
+    otherAssets: number;
+    rentalPropertyValue: number;
+    rentalMortgage: number;
+    otherPropertyValue: number;
+    otherPropertyDebt: number;
+  }) => void;
 };
 
 function toNumber(value: unknown): number {
@@ -35,9 +56,9 @@ function formatCurrency(value: number) {
 function getNetWorthMessage(netWorth: number) {
   if (netWorth < 0) {
     return {
-      title: 'Shaky Foundation',
+      title: 'Foundation Under Pressure',
       body:
-        'This is more common than most people think at this stage. Right now, your foundation needs reinforcement before growth becomes the focus. Let’s pull out the blueprints and strengthen the base first.',
+        'Right now, you owe more than you own. This is common at this stage, especially when debt and limited savings are competing for the same dollars. The priority is not growth — it is reducing pressure and creating breathing room so progress becomes possible.',
       tone: 'border-red-200 bg-red-50 text-red-900',
     };
   }
@@ -46,7 +67,7 @@ function getNetWorthMessage(netWorth: number) {
     return {
       title: 'Framing Stage',
       body:
-        'You’re at a transition point — what you do next matters most. The structure is forming, but a few key moves will determine how strong it becomes.',
+        'Your foundation is forming. The next move is to keep assets growing while reducing the debts or fixed costs that could pull the number backward.',
       tone: 'border-amber-200 bg-amber-50 text-amber-900',
     };
   }
@@ -54,7 +75,7 @@ function getNetWorthMessage(netWorth: number) {
   return {
     title: 'Solid Foundation',
     body:
-      'You’ve built a solid foundation. Now it’s about strengthening and growing it so it can support the life you want.',
+      'You have built a positive base. Now the work is strengthening the parts that help this number grow: savings, investing, equity, and lower debt pressure.',
     tone: 'border-emerald-200 bg-emerald-50 text-emerald-900',
   };
 }
@@ -93,21 +114,63 @@ export default function NetWorthActivity({
   const [totalInvestments, setTotalInvestments] = useState(String(initialValues?.totalInvestments ?? ''));
   const [homeValue, setHomeValue] = useState(String(initialValues?.homeValue ?? ''));
   const [mortgageBalance, setMortgageBalance] = useState(String(initialValues?.mortgageBalance ?? ''));
+  const [rentalPropertyValue, setRentalPropertyValue] = useState(String(initialValues?.rentalPropertyValue ?? ''));
+  const [rentalMortgage, setRentalMortgage] = useState(String(initialValues?.rentalMortgage ?? ''));
+  const [otherPropertyValue, setOtherPropertyValue] = useState(String(initialValues?.otherPropertyValue ?? ''));
+  const [otherPropertyDebt, setOtherPropertyDebt] = useState(String(initialValues?.otherPropertyDebt ?? ''));
+  const [otherAssets, setOtherAssets] = useState(String(initialValues?.otherAssets ?? ''));
   const [totalDebtBalance, setTotalDebtBalance] = useState(String(initialValues?.totalDebtBalance ?? ''));
+
+  const propertyOwnership = Array.isArray(initialValues?.propertyOwnership)
+    ? initialValues.propertyOwnership
+    : initialValues?.propertyOwnership
+      ? [String(initialValues.propertyOwnership)]
+      : [];
+
+  const ownsPrimaryHome =
+    propertyOwnership.includes('primary_home') ||
+    initialValues?.housingStatus === 'own_with_mortgage' ||
+    initialValues?.housingStatus === 'own_outright' ||
+    toNumber(initialValues?.homeValue) > 0 ||
+    toNumber(initialValues?.mortgageBalance) > 0;
+  const ownsRentalProperty =
+    propertyOwnership.includes('rental_property') ||
+    toNumber(initialValues?.rentalPropertyValue) > 0 ||
+    toNumber(initialValues?.rentalMortgage) > 0;
+  const ownsOtherProperty =
+    propertyOwnership.includes('other_property') ||
+    toNumber(initialValues?.otherPropertyValue) > 0 ||
+    toNumber(initialValues?.otherPropertyDebt) > 0;
 
   const totals = useMemo(() => {
     const assets =
       toNumber(totalLiquidSavings) +
       toNumber(totalInvestments) +
-      toNumber(homeValue);
+      toNumber(homeValue) +
+      toNumber(rentalPropertyValue) +
+      toNumber(otherPropertyValue) +
+      toNumber(otherAssets);
 
     const liabilities =
       toNumber(mortgageBalance) +
+      toNumber(rentalMortgage) +
+      toNumber(otherPropertyDebt) +
       toNumber(totalDebtBalance);
 
     const netWorth = assets - liabilities;
     return { assets, liabilities, netWorth };
-  }, [totalLiquidSavings, totalInvestments, homeValue, mortgageBalance, totalDebtBalance]);
+  }, [
+    totalLiquidSavings,
+    totalInvestments,
+    homeValue,
+    mortgageBalance,
+    rentalPropertyValue,
+    rentalMortgage,
+    otherPropertyValue,
+    otherPropertyDebt,
+    otherAssets,
+    totalDebtBalance,
+  ]);
 
   const message = getNetWorthMessage(totals.netWorth);
 
@@ -132,15 +195,32 @@ export default function NetWorthActivity({
           <div className="space-y-3">
             <InputCard icon={PiggyBank} label="Savings" value={totalLiquidSavings} onChange={setTotalLiquidSavings} />
             <InputCard icon={TrendingUp} label="Investments" value={totalInvestments} onChange={setTotalInvestments} />
-            <InputCard icon={Home} label="Home Value" value={homeValue} onChange={setHomeValue} />
+            {ownsPrimaryHome && (
+              <InputCard icon={Home} label="Primary Home Value" value={homeValue} onChange={setHomeValue} />
+            )}
+            {ownsRentalProperty && (
+              <InputCard icon={Landmark} label="Rental Property Value" value={rentalPropertyValue} onChange={setRentalPropertyValue} />
+            )}
+            {ownsOtherProperty && (
+              <InputCard icon={Landmark} label="Other Property Value" value={otherPropertyValue} onChange={setOtherPropertyValue} />
+            )}
+            <InputCard icon={PiggyBank} label="Other Assets" value={otherAssets} onChange={setOtherAssets} />
           </div>
         </div>
 
         <div>
           <div className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Liabilities</div>
           <div className="space-y-3">
-            <InputCard icon={Home} label="Mortgage Balance" value={mortgageBalance} onChange={setMortgageBalance} />
-            <InputCard icon={CreditCard} label="Other Debt" value={totalDebtBalance} onChange={setTotalDebtBalance} />
+            {ownsPrimaryHome && (
+              <InputCard icon={Home} label="Primary Mortgage Balance" value={mortgageBalance} onChange={setMortgageBalance} />
+            )}
+            {ownsRentalProperty && (
+              <InputCard icon={Landmark} label="Rental Mortgage Balance" value={rentalMortgage} onChange={setRentalMortgage} />
+            )}
+            {ownsOtherProperty && (
+              <InputCard icon={Landmark} label="Other Property Mortgage or Debt" value={otherPropertyDebt} onChange={setOtherPropertyDebt} />
+            )}
+            <InputCard icon={CreditCard} label="Total Consumer Debt (cards, loans, medical)" value={totalDebtBalance} onChange={setTotalDebtBalance} />
           </div>
         </div>
       </div>
@@ -166,8 +246,8 @@ export default function NetWorthActivity({
       </div>
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-slate-500">
-          
+        <p className="max-w-xl text-sm leading-6 text-slate-500">
+          Net worth shows whether your financial life is moving forward or backward. Even small improvements here can create momentum over time.
         </p>
 
         <button
@@ -179,6 +259,11 @@ export default function NetWorthActivity({
             homeValue: toNumber(homeValue),
             mortgageBalance: toNumber(mortgageBalance),
             totalDebtBalance: toNumber(totalDebtBalance),
+            otherAssets: toNumber(otherAssets),
+            rentalPropertyValue: toNumber(rentalPropertyValue),
+            rentalMortgage: toNumber(rentalMortgage),
+            otherPropertyValue: toNumber(otherPropertyValue),
+            otherPropertyDebt: toNumber(otherPropertyDebt),
           })}
           className="inline-flex items-center gap-2 rounded-2xl bg-copper-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-copper-700"
         >

@@ -148,9 +148,10 @@ const SECTION_META: Record<
 
 const INLINE_GROUPS: Record<string, string[]> = {
   relationshipStatus: ['monthlyChildcareCost', 'childcarePressure', 'lifeInsurance'],
-  housingStatus: ['mortgageBalance', 'homeValue', 'mortgageImpact'],
+  housingStatus: [],
+  propertyOwnership: ['primaryHomeValue', 'primaryMortgage', 'rentalPropertyValue', 'rentalMortgage', 'otherPropertyValue', 'otherPropertyDebt'],
   vehicleDebt: ['carLoanBalance', 'monthlyVehiclePayment'],
-  otherDebt: ['creditCardBehavior'],
+  otherDebt: ['creditCardDebt', 'studentLoans', 'personalLoans', 'bnplDebt', 'paydayDebt', 'medicalDebt', 'additionalDebt', 'monthlyDebtPayments', 'debtManageability', 'debtPaydownStrategy', 'creditCardBehavior'],
   healthInsurance: ['incomeInterruptionCoverage', 'propertyCoverage', 'autoCoverage'],
   investingStatus: [
     'employerMatch',
@@ -292,6 +293,26 @@ function getFixedCosts(responses: Record<string, any>) {
     toNumber(responses.monthlyDebtPayments)
   );
 }
+
+const PERSISTED_ACTIVITY_RESULT_KEYS = new Set([
+  'netWorth',
+  'assets',
+  'liabilities',
+  'totalAssets',
+  'totalLiabilities',
+  'homeValue',
+  'mortgageBalance',
+  'consumerDebtBalance',
+  'carPaymentOpportunityReview',
+  'carPaymentMonthlyPayment',
+  'carPaymentAnnualCost',
+  'carPaymentFiveYearCost',
+  'carPaymentMonthlyRaise',
+  'carPaymentMonthlyInvestment',
+  'carPaymentFutureValue',
+  'carPaymentReducedRedirect',
+  'carPaymentReducedFutureValue',
+]);
 
 function getEmergencyMonths(responses: Record<string, any>) {
   const totalLiquidSavings = toNumber(responses.totalLiquidSavings);
@@ -574,9 +595,17 @@ function OptionGrid({ question, value, onChange }: OptionGridProps) {
                 key={option.value}
                 type="button"
                 onClick={() => {
-                  const next = selected
+                  let next = selected
                     ? selectedValues.filter((item) => item !== option.value)
                     : [...selectedValues, option.value];
+
+                  // Keep “none” mutually exclusive on multi-select questions like debts/property.
+                  if (option.value === 'none' && !selected) {
+                    next = ['none'];
+                  } else if (option.value !== 'none') {
+                    next = next.filter((item) => item !== 'none');
+                  }
+
                   onChange(next);
                 }}
                 className={`rounded-2xl border p-4 text-left transition ${
@@ -902,7 +931,8 @@ function ActivityStep({ activityKey, responses, onComplete }: ActivityStepProps)
     carPaymentOpportunityReview: (
       <CarPaymentActivity
         monthlyVehiclePayment={toNumber(responses.monthlyVehiclePayment)}
-        onContinue={() => onComplete({ carPaymentOpportunityReview: 'reviewed' })}
+        carLoanBalance={toNumber(responses.carLoanBalance)}
+        onContinue={(payload) => onComplete(payload)}
       />
     ),
     netWorthEntry: (
@@ -917,25 +947,13 @@ function ActivityStep({ activityKey, responses, onComplete }: ActivityStepProps)
             toNumber(responses.consumerDebtBalance) ||
             toNumber(responses.carLoanBalance) + toNumber(responses.additionalDebt),
         }}
-        onComplete={({
-          netWorth,
-          totalLiquidSavings,
-          totalInvestments,
-          homeValue,
-          mortgageBalance,
-          totalDebtBalance,
-        }) =>
+        onComplete={(payload) =>
           onComplete({
             netWorthEntry: 'completed',
-            netWorth,
-            totalLiquidSavings,
-            totalInvestments,
-            homeValue,
-            mortgageBalance,
-            primaryHomeValue: homeValue,
-            primaryMortgage: mortgageBalance,
-            totalDebtBalance,
-            consumerDebtBalance: totalDebtBalance,
+            ...payload,
+            primaryHomeValue: payload.homeValue,
+            primaryMortgage: payload.mortgageBalance,
+            consumerDebtBalance: payload.totalDebtBalance,
           })
         }
       />
@@ -1201,11 +1219,21 @@ export default function ComprehensiveQuestionnaire() {
     setIsSubmitting(true);
 
     try {
-      const mergedAnswers = isContinueMode && baseContinueAnswers
+      const rawMergedAnswers = isContinueMode && baseContinueAnswers
         ? { ...baseContinueAnswers, ...responses }
         : responses;
 
-        const report = generateV2Report(mergedAnswers, 'detailed');
+      // Remove stale answers for questions that no longer apply after conditional routing.
+      // This prevents hidden values (old investment balances, property fields, legacy totals, etc.)
+      // from leaking into the report or net worth calculation.
+      const visibleKeys = new Set(getDetailedQuestions(rawMergedAnswers).map((question) => question.key));
+      const mergedAnswers = Object.fromEntries(
+        Object.entries(rawMergedAnswers).filter(
+          ([key]) => visibleKeys.has(key) || PERSISTED_ACTIVITY_RESULT_KEYS.has(key)
+        )
+      );
+
+      const report = generateV2Report(mergedAnswers, 'detailed');
       setCurrentAssessment({
         foundationScore: report.foundationScore,
         scoreBand: report.scoreBand,
