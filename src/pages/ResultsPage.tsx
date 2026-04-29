@@ -2071,13 +2071,13 @@ function getNinetyDayPlanPhases(
   if (title.includes('income') || title.includes('fixed') || title.includes('breathing')) {
     return [
       {
-        title: 'Phase 1: Create breathing room',
+        title: 'Phase 1: Create breathing room fast',
         body:
           'Start with the move that creates the fastest improvement in monthly cash flow' +
           (fixedCost ? ' — your must-pay bills are around ' + fixedCost + ' of take-home pay' : '') +
-          '. The first win should either raise income, lower a major fixed cost, or prevent another fixed obligation from being added.',
+          '. The goal is not perfection; it is creating even a small amount of breathing room as quickly as possible.',
         checklist: [
-          'Look for immediate income options: extra shifts, overtime, side work, selling unused items, or applying for a better role.',
+          'Increase income through extra shifts, overtime, side work, selling unused items, or applying for a better role.',
           'Identify one major fixed cost to challenge: housing, vehicle, utilities, insurance, or another required bill.',
           'Avoid adding any new fixed payment while the foundation is under pressure.',
         ],
@@ -2092,8 +2092,8 @@ function getNinetyDayPlanPhases(
         ],
       },
       {
-        title: 'Phase 3: Build momentum',
-        body: 'With more stability, start building forward. This is where extra cash can begin strengthening savings, protection, debt payoff, and long-term growth.',
+        title: 'Phase 3: Build forward with control',
+        body: 'With more stability, start building forward. This is where extra cash can begin strengthening savings, protection, debt payoff, and long-term growth without returning to high fixed-cost habits.',
         checklist: [
           'Direct the first stable margin toward a starter emergency fund or priority debt.',
           'Review basic protection needs, especially health coverage and affordable term life if others depend on your income.',
@@ -2128,23 +2128,23 @@ function getNinetyDayPlanIntro(bestNextMoveCard: BestNextMoveCard, metrics?: Res
 
   if (title.includes('income') || title.includes('fixed') || title.includes('breathing')) {
     return {
-      eyebrow: 'Your next 90 days should focus on one goal: creating breathing room',
+      eyebrow: 'Your next 90 days are about one thing: creating breathing room',
       body: fixedCost
-        ? 'This plan is built around your biggest constraint right now — income versus fixed costs. With must-pay bills around ' + fixedCost + ' of take-home pay, the priority is to improve monthly cash flow before adding more complexity.'
-        : 'This plan is built around your biggest constraint right now — income versus fixed costs. The priority is to improve monthly cash flow before adding more complexity.',
+        ? 'Right now, income and fixed costs are out of balance. With must-pay bills around ' + fixedCost + ' of take-home pay, everything here is designed to improve monthly cash flow first. Once that improves, everything else gets easier.'
+        : 'Right now, income and fixed costs are out of balance. Everything here is designed to improve monthly cash flow first. Once that improves, everything else gets easier.',
     };
   }
 
   if (title.includes('excess cash')) {
     return {
-      eyebrow: 'Your next 90 days should turn strength into efficiency',
-      body: 'This plan is built around defining the right cash reserve, moving excess money in stages, and making sure cash, investments, and debt are working together.',
+      eyebrow: 'Your next 90 days are about making strong money work harder',
+      body: 'This plan is built around defining the right cash reserve, moving excess money in stages, and making sure cash, investments, and debt are working together without adding unnecessary complexity.',
     };
   }
 
   return {
-    eyebrow: 'Your next 90 days should follow a sequence — not a scattershot of goals',
-    body: 'Start with the highest-leverage move, turn it into a repeatable system, then reassess before choosing the next priority.',
+    eyebrow: 'Your next 90 days are about focused progress',
+    body: 'Start with the highest-leverage move, turn it into a repeatable system, then reassess before choosing the next priority. This keeps the plan focused instead of scattered.',
   };
 }
 
@@ -3158,7 +3158,7 @@ export default function ResultsPage() {
 
               <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-slate-100">
                 <div
-                  className="h-full rounded-full bg-copper-600 transition-all duration-300"
+                  className="h-full rounded-full bg-gradient-to-r from-copper-500 to-copper-300 transition-all duration-300"
                   style={{ width: `${planCompletionPercent}%` }}
                 />
               </div>
@@ -3220,8 +3220,15 @@ export default function ResultsPage() {
                           >
                             <CheckCircle2 className="h-3.5 w-3.5" />
                           </span>
-                          <span className={isComplete ? 'line-through decoration-2 decoration-emerald-500/50' : ''}>
-                            {item}
+                          <span className="flex-1">
+                            <span className={isComplete ? 'line-through decoration-2 decoration-emerald-500/50' : ''}>
+                              {item}
+                            </span>
+                            {isComplete && (
+                              <span className="mt-1 block text-xs font-bold uppercase tracking-[0.12em] text-emerald-600">
+                                ✓ Completed
+                              </span>
+                            )}
                           </span>
                         </button>
                       );
@@ -3233,7 +3240,7 @@ export default function ResultsPage() {
           </div>
 
           <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4 text-sm font-semibold leading-6 text-navy-900">
-            This plan works because it focuses on your biggest constraint first — not everything at once.
+            This plan works because it focuses on your biggest constraint first — not everything at once. Complete one step, create a little more margin, then keep moving.
           </div>
         </SectionShell>
         </div>
