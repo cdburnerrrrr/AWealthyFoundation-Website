@@ -2895,6 +2895,56 @@ export default function ResultsPage() {
           </div>
         </section>
 
+        {actualPlan === 'free' && !features.showPremiumGuidance && (
+          <section
+            data-pdf-ignore="true"
+            className="relative overflow-hidden rounded-3xl border border-copper-300/25 bg-gradient-to-r from-[#7c461c] via-[#b87333] to-[#d28b3c] p-5 md:p-7 mb-8 text-white shadow-[0_24px_70px_rgba(15,42,68,0.28)]"
+          >
+            <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+            <div className="absolute -bottom-24 left-1/3 h-56 w-56 rounded-full bg-navy-900/20 blur-2xl" />
+            <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+              <div className="max-w-3xl">
+                <div className="inline-flex items-center rounded-full border border-white/20 bg-white/15 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-white/85 mb-3">
+                  Premium Roadmap
+                </div>
+                <h2 className="text-2xl md:text-3xl font-bold mb-2">
+                  Turn this into a step-by-step plan you can actually follow.
+                </h2>
+                <p className="text-white/88 leading-7">
+                  Premium adds the missing layer: what to do first, what to ignore for now,
+                  and how to move through the next 12 months without trying to fix everything at once.
+                </p>
+                <div className="mt-4 grid gap-2 text-sm text-white/90 sm:grid-cols-3">
+                  <div className="rounded-2xl border border-white/15 bg-white/10 p-3">Priority ladder</div>
+                  <div className="rounded-2xl border border-white/15 bg-white/10 p-3">Quarterly action plan</div>
+                  <div className="rounded-2xl border border-white/15 bg-white/10 p-3">Guided prompts</div>
+                </div>
+              </div>
+
+              <div className="shrink-0">
+                <button
+                  onClick={() => navigate('/pricing')}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 font-bold text-navy-900 shadow-sm hover:bg-copper-50 transition-colors"
+                >
+                  Unlock the roadmap
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </section>
+
+        )}
+        {features.showPremiumGuidance && Object.keys(pillarScores).length > 0 && (
+          <div data-pdf-page-break-before="true">
+            <PremiumGuidanceSection
+            pillarScores={pillarScores as Record<string, number>}
+            reportTier={reportTier}
+            onUnlockPremium={() => navigate('/pricing')}
+          />
+          </div>
+        )}
+
+<div data-pdf-ignore="true" className="my-10">
   <ReportNewsletterCard userEmail={user?.email} />
 </div>
 
