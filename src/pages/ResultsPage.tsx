@@ -1960,15 +1960,19 @@ function getNinetyDayPlanPhases(
   const excessCash = Number(metrics?.excessCashEstimate ?? 0);
   const fixedCost = formatPercent(metrics?.fixedCostPressureRatio);
   const pillarLabel = formatPillarName(weakestPillar || 'your next priority');
+  const title = bestNextMoveCard.title.toLowerCase();
 
-  if (bestNextMoveCard.title.toLowerCase().includes('excess cash')) {
+  if (title.includes('excess cash')) {
     return [
       {
         title: 'Phase 1: Define “enough” cash',
-        body: `Start by deciding how much cash reserve still feels safe. Your current cushion is about ${cashMonths.toFixed(1)} months, so the goal is not to drain safety — it is to separate safety money from idle money.`,
+        body:
+          'Start by deciding how much cash reserve still feels safe. Your current cushion is about ' +
+          cashMonths.toFixed(1) +
+          ' months, so the goal is not to drain safety — it is to separate safety money from idle money.',
         checklist: [
           'Pick a cash reserve target in months of expenses.',
-          excessCash > 0 ? `Mark the estimated excess cash amount: ${formatCurrency(excessCash)}.` : 'Estimate how much cash sits above that target.',
+          excessCash > 0 ? 'Mark the estimated excess cash amount: ' + formatCurrency(excessCash) + '.' : 'Estimate how much cash sits above that target.',
         ],
       },
       {
@@ -1990,35 +1994,50 @@ function getNinetyDayPlanPhases(
     ];
   }
 
-  if (bestNextMoveCard.title.toLowerCase().includes('fixed') || bestNextMoveCard.title.toLowerCase().includes('breathing')) {
+  if (title.includes('income') || title.includes('fixed') || title.includes('breathing')) {
     return [
       {
-        title: 'Phase 1: Find the pressure point',
-        body: `Start with the must-pay bill putting the most pressure on cash flow${fixedCost ? ` — mortgage/rent, utilities, and fixed bills are around ${fixedCost} of take-home pay` : ''}. This is a structure problem before it is a budgeting problem.`,
-        checklist: ['List the top must-pay monthly bills in one place.', 'Circle the one bill with the biggest possible monthly impact.'],
+        title: 'Phase 1: Create breathing room',
+        body:
+          'Start with the move that creates the fastest improvement in monthly cash flow' +
+          (fixedCost ? ' — your must-pay bills are around ' + fixedCost + ' of take-home pay' : '') +
+          '. The first win should either raise income, lower a major fixed cost, or prevent another fixed obligation from being added.',
+        checklist: [
+          'Look for immediate income options: extra shifts, overtime, side work, selling unused items, or applying for a better role.',
+          'Identify one major fixed cost to challenge: housing, vehicle, utilities, insurance, or another required bill.',
+          'Avoid adding any new fixed payment while the foundation is under pressure.',
+        ],
       },
       {
-        title: 'Phase 2: Test one change',
-        body: 'Do not try to overhaul everything. Pick one cost, one negotiation, one income move, or one structural change and test it for 30 days.',
-        checklist: ['Choose one change to test this month.', 'Redirect any freed-up margin toward the next priority.'],
+        title: 'Phase 2: Stabilize your cash flow',
+        body: 'Once you create some breathing room, protect it. The goal is to make the improvement reliable instead of letting new expenses absorb the progress.',
+        checklist: [
+          'Keep any income gain or cost reduction visible in one monthly margin number.',
+          'Build a small cash buffer so surprise expenses do not push you backward.',
+          'Give freed-up money a job before it disappears into daily spending.',
+        ],
       },
       {
-        title: 'Phase 3: Protect the margin',
-        body: 'Once margin improves, keep it from disappearing into daily spending. Give the freed-up money a job before it gets absorbed.',
-        checklist: ['Assign new margin to savings, investing, or debt reduction.', 'Rerun the score after the change becomes normal.'],
+        title: 'Phase 3: Build momentum',
+        body: 'With more stability, start building forward. This is where extra cash can begin strengthening savings, protection, debt payoff, and long-term growth.',
+        checklist: [
+          'Direct the first stable margin toward a starter emergency fund or priority debt.',
+          'Review basic protection needs, especially health coverage and affordable term life if others depend on your income.',
+          'Rerun the assessment after meaningful progress and choose the next highest-leverage area.',
+        ],
       },
     ];
   }
 
   return [
     {
-      title: `Phase 1: Start with ${pillarLabel}`,
-      body: bestNextMoveCard.nextStep || `Start with ${pillarLabel}. One focused improvement here should create the biggest ripple effect across your foundation.`,
-      checklist: bestNextMoveCard.thisWeek.slice(0, 2),
+      title: 'Phase 1: Focus the first move',
+      body: bestNextMoveCard.nextStep || 'Start with ' + pillarLabel + '. One focused improvement here should create the biggest ripple effect across your foundation.',
+      checklist: bestNextMoveCard.thisWeek.slice(0, 3),
     },
     {
-      title: 'Phase 2: Turn it into a system',
-      body: 'The next step is making the first action repeatable. One good move helps, but one repeatable habit changes the foundation.',
+      title: 'Phase 2: Make it repeatable',
+      body: 'The next step is making the first action reliable. One good move helps, but one repeatable system changes the foundation.',
       checklist: ['Pick one number or behavior to track weekly.', 'Schedule a 15-minute check-in before the month ends.'],
     },
     {
@@ -2028,6 +2047,33 @@ function getNinetyDayPlanPhases(
     },
   ];
 }
+
+function getNinetyDayPlanIntro(bestNextMoveCard: BestNextMoveCard, metrics?: ResultShape['metrics']) {
+  const title = bestNextMoveCard.title.toLowerCase();
+  const fixedCost = formatPercent(metrics?.fixedCostPressureRatio);
+
+  if (title.includes('income') || title.includes('fixed') || title.includes('breathing')) {
+    return {
+      eyebrow: 'Your next 90 days should focus on one goal: creating breathing room',
+      body: fixedCost
+        ? 'This plan is built around your biggest constraint right now — income versus fixed costs. With must-pay bills around ' + fixedCost + ' of take-home pay, the priority is to improve monthly cash flow before adding more complexity.'
+        : 'This plan is built around your biggest constraint right now — income versus fixed costs. The priority is to improve monthly cash flow before adding more complexity.',
+    };
+  }
+
+  if (title.includes('excess cash')) {
+    return {
+      eyebrow: 'Your next 90 days should turn strength into efficiency',
+      body: 'This plan is built around defining the right cash reserve, moving excess money in stages, and making sure cash, investments, and debt are working together.',
+    };
+  }
+
+  return {
+    eyebrow: 'Your next 90 days should follow a sequence — not a scattershot of goals',
+    body: 'Start with the highest-leverage move, turn it into a repeatable system, then reassess before choosing the next priority.',
+  };
+}
+
 
 
 function LockedResultsPreview({
@@ -2306,6 +2352,7 @@ export default function ResultsPage() {
     score,
   });
   const ninetyDayPlanPhases = getNinetyDayPlanPhases(bestNextMoveCard, weakestPillar, metrics);
+  const ninetyDayPlanIntro = getNinetyDayPlanIntro(bestNextMoveCard, metrics);
   const assessmentAnswers = (((currentAssessment as any)?.answers ?? (latestHistoryRecord as any)?.answers ?? {}) as Record<string, any>);
   const carPaymentAnalysis = getCarPaymentAnalysis(assessmentAnswers);
   const comparisonProfileLabel = getBenchmarkProfileLabel(assessmentAnswers);
@@ -2939,10 +2986,10 @@ export default function ResultsPage() {
         <SectionShell icon={Clock3} title="Your 90-Day Plan" className="mb-6 pdf-avoid-break">
           <div className="mb-5 rounded-2xl border border-copper-200 bg-gradient-to-r from-copper-50 to-white p-4">
             <div className="text-sm font-semibold uppercase tracking-[0.18em] text-copper-700">
-              Your next 90 days should follow a sequence — not a scattershot of goals
+              {ninetyDayPlanIntro.eyebrow}
             </div>
             <p className="mt-2 text-sm leading-7 text-gray-700">
-              The goal is not to attack every building block at once. Start with the highest-leverage move, turn it into a repeatable system, then reassess before choosing the next priority.
+              {ninetyDayPlanIntro.body}
             </p>
           </div>
 
