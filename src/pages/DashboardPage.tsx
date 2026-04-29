@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAppStore } from '../store/appStore';
-import { getEntitlements } from '../lib/entitlements';
-import { exportReportPdf } from '../utils/pdfExport';
-import { useUserPlan } from '../hooks/useUserPlan';
-import { supabase } from '../lib/supabase';
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useAppStore } from "../store/appStore";
+import { getEntitlements } from "../lib/entitlements";
+import { exportReportPdf } from "../utils/pdfExport";
+import { useUserPlan } from "../hooks/useUserPlan";
+import { supabase } from "../lib/supabase";
 
 import {
   AlertCircle,
@@ -29,19 +29,22 @@ import {
   TrendingUp,
   Users,
   Zap,
-} from 'lucide-react';
+} from "lucide-react";
 
-import logoImage from '../assets/house-icon.png';
-import { useTrackEvent } from '../hooks/useTrackEvent';
-import { loadFreedomDatePlan, type FreedomDateScenario } from '../lib/freedomDatePlanService';
-import { getScoreBand } from '../types/assessment';
+import logoImage from "../assets/house-icon.png";
+import { useTrackEvent } from "../hooks/useTrackEvent";
+import {
+  loadFreedomDatePlan,
+  type FreedomDateScenario,
+} from "../lib/freedomDatePlanService";
+import { getScoreBand } from "../types/assessment";
 
 interface DashboardPageProps {
   onLogout: () => void;
 }
 
-type PlanTier = 'free' | 'standard' | 'premium';
-type GuidanceTab = 'roadmap' | 'workbook' | 'checkins';
+type PlanTier = "free" | "standard" | "premium";
+type GuidanceTab = "roadmap" | "workbook" | "checkins";
 
 type MetricsShape = {
   debtToIncomeRatio?: number;
@@ -97,8 +100,12 @@ type ActionPlanStep = {
 };
 
 type StructuralWarning = {
-  type: 'housing_pressure' | 'income_constraint' | 'structural_pressure' | string;
-  severity: 'high' | 'critical' | string;
+  type:
+    | "housing_pressure"
+    | "income_constraint"
+    | "structural_pressure"
+    | string;
+  severity: "high" | "critical" | string;
 };
 
 type CurrentAssessmentShape = {
@@ -116,7 +123,7 @@ type CurrentAssessmentShape = {
   topFocusAreas?: string[];
   summary?: string;
   nextStep?: string;
-  lifeStage?: 'starting_out' | 'stability' | 'growth' | 'catch_up' | string;
+  lifeStage?: "starting_out" | "stability" | "growth" | "catch_up" | string;
   answers?: Record<string, any>;
   signals?: Record<string, any>;
   metrics?: MetricsShape;
@@ -142,44 +149,44 @@ const PLAN_FEATURES: Record<
   { name: string; badgeLabel: string | null; price: number; accent: string }
 > = {
   free: {
-    name: 'Free',
+    name: "Free",
     badgeLabel: null,
     price: 0,
-    accent: 'bg-navy-900 text-white border-navy-900',
+    accent: "bg-navy-900 text-white border-navy-900",
   },
   standard: {
-    name: 'Foundation Assessment',
-    badgeLabel: 'Foundation Assessment Plan',
+    name: "Foundation Assessment",
+    badgeLabel: "Foundation Assessment Plan",
     price: 29,
-    accent: 'bg-blue-600 text-white border-blue-600',
+    accent: "bg-blue-600 text-white border-blue-600",
   },
   premium: {
-    name: 'Foundation Roadmap',
-    badgeLabel: 'Foundation Roadmap Plan',
+    name: "Foundation Roadmap",
+    badgeLabel: "Foundation Roadmap Plan",
     price: 79,
-    accent: 'bg-copper-600 text-white border-copper-600',
+    accent: "bg-copper-600 text-white border-copper-600",
   },
 };
 
 function getPlanBadgeClass(plan: PlanTier) {
-  if (plan === 'premium') {
-    return 'border-copper-300/35 bg-copper-500/10 text-copper-100';
+  if (plan === "premium") {
+    return "border-copper-300/35 bg-copper-500/10 text-copper-100";
   }
 
-  if (plan === 'standard') {
-    return 'border-blue-200/30 bg-blue-500/10 text-blue-50';
+  if (plan === "standard") {
+    return "border-blue-200/30 bg-blue-500/10 text-blue-50";
   }
 
-  return '';
+  return "";
 }
 
 function getDashboardNextMoveCard(
   assessment: CurrentAssessmentShape | null,
   snapshot: ReturnType<typeof getStructuralSnapshot>,
-  weakestPillar?: string
+  weakestPillar?: string,
 ): { title: string; body: string; checklist: string[] } {
   const answers = assessment?.answers ?? {};
-  const lifeStage = assessment?.lifeStage ?? 'stability';
+  const lifeStage = assessment?.lifeStage ?? "stability";
   const confidence = answers.financialConfidence;
   const incomeGrowth = answers.incomeGrowth;
   const incomeGrowthPotential = answers.incomeGrowthPotential;
@@ -190,240 +197,258 @@ function getDashboardNextMoveCard(
   const immediateStep = assessment?.actionPlan?.immediate?.[0];
 
   const strongInvestingHabit =
-    investingStatus === 'yes_consistently' &&
-    (employerMatch === 'maximizing_match' || employerMatch === 'have_match_not_maxing');
+    investingStatus === "yes_consistently" &&
+    (employerMatch === "maximizing_match" ||
+      employerMatch === "have_match_not_maxing");
 
   const highSavingsBase =
-    (snapshot?.totalSavings ?? 0) >= 10000 || (snapshot?.monthlyMargin ?? 0) >= 500;
+    (snapshot?.totalSavings ?? 0) >= 10000 ||
+    (snapshot?.monthlyMargin ?? 0) >= 500;
 
   const foundationScore = normalizeCurrentScore(assessment);
-  const cashMonths = snapshot?.emergencyFundMonths ||
-    ((snapshot?.fixedCosts ?? 0) > 0 ? (snapshot?.totalSavings ?? 0) / (snapshot?.fixedCosts ?? 1) : 0);
+  const cashMonths =
+    snapshot?.emergencyFundMonths ||
+    ((snapshot?.fixedCosts ?? 0) > 0
+      ? (snapshot?.totalSavings ?? 0) / (snapshot?.fixedCosts ?? 1)
+      : 0);
   const excessCashEstimate = snapshot?.excessCashEstimate ?? 0;
   const investingRate = snapshot?.investmentContributionRate ?? 0;
 
   if (foundationScore >= 80 && (cashMonths >= 24 || excessCashEstimate > 0)) {
     return {
-      title: 'Optimize your excess cash',
+      title: "Optimize your excess cash",
       body: `Your foundation is strong. With roughly ${cashMonths.toFixed(1)} months of runway, the next move is less about survival and more about making sure extra cash is working efficiently without weakening your safety cushion.`,
       checklist: [
-        'Choose the cash reserve target that still lets you sleep at night.',
-        'Move excess cash into higher-yield savings, investments, or another priority in stages.',
-        'Review your asset mix so cash, investments, and home equity are working together.',
+        "Choose the cash reserve target that still lets you sleep at night.",
+        "Move excess cash into higher-yield savings, investments, or another priority in stages.",
+        "Review your asset mix so cash, investments, and home equity are working together.",
       ],
     };
   }
 
   if (foundationScore >= 80 && investingRate >= 10) {
     return {
-      title: 'Move from building to optimizing',
-      body: 'You already have strong habits and a solid base. The next opportunity is reviewing tax buckets, account mix, cash targets, and allocation so the money you have works harder.',
+      title: "Move from building to optimizing",
+      body: "You already have strong habits and a solid base. The next opportunity is reviewing tax buckets, account mix, cash targets, and allocation so the money you have works harder.",
       checklist: [
-        'Review whether your cash reserve is larger than it needs to be.',
-        'Check your mix of pre-tax, Roth, taxable, and real estate assets.',
-        'Choose one optimization move for the next 90 days.',
+        "Review whether your cash reserve is larger than it needs to be.",
+        "Check your mix of pre-tax, Roth, taxable, and real estate assets.",
+        "Choose one optimization move for the next 90 days.",
       ],
     };
   }
 
   if (snapshot && snapshot.fixedCostLoad >= 65) {
     return {
-      title: 'Create breathing room first',
+      title: "Create breathing room first",
       body: `With about ${formatCurrency(snapshot.fixedCosts)} of ${formatCurrency(snapshot.income)} already committed each month, your next move should focus on structure, not optimization. The fastest lift will likely come from changing one major fixed-cost pressure point.`,
       checklist: [
-        'List housing, utilities, childcare, and debt payments in one place.',
-        'Identify the single fixed cost creating the most pressure.',
-        'Decide whether the clearest win is lower costs, more income, or both.',
+        "List housing, utilities, childcare, and debt payments in one place.",
+        "Identify the single fixed cost creating the most pressure.",
+        "Decide whether the clearest win is lower costs, more income, or both.",
       ],
     };
   }
 
   if (snapshot && snapshot.fixedCostLoad >= 50) {
     return {
-      title: 'Protect your monthly margin',
+      title: "Protect your monthly margin",
       body: `With fixed costs around ${formatCurrency(snapshot.fixedCosts)} a month, your structure is workable, but still tight enough to slow progress. Creating even a little more monthly margin should make the rest of the plan easier to execute.`,
       checklist: [
-        'Review the top one or two fixed costs in your budget.',
-        'Choose one realistic change to test over the next 30 days.',
-        'Redirect any freed-up cash toward your highest-priority goal.',
+        "Review the top one or two fixed costs in your budget.",
+        "Choose one realistic change to test over the next 30 days.",
+        "Redirect any freed-up cash toward your highest-priority goal.",
       ],
     };
   }
 
-  if (weakestPillar === 'protection') {
-    if (['growth', 'catch_up'].includes(lifeStage)) {
+  if (weakestPillar === "protection") {
+    if (["growth", "catch_up"].includes(lifeStage)) {
       return {
-        title: 'Protect the progress you have already built',
-        body: 'You already have momentum in other areas. At this stage, the bigger risk is leaving one protection gap exposed that could undo progress if life gets expensive or income is interrupted.',
+        title: "Protect the progress you have already built",
+        body: "You already have momentum in other areas. At this stage, the bigger risk is leaving one protection gap exposed that could undo progress if life gets expensive or income is interrupted.",
         checklist: [
-          'Review the one protection area that would hurt most if it failed.',
-          'Check whether current coverage still matches your household reality.',
-          'Make one update this quarter to close the biggest gap.',
+          "Review the one protection area that would hurt most if it failed.",
+          "Check whether current coverage still matches your household reality.",
+          "Make one update this quarter to close the biggest gap.",
         ],
       };
     }
 
     return {
-      title: 'Close your biggest protection gap',
-      body: 'Protection matters because people depend on this income. The immediate goal is practical: reliable health coverage, affordable life insurance if others depend on you, and a small emergency cushion that keeps one bill from becoming new debt.',
+      title: "Close your biggest protection gap",
+      body: "Protection matters because people depend on this income. The immediate goal is practical: reliable health coverage, affordable life insurance if others depend on you, and a small emergency cushion that keeps one bill from becoming new debt.",
       checklist: [
-        'Confirm health insurance status and your biggest out-of-pocket risk.',
-        'Price basic term life insurance if anyone depends on your income.',
-        'Choose a starter emergency fund target that fits current cash flow.',
+        "Confirm health insurance status and your biggest out-of-pocket risk.",
+        "Price basic term life insurance if anyone depends on your income.",
+        "Choose a starter emergency fund target that fits current cash flow.",
       ],
     };
   }
 
-  if (weakestPillar === 'vision') {
-    if (['low', 'not_confident'].includes(confidence)) {
+  if (weakestPillar === "vision") {
+    if (["low", "not_confident"].includes(confidence)) {
       return {
-        title: 'Create a clearer target before adding complexity',
-        body: 'Your habits will feel more sustainable once they are tied to a clearer destination. Right now, the opportunity is not another tactic — it is making the goal specific enough to guide your next few decisions.',
+        title: "Create a clearer target before adding complexity",
+        body: "Your habits will feel more sustainable once they are tied to a clearer destination. Right now, the opportunity is not another tactic — it is making the goal specific enough to guide your next few decisions.",
         checklist: [
-          'Write down your top financial goal for the next 3–5 years.',
-          'Choose one 12-month milestone that would prove progress.',
-          'Make sure your next major money move supports that target.',
+          "Write down your top financial goal for the next 3–5 years.",
+          "Choose one 12-month milestone that would prove progress.",
+          "Make sure your next major money move supports that target.",
         ],
       };
     }
 
-    if (['figuring_it_out', 'no_goals', 'stuck'].includes(financialDirection)) {
+    if (["figuring_it_out", "no_goals", "stuck"].includes(financialDirection)) {
       return {
-        title: 'Turn decent habits into a clearer plan',
-        body: 'You may already be doing some things well, but the direction is still too loose. Clarifying what matters most will make tradeoffs and next steps feel much more intentional.',
+        title: "Turn decent habits into a clearer plan",
+        body: "You may already be doing some things well, but the direction is still too loose. Clarifying what matters most will make tradeoffs and next steps feel much more intentional.",
         checklist: [
-          'Choose the one outcome that matters most over the next 12 months.',
-          'Define what success would look like in concrete terms.',
-          'Use that target to filter your next money decisions.',
+          "Choose the one outcome that matters most over the next 12 months.",
+          "Define what success would look like in concrete terms.",
+          "Use that target to filter your next money decisions.",
         ],
       };
     }
 
     return {
-      title: 'Clarify what you are building toward',
-      body: 'Your direction is improving, but it still needs sharper edges. Clearer priorities will make the rest of your system easier to align and follow through on.',
+      title: "Clarify what you are building toward",
+      body: "Your direction is improving, but it still needs sharper edges. Clearer priorities will make the rest of your system easier to align and follow through on.",
       checklist: [
-        'Name your highest-priority financial goal.',
-        'Choose one milestone to track over the next year.',
-        'Align your next major money move with that goal.',
+        "Name your highest-priority financial goal.",
+        "Choose one milestone to track over the next year.",
+        "Align your next major money move with that goal.",
       ],
     };
   }
 
-  if (weakestPillar === 'investing') {
-    if (strongInvestingHabit && ['very_confident', 'somewhat_confident'].includes(investmentConfidence)) {
+  if (weakestPillar === "investing") {
+    if (
+      strongInvestingHabit &&
+      ["very_confident", "somewhat_confident"].includes(investmentConfidence)
+    ) {
       return {
-        title: 'Upgrade how your investing is working',
-        body: 'You do not need a reminder to start investing — you are already doing that. The better next move is reviewing whether your current setup is aligned, efficient, and doing enough heavy lifting for your stage.',
+        title: "Upgrade how your investing is working",
+        body: "You do not need a reminder to start investing — you are already doing that. The better next move is reviewing whether your current setup is aligned, efficient, and doing enough heavy lifting for your stage.",
         checklist: [
-          'Review whether your current contribution rate still fits your goals.',
-          'Check that account mix and allocation still make sense.',
-          'Choose one improvement to make over the next 90 days.',
+          "Review whether your current contribution rate still fits your goals.",
+          "Check that account mix and allocation still make sense.",
+          "Choose one improvement to make over the next 90 days.",
         ],
       };
     }
 
     return {
-      title: 'Turn consistency into long-term growth',
-      body: 'You may already be building margin. The next step is making sure more of that progress is moving into long-term growth instead of staying parked.',
+      title: "Turn consistency into long-term growth",
+      body: "You may already be building margin. The next step is making sure more of that progress is moving into long-term growth instead of staying parked.",
       checklist: [
-        'Review current investment contributions.',
-        'Increase consistency before adding complexity.',
-        'Set a realistic 90-day contribution target.',
+        "Review current investment contributions.",
+        "Increase consistency before adding complexity.",
+        "Set a realistic 90-day contribution target.",
       ],
     };
   }
 
-  if (weakestPillar === 'saving') {
-    if (highSavingsBase && ['growth', 'catch_up'].includes(lifeStage)) {
+  if (weakestPillar === "saving") {
+    if (highSavingsBase && ["growth", "catch_up"].includes(lifeStage)) {
       return {
-        title: 'Strengthen your buffer, not just your balance sheet',
-        body: 'You may already be building for the future, but the next improvement is making sure your cash reserve is strong enough to protect that long-term progress when life gets expensive.',
+        title: "Strengthen your buffer, not just your balance sheet",
+        body: "You may already be building for the future, but the next improvement is making sure your cash reserve is strong enough to protect that long-term progress when life gets expensive.",
         checklist: [
-          'Decide what “enough” cash reserves means for your household.',
-          'Choose a monthly amount to direct toward that buffer.',
-          'Recheck after 90 days and adjust if needed.',
+          "Decide what “enough” cash reserves means for your household.",
+          "Choose a monthly amount to direct toward that buffer.",
+          "Recheck after 90 days and adjust if needed.",
         ],
       };
     }
 
     return {
-      title: 'Convert surplus into structure',
-      body: 'You have some breathing room. The opportunity now is turning that into a more reliable saving system that strengthens the rest of the foundation.',
+      title: "Convert surplus into structure",
+      body: "You have some breathing room. The opportunity now is turning that into a more reliable saving system that strengthens the rest of the foundation.",
       checklist: [
-        'Choose a fixed monthly savings amount.',
-        'Automate the transfer if possible.',
-        'Track progress once a month for the next 90 days.',
+        "Choose a fixed monthly savings amount.",
+        "Automate the transfer if possible.",
+        "Track progress once a month for the next 90 days.",
       ],
     };
   }
 
-  if (weakestPillar === 'income') {
-    if (incomeGrowth === 'decreased') {
+  if (weakestPillar === "income") {
+    if (incomeGrowth === "decreased") {
       return {
-        title: 'Rebuild income momentum first',
-        body: 'Because income has moved backward, the next move should focus on restoring stability before pushing harder on optimization elsewhere.',
+        title: "Rebuild income momentum first",
+        body: "Because income has moved backward, the next move should focus on restoring stability before pushing harder on optimization elsewhere.",
         checklist: [
-          'Identify the main reason income slipped.',
-          'Choose one realistic way to stabilize or increase it.',
-          'Set a 90-day target tied to take-home pay.',
+          "Identify the main reason income slipped.",
+          "Choose one realistic way to stabilize or increase it.",
+          "Set a 90-day target tied to take-home pay.",
         ],
       };
     }
 
-    if (['high', 'moderate'].includes(incomeGrowthPotential)) {
+    if (["high", "moderate"].includes(incomeGrowthPotential)) {
       return {
-        title: 'Use income as your next growth lever',
-        body: 'You appear to have room to increase earning power from here. At this stage, one income move could lift saving, investing, and flexibility all at once.',
+        title: "Use income as your next growth lever",
+        body: "You appear to have room to increase earning power from here. At this stage, one income move could lift saving, investing, and flexibility all at once.",
         checklist: [
-          'Choose the most realistic path to higher income.',
-          'Take one action this week: ask, apply, pitch, or start.',
-          'Measure whether that move improves monthly margin.',
+          "Choose the most realistic path to higher income.",
+          "Take one action this week: ask, apply, pitch, or start.",
+          "Measure whether that move improves monthly margin.",
         ],
       };
     }
 
     return {
-      title: 'Strengthen income stability',
-      body: 'The next lift is not just earning more — it is making income feel more dependable so the rest of your plan can rest on a steadier base.',
+      title: "Strengthen income stability",
+      body: "The next lift is not just earning more — it is making income feel more dependable so the rest of your plan can rest on a steadier base.",
       checklist: [
-        'Identify the main source of income uncertainty.',
-        'Choose one move that improves predictability.',
-        'Review progress over the next 90 days.',
+        "Identify the main source of income uncertainty.",
+        "Choose one move that improves predictability.",
+        "Review progress over the next 90 days.",
       ],
     };
   }
 
   if (immediateStep) {
     return {
-      title: immediateStep.title || 'Best Next Move',
-      body: immediateStep.body || (assessment?.nextStep ?? 'Choose one focused next step and keep it consistent.'),
+      title: immediateStep.title || "Best Next Move",
+      body:
+        immediateStep.body ||
+        (assessment?.nextStep ??
+          "Choose one focused next step and keep it consistent."),
       checklist:
         Array.isArray(immediateStep.checklist) && immediateStep.checklist.length
           ? immediateStep.checklist.slice(0, 3)
-          : [assessment?.nextStep || 'Choose one focused next step and keep it consistent.'],
+          : [
+              assessment?.nextStep ||
+                "Choose one focused next step and keep it consistent.",
+            ],
     };
   }
 
   if (assessment?.nextStep) {
     return {
-      title: weakestPillar ? `Start with ${formatPillarName(weakestPillar)}` : 'Best Next Move',
+      title: weakestPillar
+        ? `Start with ${formatPillarName(weakestPillar)}`
+        : "Best Next Move",
       body: assessment.nextStep,
       checklist: [
-        'Choose one concrete step to take this week.',
-        'Keep the move small enough to repeat.',
-        'Review progress before changing direction.',
+        "Choose one concrete step to take this week.",
+        "Keep the move small enough to repeat.",
+        "Review progress before changing direction.",
       ],
     };
   }
 
   return {
-    title: weakestPillar ? `Start with ${formatPillarName(weakestPillar)}` : 'Best Next Move',
+    title: weakestPillar
+      ? `Start with ${formatPillarName(weakestPillar)}`
+      : "Best Next Move",
     body: getDashboardNextMove(assessment, snapshot, weakestPillar),
     checklist: [
-      'Choose one next step.',
-      'Take action this week.',
-      'Review what changed before adding more complexity.',
+      "Choose one next step.",
+      "Take action this week.",
+      "Review what changed before adding more complexity.",
     ],
   };
 }
@@ -431,9 +456,9 @@ function getDashboardNextMoveCard(
 function getDashboardWhyThisMatters(
   assessment: CurrentAssessmentShape | null,
   snapshot: ReturnType<typeof getStructuralSnapshot>,
-  weakestPillar?: string
+  weakestPillar?: string,
 ): string {
-  const lifeStage = assessment?.lifeStage ?? 'stability';
+  const lifeStage = assessment?.lifeStage ?? "stability";
   const answers = assessment?.answers ?? {};
   const confidence = answers.financialConfidence;
   const incomeGrowthPotential = answers.incomeGrowthPotential;
@@ -442,47 +467,47 @@ function getDashboardWhyThisMatters(
     return `With about ${formatCurrency(snapshot.fixedCosts)} of ${formatCurrency(snapshot.income)} already committed each month, even strong habits can feel tight. Creating more breathing room gives the rest of your plan room to work.`;
   }
 
-  if (weakestPillar === 'protection') {
-    return ['growth', 'catch_up'].includes(lifeStage)
-      ? 'At this stage, the next risk is not simply growth — it is leaving what you have already built exposed to an avoidable setback.'
-      : 'Protection matters now because one uncovered risk can interrupt progress before the rest of the foundation has a chance to compound.';
+  if (weakestPillar === "protection") {
+    return ["growth", "catch_up"].includes(lifeStage)
+      ? "At this stage, the next risk is not simply growth — it is leaving what you have already built exposed to an avoidable setback."
+      : "Protection matters now because one uncovered risk can interrupt progress before the rest of the foundation has a chance to compound.";
   }
 
-  if (weakestPillar === 'vision') {
-    return ['low', 'not_confident'].includes(confidence)
-      ? 'Clearer direction reduces decision fatigue. Once the target is sharper, saving, investing, and tradeoffs usually get easier to sustain.'
-      : 'This matters now because stronger direction helps the rest of your good habits work together instead of drifting in separate directions.';
+  if (weakestPillar === "vision") {
+    return ["low", "not_confident"].includes(confidence)
+      ? "Clearer direction reduces decision fatigue. Once the target is sharper, saving, investing, and tradeoffs usually get easier to sustain."
+      : "This matters now because stronger direction helps the rest of your good habits work together instead of drifting in separate directions.";
   }
 
-  if (weakestPillar === 'income') {
-    return ['high', 'moderate'].includes(incomeGrowthPotential)
-      ? 'Income is not just another category — it is the lever that can lift saving, investing, and flexibility all at once.'
-      : 'A steadier income base gives the rest of the foundation something more dependable to build on.';
+  if (weakestPillar === "income") {
+    return ["high", "moderate"].includes(incomeGrowthPotential)
+      ? "Income is not just another category — it is the lever that can lift saving, investing, and flexibility all at once."
+      : "A steadier income base gives the rest of the foundation something more dependable to build on.";
   }
 
-  if (weakestPillar === 'investing') {
-    return 'This matters now because the gap is no longer just about behavior — it is about making sure your long-term system is doing enough work for the future you want.';
+  if (weakestPillar === "investing") {
+    return "This matters now because the gap is no longer just about behavior — it is about making sure your long-term system is doing enough work for the future you want.";
   }
 
-  if (weakestPillar === 'saving') {
-    return 'A stronger buffer gives you more control over setbacks, better flexibility, and more confidence in the rest of the plan.';
+  if (weakestPillar === "saving") {
+    return "A stronger buffer gives you more control over setbacks, better flexibility, and more confidence in the rest of the plan.";
   }
 
   if (assessment?.nextStep) {
-    return 'This next move matters because it addresses the area most likely to improve the rest of your financial foundation, not just this one category.';
+    return "This next move matters because it addresses the area most likely to improve the rest of your financial foundation, not just this one category.";
   }
 
-  return 'The right next move should strengthen the weakest part of the system first so the rest of your progress becomes easier to sustain.';
+  return "The right next move should strengthen the weakest part of the system first so the rest of your progress becomes easier to sustain.";
 }
 
 const PILLAR_LABELS: Record<string, string> = {
-  income: 'Income',
-  spending: 'Spending',
-  saving: 'Saving',
-  investing: 'Investing',
-  debt: 'Debt Pressure',
-  protection: 'Protection',
-  vision: 'Vision',
+  income: "Income",
+  spending: "Spending",
+  saving: "Saving",
+  investing: "Investing",
+  debt: "Debt Pressure",
+  protection: "Protection",
+  vision: "Vision",
 };
 
 const PILLAR_ICONS: Record<string, React.ElementType> = {
@@ -500,18 +525,18 @@ function safeArray<T>(value: T[] | undefined | null): T[] {
 }
 
 function normalizeCurrentScore(
-  assessment: CurrentAssessmentShape | null
+  assessment: CurrentAssessmentShape | null,
 ): number {
   if (!assessment) return 0;
 
-  if (typeof assessment.foundationScore === 'number') {
+  if (typeof assessment.foundationScore === "number") {
     return Math.max(0, Math.min(100, assessment.foundationScore));
   }
 
-  if (typeof assessment.wealthScore === 'number') {
+  if (typeof assessment.wealthScore === "number") {
     return Math.max(
       0,
-      Math.min(100, Math.round(((assessment.wealthScore - 300) / 550) * 100))
+      Math.min(100, Math.round(((assessment.wealthScore - 300) / 550) * 100)),
     );
   }
 
@@ -519,18 +544,18 @@ function normalizeCurrentScore(
 }
 
 function normalizeHistoryScore(item: any): number | null {
-  if (typeof item?.foundationScore === 'number') {
+  if (typeof item?.foundationScore === "number") {
     return Math.max(0, Math.min(100, item.foundationScore));
   }
 
-  if (typeof item?.overallScore === 'number') {
+  if (typeof item?.overallScore === "number") {
     return Math.max(0, Math.min(100, item.overallScore));
   }
 
-  if (typeof item?.wealthScore === 'number') {
+  if (typeof item?.wealthScore === "number") {
     return Math.max(
       0,
-      Math.min(100, Math.round(((item.wealthScore - 300) / 550) * 100))
+      Math.min(100, Math.round(((item.wealthScore - 300) / 550) * 100)),
     );
   }
 
@@ -538,30 +563,30 @@ function normalizeHistoryScore(item: any): number | null {
 }
 
 function formatHistoryDate(createdAt?: number): string {
-  if (!createdAt) return '';
+  if (!createdAt) return "";
   const millis = createdAt > 10_000_000_000 ? createdAt : createdAt * 1000;
   const date = new Date(millis);
   return date.toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
+    month: "short",
+    day: "numeric",
   });
 }
 
 function formatCurrency(value?: number | null): string {
   if (value === undefined || value === null || Number.isNaN(Number(value))) {
-    return '—';
+    return "—";
   }
 
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
     maximumFractionDigits: 0,
   }).format(Number(value));
 }
 
 function formatPercent(value?: number | null): string {
   if (value === undefined || value === null || Number.isNaN(Number(value))) {
-    return '—';
+    return "—";
   }
 
   return `${Math.round(Number(value))}%`;
@@ -569,15 +594,15 @@ function formatPercent(value?: number | null): string {
 
 function scoreNarrative(score: number): string {
   if (score >= 80) {
-    return 'Your foundation looks strong. The opportunity now is less about fixing problems and more about strengthening the weaker edges.';
+    return "Your foundation looks strong. The opportunity now is less about fixing problems and more about strengthening the weaker edges.";
   }
   if (score >= 60) {
-    return 'You have momentum, but a few weaker areas are still holding back the rest of the house.';
+    return "You have momentum, but a few weaker areas are still holding back the rest of the house.";
   }
   if (score >= 40) {
-    return 'Some pieces are in place, but your foundation still has meaningful gaps creating drag.';
+    return "Some pieces are in place, but your foundation still has meaningful gaps creating drag.";
   }
-  return 'Your foundation needs reinforcement before long-term growth becomes the priority.';
+  return "Your foundation needs reinforcement before long-term growth becomes the priority.";
 }
 
 function formatPillarName(pillar: string): string {
@@ -593,7 +618,7 @@ function getStructuralSnapshot(metrics?: MetricsShape | null) {
   const childcare = Number(metrics.monthlyChildcareCost ?? 0);
   const debt = Number(metrics.monthlyDebtPayments ?? 0);
   const fixedCosts = Number(
-    metrics.monthlyFixedCosts ?? housing + utilities + childcare + debt
+    metrics.monthlyFixedCosts ?? housing + utilities + childcare + debt,
   );
   const fixedCostLoad = income > 0 ? (fixedCosts / income) * 100 : 0;
   const monthlyMargin = income - fixedCosts;
@@ -605,13 +630,21 @@ function getStructuralSnapshot(metrics?: MetricsShape | null) {
   const rentalPropertyValue = Number(metrics.rentalPropertyValue ?? 0);
   const otherPropertyValue = Number(metrics.otherPropertyValue ?? 0);
   const realEstateAssets = Number(
-    metrics.realEstateAssets ?? primaryHomeValue + rentalPropertyValue + otherPropertyValue
+    metrics.realEstateAssets ??
+      primaryHomeValue + rentalPropertyValue + otherPropertyValue,
   );
   const mortgageDebt = Number(metrics.mortgageDebt ?? 0);
-  const consumerDebt = Number(metrics.consumerDebt ?? metrics.totalDebtBalance ?? 0);
+  const consumerDebt = Number(
+    metrics.consumerDebt ?? metrics.totalDebtBalance ?? 0,
+  );
   const otherLiabilities = Number(metrics.otherLiabilities ?? 0);
-  const totalAssets = Number(metrics.totalAssets ?? totalSavings + totalInvestments + realEstateAssets + otherAssets);
-  const totalLiabilities = Number(metrics.totalLiabilities ?? mortgageDebt + consumerDebt + otherLiabilities);
+  const totalAssets = Number(
+    metrics.totalAssets ??
+      totalSavings + totalInvestments + realEstateAssets + otherAssets,
+  );
+  const totalLiabilities = Number(
+    metrics.totalLiabilities ?? mortgageDebt + consumerDebt + otherLiabilities,
+  );
   const netWorth = Number(metrics.netWorth ?? totalAssets - totalLiabilities);
 
   return {
@@ -629,7 +662,9 @@ function getStructuralSnapshot(metrics?: MetricsShape | null) {
     totalInvestments,
     totalDebtBalance: consumerDebt,
     netWorth,
-    homeEquity: Number(metrics.homeEquity ?? Math.max(0, realEstateAssets - mortgageDebt)),
+    homeEquity: Number(
+      metrics.homeEquity ?? Math.max(0, realEstateAssets - mortgageDebt),
+    ),
     cashSavings: Number(metrics.cashSavings ?? totalSavings),
     retirement401kIraBalance: Number(metrics.retirement401kIraBalance ?? 0),
     rothBalance: Number(metrics.rothBalance ?? 0),
@@ -642,7 +677,9 @@ function getStructuralSnapshot(metrics?: MetricsShape | null) {
     rentalPropertyValue,
     rentalMortgageBalance: Number(metrics.rentalMortgageBalance ?? 0),
     otherPropertyValue,
-    otherPropertyMortgageBalance: Number(metrics.otherPropertyMortgageBalance ?? 0),
+    otherPropertyMortgageBalance: Number(
+      metrics.otherPropertyMortgageBalance ?? 0,
+    ),
     realEstateAssets,
     mortgageDebt,
     consumerDebt,
@@ -659,88 +696,87 @@ function getStructuralSnapshot(metrics?: MetricsShape | null) {
 function getLoadTone(load: number) {
   if (load >= 65) {
     return {
-      badge: 'High Pressure',
-      text: 'text-red-700',
-      bg: 'bg-red-50',
-      border: 'border-red-200',
-      bar: 'bg-red-500',
+      badge: "High Pressure",
+      text: "text-red-700",
+      bg: "bg-red-50",
+      border: "border-red-200",
+      bar: "bg-red-500",
     };
   }
 
   if (load >= 50) {
     return {
-      badge: 'Tight',
-      text: 'text-amber-700',
-      bg: 'bg-amber-50',
-      border: 'border-amber-200',
-      bar: 'bg-amber-500',
+      badge: "Tight",
+      text: "text-amber-700",
+      bg: "bg-amber-50",
+      border: "border-amber-200",
+      bar: "bg-amber-500",
     };
   }
 
   return {
-    badge: 'Healthy',
-    text: 'text-emerald-700',
-    bg: 'bg-emerald-50',
-    border: 'border-emerald-200',
-    bar: 'bg-emerald-500',
+    badge: "Healthy",
+    text: "text-emerald-700",
+    bg: "bg-emerald-50",
+    border: "border-emerald-200",
+    bar: "bg-emerald-500",
   };
 }
 
 function getMarginTone(margin: number): string {
-  if (margin < 0) return 'text-red-600';
-  if (margin < 500) return 'text-amber-600';
-  return 'text-emerald-600';
+  if (margin < 0) return "text-red-600";
+  if (margin < 500) return "text-amber-600";
+  return "text-emerald-600";
 }
 
 function getDashboardNextMove(
   assessment: CurrentAssessmentShape | null,
   snapshot: ReturnType<typeof getStructuralSnapshot>,
-  weakestPillar?: string
+  weakestPillar?: string,
 ): string {
   if (snapshot && snapshot.fixedCostLoad >= 65) {
-    return 'Create breathing room first. Review housing, utilities, and other fixed bills together, then decide whether the fastest win is a cost cut, an income increase, or both.';
+    return "Create breathing room first. Review housing, utilities, and other fixed bills together, then decide whether the fastest win is a cost cut, an income increase, or both.";
   }
 
   if (snapshot && snapshot.fixedCostLoad >= 50) {
-    return 'Start by tightening fixed costs and protecting your monthly margin. Small relief here can unlock better progress everywhere else.';
+    return "Start by tightening fixed costs and protecting your monthly margin. Small relief here can unlock better progress everywhere else.";
   }
 
   if (assessment?.nextStep) return assessment.nextStep;
 
   if (weakestPillar) {
     return `Start with ${formatPillarName(
-      weakestPillar
+      weakestPillar,
     )}. One focused improvement here should have the biggest ripple effect.`;
   }
 
-  return 'Choose one next step and make progress this week.';
+  return "Choose one next step and make progress this week.";
 }
 
 function makePlanActionId(phaseIndex: number, itemIndex: number, item: string) {
   const slug = item
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
     .slice(0, 44);
 
-  return `phase-${phaseIndex + 1}-${itemIndex + 1}-${slug || 'step'}`;
+  return `phase-${phaseIndex + 1}-${itemIndex + 1}-${slug || "step"}`;
 }
-
 
 async function loadSavedPlanProgress(
   userId: string | undefined,
-  assessmentId: string
+  assessmentId: string,
 ): Promise<Record<string, boolean> | null> {
   if (!userId || !assessmentId) return null;
 
   const { data, error } = await supabase
-    .from('user_plan_progress')
-    .select('action_id, completed')
-    .eq('user_id', userId)
-    .eq('assessment_id', assessmentId);
+    .from("user_plan_progress")
+    .select("action_id, completed")
+    .eq("user_id", userId)
+    .eq("assessment_id", assessmentId);
 
   if (error) {
-    console.error('Could not load 90-day plan progress:', error);
+    console.error("Could not load 90-day plan progress:", error);
     return null;
   }
 
@@ -754,36 +790,34 @@ async function savePlanActionProgress(
   userId: string | undefined,
   assessmentId: string,
   actionId: string,
-  completed: boolean
+  completed: boolean,
 ) {
   if (!userId || !assessmentId || !actionId) return;
 
-  const { error } = await supabase
-    .from('user_plan_progress')
-    .upsert(
-      {
-        user_id: userId,
-        assessment_id: assessmentId,
-        action_id: actionId,
-        completed,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'user_id,assessment_id,action_id' }
-    );
+  const { error } = await supabase.from("user_plan_progress").upsert(
+    {
+      user_id: userId,
+      assessment_id: assessmentId,
+      action_id: actionId,
+      completed,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id,assessment_id,action_id" },
+  );
 
   if (error) {
-    console.error('Could not save 90-day plan progress:', error);
+    console.error("Could not save 90-day plan progress:", error);
   }
 }
 
 function getStoredPlanProgress(storageKey: string): Record<string, boolean> {
-  if (typeof window === 'undefined') return {};
+  if (typeof window === "undefined") return {};
 
   try {
     const stored = window.localStorage.getItem(storageKey);
     if (!stored) return {};
     const parsed = JSON.parse(stored);
-    return parsed && typeof parsed === 'object' ? parsed : {};
+    return parsed && typeof parsed === "object" ? parsed : {};
   } catch {
     return {};
   }
@@ -792,70 +826,80 @@ function getStoredPlanProgress(storageKey: string): Record<string, boolean> {
 function getDashboardNinetyDayPlanPhases(
   nextMoveCard: { title: string; body: string; checklist: string[] },
   snapshot: ReturnType<typeof getStructuralSnapshot>,
-  weakestPillar?: string | null
+  weakestPillar?: string | null,
 ): ActionPlanStep[] {
   const title = nextMoveCard.title.toLowerCase();
   const fixedCost = formatPercent(snapshot?.fixedCostLoad ?? 0);
   const excessCash = snapshot?.excessCashEstimate ?? 0;
-  const cashMonths = snapshot?.fixedCosts ? (snapshot.totalSavings ?? 0) / snapshot.fixedCosts : 0;
-  const pillarLabel = weakestPillar ? formatPillarName(weakestPillar) : 'your next priority';
+  const cashMonths = snapshot?.fixedCosts
+    ? (snapshot.totalSavings ?? 0) / snapshot.fixedCosts
+    : 0;
+  const pillarLabel = weakestPillar
+    ? formatPillarName(weakestPillar)
+    : "your next priority";
 
-  if (title.includes('excess cash')) {
+  if (title.includes("excess cash")) {
     return [
       {
-        title: 'Phase 1: Define “enough” cash',
+        title: "Phase 1: Define “enough” cash",
         body: `Start by deciding how much cash reserve still feels safe. Your current cushion is about ${cashMonths.toFixed(1)} months, so the goal is to separate safety money from idle money.`,
         checklist: [
-          'Pick a cash reserve target in months of expenses.',
-          excessCash > 0 ? `Mark the estimated excess cash amount: ${formatCurrency(excessCash)}.` : 'Estimate how much cash sits above that target.',
+          "Pick a cash reserve target in months of expenses.",
+          excessCash > 0
+            ? `Mark the estimated excess cash amount: ${formatCurrency(excessCash)}.`
+            : "Estimate how much cash sits above that target.",
         ],
       },
       {
-        title: 'Phase 2: Move in stages',
-        body: 'Choose one staged move for excess cash instead of making one large emotional decision.',
+        title: "Phase 2: Move in stages",
+        body: "Choose one staged move for excess cash instead of making one large emotional decision.",
         checklist: [
-          'Move a first portion to HYSA, brokerage, Roth, debt, or another priority.',
-          'Set a simple date to review the result before moving more.',
+          "Move a first portion to HYSA, brokerage, Roth, debt, or another priority.",
+          "Set a simple date to review the result before moving more.",
         ],
       },
       {
-        title: 'Phase 3: Rebalance the system',
-        body: 'After the first move, review how cash, investments, debt, and home equity fit together.',
+        title: "Phase 3: Rebalance the system",
+        body: "After the first move, review how cash, investments, debt, and home equity fit together.",
         checklist: [
-          'Compare cash vs. investments vs. real estate equity.',
-          'Rerun the assessment after meaningful changes.',
+          "Compare cash vs. investments vs. real estate equity.",
+          "Rerun the assessment after meaningful changes.",
         ],
       },
     ];
   }
 
-  if (title.includes('income') || title.includes('fixed') || title.includes('breathing')) {
+  if (
+    title.includes("income") ||
+    title.includes("fixed") ||
+    title.includes("breathing")
+  ) {
     return [
       {
-        title: 'Phase 1: Create breathing room',
-        body: `Start with the move that creates the fastest improvement in monthly cash flow${fixedCost ? ` — your must-pay bills are around ${fixedCost} of take-home pay` : ''}.`,
+        title: "Phase 1: Create breathing room",
+        body: `Start with the move that creates the fastest improvement in monthly cash flow${fixedCost ? ` — your must-pay bills are around ${fixedCost} of take-home pay` : ""}.`,
         checklist: [
-          'Look for immediate income options: extra shifts, overtime, side work, selling unused items, or applying for a better role.',
-          'Identify one major fixed cost to challenge: housing, vehicle, utilities, insurance, or another required bill.',
-          'Avoid adding any new fixed payment while the foundation is under pressure.',
+          "Look for immediate income options: extra shifts, overtime, side work, selling unused items, or applying for a better role.",
+          "Identify one major fixed cost to challenge: housing, vehicle, utilities, insurance, or another required bill.",
+          "Avoid adding any new fixed payment while the foundation is under pressure.",
         ],
       },
       {
-        title: 'Phase 2: Stabilize your cash flow',
-        body: 'Once you create some breathing room, protect it so new expenses do not absorb the progress.',
+        title: "Phase 2: Stabilize your cash flow",
+        body: "Once you create some breathing room, protect it so new expenses do not absorb the progress.",
         checklist: [
-          'Keep any income gain or cost reduction visible in one monthly margin number.',
-          'Build a small cash buffer so surprise expenses do not push you backward.',
-          'Give freed-up money a job before it disappears into daily spending.',
+          "Keep any income gain or cost reduction visible in one monthly margin number.",
+          "Build a small cash buffer so surprise expenses do not push you backward.",
+          "Give freed-up money a job before it disappears into daily spending.",
         ],
       },
       {
-        title: 'Phase 3: Build momentum',
-        body: 'With more stability, start building forward into saving, protection, debt payoff, and long-term growth.',
+        title: "Phase 3: Build momentum",
+        body: "With more stability, start building forward into saving, protection, debt payoff, and long-term growth.",
         checklist: [
-          'Direct the first stable margin toward a starter emergency fund or priority debt.',
-          'Review basic protection needs, especially health coverage and affordable term life if others depend on your income.',
-          'Rerun the assessment after meaningful progress and choose the next highest-leverage area.',
+          "Direct the first stable margin toward a starter emergency fund or priority debt.",
+          "Review basic protection needs, especially health coverage and affordable term life if others depend on your income.",
+          "Rerun the assessment after meaningful progress and choose the next highest-leverage area.",
         ],
       },
     ];
@@ -863,19 +907,27 @@ function getDashboardNinetyDayPlanPhases(
 
   return [
     {
-      title: 'Phase 1: Focus the first move',
-      body: nextMoveCard.body || `Start with ${pillarLabel}. One focused improvement here should create the biggest ripple effect.`,
+      title: "Phase 1: Focus the first move",
+      body:
+        nextMoveCard.body ||
+        `Start with ${pillarLabel}. One focused improvement here should create the biggest ripple effect.`,
       checklist: nextMoveCard.checklist.slice(0, 3),
     },
     {
-      title: 'Phase 2: Make it repeatable',
-      body: 'The next step is making the first action reliable. One good move helps, but one repeatable system changes the foundation.',
-      checklist: ['Pick one number or behavior to track weekly.', 'Schedule a 15-minute check-in before the month ends.'],
+      title: "Phase 2: Make it repeatable",
+      body: "The next step is making the first action reliable. One good move helps, but one repeatable system changes the foundation.",
+      checklist: [
+        "Pick one number or behavior to track weekly.",
+        "Schedule a 15-minute check-in before the month ends.",
+      ],
     },
     {
-      title: 'Phase 3: Reassess and advance',
-      body: 'After the first 90 days, compare your score and building blocks. Keep what improved and move to the next highest-leverage area.',
-      checklist: ['Rerun the assessment after meaningful progress.', 'Choose the next building block to strengthen.'],
+      title: "Phase 3: Reassess and advance",
+      body: "After the first 90 days, compare your score and building blocks. Keep what improved and move to the next highest-leverage area.",
+      checklist: [
+        "Rerun the assessment after meaningful progress.",
+        "Choose the next building block to strengthen.",
+      ],
     },
   ];
 }
@@ -883,68 +935,68 @@ function getDashboardNinetyDayPlanPhases(
 function getPillarTone(score: number) {
   if (score >= 80) {
     return {
-      text: 'text-emerald-700',
-      bg: 'bg-emerald-50 border-emerald-200',
-      bar: 'bg-emerald-500',
-      badge: 'bg-emerald-100 text-emerald-700',
-      label: 'Strong',
+      text: "text-emerald-700",
+      bg: "bg-emerald-50 border-emerald-200",
+      bar: "bg-emerald-500",
+      badge: "bg-emerald-100 text-emerald-700",
+      label: "Strong",
     };
   }
 
   if (score >= 60) {
     return {
-      text: 'text-amber-700',
-      bg: 'bg-amber-50 border-amber-200',
-      bar: 'bg-amber-500',
-      badge: 'bg-amber-100 text-amber-700',
-      label: 'Building',
+      text: "text-amber-700",
+      bg: "bg-amber-50 border-amber-200",
+      bar: "bg-amber-500",
+      badge: "bg-amber-100 text-amber-700",
+      label: "Building",
     };
   }
 
   if (score >= 40) {
     return {
-      text: 'text-orange-700',
-      bg: 'bg-orange-50 border-orange-200',
-      bar: 'bg-orange-500',
-      badge: 'bg-orange-100 text-orange-700',
-      label: 'Needs Attention',
+      text: "text-orange-700",
+      bg: "bg-orange-50 border-orange-200",
+      bar: "bg-orange-500",
+      badge: "bg-orange-100 text-orange-700",
+      label: "Needs Attention",
     };
   }
 
   return {
-    text: 'text-red-700',
-    bg: 'bg-red-50 border-red-200',
-    bar: 'bg-red-500',
-    badge: 'bg-red-100 text-red-700',
-    label: 'Weak',
+    text: "text-red-700",
+    bg: "bg-red-50 border-red-200",
+    bar: "bg-red-500",
+    badge: "bg-red-100 text-red-700",
+    label: "Weak",
   };
 }
 
 function getWarningCard(
   warning: StructuralWarning,
-  snapshot: ReturnType<typeof getStructuralSnapshot>
+  snapshot: ReturnType<typeof getStructuralSnapshot>,
 ) {
-  if (warning.type === 'housing_pressure' && snapshot) {
+  if (warning.type === "housing_pressure" && snapshot) {
     return {
-      title: 'Housing costs are crowding out progress',
+      title: "Housing costs are crowding out progress",
       body: `Your fixed costs are about ${snapshot.fixedCostLoad.toFixed(
-        0
+        0,
       )}% of take-home pay, with housing around ${formatCurrency(
-        snapshot.housing
+        snapshot.housing,
       )} and utilities around ${formatCurrency(snapshot.utilities)}.`,
     };
   }
 
-  if (warning.type === 'income_constraint') {
+  if (warning.type === "income_constraint") {
     return {
-      title: 'Income is the bottleneck right now',
-      body: 'This looks more like a math problem than a discipline problem. Increasing income or lowering a major fixed cost may create the biggest overall lift.',
+      title: "Income is the bottleneck right now",
+      body: "This looks more like a math problem than a discipline problem. Increasing income or lowering a major fixed cost may create the biggest overall lift.",
     };
   }
 
   return {
-    title: 'Structural pressure detected',
-    body: 'Multiple fixed obligations may be limiting your breathing room and slowing progress elsewhere.',
+    title: "Structural pressure detected",
+    body: "Multiple fixed obligations may be limiting your breathing room and slowing progress elsewhere.",
   };
 }
 
@@ -955,7 +1007,7 @@ function CalculatorIcon(props: React.ComponentProps<typeof DollarSign>) {
 function getTrustedExperts(
   pillars: Record<string, number>,
   snapshot: ReturnType<typeof getStructuralSnapshot>,
-  warnings: StructuralWarning[]
+  warnings: StructuralWarning[],
 ): ExpertCard[] {
   const cards: ExpertCard[] = [];
 
@@ -968,71 +1020,73 @@ function getTrustedExperts(
     ((snapshot.totalInvestments ?? 0) > 100000 ||
       (snapshot.homeEquity ?? 0) > 0);
   const hasDebtPressure = warnings.some(
-    (warning) => warning.type === 'structural_pressure'
+    (warning) => warning.type === "structural_pressure",
   );
 
   if (hasInvestingGap) {
     cards.push({
-      key: 'planner',
-      title: 'Take your investing to the next level',
+      key: "planner",
+      title: "Take your investing to the next level",
       reason:
-        'A fiduciary advisor can help optimize allocation, reduce tax drag, and align a stronger long-term investment strategy with your goals.',
-      cta: 'Unlock advisor matching',
+        "A fiduciary advisor can help optimize allocation, reduce tax drag, and align a stronger long-term investment strategy with your goals.",
+      cta: "Unlock advisor matching",
       icon: TrendingUp,
-      tone: 'bg-blue-50 border-blue-200',
+      tone: "bg-blue-50 border-blue-200",
     });
   }
 
   if (hasProtectionGap) {
     cards.push({
-      key: 'insurance',
-      title: 'Protect what you are building',
+      key: "insurance",
+      title: "Protect what you are building",
       reason:
-        'Insurance and protection reviews can help keep one setback from undoing years of progress.',
-      cta: 'Unlock protection guidance',
+        "Insurance and protection reviews can help keep one setback from undoing years of progress.",
+      cta: "Unlock protection guidance",
       icon: Shield,
-      tone: 'bg-emerald-50 border-emerald-200',
+      tone: "bg-emerald-50 border-emerald-200",
     });
   }
 
   if (hasVisionGap || hasTaxComplexity) {
     cards.push({
-      key: 'estate',
-      title: 'Build a clearer long-term plan',
+      key: "estate",
+      title: "Build a clearer long-term plan",
       reason:
-        'Planning support can help turn strong habits into a more intentional strategy for family, tax efficiency, and legacy.',
-      cta: 'Unlock planning guidance',
+        "Planning support can help turn strong habits into a more intentional strategy for family, tax efficiency, and legacy.",
+      cta: "Unlock planning guidance",
       icon: FileText,
-      tone: 'bg-purple-50 border-purple-200',
+      tone: "bg-purple-50 border-purple-200",
     });
   }
 
   if (hasTaxComplexity) {
     cards.push({
-      key: 'cpa',
-      title: 'Reduce tax drag and surprises',
+      key: "cpa",
+      title: "Reduce tax drag and surprises",
       reason:
-        'Tax guidance can help your saving and investing decisions work harder while reducing avoidable friction.',
-      cta: 'Unlock tax guidance',
+        "Tax guidance can help your saving and investing decisions work harder while reducing avoidable friction.",
+      cta: "Unlock tax guidance",
       icon: CalculatorIcon,
-      tone: 'bg-amber-50 border-amber-200',
+      tone: "bg-amber-50 border-amber-200",
     });
   }
 
   if (hasHousingPressure || hasDebtPressure) {
     cards.push({
-      key: 'housing',
-      title: 'Improve your monthly structure',
+      key: "housing",
+      title: "Improve your monthly structure",
       reason:
-        'Housing and cash-flow strategy can help free up margin when fixed costs are shaping the rest of your financial picture.',
-      cta: 'Unlock structural help',
+        "Housing and cash-flow strategy can help free up margin when fixed costs are shaping the rest of your financial picture.",
+      cta: "Unlock structural help",
       icon: Home,
-      tone: 'bg-copper-50 border-[#eac89a]',
+      tone: "bg-copper-50 border-[#eac89a]",
     });
   }
 
   return cards
-    .filter((card, index, all) => all.findIndex((x) => x.key === card.key) === index)
+    .filter(
+      (card, index, all) => all.findIndex((x) => x.key === card.key) === index,
+    )
     .slice(0, 3);
 }
 
@@ -1042,19 +1096,19 @@ function ProfessionalHouse({
   pillarScores: Record<string, number>;
 }) {
   const blocks = [
-    { key: 'investing', label: 'INVEST', x: 56, y: 88, w: 56, h: 56 },
-    { key: 'saving', label: 'SAVING', x: 120, y: 88, w: 68, h: 56 },
-    { key: 'vision', label: 'VISION', x: 196, y: 88, w: 52, h: 56 },
-    { key: 'spending', label: 'SPEND', x: 40, y: 158, w: 50, h: 60 },
-    { key: 'income', label: 'INCOME', x: 98, y: 158, w: 58, h: 60 },
-    { key: 'debt', label: 'DEBT', x: 164, y: 158, w: 50, h: 60 },
-    { key: 'protection', label: 'PROTECT', x: 222, y: 158, w: 58, h: 60 },
+    { key: "investing", label: "INVEST", x: 56, y: 88, w: 56, h: 56 },
+    { key: "saving", label: "SAVING", x: 120, y: 88, w: 68, h: 56 },
+    { key: "vision", label: "VISION", x: 196, y: 88, w: 52, h: 56 },
+    { key: "spending", label: "SPEND", x: 40, y: 158, w: 50, h: 60 },
+    { key: "income", label: "INCOME", x: 98, y: 158, w: 58, h: 60 },
+    { key: "debt", label: "DEBT", x: 164, y: 158, w: 50, h: 60 },
+    { key: "protection", label: "PROTECT", x: 222, y: 158, w: 58, h: 60 },
   ];
 
   const tone = (score: number) => {
-    if (score >= 80) return '#22b57a';
-    if (score >= 60) return '#d58a21';
-    return '#ef4444';
+    if (score >= 80) return "#22b57a";
+    if (score >= 60) return "#d58a21";
+    return "#ef4444";
   };
 
   return (
@@ -1062,27 +1116,22 @@ function ProfessionalHouse({
       <div className="mb-3">
         <div className="text-sm font-semibold text-navy-900">House View</div>
         <p className="text-xs text-gray-500 mt-1">
-          A visual summary of how your building blocks are supporting the foundation.
+          A visual summary of how your building blocks are supporting the
+          foundation.
         </p>
       </div>
 
       <svg
         viewBox="0 0 320 272"
         className="w-full h-auto"
-        style={{ maxHeight: '248px' }}
+        style={{ maxHeight: "248px" }}
       >
         <defs>
           <linearGradient id="roofGradDash" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="#17365d" />
             <stop offset="100%" stopColor="#284d7d" />
           </linearGradient>
-          <filter
-            id="houseShadow"
-            x="-20%"
-            y="-20%"
-            width="140%"
-            height="140%"
-          >
+          <filter id="houseShadow" x="-20%" y="-20%" width="140%" height="140%">
             <feDropShadow
               dx="0"
               dy="5"
@@ -1168,12 +1217,12 @@ function SectionHeader({
   label: string;
   title: string;
   description: string;
-  theme: 'foundation' | 'picture' | 'action';
+  theme: "foundation" | "picture" | "action";
 }) {
   const themeMap = {
-    foundation: 'bg-copper-50 text-copper-700 border-copper-100',
-    picture: 'bg-blue-50 text-blue-700 border-blue-100',
-    action: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+    foundation: "bg-copper-50 text-copper-700 border-copper-100",
+    picture: "bg-blue-50 text-blue-700 border-blue-100",
+    action: "bg-emerald-50 text-emerald-700 border-emerald-100",
   } as const;
 
   return (
@@ -1216,7 +1265,9 @@ function LockedPreview({
         <p className="text-gray-600 leading-7 mb-5">{description}</p>
 
         <div className="relative">
-          <div className="pointer-events-none select-none opacity-80">{children}</div>
+          <div className="pointer-events-none select-none opacity-80">
+            {children}
+          </div>
           <div className="absolute inset-0 bg-white/45 backdrop-blur-[1px] flex items-center justify-center rounded-2xl">
             <div className="text-center px-6">
               <div className="text-navy-900 font-semibold mb-2">
@@ -1242,7 +1293,7 @@ function ActionButtonCard({
   title,
   body,
   onClick,
-  accent = 'bg-white',
+  accent = "bg-white",
 }: {
   icon: React.ElementType;
   title: string;
@@ -1266,10 +1317,17 @@ function ActionButtonCard({
   );
 }
 
-
-function DashboardPanel({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+function DashboardPanel({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div className={`rounded-[1.6rem] border border-cyan-200/10 bg-white/[0.045] shadow-[0_20px_70px_rgba(0,0,0,.24)] backdrop-blur-xl ${className}`}>
+    <div
+      className={`rounded-[1.6rem] border border-cyan-200/10 bg-white/[0.045] shadow-[0_20px_70px_rgba(0,0,0,.24)] backdrop-blur-xl ${className}`}
+    >
       {children}
     </div>
   );
@@ -1278,7 +1336,8 @@ function DashboardPanel({ children, className = '' }: { children: React.ReactNod
 function ScoreRing({ value }: { value: number }) {
   const radius = 34;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (Math.max(0, Math.min(100, value)) / 100) * circumference;
+  const offset =
+    circumference - (Math.max(0, Math.min(100, value)) / 100) * circumference;
 
   return (
     <div className="relative h-24 w-24 shrink-0">
@@ -1289,7 +1348,14 @@ function ScoreRing({ value }: { value: number }) {
             <stop offset="100%" stopColor="#b87333" />
           </linearGradient>
         </defs>
-        <circle cx="44" cy="44" r={radius} stroke="rgba(255,255,255,.10)" strokeWidth="8" fill="none" />
+        <circle
+          cx="44"
+          cy="44"
+          r={radius}
+          stroke="rgba(255,255,255,.10)"
+          strokeWidth="8"
+          fill="none"
+        />
         <circle
           cx="44"
           cy="44"
@@ -1302,30 +1368,108 @@ function ScoreRing({ value }: { value: number }) {
           strokeDashoffset={offset}
         />
       </svg>
-      <div className="absolute inset-0 flex items-center justify-center text-2xl font-bold text-white">{value}</div>
+      <div className="absolute inset-0 flex items-center justify-center text-2xl font-bold text-white">
+        {value}
+      </div>
     </div>
   );
 }
 
-function DashboardHouseVisual({ pillarScores }: { pillarScores: Record<string, number> }) {
-  const getScore = (key: string) => Math.max(0, Math.min(100, Number(pillarScores[key] ?? 0)));
+function DashboardHouseVisual({
+  pillarScores,
+}: {
+  pillarScores: Record<string, number>;
+}) {
+  const getScore = (key: string) =>
+    Math.max(0, Math.min(100, Number(pillarScores[key] ?? 0)));
   const blocks = [
-    { key: 'vision', label: 'VISION', color: '#a78bfa', x: 198, y: 66, w: 124, h: 22 },
-    { key: 'investing', label: 'INVESTING', color: '#34d399', x: 122, y: 100, w: 130, h: 38 },
-    { key: 'protection', label: 'PROTECTION', color: '#fbbf24', x: 258, y: 100, w: 130, h: 38 },
-    { key: 'spending', label: 'SPENDING', color: '#f59e0b', x: 122, y: 144, w: 130, h: 38 },
-    { key: 'saving', label: 'SAVING', color: '#22d3ee', x: 258, y: 144, w: 130, h: 38 },
-    { key: 'income', label: 'INCOME', color: '#38bdf8', x: 122, y: 188, w: 130, h: 38 },
-    { key: 'debt', label: 'DEBT', color: '#34d399', x: 258, y: 188, w: 130, h: 38 },
+    {
+      key: "vision",
+      label: "VISION",
+      color: "#a78bfa",
+      x: 198,
+      y: 66,
+      w: 124,
+      h: 22,
+    },
+    {
+      key: "investing",
+      label: "INVESTING",
+      color: "#34d399",
+      x: 122,
+      y: 100,
+      w: 130,
+      h: 38,
+    },
+    {
+      key: "protection",
+      label: "PROTECTION",
+      color: "#fbbf24",
+      x: 258,
+      y: 100,
+      w: 130,
+      h: 38,
+    },
+    {
+      key: "spending",
+      label: "SPENDING",
+      color: "#f59e0b",
+      x: 122,
+      y: 144,
+      w: 130,
+      h: 38,
+    },
+    {
+      key: "saving",
+      label: "SAVING",
+      color: "#22d3ee",
+      x: 258,
+      y: 144,
+      w: 130,
+      h: 38,
+    },
+    {
+      key: "income",
+      label: "INCOME",
+      color: "#38bdf8",
+      x: 122,
+      y: 188,
+      w: 130,
+      h: 38,
+    },
+    {
+      key: "debt",
+      label: "DEBT",
+      color: "#34d399",
+      x: 258,
+      y: 188,
+      w: 130,
+      h: 38,
+    },
   ];
 
   return (
     <div className="relative h-[360px] overflow-hidden rounded-[2rem] border border-cyan-300/10 bg-[radial-gradient(circle_at_50%_42%,rgba(18,199,255,.18),transparent_46%),linear-gradient(180deg,rgba(8,26,47,.96),rgba(5,16,31,.96))] p-6">
       <div className="absolute inset-0 bg-[linear-gradient(rgba(18,199,255,.08)_1px,transparent_1px),linear-gradient(90deg,rgba(18,199,255,.08)_1px,transparent_1px)] bg-[size:42px_42px] opacity-30" />
-      <svg viewBox="0 0 520 300" className="relative z-10 h-full w-full scale-[1.12]">
+      <svg
+        viewBox="0 0 520 300"
+        className="relative z-10 h-full w-full scale-[1.12]"
+      >
         <defs>
-          <filter id="blockGlowLive" x="-30%" y="-30%" width="160%" height="160%">
-            <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#18d5ff" floodOpacity="0.18" />
+          <filter
+            id="blockGlowLive"
+            x="-30%"
+            y="-30%"
+            width="160%"
+            height="160%"
+          >
+            <feDropShadow
+              dx="0"
+              dy="0"
+              stdDeviation="4"
+              floodColor="#18d5ff"
+              floodOpacity="0.18"
+            />
           </filter>
           <linearGradient id="roofLineLive" x1="0" x2="1">
             <stop offset="0%" stopColor="#18d5ff" />
@@ -1336,9 +1480,28 @@ function DashboardHouseVisual({ pillarScores }: { pillarScores: Record<string, n
 
         <path d="M92 236 H430" stroke="rgba(18,213,255,.22)" strokeWidth="2" />
         <path d="M128 252 H394" stroke="rgba(18,213,255,.13)" strokeWidth="2" />
-        <path d="M84 110 L260 20 L436 110" fill="none" stroke="url(#roofLineLive)" strokeWidth="4" strokeLinecap="round" />
-        <path d="M122 110 L260 52 L398 110" fill="rgba(18,213,255,.06)" stroke="rgba(77,220,255,.38)" strokeWidth="1.5" />
-        <rect x="110" y="92" width="300" height="144" rx="14" fill="rgba(4,17,31,.42)" stroke="rgba(77,220,255,.25)" />
+        <path
+          d="M84 110 L260 20 L436 110"
+          fill="none"
+          stroke="url(#roofLineLive)"
+          strokeWidth="4"
+          strokeLinecap="round"
+        />
+        <path
+          d="M122 110 L260 52 L398 110"
+          fill="rgba(18,213,255,.06)"
+          stroke="rgba(77,220,255,.38)"
+          strokeWidth="1.5"
+        />
+        <rect
+          x="110"
+          y="92"
+          width="300"
+          height="144"
+          rx="14"
+          fill="rgba(4,17,31,.42)"
+          stroke="rgba(77,220,255,.25)"
+        />
 
         {blocks.map((block) => {
           const score = getScore(block.key);
@@ -1363,18 +1526,44 @@ function DashboardHouseVisual({ pillarScores }: { pillarScores: Record<string, n
                 fill={block.color}
                 opacity="0.95"
               />
-              <text x={block.x + 12} y={block.y + (block.key === 'vision' ? 15 : 24)} fill="rgba(226,232,240,.9)" fontSize={block.key === 'vision' ? '11' : '12'} fontWeight="700">
+              <text
+                x={block.x + 12}
+                y={block.y + (block.key === "vision" ? 15 : 24)}
+                fill="rgba(226,232,240,.9)"
+                fontSize={block.key === "vision" ? "11" : "12"}
+                fontWeight="700"
+              >
                 {block.label}
               </text>
-              <text x={block.x + block.w - 12} y={block.y + (block.key === 'vision' ? 15 : 24)} fill={block.color} fontSize={block.key === 'vision' ? '11' : '13'} fontWeight="800" textAnchor="end">
+              <text
+                x={block.x + block.w - 12}
+                y={block.y + (block.key === "vision" ? 15 : 24)}
+                fill={block.color}
+                fontSize={block.key === "vision" ? "11" : "13"}
+                fontWeight="800"
+                textAnchor="end"
+              >
                 {score}
               </text>
             </g>
           );
         })}
 
-        <path d="M108 236 H412" stroke="#4ddcff" strokeOpacity=".42" strokeWidth="2" />
-        <text x="260" y="274" fill="rgba(226,232,240,.55)" fontSize="12" fontWeight="700" textAnchor="middle" letterSpacing="2">
+        <path
+          d="M108 236 H412"
+          stroke="#4ddcff"
+          strokeOpacity=".42"
+          strokeWidth="2"
+        />
+        <text
+          x="260"
+          y="274"
+          fill="rgba(226,232,240,.55)"
+          fontSize="12"
+          fontWeight="700"
+          textAnchor="middle"
+          letterSpacing="2"
+        >
           FINANCIAL FOUNDATION
         </text>
       </svg>
@@ -1382,7 +1571,15 @@ function DashboardHouseVisual({ pillarScores }: { pillarScores: Record<string, n
   );
 }
 
-function IncomeExpenseChart({ income, fixedCosts, margin }: { income: number; fixedCosts: number; margin: number }) {
+function IncomeExpenseChart({
+  income,
+  fixedCosts,
+  margin,
+}: {
+  income: number;
+  fixedCosts: number;
+  margin: number;
+}) {
   const max = Math.max(income, fixedCosts, margin, 1);
   const incomeH = Math.max(8, (income / max) * 120);
   const fixedH = Math.max(8, (fixedCosts / max) * 120);
@@ -1392,13 +1589,36 @@ function IncomeExpenseChart({ income, fixedCosts, margin }: { income: number; fi
     <div className="h-44 w-full rounded-2xl border border-white/5 bg-white/[0.025] p-4">
       <div className="flex h-full items-end justify-around gap-5">
         {[
-          { label: 'Income', value: income, h: incomeH, color: 'from-cyan-300 to-cyan-600' },
-          { label: 'Fixed', value: fixedCosts, h: fixedH, color: 'from-amber-300 to-amber-600' },
-          { label: 'Margin', value: margin, h: marginH, color: 'from-emerald-300 to-emerald-600' },
+          {
+            label: "Income",
+            value: income,
+            h: incomeH,
+            color: "from-cyan-300 to-cyan-600",
+          },
+          {
+            label: "Fixed",
+            value: fixedCosts,
+            h: fixedH,
+            color: "from-amber-300 to-amber-600",
+          },
+          {
+            label: "Margin",
+            value: margin,
+            h: marginH,
+            color: "from-emerald-300 to-emerald-600",
+          },
         ].map((bar) => (
-          <div key={bar.label} className="flex flex-1 flex-col items-center justify-end gap-2">
-            <div className="text-xs font-semibold text-slate-400">{formatCurrency(bar.value)}</div>
-            <div className={`w-full max-w-[54px] rounded-t-xl bg-gradient-to-t ${bar.color}`} style={{ height: `${bar.h}px` }} />
+          <div
+            key={bar.label}
+            className="flex flex-1 flex-col items-center justify-end gap-2"
+          >
+            <div className="text-xs font-semibold text-slate-400">
+              {formatCurrency(bar.value)}
+            </div>
+            <div
+              className={`w-full max-w-[54px] rounded-t-xl bg-gradient-to-t ${bar.color}`}
+              style={{ height: `${bar.h}px` }}
+            />
             <div className="text-xs text-slate-500">{bar.label}</div>
           </div>
         ))}
@@ -1407,9 +1627,16 @@ function IncomeExpenseChart({ income, fixedCosts, margin }: { income: number; fi
   );
 }
 
-function NetWorthMiniChart({ scoreHistory }: { scoreHistory: { score: number }[] }) {
+function NetWorthMiniChart({
+  scoreHistory,
+}: {
+  scoreHistory: { score: number }[];
+}) {
   const points = scoreHistory.length
-    ? scoreHistory.map((item, index) => ({ x: 14 + index * (280 / Math.max(1, scoreHistory.length - 1)), y: 140 - item.score * 1.1 }))
+    ? scoreHistory.map((item, index) => ({
+        x: 14 + index * (280 / Math.max(1, scoreHistory.length - 1)),
+        y: 140 - item.score * 1.1,
+      }))
     : [
         { x: 14, y: 120 },
         { x: 85, y: 100 },
@@ -1418,14 +1645,28 @@ function NetWorthMiniChart({ scoreHistory }: { scoreHistory: { score: number }[]
         { x: 294, y: 52 },
       ];
 
-  const line = points.map((p) => `${p.x},${p.y}`).join(' ');
+  const line = points.map((p) => `${p.x},${p.y}`).join(" ");
 
   return (
     <svg viewBox="0 0 320 170" className="h-44 w-full overflow-visible">
       {[0, 1, 2, 3].map((i) => (
-        <line key={i} x1="0" x2="320" y1={36 + i * 34} y2={36 + i * 34} stroke="rgba(148,163,184,.13)" />
+        <line
+          key={i}
+          x1="0"
+          x2="320"
+          y1={36 + i * 34}
+          y2={36 + i * 34}
+          stroke="rgba(148,163,184,.13)"
+        />
       ))}
-      <polyline points={line} fill="none" stroke="#18d5ff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <polyline
+        points={line}
+        fill="none"
+        stroke="#18d5ff"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
       {points.map((p, i) => (
         <circle key={i} cx={p.x} cy={p.y} r="4" fill="#18d5ff" />
       ))}
@@ -1433,20 +1674,40 @@ function NetWorthMiniChart({ scoreHistory }: { scoreHistory: { score: number }[]
   );
 }
 
-function AssetDonut({ rows, total }: { rows: { label: string; value: number; color: string }[]; total: number }) {
-  const gradient = rows.length && total > 0
-    ? rows.reduce((parts, row, index) => {
-        const start = rows.slice(0, index).reduce((sum, item) => sum + item.value, 0) / total * 100;
-        const end = (rows.slice(0, index + 1).reduce((sum, item) => sum + item.value, 0) / total) * 100;
-        return `${parts}${index ? ',' : ''}${row.color} ${start.toFixed(1)}% ${end.toFixed(1)}%`;
-      }, '')
-    : '#334155 0% 100%';
+function AssetDonut({
+  rows,
+  total,
+}: {
+  rows: { label: string; value: number; color: string }[];
+  total: number;
+}) {
+  const gradient =
+    rows.length && total > 0
+      ? rows.reduce((parts, row, index) => {
+          const start =
+            (rows.slice(0, index).reduce((sum, item) => sum + item.value, 0) /
+              total) *
+            100;
+          const end =
+            (rows
+              .slice(0, index + 1)
+              .reduce((sum, item) => sum + item.value, 0) /
+              total) *
+            100;
+          return `${parts}${index ? "," : ""}${row.color} ${start.toFixed(1)}% ${end.toFixed(1)}%`;
+        }, "")
+      : "#334155 0% 100%";
 
   return (
-    <div className="relative mx-auto h-44 w-44 rounded-full shadow-[0_0_36px_rgba(34,211,238,.20)]" style={{ background: `conic-gradient(${gradient})` }}>
+    <div
+      className="relative mx-auto h-44 w-44 rounded-full shadow-[0_0_36px_rgba(34,211,238,.20)]"
+      style={{ background: `conic-gradient(${gradient})` }}
+    >
       <div className="absolute inset-8 rounded-full bg-[#06172b] shadow-inner" />
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <div className="text-xl font-bold text-white">{formatCurrency(total)}</div>
+        <div className="text-xl font-bold text-white">
+          {formatCurrency(total)}
+        </div>
         <div className="text-xs text-slate-400">Total Assets</div>
       </div>
     </div>
@@ -1471,12 +1732,20 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const entitlements = getEntitlements(currentPlan, planIsActive);
   const [showSuccess, setShowSuccess] = useState(false);
   const [whatIf, setWhatIf] = useState({ income: 500, housing: 300, debt: 0 });
-  const [guidanceTab, setGuidanceTab] = useState<GuidanceTab>('roadmap');
-  const [activeDetail, setActiveDetail] = useState<'financial' | 'netWorth' | 'assetAllocation' | null>(null);
-  const [freedomDateScenario, setFreedomDateScenario] = useState<FreedomDateScenario | null>(null);
-  const [freedomPlanUpdatedAt, setFreedomPlanUpdatedAt] = useState<string | null>(null);
+  const [guidanceTab, setGuidanceTab] = useState<GuidanceTab>("roadmap");
+  const [activeDetail, setActiveDetail] = useState<
+    "financial" | "netWorth" | "assetAllocation" | null
+  >(null);
+  const [freedomDateScenario, setFreedomDateScenario] =
+    useState<FreedomDateScenario | null>(null);
+  const [freedomPlanUpdatedAt, setFreedomPlanUpdatedAt] = useState<
+    string | null
+  >(null);
 
-  const rawAssessment = (currentAssessment as (CurrentAssessmentShape & { report?: CurrentAssessmentShape }) | null) ?? null;
+  const rawAssessment =
+    (currentAssessment as
+      | (CurrentAssessmentShape & { report?: CurrentAssessmentShape })
+      | null) ?? null;
 
   useEffect(() => {
     const userId = (user as any)?.id || (user as any)?.user_id;
@@ -1491,7 +1760,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
         setFreedomPlanUpdatedAt(record?.updated_at ?? null);
       })
       .catch((error) => {
-        console.error('Failed to load Freedom Date plan for dashboard', error);
+        console.error("Failed to load Freedom Date plan for dashboard", error);
       });
 
     return () => {
@@ -1501,15 +1770,15 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
   useEffect(() => {
     async function handleCheckoutSuccess() {
-      if (searchParams.get('checkout') !== 'success') return;
+      if (searchParams.get("checkout") !== "success") return;
 
       try {
         await refreshProfile?.();
         setShowSuccess(true);
       } finally {
         const url = new URL(window.location.href);
-        url.searchParams.delete('checkout');
-        window.history.replaceState({}, '', `${url.pathname}${url.search}`);
+        url.searchParams.delete("checkout");
+        window.history.replaceState({}, "", `${url.pathname}${url.search}`);
       }
     }
 
@@ -1525,38 +1794,71 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   }, [assessmentHistory]);
 
   const latestHistoryRecord = historyRecords[0] ?? null;
-  const latestHistoryReport = ((latestHistoryRecord?.report ?? null) as CurrentAssessmentShape | null) ?? null;
-  const currentReport = ((rawAssessment?.report ?? rawAssessment) as CurrentAssessmentShape | null) ?? null;
-  const assessment = (currentReport ?? latestHistoryReport ?? latestHistoryRecord ?? null) as CurrentAssessmentShape | null;
+  const latestHistoryReport =
+    ((latestHistoryRecord?.report ?? null) as CurrentAssessmentShape | null) ??
+    null;
+  const currentReport =
+    ((rawAssessment?.report ??
+      rawAssessment) as CurrentAssessmentShape | null) ?? null;
+  const assessment = (currentReport ??
+    latestHistoryReport ??
+    latestHistoryRecord ??
+    null) as CurrentAssessmentShape | null;
   const foundationScore = normalizeCurrentScore(assessment);
   const showAssessment = foundationScore > 0;
   const scoreBand = foundationScore > 0 ? getScoreBand(foundationScore) : null;
 
-  const latestAssessmentType = latestHistoryRecord?.assessmentType ?? rawAssessment?.assessmentType ?? assessment?.assessmentType ?? null;
-  const latestPaidType = latestAssessmentType === 'detailed' || latestAssessmentType === 'premium';
-  const currentAssessmentType = rawAssessment?.assessmentType ?? assessment?.assessmentType;
-  const canViewPremium = currentPlan === 'premium' || latestAssessmentType === 'premium' || currentAssessmentType === 'premium';
+  const latestAssessmentType =
+    latestHistoryRecord?.assessmentType ??
+    rawAssessment?.assessmentType ??
+    assessment?.assessmentType ??
+    null;
+  const latestPaidType =
+    latestAssessmentType === "detailed" || latestAssessmentType === "premium";
+  const currentAssessmentType =
+    rawAssessment?.assessmentType ?? assessment?.assessmentType;
+  const canViewPremium =
+    currentPlan === "premium" ||
+    latestAssessmentType === "premium" ||
+    currentAssessmentType === "premium";
   const canViewFullReport =
-    currentPlan === 'standard' ||
-    currentPlan === 'premium' ||
+    currentPlan === "standard" ||
+    currentPlan === "premium" ||
     latestPaidType ||
-    currentAssessmentType === 'detailed' ||
-    currentAssessmentType === 'premium';
+    currentAssessmentType === "detailed" ||
+    currentAssessmentType === "premium";
   const canExportPdf = entitlements.canDownloadPdf || latestPaidType;
 
-  const pillarScores = (assessment?.pillarScores ?? assessment?.pillars ?? latestHistoryReport?.pillarScores ?? latestHistoryReport?.pillars ?? {}) as Record<string, number>;
-  const priorities = safeArray(assessment?.priorities ?? assessment?.topFocusAreas);
+  const pillarScores = (assessment?.pillarScores ??
+    assessment?.pillars ??
+    latestHistoryReport?.pillarScores ??
+    latestHistoryReport?.pillars ??
+    {}) as Record<string, number>;
+  const priorities = safeArray(
+    assessment?.priorities ?? assessment?.topFocusAreas,
+  );
   const warnings = safeArray(assessment?.structuralWarnings);
   const snapshot = useMemo(
-    () => getStructuralSnapshot(assessment?.metrics ?? latestHistoryReport?.metrics),
-    [assessment?.metrics, latestHistoryReport?.metrics]
+    () =>
+      getStructuralSnapshot(
+        assessment?.metrics ?? latestHistoryReport?.metrics,
+      ),
+    [assessment?.metrics, latestHistoryReport?.metrics],
   );
 
-  const runwayMonths = snapshot && snapshot.fixedCosts > 0 ? snapshot.totalSavings / snapshot.fixedCosts : 0;
+  const runwayMonths =
+    snapshot && snapshot.fixedCosts > 0
+      ? snapshot.totalSavings / snapshot.fixedCosts
+      : 0;
   const emergencyMinMonths = 3;
-  const emergencyTarget = snapshot?.fixedCosts ? snapshot.fixedCosts * emergencyMinMonths : 0;
+  const emergencyTarget = snapshot?.fixedCosts
+    ? snapshot.fixedCosts * emergencyMinMonths
+    : 0;
   const currentSavings = snapshot?.totalSavings ?? 0;
-  const emergencyPercent = emergencyTarget > 0 ? Math.min(100, (currentSavings / emergencyTarget) * 100) : 0;
+  const emergencyPercent =
+    emergencyTarget > 0
+      ? Math.min(100, (currentSavings / emergencyTarget) * 100)
+      : 0;
 
   const cushionScore = snapshot
     ? Math.round(
@@ -1564,39 +1866,43 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
           0,
           Math.min(
             100,
-            Math.min(runwayMonths, 6) * 7.5 + emergencyPercent * 0.35 + Math.max(0, 70 - snapshot.fixedCostLoad) * 0.3
-          )
-        )
+            Math.min(runwayMonths, 6) * 7.5 +
+              emergencyPercent * 0.35 +
+              Math.max(0, 70 - snapshot.fixedCostLoad) * 0.3,
+          ),
+        ),
       )
     : 0;
 
-  const cushionLevel: 'weak' | 'developing' | 'strong' =
-    cushionScore >= 70 ? 'strong' : cushionScore >= 40 ? 'developing' : 'weak';
+  const cushionLevel: "weak" | "developing" | "strong" =
+    cushionScore >= 70 ? "strong" : cushionScore >= 40 ? "developing" : "weak";
 
   const cushionTone = {
     weak: {
-      label: 'Weak Cushion',
-      text: 'text-red-300',
-      bg: 'bg-red-400/10',
-      border: 'border-red-300/20',
-      bar: 'bg-red-400',
-      message: 'A disruption could quickly force debt or major lifestyle cuts.',
+      label: "Weak Cushion",
+      text: "text-red-300",
+      bg: "bg-red-400/10",
+      border: "border-red-300/20",
+      bar: "bg-red-400",
+      message: "A disruption could quickly force debt or major lifestyle cuts.",
     },
     developing: {
-      label: 'Developing',
-      text: 'text-amber-300',
-      bg: 'bg-amber-300/10',
-      border: 'border-amber-300/20',
-      bar: 'bg-gradient-to-r from-amber-400 to-cyan-300',
-      message: 'You have some protection, but a longer disruption would still be challenging.',
+      label: "Developing",
+      text: "text-amber-300",
+      bg: "bg-amber-300/10",
+      border: "border-amber-300/20",
+      bar: "bg-gradient-to-r from-amber-400 to-cyan-300",
+      message:
+        "You have some protection, but a longer disruption would still be challenging.",
     },
     strong: {
-      label: 'Strong Cushion',
-      text: 'text-emerald-300',
-      bg: 'bg-emerald-300/10',
-      border: 'border-emerald-300/20',
-      bar: 'bg-emerald-400',
-      message: 'You have a solid buffer in place to handle most financial disruptions.',
+      label: "Strong Cushion",
+      text: "text-emerald-300",
+      bg: "bg-emerald-300/10",
+      border: "border-emerald-300/20",
+      bar: "bg-emerald-400",
+      message:
+        "You have a solid buffer in place to handle most financial disruptions.",
     },
   }[cushionLevel];
 
@@ -1620,19 +1926,19 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
   useEffect(() => {
     void track(
-      'dashboard_viewed',
+      "dashboard_viewed",
       {
         hasAssessment: showAssessment,
         foundationScore,
         weakestPillar,
         currentPlan,
       },
-      'dashboard'
+      "dashboard",
     );
   }, [track, showAssessment, foundationScore, weakestPillar, currentPlan]);
 
   useEffect(() => {
-    void trackTabViewed(guidanceTab, 'premium_guidance');
+    void trackTabViewed(guidanceTab, "premium_guidance");
   }, [guidanceTab, trackTabViewed]);
 
   const scoreHistory = useMemo(() => {
@@ -1654,11 +1960,21 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
         const bTime = b.createdAt ?? 0;
         return aTime - bTime;
       })
-      .slice(-6) as { id: string | number; score: number; createdAt?: number; assessmentType?: string }[];
+      .slice(-6) as {
+      id: string | number;
+      score: number;
+      createdAt?: number;
+      assessmentType?: string;
+    }[];
   }, [assessmentHistory]);
 
-  const latestHistoryItem = scoreHistory.length ? scoreHistory[scoreHistory.length - 1] : null;
-  const previousScore = scoreHistory.length > 1 ? scoreHistory[scoreHistory.length - 2]?.score ?? null : null;
+  const latestHistoryItem = scoreHistory.length
+    ? scoreHistory[scoreHistory.length - 1]
+    : null;
+  const previousScore =
+    scoreHistory.length > 1
+      ? (scoreHistory[scoreHistory.length - 2]?.score ?? null)
+      : null;
 
   const scenarioResult = useMemo(() => {
     if (!snapshot) return null;
@@ -1670,7 +1986,8 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
       snapshot.childcare +
       Math.max(0, snapshot.debt - Number(whatIf.debt || 0));
 
-    const adjustedLoad = adjustedIncome > 0 ? (adjustedFixedCosts / adjustedIncome) * 100 : 0;
+    const adjustedLoad =
+      adjustedIncome > 0 ? (adjustedFixedCosts / adjustedIncome) * 100 : 0;
     const adjustedMargin = adjustedIncome - adjustedFixedCosts;
 
     return {
@@ -1683,35 +2000,53 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
   const fixedCostTone = getLoadTone(snapshot?.fixedCostLoad || 0);
   const dashboardNextMoveCard = useMemo(
-    () => getDashboardNextMoveCard(assessment, snapshot, weakestPillar ?? undefined),
-    [assessment, snapshot, weakestPillar]
+    () =>
+      getDashboardNextMoveCard(
+        assessment,
+        snapshot,
+        weakestPillar ?? undefined,
+      ),
+    [assessment, snapshot, weakestPillar],
   );
   const dashboardWhyThisMatters = useMemo(
-    () => getDashboardWhyThisMatters(assessment, snapshot, weakestPillar ?? undefined),
-    [assessment, snapshot, weakestPillar]
+    () =>
+      getDashboardWhyThisMatters(
+        assessment,
+        snapshot,
+        weakestPillar ?? undefined,
+      ),
+    [assessment, snapshot, weakestPillar],
   );
 
   const planProgressAssessmentId = String(
-    (rawAssessment as any)?.id ?? (assessment as any)?.id ?? (latestHistoryRecord as any)?.id ?? 'latest'
+    (rawAssessment as any)?.id ??
+      (assessment as any)?.id ??
+      (latestHistoryRecord as any)?.id ??
+      "latest",
   );
-  const planProgressStorageKey = `awf-90-day-plan-progress-${(user as any)?.id ?? 'guest'}-${planProgressAssessmentId}`;
-  const [completedPlanActions, setCompletedPlanActions] = useState<Record<string, boolean>>(() =>
-    getStoredPlanProgress(planProgressStorageKey)
-  );
+  const planProgressStorageKey = `awf-90-day-plan-progress-${(user as any)?.id ?? "guest"}-${planProgressAssessmentId}`;
+  const [completedPlanActions, setCompletedPlanActions] = useState<
+    Record<string, boolean>
+  >(() => getStoredPlanProgress(planProgressStorageKey));
 
   useEffect(() => {
     let isMounted = true;
     const localProgress = getStoredPlanProgress(planProgressStorageKey);
     setCompletedPlanActions(localProgress);
 
-    loadSavedPlanProgress((user as any)?.id, planProgressAssessmentId).then((savedProgress) => {
-      if (!isMounted || !savedProgress) return;
-      const mergedProgress = { ...localProgress, ...savedProgress };
-      setCompletedPlanActions(mergedProgress);
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(planProgressStorageKey, JSON.stringify(mergedProgress));
-      }
-    });
+    loadSavedPlanProgress((user as any)?.id, planProgressAssessmentId).then(
+      (savedProgress) => {
+        if (!isMounted || !savedProgress) return;
+        const mergedProgress = { ...localProgress, ...savedProgress };
+        setCompletedPlanActions(mergedProgress);
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(
+            planProgressStorageKey,
+            JSON.stringify(mergedProgress),
+          );
+        }
+      },
+    );
 
     return () => {
       isMounted = false;
@@ -1719,49 +2054,42 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   }, [planProgressStorageKey, (user as any)?.id, planProgressAssessmentId]);
 
   const dashboardPlanPhases = useMemo(
-    () => getDashboardNinetyDayPlanPhases(dashboardNextMoveCard, snapshot, weakestPillar),
-    [dashboardNextMoveCard, snapshot, weakestPillar]
+    () =>
+      getDashboardNinetyDayPlanPhases(
+        dashboardNextMoveCard,
+        snapshot,
+        weakestPillar,
+      ),
+    [dashboardNextMoveCard, snapshot, weakestPillar],
   );
 
   const dashboardPlanActions = useMemo(
     () =>
       dashboardPlanPhases.flatMap((phase, phaseIndex) =>
-        safeArray(phase.checklist).slice(0, 3).map((item, itemIndex) => ({
-          id: makePlanActionId(phaseIndex, itemIndex, item),
-          label: item,
-          phaseTitle: phase.title,
-          phaseIndex,
-        }))
+        safeArray(phase.checklist)
+          .slice(0, 3)
+          .map((item, itemIndex) => ({
+            id: makePlanActionId(phaseIndex, itemIndex, item),
+            label: item,
+            phaseTitle: phase.title,
+            phaseIndex,
+          })),
       ),
-    [dashboardPlanPhases]
+    [dashboardPlanPhases],
   );
 
-  const completedDashboardPlanCount = dashboardPlanActions.filter((action) => completedPlanActions[action.id]).length;
+  const completedDashboardPlanCount = dashboardPlanActions.filter(
+    (action) => completedPlanActions[action.id],
+  ).length;
   const dashboardPlanPercent = dashboardPlanActions.length
-    ? Math.round((completedDashboardPlanCount / dashboardPlanActions.length) * 100)
+    ? Math.round(
+        (completedDashboardPlanCount / dashboardPlanActions.length) * 100,
+      )
     : 0;
-  const nextDashboardPlanAction = dashboardPlanActions.find((action) => !completedPlanActions[action.id]) ?? dashboardPlanActions[0] ?? null;
-  const dashboardDebtBalance = snapshot?.consumerDebt ?? snapshot?.totalDebtBalance ?? 0;
-  const dashboardDebtLoad = snapshot?.debtToIncomeRatio ?? 0;
-  const dashboardDebtLoadPercent = dashboardDebtLoad > 0 && dashboardDebtLoad <= 1 ? dashboardDebtLoad * 100 : dashboardDebtLoad;
-  const isDashboardDebtUnderPressure =
-    dashboardDebtBalance > 0 && ((snapshot?.fixedCostLoad ?? 0) >= 65 || dashboardDebtLoadPercent >= 20 || (snapshot?.monthlyMargin ?? 0) < 300);
-  const dashboardDebtStatusTitle =
-    dashboardDebtBalance <= 0
-      ? 'No Consumer Debt'
-      : isDashboardDebtUnderPressure
-        ? 'Under Pressure'
-        : freedomDateScenario?.results?.freedomDate
-          ? new Date(freedomDateScenario.results.freedomDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-          : 'Use Debt Tool';
-  const dashboardDebtStatusDetail =
-    dashboardDebtBalance <= 0
-      ? (snapshot?.mortgageDebt ?? 0) > 0 ? 'Mortgage only' : 'Debt-free'
-      : isDashboardDebtUnderPressure
-        ? 'Reduce monthly obligations first'
-        : freedomDateScenario?.results?.monthsSaved
-          ? `${freedomDateScenario.results.monthsSaved} months saved`
-          : 'Open payoff planner';
+  const nextDashboardPlanAction =
+    dashboardPlanActions.find((action) => !completedPlanActions[action.id]) ??
+    dashboardPlanActions[0] ??
+    null;
 
   const toggleDashboardPlanAction = (actionId: string) => {
     const nextCompleted = !completedPlanActions[actionId];
@@ -1772,11 +2100,16 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
     setCompletedPlanActions(next);
 
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       window.localStorage.setItem(planProgressStorageKey, JSON.stringify(next));
     }
 
-    void savePlanActionProgress((user as any)?.id, planProgressAssessmentId, actionId, nextCompleted);
+    void savePlanActionProgress(
+      (user as any)?.id,
+      planProgressAssessmentId,
+      actionId,
+      nextCompleted,
+    );
   };
 
   const assetRows = useMemo(() => {
@@ -1787,44 +2120,99 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
       (snapshot?.pensionBalance ?? 0) +
       (snapshot?.otherInvestmentAssets ?? 0);
 
-    const investmentFallback = Math.max(0, (snapshot?.totalInvestments ?? 0) - detailedInvestmentTotal);
+    const investmentFallback = Math.max(
+      0,
+      (snapshot?.totalInvestments ?? 0) - detailedInvestmentTotal,
+    );
 
     const rows = [
-      { label: 'Cash / Savings', value: snapshot?.cashSavings ?? snapshot?.totalSavings ?? 0, color: '#a78bfa', dot: 'bg-violet-400' },
-      { label: '401k / IRA', value: snapshot?.retirement401kIraBalance ?? 0, color: '#22d3ee', dot: 'bg-cyan-400' },
-      { label: 'Roth', value: snapshot?.rothBalance ?? 0, color: '#818cf8', dot: 'bg-indigo-400' },
-      { label: 'Brokerage', value: snapshot?.brokerageBalance ?? 0, color: '#f59e0b', dot: 'bg-amber-400' },
-      { label: 'Pension', value: snapshot?.pensionBalance ?? 0, color: '#14b8a6', dot: 'bg-teal-400' },
-      { label: 'Other Investments', value: (snapshot?.otherInvestmentAssets ?? 0) + investmentFallback, color: '#38bdf8', dot: 'bg-sky-400' },
-      { label: 'Home Equity', value: snapshot?.homeEquity ?? 0, color: '#34d399', dot: 'bg-emerald-400' },
-      { label: 'Other Assets', value: snapshot?.otherAssets ?? 0, color: '#f472b6', dot: 'bg-pink-400' },
+      {
+        label: "Cash / Savings",
+        value: snapshot?.cashSavings ?? snapshot?.totalSavings ?? 0,
+        color: "#a78bfa",
+        dot: "bg-violet-400",
+      },
+      {
+        label: "401k / IRA",
+        value: snapshot?.retirement401kIraBalance ?? 0,
+        color: "#22d3ee",
+        dot: "bg-cyan-400",
+      },
+      {
+        label: "Roth",
+        value: snapshot?.rothBalance ?? 0,
+        color: "#818cf8",
+        dot: "bg-indigo-400",
+      },
+      {
+        label: "Brokerage",
+        value: snapshot?.brokerageBalance ?? 0,
+        color: "#f59e0b",
+        dot: "bg-amber-400",
+      },
+      {
+        label: "Pension",
+        value: snapshot?.pensionBalance ?? 0,
+        color: "#14b8a6",
+        dot: "bg-teal-400",
+      },
+      {
+        label: "Other Investments",
+        value: (snapshot?.otherInvestmentAssets ?? 0) + investmentFallback,
+        color: "#38bdf8",
+        dot: "bg-sky-400",
+      },
+      {
+        label: "Home Equity",
+        value: snapshot?.homeEquity ?? 0,
+        color: "#34d399",
+        dot: "bg-emerald-400",
+      },
+      {
+        label: "Other Assets",
+        value: snapshot?.otherAssets ?? 0,
+        color: "#f472b6",
+        dot: "bg-pink-400",
+      },
     ].filter((row) => row.value > 0);
 
     if (!rows.length) {
-      return [{ label: 'No asset breakdown yet', value: 0, color: '#334155', dot: 'bg-slate-500' }];
+      return [
+        {
+          label: "No asset breakdown yet",
+          value: 0,
+          color: "#334155",
+          dot: "bg-slate-500",
+        },
+      ];
     }
 
     return rows;
   }, [snapshot]);
 
   const totalAssets = assetRows.reduce((sum, row) => sum + row.value, 0);
-  const welcomeName = user?.name || user?.email?.split('@')?.[0] || 'there';
+  const welcomeName = user?.name || user?.email?.split("@")?.[0] || "there";
 
-  const handleViewLatestReport = (targetHash = '') => {
+  const handleViewLatestReport = (targetHash = "") => {
     void track(
-      targetHash === '#90-day-plan' ? 'open_full_90_day_plan_clicked' : 'view_latest_report_clicked',
-      { source: 'dashboard_command_center', latestAssessmentType, targetHash },
-      'navigation'
+      targetHash === "#90-day-plan"
+        ? "open_full_90_day_plan_clicked"
+        : "view_latest_report_clicked",
+      { source: "dashboard_command_center", latestAssessmentType, targetHash },
+      "navigation",
     );
 
-    const suffix = targetHash || '';
+    const suffix = targetHash || "";
 
-    if (latestAssessmentType === 'free') {
+    if (latestAssessmentType === "free") {
       navigate(`/results/snapshot${suffix}`);
       return;
     }
 
-    if (latestAssessmentType === 'detailed' || latestAssessmentType === 'premium') {
+    if (
+      latestAssessmentType === "detailed" ||
+      latestAssessmentType === "premium"
+    ) {
       navigate(`/results${suffix}`);
       return;
     }
@@ -1834,21 +2222,28 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
       return;
     }
 
-    navigate('/assessment/snapshot');
+    navigate("/assessment/snapshot");
   };
 
   const handleOpenFullNinetyDayPlan = () => {
-    handleViewLatestReport('#90-day-plan');
+    handleViewLatestReport("#90-day-plan");
   };
 
   const handleRetakeAssessment = () => {
-    void track('retake_assessment_clicked', { source: 'dashboard_command_center' }, 'assessment');
-    navigate('/assessment/comprehensive?mode=retake');
+    void track(
+      "retake_assessment_clicked",
+      { source: "dashboard_command_center" },
+      "assessment",
+    );
+    navigate("/assessment/comprehensive?mode=retake");
   };
 
-  const handleUpgradeClick = (source: string, targetPlan: 'standard' | 'premium' = 'premium') => {
-    void trackUpgradeClick(targetPlan, 'dashboard_upgrade', source);
-    navigate('/pricing');
+  const handleUpgradeClick = (
+    source: string,
+    targetPlan: "standard" | "premium" = "premium",
+  ) => {
+    void trackUpgradeClick(targetPlan, "dashboard_upgrade", source);
+    navigate("/pricing");
   };
 
   const handleRoadmapClick = () => {
@@ -1857,29 +2252,33 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
       return;
     }
 
-    handleUpgradeClick('best_next_move_roadmap', 'premium');
+    handleUpgradeClick("best_next_move_roadmap", "premium");
   };
 
   async function handlePrintPDF() {
     if (!canExportPdf) {
-      void trackLockedFeature('pdf_export', 'dashboard_header');
-      void trackUpgradeClick('standard', 'pdf_export', 'dashboard_header');
-      navigate('/pricing');
+      void trackLockedFeature("pdf_export", "dashboard_header");
+      void trackUpgradeClick("standard", "pdf_export", "dashboard_header");
+      navigate("/pricing");
       return;
     }
 
-    void track('pdf_export_clicked', { currentPlan }, 'conversion');
+    void track("pdf_export_clicked", { currentPlan }, "conversion");
 
     if (!printRef.current) return;
 
     try {
       await exportReportPdf({
         element: printRef.current,
-        tier: canViewPremium ? 'premium' : canViewFullReport ? 'standard' : 'free',
+        tier: canViewPremium
+          ? "premium"
+          : canViewFullReport
+            ? "standard"
+            : "free",
         foundationScore,
       });
     } catch (error) {
-      console.error('PDF export failed:', error);
+      console.error("PDF export failed:", error);
     }
   }
 
@@ -1889,28 +2288,61 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
         <aside className="hidden w-64 shrink-0 border-r border-white/10 bg-[#06172b]/90 p-4 xl:block">
           <div className="mb-6 flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#b87333] to-amber-300 text-[#06172b] shadow-lg">
-              <img src={logoImage} alt="A Wealthy Foundation" className="h-7 w-7 object-contain" />
+              <img
+                src={logoImage}
+                alt="A Wealthy Foundation"
+                className="h-7 w-7 object-contain"
+              />
             </div>
             <div>
               <div className="text-lg font-bold leading-5">A Wealthy</div>
-              <div className="text-lg font-bold leading-5 text-[#d18a3a]">Foundation</div>
+              <div className="text-lg font-bold leading-5 text-[#d18a3a]">
+                Foundation
+              </div>
             </div>
           </div>
 
           <nav className="space-y-1.5">
             {[
-              { label: 'Dashboard', icon: Home, onClick: () => navigate('/my-foundation'), active: true },
-              { label: 'Foundation', icon: Shield, onClick: () => navigate('/foundation-score') },
-              { label: 'Financial Picture', icon: BarChart3, onClick: () => navigate('/results') },
-              { label: 'Action Plan', icon: Target, onClick: () => navigate('/results') },
-              { label: 'Tools', icon: Zap, onClick: () => navigate('/foundation-tools') },
-              { label: 'Reports', icon: FileText, onClick: () => handleViewLatestReport() },
+              {
+                label: "Dashboard",
+                icon: Home,
+                onClick: () => navigate("/my-foundation"),
+                active: true,
+              },
+              {
+                label: "Foundation",
+                icon: Shield,
+                onClick: () => navigate("/foundation-score"),
+              },
+              {
+                label: "Financial Picture",
+                icon: BarChart3,
+                onClick: () => navigate("/results"),
+              },
+              {
+                label: "Action Plan",
+                icon: Target,
+                onClick: () => navigate("/results"),
+              },
+              {
+                label: "Tools",
+                icon: Zap,
+                onClick: () => navigate("/foundation-tools"),
+              },
+              {
+                label: "Reports",
+                icon: FileText,
+                onClick: () => handleViewLatestReport(),
+              },
             ].map(({ label, icon: Icon, onClick, active }) => (
               <button
                 key={label}
                 onClick={onClick}
                 className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
-                  active ? 'bg-cyan-400/16 text-cyan-100 shadow-[0_0_24px_rgba(34,211,238,.12)]' : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                  active
+                    ? "bg-cyan-400/16 text-cyan-100 shadow-[0_0_24px_rgba(34,211,238,.12)]"
+                    : "text-slate-400 hover:bg-white/5 hover:text-white"
                 }`}
               >
                 <Icon className="h-5 w-5" />
@@ -1921,38 +2353,69 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
           <div className="mt-6 space-y-3">
             <div className="rounded-2xl border border-cyan-300/12 bg-cyan-300/6 p-3">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-200/70">Next Check-In</div>
-              <div className="mt-2 text-sm font-semibold text-white">Review your cushion</div>
-              <div className="mt-1 text-xs leading-5 text-slate-400">Most users update their Foundation Score every 90 days.</div>
-              <button onClick={handleRetakeAssessment} className="mt-3 w-full rounded-xl border border-cyan-300/20 bg-cyan-300/8 px-3 py-2 text-xs font-bold text-cyan-200">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-200/70">
+                Next Check-In
+              </div>
+              <div className="mt-2 text-sm font-semibold text-white">
+                Review your cushion
+              </div>
+              <div className="mt-1 text-xs leading-5 text-slate-400">
+                Most users update their Foundation Score every 90 days.
+              </div>
+              <button
+                onClick={handleRetakeAssessment}
+                className="mt-3 w-full rounded-xl border border-cyan-300/20 bg-cyan-300/8 px-3 py-2 text-xs font-bold text-cyan-200"
+              >
                 Retake Assessment
               </button>
             </div>
 
             <div className="rounded-2xl border border-amber-300/12 bg-amber-300/6 p-3">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-200/70">Focus Area</div>
+              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-200/70">
+                Focus Area
+              </div>
               <div className="mt-2 text-sm font-semibold text-white">
-                {weakestPillar ? formatPillarName(weakestPillar) : 'Create breathing room'}
+                {weakestPillar
+                  ? formatPillarName(weakestPillar)
+                  : "Create breathing room"}
               </div>
               <div className="mt-1 h-2 rounded-full bg-white/10">
-                <div className="h-2 rounded-full bg-amber-300" style={{ width: `${Math.max(8, Math.min(100, weakestPillar ? Number(pillarScores[weakestPillar] ?? 0) : 48))}%` }} />
+                <div
+                  className="h-2 rounded-full bg-amber-300"
+                  style={{
+                    width: `${Math.max(8, Math.min(100, weakestPillar ? Number(pillarScores[weakestPillar] ?? 0) : 48))}%`,
+                  }}
+                />
               </div>
               <div className="mt-2 text-xs text-slate-400">
-                {weakestPillar ? `${Math.round(Number(pillarScores[weakestPillar] ?? 0))}/100 current score` : 'Start with your highest-leverage next step'}
+                {weakestPillar
+                  ? `${Math.round(Number(pillarScores[weakestPillar] ?? 0))}/100 current score`
+                  : "Start with your highest-leverage next step"}
               </div>
             </div>
           </div>
 
-          <button onClick={onLogout} className="mt-5 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-400 hover:bg-white/5 hover:text-white">
+          <button
+            onClick={onLogout}
+            className="mt-5 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-400 hover:bg-white/5 hover:text-white"
+          >
             <LogOut className="h-5 w-5" />
             Log Out
           </button>
         </aside>
 
-        <main ref={printRef} className="flex-1 overflow-hidden p-3 md:p-4 xl:p-6">
-          {showSuccess && currentPlan !== 'free' && (
-            <div data-pdf-ignore="true" className="mb-4 rounded-2xl border border-emerald-300/20 bg-emerald-300/10 px-5 py-4 text-emerald-100 shadow-sm">
-              You’re all set — {PLAN_FEATURES[currentPlan].name} is now unlocked. Your dashboard and report now reflect your upgraded access.
+        <main
+          ref={printRef}
+          className="flex-1 overflow-hidden p-3 md:p-4 xl:p-6"
+        >
+          {showSuccess && currentPlan !== "free" && (
+            <div
+              data-pdf-ignore="true"
+              className="mb-4 rounded-2xl border border-emerald-300/20 bg-emerald-300/10 px-5 py-4 text-emerald-100 shadow-sm"
+            >
+              You’re all set — {PLAN_FEATURES[currentPlan].name} is now
+              unlocked. Your dashboard and report now reflect your upgraded
+              access.
             </div>
           )}
 
@@ -1962,24 +2425,40 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                 <Sparkles className="h-3.5 w-3.5" />
                 Dashboard
               </div>
-              <h1 className="mt-2 text-3xl font-bold md:text-4xl">Good morning, {welcomeName}</h1>
+              <h1 className="mt-2 text-3xl font-bold md:text-4xl">
+                Good morning, {welcomeName}
+              </h1>
               <p className="mt-0.5 text-sm text-slate-400">
-                {showAssessment ? 'Your financial foundation at a glance.' : 'Start your assessment to build your dashboard.'}
+                {showAssessment
+                  ? "Your financial foundation at a glance."
+                  : "Start your assessment to build your dashboard."}
               </p>
             </div>
 
-            <div data-pdf-ignore="true" className="hidden items-center gap-3 md:flex">
-              <button onClick={() => handleViewLatestReport()} className="rounded-2xl border border-cyan-300/20 bg-cyan-300/8 px-4 py-2 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/12">
+            <div
+              data-pdf-ignore="true"
+              className="hidden items-center gap-3 md:flex"
+            >
+              <button
+                onClick={() => handleViewLatestReport()}
+                className="rounded-2xl border border-cyan-300/20 bg-cyan-300/8 px-4 py-2 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/12"
+              >
                 View Report
               </button>
-              <button onClick={handlePrintPDF} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-white/10">
-                {canExportPdf ? 'Save PDF' : 'Unlock PDF'}
+              <button
+                onClick={handlePrintPDF}
+                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-white/10"
+              >
+                {canExportPdf ? "Save PDF" : "Unlock PDF"}
               </button>
-              <button onClick={handleRetakeAssessment} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-white/10">
+              <button
+                onClick={handleRetakeAssessment}
+                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-white/10"
+              >
                 Retake
               </button>
               <div className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-700/80 font-bold">
-                {(welcomeName || 'M').charAt(0).toUpperCase()}
+                {(welcomeName || "M").charAt(0).toUpperCase()}
               </div>
             </div>
           </header>
@@ -1988,8 +2467,14 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
             <DashboardPanel className="p-8 text-center">
               <Shield className="mx-auto mb-4 h-12 w-12 text-cyan-300" />
               <h2 className="text-2xl font-bold">No assessment yet</h2>
-              <p className="mx-auto mt-2 max-w-xl text-slate-400">Complete your first assessment to unlock your Foundation Score, financial picture, and action plan.</p>
-              <button onClick={() => navigate('/assessment/snapshot')} className="mt-6 rounded-2xl bg-cyan-300 px-5 py-3 font-bold text-[#06172b]">
+              <p className="mx-auto mt-2 max-w-xl text-slate-400">
+                Complete your first assessment to unlock your Foundation Score,
+                financial picture, and action plan.
+              </p>
+              <button
+                onClick={() => navigate("/assessment/snapshot")}
+                className="mt-6 rounded-2xl bg-cyan-300 px-5 py-3 font-bold text-[#06172b]"
+              >
                 Start Snapshot
               </button>
             </DashboardPanel>
@@ -2001,12 +2486,18 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                     <div className="p-2">
                       <div className="flex items-center justify-between gap-4">
                         <div>
-                          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Foundation Score</div>
+                          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                            Foundation Score
+                          </div>
                           <div className="mt-4 flex items-end gap-2">
-                            <span className="text-4xl font-bold text-cyan-300">{foundationScore}</span>
+                            <span className="text-4xl font-bold text-cyan-300">
+                              {foundationScore}
+                            </span>
                             <span className="pb-1 text-slate-500">/100</span>
                           </div>
-                          <div className="mt-2 text-sm font-semibold text-cyan-200">{scoreBand?.label ?? 'Foundation Score'}</div>
+                          <div className="mt-2 text-sm font-semibold text-cyan-200">
+                            {scoreBand?.label ?? "Foundation Score"}
+                          </div>
                         </div>
                         <ScoreRing value={foundationScore} />
                       </div>
@@ -2015,29 +2506,55 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                     <div className="p-2">
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Financial Cushion</div>
-                          <div className={`mt-4 text-xl font-bold ${cushionTone.text}`}>{cushionTone.label}</div>
-                          <div className="mt-1 text-sm text-slate-400">{runwayMonths.toFixed(1)} months runway</div>
+                          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                            Financial Cushion
+                          </div>
+                          <div
+                            className={`mt-4 text-xl font-bold ${cushionTone.text}`}
+                          >
+                            {cushionTone.label}
+                          </div>
+                          <div className="mt-1 text-sm text-slate-400">
+                            {runwayMonths.toFixed(1)} months runway
+                          </div>
                         </div>
-                        <div className={`rounded-full border ${cushionTone.border} ${cushionTone.bg} p-3 ${cushionTone.text}`}>
+                        <div
+                          className={`rounded-full border ${cushionTone.border} ${cushionTone.bg} p-3 ${cushionTone.text}`}
+                        >
                           <Shield className="h-6 w-6" />
                         </div>
                       </div>
                       <div className="mt-4 h-2 rounded-full bg-white/10">
-                        <div className={`h-2 rounded-full ${cushionTone.bar}`} style={{ width: `${Math.max(6, cushionScore)}%` }} />
+                        <div
+                          className={`h-2 rounded-full ${cushionTone.bar}`}
+                          style={{ width: `${Math.max(6, cushionScore)}%` }}
+                        />
                       </div>
-                      <div className="mt-2 text-xs text-slate-400"><span className={cushionTone.text}>{cushionScore}%</span> cushion score</div>
+                      <div className="mt-2 text-xs text-slate-400">
+                        <span className={cushionTone.text}>
+                          {cushionScore}%
+                        </span>{" "}
+                        cushion score
+                      </div>
                     </div>
 
                     <div className="p-2">
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Monthly Margin</div>
-                          <div className={`mt-4 text-3xl font-bold ${snapshot && snapshot.monthlyMargin >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
+                          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                            Monthly Margin
+                          </div>
+                          <div
+                            className={`mt-4 text-3xl font-bold ${snapshot && snapshot.monthlyMargin >= 0 ? "text-emerald-300" : "text-red-300"}`}
+                          >
                             {formatCurrency(snapshot?.monthlyMargin ?? 0)}
                           </div>
-                          <div className={`mt-2 inline-flex rounded-full px-2 py-1 text-xs font-semibold ${snapshot && snapshot.monthlyMargin >= 500 ? 'bg-emerald-400/10 text-emerald-300' : 'bg-amber-400/10 text-amber-300'}`}>
-                            {snapshot && snapshot.monthlyMargin >= 500 ? 'Healthy' : 'Tight'}
+                          <div
+                            className={`mt-2 inline-flex rounded-full px-2 py-1 text-xs font-semibold ${snapshot && snapshot.monthlyMargin >= 500 ? "bg-emerald-400/10 text-emerald-300" : "bg-amber-400/10 text-amber-300"}`}
+                          >
+                            {snapshot && snapshot.monthlyMargin >= 500
+                              ? "Healthy"
+                              : "Tight"}
                           </div>
                         </div>
                         <LineChart className="h-10 w-10 text-emerald-300/80" />
@@ -2046,39 +2563,62 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
                     <button
                       type="button"
-                      onClick={() => navigate('/foundation-tools/my-freedom-date')}
+                      onClick={() =>
+                        navigate("/foundation-tools/my-freedom-date")
+                      }
                       className="p-2 text-left"
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Debt Status</div>
-                          <div className={`mt-4 text-2xl font-bold ${isDashboardDebtUnderPressure ? 'text-orange-300' : 'text-violet-300'}`}>
-                            {dashboardDebtStatusTitle}
+                          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                            Debt Status
+                          </div>
+                          <div className="mt-4 text-2xl font-bold text-violet-300">
+                            {(snapshot?.consumerDebt ??
+                              snapshot?.totalDebtBalance ??
+                              0) <= 0
+                              ? "No Consumer Debt"
+                              : freedomDateScenario?.results?.freedomDate
+                                ? new Date(
+                                    freedomDateScenario.results.freedomDate,
+                                  ).toLocaleDateString("en-US", {
+                                    month: "short",
+                                    year: "numeric",
+                                  })
+                                : "Use Debt Tool"}
                           </div>
                           <div className="mt-1 text-sm text-slate-400">
-                            {dashboardDebtStatusDetail}
+                            {(snapshot?.consumerDebt ??
+                              snapshot?.totalDebtBalance ??
+                              0) <= 0
+                              ? (snapshot?.mortgageDebt ?? 0) > 0
+                                ? "Mortgage only"
+                                : "Debt-free"
+                              : freedomDateScenario?.results?.monthsSaved
+                                ? `${freedomDateScenario.results.monthsSaved} months saved`
+                                : "Open payoff planner"}
                           </div>
-                          {isDashboardDebtUnderPressure && (
-                            <div className="mt-3 max-w-xs rounded-xl border border-orange-300/20 bg-orange-300/10 px-3 py-2 text-xs leading-5 text-orange-100">
-                              Focus on lowering required payments or increasing income before relying on payoff-date projections.
-                            </div>
-                          )}
                         </div>
-                        <Calendar className={`h-10 w-10 ${isDashboardDebtUnderPressure ? 'text-orange-300/80' : 'text-violet-300/80'}`} />
+                        <Calendar className="h-10 w-10 text-violet-300/80" />
                       </div>
                     </button>
                   </div>
                 </DashboardPanel>
               </section>
 
-              <section className="mb-6 grid gap-4 xl:grid-cols-[.72fr_1.28fr]">
-                <DashboardPanel className="order-2 p-5 md:p-6 xl:order-2">
+              <section className="mb-6 grid gap-4 xl:grid-cols-[1.35fr_.65fr]">
+                <DashboardPanel className="p-5 md:p-6">
                   <div className="mb-4 flex items-center justify-between">
                     <div>
-                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Your Financial Foundation</div>
+                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                        Your Financial Foundation
+                      </div>
                       <h2 className="mt-2 text-2xl font-bold">House View</h2>
                     </div>
-                    <button onClick={() => navigate('/results')} className="inline-flex items-center gap-2 rounded-xl border border-cyan-300/20 px-3 py-2 text-sm font-semibold text-cyan-200">
+                    <button
+                      onClick={() => navigate("/results")}
+                      className="inline-flex items-center gap-2 rounded-xl border border-cyan-300/20 px-3 py-2 text-sm font-semibold text-cyan-200"
+                    >
                       View Details <ArrowRight className="h-4 w-4" />
                     </button>
                   </div>
@@ -2088,67 +2628,102 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                     <div className="rounded-[1.6rem] border border-cyan-200/10 bg-white/[0.045] p-5 backdrop-blur-xl">
                       <div className="mb-3 flex items-center gap-2 text-cyan-300">
                         <Zap className="h-4 w-4" />
-                        <div className="text-xs font-semibold uppercase tracking-[0.16em]">What-If Calculator</div>
+                        <div className="text-xs font-semibold uppercase tracking-[0.16em]">
+                          What-If Calculator
+                        </div>
                       </div>
 
-                      <p className="mb-4 text-sm text-slate-400">See how small changes impact your financial foundation.</p>
+                      <p className="mb-4 text-sm text-slate-400">
+                        See how small changes impact your financial foundation.
+                      </p>
 
                       {snapshot && scenarioResult ? (
                         <>
                           <div className="grid grid-cols-2 gap-3">
                             <label className="rounded-xl bg-white/[0.04] p-3">
-                              <div className="text-xs text-slate-500">Extra Income</div>
+                              <div className="text-xs text-slate-500">
+                                Extra Income
+                              </div>
                               <input
                                 type="number"
                                 value={whatIf.income}
-                                onChange={(e) => setWhatIf((prev) => ({ ...prev, income: Number(e.target.value || 0) }))}
+                                onChange={(e) =>
+                                  setWhatIf((prev) => ({
+                                    ...prev,
+                                    income: Number(e.target.value || 0),
+                                  }))
+                                }
                                 className="mt-1 w-full bg-transparent text-lg font-bold text-emerald-300 outline-none"
                               />
                             </label>
                             <label className="rounded-xl bg-white/[0.04] p-3">
-                              <div className="text-xs text-slate-500">Lower Costs</div>
+                              <div className="text-xs text-slate-500">
+                                Lower Costs
+                              </div>
                               <input
                                 type="number"
                                 value={whatIf.housing}
-                                onChange={(e) => setWhatIf((prev) => ({ ...prev, housing: Number(e.target.value || 0) }))}
+                                onChange={(e) =>
+                                  setWhatIf((prev) => ({
+                                    ...prev,
+                                    housing: Number(e.target.value || 0),
+                                  }))
+                                }
                                 className="mt-1 w-full bg-transparent text-lg font-bold text-emerald-300 outline-none"
                               />
                             </label>
                             <div className="col-span-2 rounded-xl bg-white/[0.04] p-3">
-                              <div className="text-xs text-slate-500">New Monthly Margin</div>
-                              <div className="text-xl font-bold text-cyan-300">{formatCurrency(scenarioResult.adjustedMargin)}</div>
-                              <div className="mt-1 text-xs text-slate-500">Fixed load would become {formatPercent(scenarioResult.adjustedLoad)}</div>
+                              <div className="text-xs text-slate-500">
+                                New Monthly Margin
+                              </div>
+                              <div className="text-xl font-bold text-cyan-300">
+                                {formatCurrency(scenarioResult.adjustedMargin)}
+                              </div>
+                              <div className="mt-1 text-xs text-slate-500">
+                                Fixed load would become{" "}
+                                {formatPercent(scenarioResult.adjustedLoad)}
+                              </div>
                             </div>
                           </div>
                         </>
                       ) : (
-                        <div className="rounded-xl bg-white/[0.04] p-3 text-sm text-slate-400">Metrics will appear after your full report is generated.</div>
+                        <div className="rounded-xl bg-white/[0.04] p-3 text-sm text-slate-400">
+                          Metrics will appear after your full report is
+                          generated.
+                        </div>
                       )}
                     </div>
                   </div>
                 </DashboardPanel>
 
-                <DashboardPanel className="order-1 p-5 md:p-6 xl:order-1">
+                <DashboardPanel className="p-5 md:p-6">
                   <div className="mb-4 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2 text-cyan-300">
                       <Sparkles className="h-5 w-5" />
-                      <div className="text-xs font-semibold uppercase tracking-[0.16em]">This Week&apos;s Focus</div>
+                      <div className="text-xs font-semibold uppercase tracking-[0.16em]">
+                        Your 90-Day Focus
+                      </div>
                     </div>
                     <div className="rounded-full border border-cyan-300/20 bg-cyan-300/8 px-3 py-1 text-xs font-bold text-cyan-200">
                       {dashboardPlanPercent}% complete
                     </div>
                   </div>
 
-                  <h2 className="text-2xl font-bold">{nextDashboardPlanAction ? 'Do this next' : 'Plan complete'}</h2>
+                  <h2 className="text-2xl font-bold">
+                    {nextDashboardPlanAction ? "Next step" : "Plan complete"}
+                  </h2>
                   <p className="mt-3 text-sm leading-6 text-slate-400">
                     {nextDashboardPlanAction
-                      ? nextDashboardPlanAction.label
-                      : 'You have completed the current 90-day plan. Review your report or retake the assessment to choose the next priority.'}
+                      ? `${nextDashboardPlanAction.label} This is what turns small wins into real progress.`
+                      : "You have completed the current 90-day plan. Review your report or retake the assessment to choose the next priority."}
                   </p>
 
                   <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                     <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                      <span>{completedDashboardPlanCount} of {dashboardPlanActions.length} steps complete</span>
+                      <span>
+                        {completedDashboardPlanCount} of{" "}
+                        {dashboardPlanActions.length} steps complete
+                      </span>
                       <span>{dashboardPlanPercent}%</span>
                     </div>
                     <div className="h-2.5 overflow-hidden rounded-full bg-white/10">
@@ -2158,27 +2733,33 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                       />
                     </div>
                     <p className="mt-3 text-xs leading-5 text-slate-400">
-                      {completedDashboardPlanCount === 0
-                        ? 'Start with one step today. Small wins compound quickly.'
-                        : completedDashboardPlanCount < dashboardPlanActions.length
-                          ? 'Momentum builds fast — keep going.'
-                          : 'You are fully on track. Great work.'}
+                      This stays synced with the checklist in your report.
+                      Complete 1–2 steps per week to build momentum.
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                      90-day target: complete 6–9 meaningful steps, not a
+                      perfect checklist.
                     </p>
                   </div>
 
                   {nextDashboardPlanAction && (
                     <button
                       type="button"
-                      onClick={() => toggleDashboardPlanAction(nextDashboardPlanAction.id)}
+                      onClick={() =>
+                        toggleDashboardPlanAction(nextDashboardPlanAction.id)
+                      }
                       className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-300/30 bg-emerald-300/10 px-4 py-3 text-sm font-bold text-emerald-200 hover:bg-emerald-300/15"
                     >
                       <CheckCircle2 className="h-5 w-5" />
-                      Complete step and move forward
+                      Mark this step complete
                     </button>
                   )}
 
-                  <button onClick={handleOpenFullNinetyDayPlan} className="mt-3 inline-flex items-center gap-2 rounded-2xl border border-cyan-300/35 bg-cyan-300/8 px-4 py-3 text-sm font-bold text-cyan-200 shadow-[0_0_28px_rgba(34,211,238,.12)]">
-                    See all 90-day steps <ArrowRight className="h-4 w-4" />
+                  <button
+                    onClick={handleOpenFullNinetyDayPlan}
+                    className="mt-3 inline-flex items-center gap-2 rounded-2xl border border-cyan-300/35 bg-cyan-300/8 px-4 py-3 text-sm font-bold text-cyan-200 shadow-[0_0_28px_rgba(34,211,238,.12)]"
+                  >
+                    Open full 90-day plan <ArrowRight className="h-4 w-4" />
                   </button>
                 </DashboardPanel>
               </section>
@@ -2187,72 +2768,121 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                 <DashboardPanel className="p-5">
                   <div className="mb-3 flex items-center justify-between">
                     <div>
-                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Financial Snapshot</div>
-                      <div className="mt-1 text-sm text-slate-500">Income vs. fixed costs</div>
+                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                        Financial Snapshot
+                      </div>
+                      <div className="mt-1 text-sm text-slate-500">
+                        Income vs. fixed costs
+                      </div>
                     </div>
                     <LineChart className="h-5 w-5 text-cyan-300" />
                   </div>
-                  <IncomeExpenseChart income={snapshot?.income ?? 0} fixedCosts={snapshot?.fixedCosts ?? 0} margin={snapshot?.monthlyMargin ?? 0} />
+                  <IncomeExpenseChart
+                    income={snapshot?.income ?? 0}
+                    fixedCosts={snapshot?.fixedCosts ?? 0}
+                    margin={snapshot?.monthlyMargin ?? 0}
+                  />
                   <div className="mt-3 grid grid-cols-3 gap-3">
                     <div className="rounded-2xl bg-white/[0.04] p-3">
                       <div className="text-xs text-slate-500">Fixed Load</div>
-                      <div className="mt-1 text-xl font-bold text-amber-300">{formatPercent(snapshot?.fixedCostLoad ?? 0)}</div>
+                      <div className="mt-1 text-xl font-bold text-amber-300">
+                        {formatPercent(snapshot?.fixedCostLoad ?? 0)}
+                      </div>
                     </div>
                     <div className="rounded-2xl bg-white/[0.04] p-3">
                       <div className="text-xs text-slate-500">Savings Rate</div>
-                      <div className="mt-1 text-xl font-bold text-emerald-300">{formatPercent(snapshot?.savingsRate ?? 0)}</div>
+                      <div className="mt-1 text-xl font-bold text-emerald-300">
+                        {formatPercent(snapshot?.savingsRate ?? 0)}
+                      </div>
                     </div>
                     <div className="rounded-2xl bg-white/[0.04] p-3">
                       <div className="text-xs text-slate-500">Debt Ratio</div>
-                      <div className="mt-1 text-xl font-bold text-cyan-300">{formatPercent(snapshot?.debtToIncomeRatio ?? 0)}</div>
+                      <div className="mt-1 text-xl font-bold text-cyan-300">
+                        {formatPercent(snapshot?.debtToIncomeRatio ?? 0)}
+                      </div>
                     </div>
                   </div>
-                  <button onClick={() => setActiveDetail('financial')} className="mt-4 flex items-center gap-2 text-sm font-semibold text-cyan-300">View Details <ArrowRight className="h-4 w-4" /></button>
+                  <button
+                    onClick={() => setActiveDetail("financial")}
+                    className="mt-4 flex items-center gap-2 text-sm font-semibold text-cyan-300"
+                  >
+                    View Details <ArrowRight className="h-4 w-4" />
+                  </button>
                 </DashboardPanel>
 
                 <DashboardPanel className="p-5">
                   <div className="mb-3 flex items-center justify-between">
                     <div>
-                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Net Worth</div>
-                      <div className="mt-3 text-4xl font-bold">{snapshot?.netWorth ? formatCurrency(snapshot.netWorth) : '—'}</div>
+                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                        Net Worth
+                      </div>
+                      <div className="mt-3 text-4xl font-bold">
+                        {snapshot?.netWorth
+                          ? formatCurrency(snapshot.netWorth)
+                          : "—"}
+                      </div>
                     </div>
                     <div className="rounded-full bg-emerald-400/10 px-3 py-1 text-xs font-bold text-emerald-300">
-                      {previousScore !== null ? `${previousScore} → ${foundationScore}` : 'Latest'}
+                      {previousScore !== null
+                        ? `${previousScore} → ${foundationScore}`
+                        : "Latest"}
                     </div>
                   </div>
                   <NetWorthMiniChart scoreHistory={scoreHistory} />
-                  <button onClick={() => setActiveDetail('netWorth')} className="mt-4 flex items-center gap-2 text-sm font-semibold text-cyan-300">View Details <ArrowRight className="h-4 w-4" /></button>
+                  <button
+                    onClick={() => setActiveDetail("netWorth")}
+                    className="mt-4 flex items-center gap-2 text-sm font-semibold text-cyan-300"
+                  >
+                    View Details <ArrowRight className="h-4 w-4" />
+                  </button>
                 </DashboardPanel>
 
                 <DashboardPanel className="p-5">
                   <div className="mb-4 flex items-center justify-between">
                     <div>
-                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Asset Allocation</div>
-                      <div className="mt-1 text-sm text-slate-500">Current available categories</div>
+                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                        Asset Allocation
+                      </div>
+                      <div className="mt-1 text-sm text-slate-500">
+                        Current available categories
+                      </div>
                     </div>
                     <PieChart className="h-5 w-5 text-cyan-300" />
                   </div>
                   <AssetDonut rows={assetRows} total={totalAssets} />
                   <div className="mt-5 space-y-2">
                     {assetRows.map((row) => {
-                      const percent = totalAssets > 0 ? (row.value / totalAssets) * 100 : 0;
+                      const percent =
+                        totalAssets > 0 ? (row.value / totalAssets) * 100 : 0;
                       return (
-                        <div key={row.label} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 text-sm">
+                        <div
+                          key={row.label}
+                          className="grid grid-cols-[1fr_auto_auto] items-center gap-3 text-sm"
+                        >
                           <div className="flex items-center gap-2 text-slate-300">
-                            <span className={`h-2.5 w-2.5 rounded-full ${row.dot}`} />
+                            <span
+                              className={`h-2.5 w-2.5 rounded-full ${row.dot}`}
+                            />
                             {row.label}
                           </div>
-                          <div className="text-slate-400">{percent.toFixed(0)}%</div>
-                          <div className="font-semibold text-slate-200">{formatCurrency(row.value)}</div>
+                          <div className="text-slate-400">
+                            {percent.toFixed(0)}%
+                          </div>
+                          <div className="font-semibold text-slate-200">
+                            {formatCurrency(row.value)}
+                          </div>
                         </div>
                       );
                     })}
                   </div>
-                  <button onClick={() => setActiveDetail('assetAllocation')} className="mt-4 flex items-center gap-2 text-sm font-semibold text-cyan-300">View Details <ArrowRight className="h-4 w-4" /></button>
+                  <button
+                    onClick={() => setActiveDetail("assetAllocation")}
+                    className="mt-4 flex items-center gap-2 text-sm font-semibold text-cyan-300"
+                  >
+                    View Details <ArrowRight className="h-4 w-4" />
+                  </button>
                 </DashboardPanel>
               </section>
-
-
 
               {activeDetail && snapshot ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-8 backdrop-blur-sm">
@@ -2260,76 +2890,128 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                     <div className="mb-5 flex items-start justify-between gap-4">
                       <div>
                         <div className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">
-                          {activeDetail === 'financial' ? 'Financial Snapshot' : activeDetail === 'netWorth' ? 'Net Worth Breakdown' : 'Asset Allocation'}
+                          {activeDetail === "financial"
+                            ? "Financial Snapshot"
+                            : activeDetail === "netWorth"
+                              ? "Net Worth Breakdown"
+                              : "Asset Allocation"}
                         </div>
                         <h3 className="mt-2 text-2xl font-bold">
-                          {activeDetail === 'financial' ? 'How your monthly structure is calculated' : activeDetail === 'netWorth' ? 'How we calculated your net worth' : 'Where your assets are currently allocated'}
+                          {activeDetail === "financial"
+                            ? "How your monthly structure is calculated"
+                            : activeDetail === "netWorth"
+                              ? "How we calculated your net worth"
+                              : "Where your assets are currently allocated"}
                         </h3>
                       </div>
-                      <button onClick={() => setActiveDetail(null)} className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xl leading-none text-slate-300 hover:bg-white/10">×</button>
+                      <button
+                        onClick={() => setActiveDetail(null)}
+                        className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xl leading-none text-slate-300 hover:bg-white/10"
+                      >
+                        ×
+                      </button>
                     </div>
 
-                    {activeDetail === 'financial' ? (
+                    {activeDetail === "financial" ? (
                       <div className="space-y-3 text-sm">
                         {[
-                          ['Monthly income', snapshot.income],
-                          ['Housing / rent / mortgage payment', snapshot.housing],
-                          ['Utilities', snapshot.utilities],
-                          ['Childcare', snapshot.childcare],
-                          ['Consumer debt payments', snapshot.debt],
-                          ['Total fixed costs', snapshot.fixedCosts],
-                          ['Monthly breathing room', snapshot.monthlyMargin],
+                          ["Monthly income", snapshot.income],
+                          [
+                            "Housing / rent / mortgage payment",
+                            snapshot.housing,
+                          ],
+                          ["Utilities", snapshot.utilities],
+                          ["Childcare", snapshot.childcare],
+                          ["Consumer debt payments", snapshot.debt],
+                          ["Total fixed costs", snapshot.fixedCosts],
+                          ["Monthly breathing room", snapshot.monthlyMargin],
                         ].map(([label, value]) => (
-                          <div key={label as string} className="flex justify-between rounded-xl bg-white/[0.04] px-4 py-3">
+                          <div
+                            key={label as string}
+                            className="flex justify-between rounded-xl bg-white/[0.04] px-4 py-3"
+                          >
                             <span className="text-slate-400">{label}</span>
-                            <span className="font-semibold">{formatCurrency(value as number)}</span>
+                            <span className="font-semibold">
+                              {formatCurrency(value as number)}
+                            </span>
                           </div>
                         ))}
-                        <div className="rounded-xl border border-cyan-300/15 bg-cyan-300/8 px-4 py-3 text-cyan-100">Fixed cost load: {formatPercent(snapshot.fixedCostLoad)} of take-home pay.</div>
+                        <div className="rounded-xl border border-cyan-300/15 bg-cyan-300/8 px-4 py-3 text-cyan-100">
+                          Fixed cost load:{" "}
+                          {formatPercent(snapshot.fixedCostLoad)} of take-home
+                          pay.
+                        </div>
                       </div>
                     ) : null}
 
-                    {activeDetail === 'netWorth' ? (
+                    {activeDetail === "netWorth" ? (
                       <div className="space-y-3 text-sm">
                         {[
-                          ['Cash / savings', snapshot.cashSavings],
-                          ['Investments', snapshot.totalInvestments],
-                          ['Real estate value', snapshot.realEstateAssets],
-                          ['Other assets', snapshot.otherAssets],
-                          ['Mortgage debt', -snapshot.mortgageDebt],
-                          ['Consumer debt', -snapshot.consumerDebt],
-                          ['Other liabilities', -snapshot.otherLiabilities],
+                          ["Cash / savings", snapshot.cashSavings],
+                          ["Investments", snapshot.totalInvestments],
+                          ["Real estate value", snapshot.realEstateAssets],
+                          ["Other assets", snapshot.otherAssets],
+                          ["Mortgage debt", -snapshot.mortgageDebt],
+                          ["Consumer debt", -snapshot.consumerDebt],
+                          ["Other liabilities", -snapshot.otherLiabilities],
                         ].map(([label, value]) => (
-                          <div key={label as string} className="flex justify-between rounded-xl bg-white/[0.04] px-4 py-3">
+                          <div
+                            key={label as string}
+                            className="flex justify-between rounded-xl bg-white/[0.04] px-4 py-3"
+                          >
                             <span className="text-slate-400">{label}</span>
-                            <span className={`font-semibold ${(value as number) < 0 ? 'text-red-300' : ''}`}>{formatCurrency(value as number)}</span>
+                            <span
+                              className={`font-semibold ${(value as number) < 0 ? "text-red-300" : ""}`}
+                            >
+                              {formatCurrency(value as number)}
+                            </span>
                           </div>
                         ))}
                         <div className="flex justify-between rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-lg">
-                          <span className="font-bold text-emerald-200">Estimated net worth</span>
-                          <span className="font-bold text-emerald-200">{formatCurrency(snapshot.netWorth)}</span>
+                          <span className="font-bold text-emerald-200">
+                            Estimated net worth
+                          </span>
+                          <span className="font-bold text-emerald-200">
+                            {formatCurrency(snapshot.netWorth)}
+                          </span>
                         </div>
                       </div>
                     ) : null}
 
-                    {activeDetail === 'assetAllocation' ? (
+                    {activeDetail === "assetAllocation" ? (
                       <div className="space-y-3 text-sm">
                         {assetRows.map((row) => {
-                          const percent = totalAssets > 0 ? (row.value / totalAssets) * 100 : 0;
+                          const percent =
+                            totalAssets > 0
+                              ? (row.value / totalAssets) * 100
+                              : 0;
                           return (
-                            <div key={row.label} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 rounded-xl bg-white/[0.04] px-4 py-3">
+                            <div
+                              key={row.label}
+                              className="grid grid-cols-[1fr_auto_auto] items-center gap-3 rounded-xl bg-white/[0.04] px-4 py-3"
+                            >
                               <div className="flex items-center gap-2 text-slate-300">
-                                <span className={`h-2.5 w-2.5 rounded-full ${row.dot}`} />
+                                <span
+                                  className={`h-2.5 w-2.5 rounded-full ${row.dot}`}
+                                />
                                 {row.label}
                               </div>
-                              <div className="text-slate-400">{percent.toFixed(0)}%</div>
-                              <div className="font-semibold">{formatCurrency(row.value)}</div>
+                              <div className="text-slate-400">
+                                {percent.toFixed(0)}%
+                              </div>
+                              <div className="font-semibold">
+                                {formatCurrency(row.value)}
+                              </div>
                             </div>
                           );
                         })}
                         <div className="flex justify-between rounded-xl border border-cyan-300/15 bg-cyan-300/8 px-4 py-3">
-                          <span className="font-semibold text-cyan-100">Total shown assets</span>
-                          <span className="font-bold text-cyan-100">{formatCurrency(totalAssets)}</span>
+                          <span className="font-semibold text-cyan-100">
+                            Total shown assets
+                          </span>
+                          <span className="font-bold text-cyan-100">
+                            {formatCurrency(totalAssets)}
+                          </span>
                         </div>
                       </div>
                     ) : null}
@@ -2339,7 +3021,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
               <div className="hidden">
                 <span>{dashboardWhyThisMatters}</span>
-                <span>{priorities.join(',')}</span>
+                <span>{priorities.join(",")}</span>
                 <span>{warnings.length}</span>
                 <span>{strongestPillar}</span>
                 <span>{latestHistoryItem?.id}</span>
