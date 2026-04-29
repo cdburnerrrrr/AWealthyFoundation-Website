@@ -734,7 +734,7 @@ async function loadSavedPlanProgress(
   if (!userId || !assessmentId) return null;
 
   const { data, error } = await supabase
-    .from('plan_progress')
+    .from('user_plan_progress')
     .select('action_id, completed')
     .eq('user_id', userId)
     .eq('assessment_id', assessmentId);
@@ -759,7 +759,7 @@ async function savePlanActionProgress(
   if (!userId || !assessmentId || !actionId) return;
 
   const { error } = await supabase
-    .from('plan_progress')
+    .from('user_plan_progress')
     .upsert(
       {
         user_id: userId,
