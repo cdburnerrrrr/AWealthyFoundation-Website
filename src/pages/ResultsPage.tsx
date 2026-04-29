@@ -2912,6 +2912,7 @@ export default function ResultsPage() {
               </div>
             </div>
           </section>
+        )}
 
         {features.showPremiumGuidance && Object.keys(pillarScores).length > 0 && (
           <div data-pdf-page-break-before="true">
