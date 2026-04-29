@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { exportReportPdf } from '../utils/pdfExport';
 import ReportNewsletterCard from '../components/ReportNewsletterCard';
 import { useNavigate } from 'react-router-dom';
@@ -765,6 +765,29 @@ function formatCurrency(value?: number) {
     currency: 'USD',
     maximumFractionDigits: 0,
   }).format(Number(value));
+}
+
+function makePlanActionId(phaseIndex: number, itemIndex: number, item: string) {
+  const slug = item
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 44);
+
+  return `phase-${phaseIndex + 1}-${itemIndex + 1}-${slug || 'step'}`;
+}
+
+function getStoredPlanProgress(storageKey: string): Record<string, boolean> {
+  if (typeof window === 'undefined') return {};
+
+  try {
+    const stored = window.localStorage.getItem(storageKey);
+    if (!stored) return {};
+    const parsed = JSON.parse(stored);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
 }
 
 function getCarPaymentAnalysis(answers?: Record<string, any>) {
@@ -2220,6 +2243,31 @@ export default function ResultsPage() {
   const planBadge = getPlanBadgeMeta(shouldGateFullReport ? 'free' : actualPlan);
   const [showPdfUpgradeModal, setShowPdfUpgradeModal] = useState(false);
   const [showComparisonModal, setShowComparisonModal] = useState(false);
+  const planProgressStorageKey = `awf-90-day-plan-progress-${user?.id ?? 'guest'}-${
+    (currentAssessment as any)?.id ?? (latestHistoryRecord as any)?.id ?? 'latest'
+  }`;
+  const [completedPlanActions, setCompletedPlanActions] = useState<Record<string, boolean>>(() =>
+    getStoredPlanProgress(planProgressStorageKey)
+  );
+
+  useEffect(() => {
+    setCompletedPlanActions(getStoredPlanProgress(planProgressStorageKey));
+  }, [planProgressStorageKey]);
+
+  const togglePlanAction = (actionId: string) => {
+    setCompletedPlanActions((current) => {
+      const next = {
+        ...current,
+        [actionId]: !current[actionId],
+      };
+
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(planProgressStorageKey, JSON.stringify(next));
+      }
+
+      return next;
+    });
+  };
 
   const handlePdfClick = async () => {
   if (!features.allowFullPdfExport) {
@@ -2353,6 +2401,22 @@ export default function ResultsPage() {
   });
   const ninetyDayPlanPhases = getNinetyDayPlanPhases(bestNextMoveCard, weakestPillar, metrics);
   const ninetyDayPlanIntro = getNinetyDayPlanIntro(bestNextMoveCard, metrics);
+  const ninetyDayPlanActions = useMemo(
+    () =>
+      ninetyDayPlanPhases.flatMap((phase, phaseIndex) =>
+        phase.checklist.slice(0, 3).map((item, itemIndex) => ({
+          id: makePlanActionId(phaseIndex, itemIndex, item),
+          label: item,
+          phaseIndex,
+          phaseTitle: phase.title,
+        }))
+      ),
+    [ninetyDayPlanPhases]
+  );
+  const completedPlanActionCount = ninetyDayPlanActions.filter((action) => completedPlanActions[action.id]).length;
+  const planCompletionPercent = ninetyDayPlanActions.length
+    ? Math.round((completedPlanActionCount / ninetyDayPlanActions.length) * 100)
+    : 0;
   const assessmentAnswers = (((currentAssessment as any)?.answers ?? (latestHistoryRecord as any)?.answers ?? {}) as Record<string, any>);
   const carPaymentAnalysis = getCarPaymentAnalysis(assessmentAnswers);
   const comparisonProfileLabel = getBenchmarkProfileLabel(assessmentAnswers);
@@ -2984,13 +3048,39 @@ export default function ResultsPage() {
 </div>
 
         <SectionShell icon={Clock3} title="Your 90-Day Plan" className="mb-6 pdf-avoid-break">
-          <div className="mb-5 rounded-2xl border border-copper-200 bg-gradient-to-r from-copper-50 to-white p-4">
+          <div className="mb-5 rounded-2xl border border-copper-200 bg-gradient-to-r from-copper-50 to-white p-4 md:p-5">
             <div className="text-sm font-semibold uppercase tracking-[0.18em] text-copper-700">
               {ninetyDayPlanIntro.eyebrow}
             </div>
             <p className="mt-2 text-sm leading-7 text-gray-700">
               {ninetyDayPlanIntro.body}
             </p>
+
+            <div className="mt-4 rounded-2xl border border-white bg-white/80 p-4 shadow-sm">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="text-sm font-bold text-navy-900">Track your 90-day progress</div>
+                  <div className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    {completedPlanActionCount} of {ninetyDayPlanActions.length} steps complete
+                  </div>
+                </div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-copper-200 bg-copper-50 px-3 py-1 text-xs font-bold text-copper-700">
+                  <CheckCircle2 className="h-4 w-4" />
+                  {planCompletionPercent}% complete
+                </div>
+              </div>
+
+              <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-slate-100">
+                <div
+                  className="h-full rounded-full bg-copper-600 transition-all duration-300"
+                  style={{ width: `${planCompletionPercent}%` }}
+                />
+              </div>
+
+              <p className="mt-3 text-xs leading-5 text-slate-600">
+                Most users complete 1–2 steps per week. The goal is not to finish everything at once — it is to create visible momentum and keep coming back.
+              </p>
+            </div>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-4">
@@ -3001,9 +3091,10 @@ export default function ResultsPage() {
                 'border-emerald-200 bg-emerald-50/70',
               ];
               const dotStyles = ['bg-copper-600', 'bg-blue-600', 'bg-emerald-600'];
+              const phaseLabel = index === 0 ? 'Create breathing room fast' : index === 1 ? 'Stabilize cash flow' : 'Build forward with control';
 
               return (
-                <div key={phase.title} className={`rounded-2xl border p-5 ${phaseStyles[index] ?? 'border-gray-200 bg-gray-50'}`}>
+                <div key={phase.title} className={`flex min-h-[300px] flex-col rounded-2xl border p-5 ${phaseStyles[index] ?? 'border-gray-200 bg-gray-50'}`}>
                   <div className="mb-4 flex items-start gap-3">
                     <div className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${dotStyles[index] ?? 'bg-copper-600'}`}>
                       {index + 1}
@@ -3011,23 +3102,52 @@ export default function ResultsPage() {
                     <div>
                       <div className="text-sm font-bold text-navy-900">{phase.title}</div>
                       <div className="mt-1 text-xs uppercase tracking-[0.16em] text-gray-500">
-                        {index === 0 ? 'Start here' : index === 1 ? 'Build momentum' : 'Strengthen the system'}
+                        {phaseLabel}
                       </div>
                     </div>
                   </div>
 
                   <p className="text-navy-900 leading-7 mb-4">{phase.body}</p>
-                  <ul className="space-y-2">
-                    {phase.checklist.slice(0, 3).map((item, itemIndex) => (
-                      <li key={`${phase.title}-${itemIndex}`} className="flex items-start gap-2 text-sm text-navy-900">
-                        <span className={`mt-1.5 h-1.5 w-1.5 rounded-full ${dotStyles[index] ?? 'bg-copper-600'}`} />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
+
+                  <div className="mt-auto space-y-2">
+                    {phase.checklist.slice(0, 3).map((item, itemIndex) => {
+                      const actionId = makePlanActionId(index, itemIndex, item);
+                      const isComplete = !!completedPlanActions[actionId];
+
+                      return (
+                        <button
+                          key={`${phase.title}-${itemIndex}`}
+                          type="button"
+                          onClick={() => togglePlanAction(actionId)}
+                          className={`flex w-full items-start gap-3 rounded-xl border p-3 text-left text-sm transition ${
+                            isComplete
+                              ? 'border-emerald-200 bg-white text-slate-500'
+                              : 'border-white/70 bg-white/55 text-navy-900 hover:border-copper-200 hover:bg-white'
+                          }`}
+                        >
+                          <span
+                            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+                              isComplete
+                                ? 'border-emerald-500 bg-emerald-500 text-white'
+                                : 'border-slate-300 bg-white text-transparent'
+                            }`}
+                          >
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                          </span>
+                          <span className={isComplete ? 'line-through decoration-2 decoration-emerald-500/50' : ''}>
+                            {item}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })}
+          </div>
+
+          <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4 text-sm font-semibold leading-6 text-navy-900">
+            This plan works because it focuses on your biggest constraint first — not everything at once.
           </div>
         </SectionShell>
 
