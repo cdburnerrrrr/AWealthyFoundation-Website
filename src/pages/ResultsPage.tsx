@@ -591,8 +591,8 @@ function getPriorityBody(pillar: string, isBiggest: boolean) {
         : 'Reducing debt further keeps more of your income available for saving, investing, and choice.';
     case 'protection':
       return isBiggest
-        ? 'Protection matters because the household has people depending on the income. For this family, the practical needs are clear: reliable health coverage, affordable life insurance, a starter emergency fund, and enough income or margin to keep those protections in place.'
-        : 'Strengthening protection helps preserve the foundation you are building, especially when dependents or limited cash reserves raise the cost of a setback.';
+        ? 'Protection matters because the household has people depending on the income. But this family cannot protect its future with insurance alone. The practical needs are clear: more breathing room, reliable health coverage, affordable life insurance, a starter emergency fund, and enough income or margin to keep those protections in place.'
+        : 'Strengthening protection helps preserve the foundation you are building, but it has to be sized to what the household can sustain.';
     case 'vision':
       return isBiggest
         ? 'Vision is the area most in need of clarity. Sharper direction will make saving, spending, and investing decisions easier to align and follow through on.'
@@ -1372,11 +1372,14 @@ function getComparisonHelperLine(label: string) {
   }
 }
 
-function getComparisonWhyItMatters(metric?: ComparisonMetric) {
+function getComparisonWhyItMatters(metric?: ComparisonMetric | null) {
   if (!metric) return 'Use the comparison as a guide for where to focus next, not as a grade.';
 
   switch (metric.label) {
     case 'Net Worth':
+      if (metric.myValue < 0) {
+        return 'Right now, liabilities are ahead of assets. The priority is not optimization — it is reducing debt pressure and building a small cash buffer so net worth can start moving in the right direction.';
+      }
       return 'This shows whether your assets are pulling ahead of what you owe. It is one of the clearest signs that your foundation is gaining strength.';
     case 'Consumer Debt':
       return 'Debt pressure is really about monthly payments. The lower those payments are, the more room you have for saving, investing, and choices.';
@@ -1395,10 +1398,10 @@ function getComparisonTakeaway(metrics: ComparisonMetric[]) {
   const strongMetrics = metrics.filter((metric) => metric.status === 'ahead' || metric.status === 'strong');
   const watchMetrics = metrics.filter((metric) => metric.status === 'watch');
   const typicalMetrics = metrics.filter((metric) => metric.status === 'average');
-  const strongest = strongMetrics[0] ?? metrics[0];
+  const strongest = strongMetrics[0] ?? null;
   const needsAttention = watchMetrics[0] ?? typicalMetrics[0] ?? null;
 
-  if (strongMetrics.length >= 4) {
+  if (strongMetrics.length >= 4 && strongest) {
     return {
       headline: 'You have more working than most people in your situation.',
       body: needsAttention
@@ -1411,9 +1414,9 @@ function getComparisonTakeaway(metrics: ComparisonMetric[]) {
     };
   }
 
-  if (strongMetrics.length >= 2) {
+  if (strongMetrics.length >= 2 && strongest) {
     return {
-      headline: 'You are in a solid spot, but one pressure point still deserves attention.',
+      headline: 'You have a few strengths, but one pressure point still deserves attention.',
       body: needsAttention
         ? `You are doing well with ${getComparisonPlainLabel(strongest.label)}, but ${getComparisonPlainLabel(needsAttention.label)} is the area most likely to make day-to-day money feel easier.`
         : `You are doing well with ${getComparisonPlainLabel(strongest.label)}. The next step is turning that strength into more consistency across the full foundation.`,
@@ -1441,7 +1444,7 @@ function getSnapshotPrimaryConstraint(
   weakestPillar: string,
   bestNextMoveCard: BestNextMoveCard
 ) {
-  if (warnings.some((warning) => warning.type === 'income_constraint')) return 'Income or must-pay bills are limiting progress';
+  if (warnings.some((warning) => warning.type === 'income_constraint')) return 'Income is too thin for the current bills';
   if (warnings.some((warning) => warning.type === 'housing_pressure')) return 'Mortgage/rent and fixed bills are taking too much room';
   if (warnings.some((warning) => warning.type === 'structural_pressure')) return 'Too many required payments are stacking up';
   if (bestNextMoveCard.title.toLowerCase().includes('excess cash')) return 'Idle cash may be slowing long-term growth';
@@ -1672,7 +1675,7 @@ function HouseholdComparisonSection({
           </div>
 
           <div className="mt-4 grid items-stretch gap-3 md:grid-cols-2">
-            {comparisonTakeaway.strongest && (
+            {comparisonTakeaway.strongest ? (
               <div className="flex h-full min-h-[190px] flex-col justify-between rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
                 <div className="flex items-center justify-between gap-2">
                   <div className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700">Working Well</div>
@@ -1688,6 +1691,26 @@ function HouseholdComparisonSection({
                 <div className="mt-1 text-sm font-semibold text-navy-900">{comparisonTakeaway.strongest.label}</div>
                 <p className="mt-2 text-xs leading-5 text-slate-600">
                   {getComparisonWhyItMatters(comparisonTakeaway.strongest)}
+                </p>
+              </div>
+            ) : (
+              <div className="flex h-full min-h-[190px] flex-col justify-between rounded-2xl border border-blue-200 bg-blue-50/70 p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-xs font-bold uppercase tracking-[0.14em] text-blue-700">First Area to Build</div>
+                  <span className="rounded-full border border-blue-200 bg-white px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-blue-700">
+                    Start Here
+                  </span>
+                </div>
+                <div className="mt-2 text-lg font-black text-navy-900">
+                  {comparisonTakeaway.needsAttention
+                    ? formatComparisonValue(comparisonTakeaway.needsAttention.myValue, comparisonTakeaway.needsAttention.unit)
+                    : 'Create margin'}
+                </div>
+                <div className="mt-1 text-sm font-semibold text-navy-900">
+                  {comparisonTakeaway.needsAttention?.label ?? 'Monthly breathing room'}
+                </div>
+                <p className="mt-2 text-xs leading-5 text-slate-600">
+                  {getComparisonWhyItMatters(comparisonTakeaway.needsAttention)}
                 </p>
               </div>
             )}

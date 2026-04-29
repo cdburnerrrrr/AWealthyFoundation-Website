@@ -513,23 +513,39 @@ export function deriveV2Signals(
 }
 
 function scoreIncome(answers: Record<string, any>, metrics: V2FinancialMetrics) {
-  let score = 55;
+  // Income is not just “do you have a paycheck?” — it has to be enough for the household it supports.
+  // This prevents a low-income two-adult/with-kids household from scoring like a strong income base
+  // just because income is consistent.
+  let score = 45;
+  const dependents = hasDependents(answers);
+  const partneredHousehold = ['partnered', 'partnered_with_dependents'].includes(answers.relationshipStatus);
 
-  if (metrics.monthlyIncome > 0) score += 10;
+  if (metrics.monthlyIncome > 0) score += 8;
 
   const consistency = answers.incomeConsistency;
-  if (consistency === 'very_consistent' || consistency === 'very_stable' || consistency === 'stable') score += 20;
-  else if (consistency === 'mostly_consistent' || consistency === 'mostly_stable') score += 12;
-  else if (consistency === 'variable') score += 4;
-  else if (consistency === 'highly_unpredictable' || consistency === 'unstable') score -= 10;
+  if (consistency === 'very_consistent' || consistency === 'very_stable' || consistency === 'stable') score += 16;
+  else if (consistency === 'mostly_consistent' || consistency === 'mostly_stable') score += 10;
+  else if (consistency === 'variable') score += 2;
+  else if (consistency === 'highly_unpredictable' || consistency === 'unstable') score -= 12;
 
   const growth = answers.incomeGrowthPotential;
-  if (growth === 'high') score += 10;
-  else if (growth === 'moderate') score += 6;
-  else if (growth === 'limited' || growth === 'low') score += 1;
+  if (growth === 'high') score += 9;
+  else if (growth === 'moderate') score += 5;
+  else if (growth === 'limited' || growth === 'low') score -= 2;
+  else if (growth === 'none') score -= 5;
 
-  if (metrics.monthlyIncome >= 6000) score += 5;
-  if (metrics.monthlyIncome <= 0) score -= 15;
+  // Household adequacy adjustment. $3k/month can be workable for a single person with low costs,
+  // but it is usually strained for a partnered household, especially with kids and debt.
+  if (metrics.monthlyIncome >= 8000) score += 8;
+  else if (metrics.monthlyIncome >= 6000) score += 5;
+  else if (metrics.monthlyIncome >= 4000) score += 1;
+  else if (metrics.monthlyIncome > 0) score -= dependents || partneredHousehold ? 18 : 8;
+
+  if (dependents && metrics.monthlyIncome < 5000) score -= 8;
+  if (partneredHousehold && metrics.monthlyIncome < 4000) score -= 6;
+  if (metrics.fixedCostPressureRatio >= 60 && metrics.monthlyIncome < 5000) score -= 10;
+  if (metrics.fixedCostPressureRatio >= 70) score -= 8;
+  if (metrics.monthlyIncome <= 0) score -= 25;
 
   return clamp(round(score));
 }
@@ -631,19 +647,31 @@ function scoreProtection(answers: Record<string, any>, signals: V2Signals) {
 }
 
 function scoreVision(answers: Record<string, any>) {
-  let score = 50;
+  // Vision should measure clarity and confidence, not merely whether the user picked a priority.
+  // A household that says “no real plan,” “overwhelmed,” or “paycheck-to-paycheck” should not
+  // receive a mid-range vision score by default.
+  let score = 35;
 
-  if (answers.financialDirection === 'very_clear' || answers.financialDirection === 'clear_goals') score += 25;
-  else if (answers.financialDirection === 'fairly_clear' || answers.financialDirection === 'some_goals') score += 15;
-  else if (answers.financialDirection === 'unclear' || answers.financialDirection === 'figuring_it_out') score += 5;
+  if (answers.financialDirection === 'very_clear' || answers.financialDirection === 'clear_goals') score += 32;
+  else if (answers.financialDirection === 'fairly_clear' || answers.financialDirection === 'some_goals') score += 18;
+  else if (answers.financialDirection === 'unclear' || answers.financialDirection === 'figuring_it_out') score += 2;
+  else if (answers.financialDirection === 'very_unclear' || answers.financialDirection === 'no_goals' || answers.financialDirection === 'stuck') score -= 10;
 
-  if (answers.primaryFinancialPriority) score += 10;
+  if (answers.primaryFinancialPriority && !['unclear', 'very_unclear', 'no_goals', 'stuck'].includes(answers.financialDirection)) {
+    score += 6;
+  }
+
+  if (answers.progressPriority === 'unsure') score -= 6;
+  if (answers.progressPriority === 'relief') score -= 2;
 
   const confidence = answers.financialConfidence;
   if (confidence === 'very_confident') score += 15;
-  else if (confidence === 'somewhat_confident') score += 8;
-  else if (confidence === 'low' || confidence === 'not_confident') score -= 5;
-  else if (confidence === 'overwhelmed') score -= 10;
+  else if (confidence === 'somewhat_confident') score += 7;
+  else if (confidence === 'low' || confidence === 'not_confident') score -= 8;
+  else if (confidence === 'overwhelmed') score -= 15;
+
+  if (answers.debtPaydownStrategy === 'minimums_only' || answers.debtPaydownStrategy === 'no_strategy') score -= 6;
+  if (answers.savingConsistency === 'not_currently') score -= 4;
 
   return clamp(round(score));
 }
@@ -691,6 +719,12 @@ export function getV2BiggestOpportunity(
   if (signals.housePoorRisk) weighted.spending -= 8;
   if (signals.highConsumerDebt) weighted.debt -= 12;
   if (signals.dependentsWithoutLifeInsurance) weighted.protection -= 10;
+
+  // When income is too low for the household and fixed costs are already high,
+  // the real-world bottleneck is usually income/margin, not another generic category.
+  if (signals.hasDependents && weighted.income < 70) weighted.income -= 8;
+  if (metrics.monthlyIncome < 4000 && signals.hasDependents) weighted.income -= 18;
+  if (metrics.monthlyIncome < 5000 && metrics.fixedCostPressureRatio >= 60) weighted.income -= 12;
 
   return Object.entries(weighted).sort((a, b) => a[1] - b[1])[0][0] as BuildingBlockKey;
 }
@@ -850,6 +884,10 @@ function buildNextStep(biggestOpportunity: BuildingBlockKey, metrics: V2Financia
   }
 
   if (signals.housePoorRisk && metrics.fixedCostPressureRatio >= 60) {
+    if ((signals.hasDependents && metrics.monthlyIncome < 5000) || metrics.monthlyIncome < 4000) {
+      return 'Create breathing room first. Review housing, utilities, and fixed obligations, but also treat more income as a primary lever — overtime, a second income stream, a better-paying role, or temporary family support may matter more than small cuts.';
+    }
+
     return 'Review housing, utilities, and fixed obligations together before making smaller spending cuts elsewhere.';
   }
 
@@ -870,6 +908,20 @@ function buildNextStep(biggestOpportunity: BuildingBlockKey, metrics: V2Financia
 
 function buildStructuralWarnings(metrics: V2FinancialMetrics, signals: V2Signals): V2Report['structuralWarnings'] {
   const warnings: V2Report['structuralWarnings'] = [];
+
+  const incomeIsTooThin =
+    (signals.hasDependents && metrics.monthlyIncome < 5000) ||
+    (metrics.monthlyIncome < 4000 && metrics.fixedCostPressureRatio >= 55) ||
+    (metrics.monthlyIncome < 5000 && metrics.fixedCostPressureRatio >= 65);
+
+  if (incomeIsTooThin) {
+    warnings.push({
+      type: 'income_constraint',
+      severity: 'high',
+      message:
+        'Income is too thin for the current household structure. Reducing expenses may help, but this household likely needs more income or a major structural change to create real breathing room.',
+    });
+  }
 
   if (signals.housePoorRisk) {
     warnings.push({
