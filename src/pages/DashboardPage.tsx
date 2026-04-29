@@ -715,6 +715,120 @@ function getDashboardNextMove(
   return 'Choose one next step and make progress this week.';
 }
 
+function makePlanActionId(phaseIndex: number, itemIndex: number, item: string) {
+  const slug = item
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 44);
+
+  return `phase-${phaseIndex + 1}-${itemIndex + 1}-${slug || 'step'}`;
+}
+
+function getStoredPlanProgress(storageKey: string): Record<string, boolean> {
+  if (typeof window === 'undefined') return {};
+
+  try {
+    const stored = window.localStorage.getItem(storageKey);
+    if (!stored) return {};
+    const parsed = JSON.parse(stored);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function getDashboardNinetyDayPlanPhases(
+  nextMoveCard: { title: string; body: string; checklist: string[] },
+  snapshot: ReturnType<typeof getStructuralSnapshot>,
+  weakestPillar?: string | null
+): ActionPlanStep[] {
+  const title = nextMoveCard.title.toLowerCase();
+  const fixedCost = formatPercent(snapshot?.fixedCostLoad ?? 0);
+  const excessCash = snapshot?.excessCashEstimate ?? 0;
+  const cashMonths = snapshot?.fixedCosts ? (snapshot.totalSavings ?? 0) / snapshot.fixedCosts : 0;
+  const pillarLabel = weakestPillar ? formatPillarName(weakestPillar) : 'your next priority';
+
+  if (title.includes('excess cash')) {
+    return [
+      {
+        title: 'Phase 1: Define “enough” cash',
+        body: `Start by deciding how much cash reserve still feels safe. Your current cushion is about ${cashMonths.toFixed(1)} months, so the goal is to separate safety money from idle money.`,
+        checklist: [
+          'Pick a cash reserve target in months of expenses.',
+          excessCash > 0 ? `Mark the estimated excess cash amount: ${formatCurrency(excessCash)}.` : 'Estimate how much cash sits above that target.',
+        ],
+      },
+      {
+        title: 'Phase 2: Move in stages',
+        body: 'Choose one staged move for excess cash instead of making one large emotional decision.',
+        checklist: [
+          'Move a first portion to HYSA, brokerage, Roth, debt, or another priority.',
+          'Set a simple date to review the result before moving more.',
+        ],
+      },
+      {
+        title: 'Phase 3: Rebalance the system',
+        body: 'After the first move, review how cash, investments, debt, and home equity fit together.',
+        checklist: [
+          'Compare cash vs. investments vs. real estate equity.',
+          'Rerun the assessment after meaningful changes.',
+        ],
+      },
+    ];
+  }
+
+  if (title.includes('income') || title.includes('fixed') || title.includes('breathing')) {
+    return [
+      {
+        title: 'Phase 1: Create breathing room',
+        body: `Start with the move that creates the fastest improvement in monthly cash flow${fixedCost ? ` — your must-pay bills are around ${fixedCost} of take-home pay` : ''}.`,
+        checklist: [
+          'Look for immediate income options: extra shifts, overtime, side work, selling unused items, or applying for a better role.',
+          'Identify one major fixed cost to challenge: housing, vehicle, utilities, insurance, or another required bill.',
+          'Avoid adding any new fixed payment while the foundation is under pressure.',
+        ],
+      },
+      {
+        title: 'Phase 2: Stabilize your cash flow',
+        body: 'Once you create some breathing room, protect it so new expenses do not absorb the progress.',
+        checklist: [
+          'Keep any income gain or cost reduction visible in one monthly margin number.',
+          'Build a small cash buffer so surprise expenses do not push you backward.',
+          'Give freed-up money a job before it disappears into daily spending.',
+        ],
+      },
+      {
+        title: 'Phase 3: Build momentum',
+        body: 'With more stability, start building forward into saving, protection, debt payoff, and long-term growth.',
+        checklist: [
+          'Direct the first stable margin toward a starter emergency fund or priority debt.',
+          'Review basic protection needs, especially health coverage and affordable term life if others depend on your income.',
+          'Rerun the assessment after meaningful progress and choose the next highest-leverage area.',
+        ],
+      },
+    ];
+  }
+
+  return [
+    {
+      title: 'Phase 1: Focus the first move',
+      body: nextMoveCard.body || `Start with ${pillarLabel}. One focused improvement here should create the biggest ripple effect.`,
+      checklist: nextMoveCard.checklist.slice(0, 3),
+    },
+    {
+      title: 'Phase 2: Make it repeatable',
+      body: 'The next step is making the first action reliable. One good move helps, but one repeatable system changes the foundation.',
+      checklist: ['Pick one number or behavior to track weekly.', 'Schedule a 15-minute check-in before the month ends.'],
+    },
+    {
+      title: 'Phase 3: Reassess and advance',
+      body: 'After the first 90 days, compare your score and building blocks. Keep what improved and move to the next highest-leverage area.',
+      checklist: ['Rerun the assessment after meaningful progress.', 'Choose the next building block to strengthen.'],
+    },
+  ];
+}
+
 function getPillarTone(score: number) {
   if (score >= 80) {
     return {
@@ -1526,6 +1640,56 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     [assessment, snapshot, weakestPillar]
   );
 
+  const planProgressStorageKey = `awf-90-day-plan-progress-${(user as any)?.id ?? 'guest'}-${
+    (rawAssessment as any)?.id ?? (assessment as any)?.id ?? (latestHistoryRecord as any)?.id ?? 'latest'
+  }`;
+  const [completedPlanActions, setCompletedPlanActions] = useState<Record<string, boolean>>(() =>
+    getStoredPlanProgress(planProgressStorageKey)
+  );
+
+  useEffect(() => {
+    setCompletedPlanActions(getStoredPlanProgress(planProgressStorageKey));
+  }, [planProgressStorageKey]);
+
+  const dashboardPlanPhases = useMemo(
+    () => getDashboardNinetyDayPlanPhases(dashboardNextMoveCard, snapshot, weakestPillar),
+    [dashboardNextMoveCard, snapshot, weakestPillar]
+  );
+
+  const dashboardPlanActions = useMemo(
+    () =>
+      dashboardPlanPhases.flatMap((phase, phaseIndex) =>
+        safeArray(phase.checklist).slice(0, 3).map((item, itemIndex) => ({
+          id: makePlanActionId(phaseIndex, itemIndex, item),
+          label: item,
+          phaseTitle: phase.title,
+          phaseIndex,
+        }))
+      ),
+    [dashboardPlanPhases]
+  );
+
+  const completedDashboardPlanCount = dashboardPlanActions.filter((action) => completedPlanActions[action.id]).length;
+  const dashboardPlanPercent = dashboardPlanActions.length
+    ? Math.round((completedDashboardPlanCount / dashboardPlanActions.length) * 100)
+    : 0;
+  const nextDashboardPlanAction = dashboardPlanActions.find((action) => !completedPlanActions[action.id]) ?? dashboardPlanActions[0] ?? null;
+
+  const toggleDashboardPlanAction = (actionId: string) => {
+    setCompletedPlanActions((current) => {
+      const next = {
+        ...current,
+        [actionId]: !current[actionId],
+      };
+
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(planProgressStorageKey, JSON.stringify(next));
+      }
+
+      return next;
+    });
+  };
+
   const assetRows = useMemo(() => {
     const detailedInvestmentTotal =
       (snapshot?.retirement401kIraBalance ?? 0) +
@@ -1788,20 +1952,20 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Debt Pressure</div>
+                          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Debt Status</div>
                           <div className="mt-4 text-2xl font-bold text-violet-300">
                             {(snapshot?.consumerDebt ?? snapshot?.totalDebtBalance ?? 0) <= 0
                               ? 'No Consumer Debt'
                               : freedomDateScenario?.results?.freedomDate
-                                ? ((snapshot?.fixedCostLoad ?? 0) >= 60 || (snapshot?.netWorth ?? 0) < 0 ? 'High Pressure' : new Date(freedomDateScenario.results.freedomDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }))
-                                : ((snapshot?.fixedCostLoad ?? 0) >= 60 || (snapshot?.netWorth ?? 0) < 0 ? 'High Pressure' : 'Build Payoff Plan')}
+                                ? new Date(freedomDateScenario.results.freedomDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                                : 'Use Debt Tool'}
                           </div>
                           <div className="mt-1 text-sm text-slate-400">
                             {(snapshot?.consumerDebt ?? snapshot?.totalDebtBalance ?? 0) <= 0
                               ? (snapshot?.mortgageDebt ?? 0) > 0 ? 'Mortgage only' : 'Debt-free'
                               : freedomDateScenario?.results?.monthsSaved
-                                ? ((snapshot?.fixedCostLoad ?? 0) >= 60 || (snapshot?.netWorth ?? 0) < 0 ? 'Stabilize cash flow first' : `${freedomDateScenario.results.monthsSaved} months saved`)
-                                : ((snapshot?.fixedCostLoad ?? 0) >= 60 || (snapshot?.netWorth ?? 0) < 0 ? 'Stabilize cash flow first' : 'Open payoff planner')}
+                                ? `${freedomDateScenario.results.monthsSaved} months saved`
+                                : 'Open payoff planner'}
                           </div>
                         </div>
                         <Calendar className="h-10 w-10 text-violet-300/80" />
@@ -1869,22 +2033,52 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                 </DashboardPanel>
 
                 <DashboardPanel className="p-5 md:p-6">
-                  <div className="mb-4 flex items-center gap-2 text-cyan-300">
-                    <Sparkles className="h-5 w-5" />
-                    <div className="text-xs font-semibold uppercase tracking-[0.16em]">Your Best Next Move</div>
+                  <div className="mb-4 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2 text-cyan-300">
+                      <Sparkles className="h-5 w-5" />
+                      <div className="text-xs font-semibold uppercase tracking-[0.16em]">Your 90-Day Focus</div>
+                    </div>
+                    <div className="rounded-full border border-cyan-300/20 bg-cyan-300/8 px-3 py-1 text-xs font-bold text-cyan-200">
+                      {dashboardPlanPercent}% complete
+                    </div>
                   </div>
-                  <h2 className="text-2xl font-bold">{dashboardNextMoveCard.title}</h2>
-                  <p className="mt-3 text-sm leading-6 text-slate-400">{dashboardNextMoveCard.body}</p>
-                  <div className="mt-5 space-y-3">
-                    {dashboardNextMoveCard.checklist.slice(0, 3).map((item, index) => (
-                      <div key={index} className="flex items-center gap-3 text-sm text-slate-300">
-                        <CheckCircle2 className="h-5 w-5 text-cyan-300" />
-                        {item}
-                      </div>
-                    ))}
+
+                  <h2 className="text-2xl font-bold">{nextDashboardPlanAction ? 'Next step' : 'Plan complete'}</h2>
+                  <p className="mt-3 text-sm leading-6 text-slate-400">
+                    {nextDashboardPlanAction
+                      ? nextDashboardPlanAction.label
+                      : 'You have completed the current 90-day plan. Review your report or retake the assessment to choose the next priority.'}
+                  </p>
+
+                  <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                    <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                      <span>{completedDashboardPlanCount} of {dashboardPlanActions.length} steps complete</span>
+                      <span>{dashboardPlanPercent}%</span>
+                    </div>
+                    <div className="h-2.5 overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-copper-400 transition-all duration-300"
+                        style={{ width: `${dashboardPlanPercent}%` }}
+                      />
+                    </div>
+                    <p className="mt-3 text-xs leading-5 text-slate-400">
+                      This stays synced with the checklist in your report. Complete 1–2 steps per week to build momentum.
+                    </p>
                   </div>
-                  <button onClick={handleRoadmapClick} className="mt-6 inline-flex items-center gap-2 rounded-2xl border border-cyan-300/35 bg-cyan-300/8 px-4 py-3 text-sm font-bold text-cyan-200 shadow-[0_0_28px_rgba(34,211,238,.12)]">
-                    {canViewPremium ? 'View Full Roadmap' : 'Turn this into a step-by-step plan'} <ArrowRight className="h-4 w-4" />
+
+                  {nextDashboardPlanAction && (
+                    <button
+                      type="button"
+                      onClick={() => toggleDashboardPlanAction(nextDashboardPlanAction.id)}
+                      className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-300/30 bg-emerald-300/10 px-4 py-3 text-sm font-bold text-emerald-200 hover:bg-emerald-300/15"
+                    >
+                      <CheckCircle2 className="h-5 w-5" />
+                      Mark this step complete
+                    </button>
+                  )}
+
+                  <button onClick={handleViewLatestReport} className="mt-3 inline-flex items-center gap-2 rounded-2xl border border-cyan-300/35 bg-cyan-300/8 px-4 py-3 text-sm font-bold text-cyan-200 shadow-[0_0_28px_rgba(34,211,238,.12)]">
+                    Open full 90-day plan <ArrowRight className="h-4 w-4" />
                   </button>
                 </DashboardPanel>
               </section>
