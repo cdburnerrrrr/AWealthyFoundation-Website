@@ -1423,6 +1423,53 @@ function getComparisonWhyItMatters(metric?: ComparisonMetric | null) {
   }
 }
 
+
+function getComparisonSecondaryMetric(
+  metrics: ComparisonMetric[],
+  primary?: ComparisonMetric | null,
+  strongest?: ComparisonMetric | null,
+  warnings: StructuralWarning[] = []
+) {
+  const byLabel = (label: string) => metrics.find((metric) => metric.label === label) ?? null;
+  const differentFromPrimary = (metric?: ComparisonMetric | null) =>
+    metric && (!primary || metric.label !== primary.label);
+
+  const hasIncomeConstraint = warnings.some((warning) => warning.type === 'income_constraint');
+  const hasHousingPressure = warnings.some((warning) => warning.type === 'housing_pressure');
+
+  const priorityLabels = hasIncomeConstraint || hasHousingPressure
+    ? ['Consumer Debt', 'Savings Rate', 'Net Worth', 'Investing Rate']
+    : ['Fixed Cost Load', 'Consumer Debt', 'Savings Rate', 'Investing Rate', 'Net Worth'];
+
+  if (differentFromPrimary(strongest)) return strongest;
+
+  const watchOrTypical = priorityLabels
+    .map(byLabel)
+    .find((metric) => differentFromPrimary(metric) && (metric.status === 'watch' || metric.status === 'average'));
+  if (watchOrTypical) return watchOrTypical;
+
+  const anyDifferent = priorityLabels.map(byLabel).find((metric) => differentFromPrimary(metric));
+  return anyDifferent ?? null;
+}
+
+function getComparisonCardRole(metric?: ComparisonMetric | null) {
+  if (!metric) return 'Next Layer';
+  switch (metric.label) {
+    case 'Fixed Cost Load':
+      return 'First Area to Build';
+    case 'Consumer Debt':
+      return 'Debt Pressure';
+    case 'Savings Rate':
+      return 'Cash Buffer';
+    case 'Investing Rate':
+      return 'Future Growth';
+    case 'Net Worth':
+      return 'Longer-Term Signal';
+    default:
+      return 'Keep An Eye On';
+  }
+}
+
 function getComparisonTakeaway(
   metrics: ComparisonMetric[],
   warnings: StructuralWarning[] = []
@@ -1692,8 +1739,15 @@ function HouseholdComparisonSection({
   const aheadCount = comparisonMetrics.filter((item) => item.status === 'ahead' || item.status === 'strong').length;
   const watchCount = comparisonMetrics.filter((item) => item.status === 'watch').length;
   const comparisonTakeaway = getComparisonTakeaway(comparisonMetrics, warnings);
-  const strongestTone = comparisonTakeaway.strongest ? getComparisonTone(comparisonTakeaway.strongest.status) : null;
-  const watchTone = comparisonTakeaway.needsAttention ? getComparisonTone(comparisonTakeaway.needsAttention.status) : null;
+  const primaryTakeawayMetric = comparisonTakeaway.needsAttention ?? comparisonTakeaway.strongest ?? null;
+  const secondaryTakeawayMetric = getComparisonSecondaryMetric(
+    comparisonMetrics,
+    primaryTakeawayMetric,
+    comparisonTakeaway.strongest,
+    warnings
+  );
+  const primaryTone = primaryTakeawayMetric ? getComparisonTone(primaryTakeawayMetric.status) : null;
+  const secondaryTone = secondaryTakeawayMetric ? getComparisonTone(secondaryTakeawayMetric.status) : null;
 
   return (
     <section
@@ -1748,73 +1802,61 @@ function HouseholdComparisonSection({
           </div>
 
           <div className="mt-4 grid items-stretch gap-3 md:grid-cols-2">
-            {comparisonTakeaway.strongest ? (
-              <div className="flex h-full min-h-[190px] flex-col justify-between rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700">Working Well</div>
-                  {strongestTone && (
-                    <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${strongestTone.badge}`}>
-                      {strongestTone.label}
-                    </span>
-                  )}
+            <div className="flex h-full min-h-[190px] flex-col justify-between rounded-2xl border border-blue-200 bg-blue-50/70 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-xs font-bold uppercase tracking-[0.14em] text-blue-700">
+                  {getComparisonCardRole(primaryTakeawayMetric)}
                 </div>
-                <div className="mt-2 text-lg font-black text-navy-900">
-                  {formatComparisonValue(comparisonTakeaway.strongest.myValue, comparisonTakeaway.strongest.unit)}
-                </div>
-                <div className="mt-1 text-sm font-semibold text-navy-900">{comparisonTakeaway.strongest.label}</div>
-                <p className="mt-2 text-xs leading-5 text-slate-600">
-                  {getComparisonWhyItMatters(comparisonTakeaway.strongest)}
-                </p>
-              </div>
-            ) : (
-              <div className="flex h-full min-h-[190px] flex-col justify-between rounded-2xl border border-blue-200 bg-blue-50/70 p-4">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="text-xs font-bold uppercase tracking-[0.14em] text-blue-700">First Area to Build</div>
+                {primaryTone ? (
+                  <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${primaryTone.badge}`}>
+                    {primaryTakeawayMetric?.label === 'Fixed Cost Load' ? 'Start Here' : primaryTone.label}
+                  </span>
+                ) : (
                   <span className="rounded-full border border-blue-200 bg-white px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-blue-700">
                     Start Here
-                  </span>
-                </div>
-                <div className="mt-2 text-lg font-black text-navy-900">
-                  {comparisonTakeaway.needsAttention
-                    ? formatComparisonValue(comparisonTakeaway.needsAttention.myValue, comparisonTakeaway.needsAttention.unit)
-                    : 'Create margin'}
-                </div>
-                <div className="mt-1 text-sm font-semibold text-navy-900">
-                  {comparisonTakeaway.needsAttention?.label ?? 'Monthly breathing room'}
-                </div>
-                <p className="mt-2 text-xs leading-5 text-slate-600">
-                  {getComparisonWhyItMatters(comparisonTakeaway.needsAttention)}
-                </p>
-              </div>
-            )}
-
-            <div className="flex h-full min-h-[190px] flex-col justify-between rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
-              <div className="flex items-center justify-between gap-2">
-                <div className="text-xs font-bold uppercase tracking-[0.14em] text-amber-700">
-                  {comparisonTakeaway.needsAttention ? 'Keep An Eye On' : 'Next Layer'}
-                </div>
-                {watchTone && (
-                  <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${watchTone.badge}`}>
-                    {watchTone.label}
                   </span>
                 )}
               </div>
               <div className="mt-2 text-lg font-black text-navy-900">
-                {comparisonTakeaway.needsAttention
-                  ? formatComparisonValue(comparisonTakeaway.needsAttention.myValue, comparisonTakeaway.needsAttention.unit)
+                {primaryTakeawayMetric
+                  ? formatComparisonValue(primaryTakeawayMetric.myValue, primaryTakeawayMetric.unit)
+                  : 'Create margin'}
+              </div>
+              <div className="mt-1 text-sm font-semibold text-navy-900">
+                {primaryTakeawayMetric?.label ?? 'Monthly breathing room'}
+              </div>
+              <p className="mt-2 text-xs leading-5 text-slate-600">
+                {getComparisonWhyItMatters(primaryTakeawayMetric)}
+              </p>
+            </div>
+
+            <div className="flex h-full min-h-[190px] flex-col justify-between rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-xs font-bold uppercase tracking-[0.14em] text-amber-700">
+                  {secondaryTakeawayMetric ? getComparisonCardRole(secondaryTakeawayMetric) : 'Next Layer'}
+                </div>
+                {secondaryTone && (
+                  <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${secondaryTone.badge}`}>
+                    {secondaryTone.label}
+                  </span>
+                )}
+              </div>
+              <div className="mt-2 text-lg font-black text-navy-900">
+                {secondaryTakeawayMetric
+                  ? formatComparisonValue(secondaryTakeawayMetric.myValue, secondaryTakeawayMetric.unit)
                   : 'Stay consistent'}
               </div>
               <div className="mt-1 text-sm font-semibold text-navy-900">
-                {comparisonTakeaway.needsAttention?.label ?? 'Keep building the strong parts'}
+                {secondaryTakeawayMetric?.label ?? 'Keep building the strong parts'}
               </div>
               <p className="mt-2 text-xs leading-5 text-slate-600">
-                {getComparisonWhyItMatters(comparisonTakeaway.needsAttention ?? comparisonTakeaway.strongest)}
+                {getComparisonWhyItMatters(secondaryTakeawayMetric ?? comparisonTakeaway.strongest)}
               </p>
             </div>
           </div>
 
           <div className="mt-4 flex min-h-[120px] flex-col justify-between rounded-2xl border border-copper-200 bg-copper-50/70 p-4">
-            <div className="text-xs font-bold uppercase tracking-[0.14em] text-copper-700">What to do with this</div>
+            <div className="text-xs font-bold uppercase tracking-[0.14em] text-copper-700">What actually moves the needle right now</div>
             <p className="mt-2 text-sm font-semibold leading-7 text-navy-900">
               {comparisonTakeaway.nextMove}
             </p>
@@ -2699,6 +2741,54 @@ export default function ResultsPage() {
             </div>
           </SectionShell>
 
+          <SectionShell icon={Sparkles} title="Foundation Stress Test">
+            {warnings.length > 0 ? (
+              <div className="space-y-4">
+                {warnings.map((warning, index) => {
+                  const tone = getWarningTone(warning.severity);
+
+                  return (
+                    <div
+                      key={`${warning.type}-${index}`}
+                      className={`rounded-2xl border p-5 ${tone.card}`}
+                    >
+                      <div className="flex items-start justify-between gap-4 mb-3">
+                        <div className="text-lg font-bold text-amber-950">
+                          {getWarningTitle(warning.type)}
+                        </div>
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-semibold ${tone.badge}`}
+                        >
+                          {warning.severity === 'critical' ? 'Critical' : 'Warning'}
+                        </span>
+                      </div>
+
+                      <p className="text-gray-700 leading-7 mb-3">
+                        {getWarningBodyWithMetrics(warning, metrics)}
+                      </p>
+
+                      <div className="text-sm font-medium text-copper-700 leading-6">
+                        {getWarningAction(warning.type)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+                <div className="text-lg font-bold text-emerald-800 mb-2">
+                  No major structural warning signs were triggered
+                </div>
+                <p className="text-gray-700 leading-7">
+                  Your current structure did not trip a major fixed-cost or debt-pressure alert under the current thresholds. That does not mean the rest of the house is strong yet — it means the biggest issues may be showing up in your weaker pillars rather than in one obvious structural break.
+                </p>
+              </div>
+            )}
+          </SectionShell>
+
+        </section>
+
+        <section className="grid items-start gap-6 mb-6 lg:grid-cols-2">
           <SectionShell
             icon={meaningfulStrengths.length >= 2 ? CheckCircle2 : Target}
             title={meaningfulStrengths.length >= 2 ? 'What Is Already Working' : 'Where to Stabilize First'}
@@ -2753,54 +2843,6 @@ export default function ResultsPage() {
               </div>
             )}
           </SectionShell>
-        </section>
-
-        <section className="grid items-start gap-6 mb-6 lg:grid-cols-2">
-          <SectionShell icon={Sparkles} title="Foundation Stress Test">
-            {warnings.length > 0 ? (
-              <div className="space-y-4">
-                {warnings.map((warning, index) => {
-                  const tone = getWarningTone(warning.severity);
-
-                  return (
-                    <div
-                      key={`${warning.type}-${index}`}
-                      className={`rounded-2xl border p-5 ${tone.card}`}
-                    >
-                      <div className="flex items-start justify-between gap-4 mb-3">
-                        <div className="text-lg font-bold text-amber-950">
-                          {getWarningTitle(warning.type)}
-                        </div>
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-semibold ${tone.badge}`}
-                        >
-                          {warning.severity === 'critical' ? 'Critical' : 'Warning'}
-                        </span>
-                      </div>
-
-                      <p className="text-gray-700 leading-7 mb-3">
-                        {getWarningBodyWithMetrics(warning, metrics)}
-                      </p>
-
-                      <div className="text-sm font-medium text-copper-700 leading-6">
-                        {getWarningAction(warning.type)}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
-                <div className="text-lg font-bold text-emerald-800 mb-2">
-                  No major structural warning signs were triggered
-                </div>
-                <p className="text-gray-700 leading-7">
-                  Your current structure did not trip a major fixed-cost or debt-pressure alert under the current thresholds. That does not mean the rest of the house is strong yet — it means the biggest issues may be showing up in your weaker pillars rather than in one obvious structural break.
-                </p>
-              </div>
-            )}
-          </SectionShell>
-
           <SectionShell icon={Sparkles} title="Key Insights">
             {insights.length || carPaymentAnalysis ? (
               <div className="space-y-4">
@@ -2873,7 +2915,6 @@ export default function ResultsPage() {
               </div>
             </div>
           </section>
-        )}
 
         {features.showPremiumGuidance && Object.keys(pillarScores).length > 0 && (
           <div data-pdf-page-break-before="true">
