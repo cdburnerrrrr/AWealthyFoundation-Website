@@ -2325,33 +2325,33 @@ export default function ResultsPage() {
   const phaseCopy = {
     stabilize: {
       eyebrow: 'Stabilization Plan',
-      title: 'Create breathing room before adding complexity.',
+      title: 'What needs to change first',
       body:
-        'The report is pointing to a practical order of operations: reduce the pressure first, then strengthen the weaker pillars underneath it. This is less about doing everything and more about choosing the move that changes monthly cash flow fastest.',
-      primaryLabel: 'Primary Lever',
-      pressureLabel: 'What Is Creating Pressure',
-      forwardLabel: 'How To Move Forward',
-      insightLabel: 'Advisor Notes',
+        'Right now, your biggest constraint is income relative to fixed costs. Before anything else, the goal is to create breathing room — either by increasing income, reducing a major fixed cost, or both.',
+      primaryLabel: 'Your primary lever',
+      pressureLabel: 'Why things feel tight',
+      forwardLabel: 'What to do next',
+      insightLabel: 'Worth noting',
     },
     build: {
       eyebrow: 'Next Moves',
-      title: 'Turn the strongest parts of your foundation into steady momentum.',
+      title: 'What needs to improve next',
       body:
-        'You have pieces to build on, but a few areas are still limiting progress. The goal now is to improve the next constraint without scattering your effort across too many goals at once.',
-      primaryLabel: 'Primary Lever',
-      pressureLabel: 'What Still Needs Attention',
-      forwardLabel: 'How To Build Momentum',
-      insightLabel: 'Advisor Notes',
+        'You have pieces to build on, but one constraint is still limiting momentum. The goal now is to choose the move that creates the most relief or progress without scattering effort across too many goals.',
+      primaryLabel: 'Your primary lever',
+      pressureLabel: 'What still needs attention',
+      forwardLabel: 'What to do next',
+      insightLabel: 'Worth noting',
     },
     optimize: {
       eyebrow: 'Optimization Plan',
-      title: 'Refine what is already working so your money works harder.',
+      title: 'What to optimize next',
       body:
-        'Your foundation is strong enough that the next gains may come from alignment, efficiency, and better use of existing assets rather than basic stabilization.',
-      primaryLabel: 'Optimization Lever',
-      pressureLabel: 'Fine-Tuning Areas',
-      forwardLabel: 'How To Optimize From Here',
-      insightLabel: 'Strategic Notes',
+        'Your foundation is strong enough that the next gains should come from alignment, efficiency, and better use of existing assets — not from adding more complexity.',
+      primaryLabel: 'Your optimization lever',
+      pressureLabel: 'What to fine-tune',
+      forwardLabel: 'What to do next',
+      insightLabel: 'Worth noting',
     },
   }[foundationPhase];
   const displayedWarnings = warnings.slice(0, 3);
@@ -2723,40 +2723,36 @@ export default function ResultsPage() {
           data-pdf-page-break-avoid="true"
           className="mb-8 rounded-[2rem] border border-copper-300/20 bg-white/95 p-5 shadow-[0_24px_70px_rgba(15,42,68,0.18)] md:p-7"
         >
-          <div className="mb-6 border-b border-slate-200 pb-6">
+          <div className="mb-6">
             <div className="inline-flex rounded-full bg-copper-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-copper-700">
               {phaseCopy.eyebrow}
             </div>
-            <h2 className="mt-3 text-2xl font-bold tracking-tight text-navy-900 md:text-3xl">
-              {phaseCopy.title}
-            </h2>
-            <p className="mt-3 max-w-4xl text-sm leading-7 text-slate-600 md:text-base">
-              {phaseCopy.body}
-            </p>
           </div>
 
           <div className="mb-5 rounded-3xl border border-copper-200 bg-gradient-to-br from-copper-50 to-white p-5 md:p-6">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div className="max-w-3xl">
-                <div className="text-xs font-bold uppercase tracking-[0.18em] text-copper-700">
-                  What needs to change first
-                </div>
-                <h3 className="mt-2 text-xl font-bold text-navy-900 md:text-2xl">
-                  {bestNextMoveCard.title}
-                </h3>
-                <p className="mt-3 text-sm leading-7 text-slate-700 md:text-base">
-                  {bestNextMoveCard.intro}
-                </p>
-              </div>
+            <div className="max-w-4xl">
+              <h2 className="text-2xl font-bold tracking-tight text-navy-900 md:text-3xl">
+                {phaseCopy.title}
+              </h2>
+              <p className="mt-3 text-sm leading-7 text-slate-700 md:text-base">
+                {phaseCopy.body}
+              </p>
+            </div>
 
-              <div className="rounded-2xl border border-copper-200 bg-white p-4 lg:w-80">
-                <div className="text-xs font-bold uppercase tracking-[0.16em] text-copper-700">
-                  Best next step
-                </div>
-                <p className="mt-2 text-sm font-semibold leading-6 text-navy-900">
-                  {bestNextMoveCard.nextStep}
-                </p>
+            <div className="mt-5 rounded-2xl border border-copper-200 bg-white p-4">
+              <div className="text-xs font-bold uppercase tracking-[0.16em] text-copper-700">
+                Start here
               </div>
+              <ul className="mt-3 grid gap-3 md:grid-cols-3">
+                {(bestNextMoveCard.thisWeek.length ? bestNextMoveCard.thisWeek : stabilizeItems)
+                  .slice(0, 3)
+                  .map((item, index) => (
+                    <li key={`start-here-${index}`} className="flex items-start gap-3 text-sm leading-6 text-slate-700">
+                      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-copper-600" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+              </ul>
             </div>
           </div>
 
@@ -2764,14 +2760,11 @@ export default function ResultsPage() {
             <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
               <div className="mb-4 flex items-center gap-2">
                 <Target className="h-5 w-5 text-copper-600" />
-                <h3 className="text-xl font-bold text-navy-900">Where to focus</h3>
+                <h3 className="text-xl font-bold text-navy-900">{phaseCopy.primaryLabel}</h3>
               </div>
 
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <div className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
-                  Primary lever
-                </div>
-                <div className="mt-2 text-lg font-bold text-navy-900">
+                <div className="text-lg font-bold text-navy-900">
                   {bestNextMoveCard.title}
                 </div>
                 <p className="mt-2 text-sm leading-7 text-slate-700">
@@ -2782,7 +2775,7 @@ export default function ResultsPage() {
               <ul className="mt-4 space-y-3">
                 {bestNextMoveCard.rightNow.map((item, index) => (
                   <li key={`focus-${index}`} className="flex items-start gap-3 text-sm leading-6 text-slate-700">
-                    <span className="mt-2 h-1.5 w-1.5 rounded-full bg-copper-600" />
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-copper-600" />
                     <span>{item}</span>
                   </li>
                 ))}
@@ -2792,7 +2785,7 @@ export default function ResultsPage() {
             <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm md:p-6">
               <div className="mb-4 flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-copper-600" />
-                <h3 className="text-xl font-bold text-navy-900">What is creating pressure</h3>
+                <h3 className="text-xl font-bold text-navy-900">{phaseCopy.pressureLabel}</h3>
               </div>
 
               {displayedWarnings.length > 0 ? (
@@ -2855,27 +2848,22 @@ export default function ResultsPage() {
           <div className="mt-5 rounded-3xl border border-copper-200 bg-copper-50 p-5 md:p-6">
             <div className="mb-4 flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-copper-700" />
-              <h3 className="text-xl font-bold text-navy-900">How to move forward</h3>
+              <h3 className="text-xl font-bold text-navy-900">{phaseCopy.forwardLabel}</h3>
             </div>
 
-            <div className="grid gap-5 lg:grid-cols-[1fr_0.85fr]">
+            <div className="grid gap-5 lg:grid-cols-[1fr_0.82fr]">
               <div>
-                <div className="mb-3 text-sm font-bold uppercase tracking-[0.16em] text-copper-700">
-                  This week
-                </div>
-                <ul className="space-y-3">
-                  {(bestNextMoveCard.thisWeek.length ? bestNextMoveCard.thisWeek : stabilizeItems).map((item, index) => (
-                    <li key={`move-forward-${index}`} className="flex items-start gap-3 text-sm leading-6 text-slate-700">
-                      <span className="mt-2 h-1.5 w-1.5 rounded-full bg-copper-600" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
+                <p className="text-sm font-semibold leading-7 text-navy-900 md:text-base">
+                  Focus on the move that improves monthly cash flow first.
+                </p>
+                <p className="mt-2 text-sm leading-7 text-slate-700">
+                  Once breathing room improves, shift the focus toward saving, protection, and long-term growth.
+                </p>
               </div>
 
               <div className="rounded-2xl border border-copper-200 bg-white p-4">
                 <div className="text-xs font-bold uppercase tracking-[0.16em] text-copper-700">
-                  Worth noting
+                  {phaseCopy.insightLabel}
                 </div>
                 {carPaymentAnalysis ? (
                   <p className="mt-2 text-sm leading-7 text-slate-700">
@@ -2887,7 +2875,7 @@ export default function ResultsPage() {
                   </p>
                 ) : (
                   <p className="mt-2 text-sm leading-7 text-slate-700">
-                    Choose the move that changes monthly cash flow or removes the most pressure first. Momentum matters more than complexity right now.
+                    Momentum matters more than complexity right now. Make the first move visible, practical, and repeatable.
                   </p>
                 )}
               </div>
