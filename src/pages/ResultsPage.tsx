@@ -2723,150 +2723,116 @@ export default function ResultsPage() {
           data-pdf-page-break-avoid="true"
           className="mb-8 rounded-[2rem] border border-copper-300/20 bg-white/95 p-5 shadow-[0_24px_70px_rgba(15,42,68,0.18)] md:p-7"
         >
-          <div className="mb-6 flex flex-col gap-4 border-b border-slate-200 pb-6 lg:flex-row lg:items-start lg:justify-between">
-            <div className="max-w-3xl">
-              <div className="inline-flex rounded-full bg-copper-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-copper-700">
-                {phaseCopy.eyebrow}
-              </div>
-              <h2 className="mt-3 text-2xl font-bold tracking-tight text-navy-900 md:text-3xl">
-                {phaseCopy.title}
-              </h2>
-              <p className="mt-3 text-sm leading-7 text-slate-600 md:text-base">
-                {phaseCopy.body}
-              </p>
+          <div className="mb-6 border-b border-slate-200 pb-6">
+            <div className="inline-flex rounded-full bg-copper-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-copper-700">
+              {phaseCopy.eyebrow}
             </div>
+            <h2 className="mt-3 text-2xl font-bold tracking-tight text-navy-900 md:text-3xl">
+              {phaseCopy.title}
+            </h2>
+            <p className="mt-3 max-w-4xl text-sm leading-7 text-slate-600 md:text-base">
+              {phaseCopy.body}
+            </p>
+          </div>
 
-            <div className="rounded-2xl border border-copper-200 bg-copper-50 p-4 lg:max-w-sm">
-              <div className="text-xs font-bold uppercase tracking-[0.16em] text-copper-700">
-                What matters most
+          <div className="mb-5 rounded-3xl border border-copper-200 bg-gradient-to-br from-copper-50 to-white p-5 md:p-6">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="max-w-3xl">
+                <div className="text-xs font-bold uppercase tracking-[0.18em] text-copper-700">
+                  What needs to change first
+                </div>
+                <h3 className="mt-2 text-xl font-bold text-navy-900 md:text-2xl">
+                  {bestNextMoveCard.title}
+                </h3>
+                <p className="mt-3 text-sm leading-7 text-slate-700 md:text-base">
+                  {bestNextMoveCard.intro}
+                </p>
               </div>
-              <p className="mt-2 text-sm font-semibold leading-6 text-navy-900">
-                {bestNextMoveCard.nextStep}
-              </p>
+
+              <div className="rounded-2xl border border-copper-200 bg-white p-4 lg:w-80">
+                <div className="text-xs font-bold uppercase tracking-[0.16em] text-copper-700">
+                  Best next step
+                </div>
+                <p className="mt-2 text-sm font-semibold leading-6 text-navy-900">
+                  {bestNextMoveCard.nextStep}
+                </p>
+              </div>
             </div>
           </div>
 
-          <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="grid gap-5 lg:grid-cols-2">
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
               <div className="mb-4 flex items-center gap-2">
                 <Target className="h-5 w-5 text-copper-600" />
-                <h3 className="text-xl font-bold text-navy-900">{phaseCopy.primaryLabel}</h3>
+                <h3 className="text-xl font-bold text-navy-900">Where to focus</h3>
               </div>
 
-              {getStructuralContextNote(warnings, metrics) && (
-                <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-900">
-                  {getStructuralContextNote(warnings, metrics)}
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+                  Primary lever
                 </div>
-              )}
-
-              <div className="space-y-4">
-                {weakest.map(([pillar, pillarScore], index) => {
-                  const isBiggest = pillar === biggest;
-
-                  return (
-                    <div key={pillar} className="rounded-2xl border border-gray-200 border-l-4 border-l-copper-500 bg-gradient-to-r from-copper-50/70 to-gray-50 p-5">
-                      <div className="mb-3 flex items-start justify-between gap-4">
-                        <div>
-                          <div className="text-lg font-bold text-navy-900">
-                            {formatPillarName(pillar)}
-                          </div>
-                          <div className="text-sm text-copper-500">Score: {pillarScore}/100</div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          {index === 0 && (
-                            <span className="rounded-full bg-copper-100 px-3 py-1 text-xs font-semibold text-copper-700">
-                              {foundationPhase === 'optimize' ? 'Top Lever' : 'Start Here'}
-                            </span>
-                          )}
-                          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getPillarTone(pillarScore).badge}`}>
-                            {getPillarTone(pillarScore).label}
-                          </span>
-                        </div>
-                      </div>
-
-                      <p className="mb-2 font-semibold leading-7 text-navy-900">
-                        {getPriorityHeadline(pillar, isBiggest, score)}
-                      </p>
-
-                      <p className="mb-3 leading-7 text-gray-700">
-                        {getPriorityBody(pillar, isBiggest)}
-                      </p>
-
-                      <div className="mb-3 h-2 overflow-hidden rounded-full bg-gray-200">
-                        <div
-                          className={`h-full ${getPillarTone(pillarScore).bar}`}
-                          style={{ width: `${Math.max(4, pillarScore)}%` }}
-                        />
-                      </div>
-
-                      <div className="text-sm font-medium leading-6 text-copper-700">
-                        {priorities.find((item) => item.toLowerCase().includes(pillar.toLowerCase())) || getConstraintLine(pillar)}
-                      </div>
-
-                      {getPriorityMetricLine(pillar, metrics) ? (
-                        <div className="mt-2 text-sm leading-6 text-gray-600">
-                          {getPriorityMetricLine(pillar, metrics)}
-                        </div>
-                      ) : null}
-                    </div>
-                  );
-                })}
+                <div className="mt-2 text-lg font-bold text-navy-900">
+                  {bestNextMoveCard.title}
+                </div>
+                <p className="mt-2 text-sm leading-7 text-slate-700">
+                  {bestNextMoveCard.whyThisMatters}
+                </p>
               </div>
+
+              <ul className="mt-4 space-y-3">
+                {bestNextMoveCard.rightNow.map((item, index) => (
+                  <li key={`focus-${index}`} className="flex items-start gap-3 text-sm leading-6 text-slate-700">
+                    <span className="mt-2 h-1.5 w-1.5 rounded-full bg-copper-600" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
 
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm md:p-6">
               <div className="mb-4 flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-copper-600" />
-                <h3 className="text-xl font-bold text-navy-900">{phaseCopy.pressureLabel}</h3>
+                <h3 className="text-xl font-bold text-navy-900">What is creating pressure</h3>
               </div>
 
               {displayedWarnings.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {displayedWarnings.map((warning, index) => {
                     const tone = getWarningTone(warning.severity);
 
                     return (
                       <div key={`${warning.type}-${index}`} className={`rounded-2xl border p-4 ${tone.card}`}>
-                        <div className="mb-2 flex items-start justify-between gap-4">
+                        <div className="mb-2 flex items-start justify-between gap-3">
                           <div className="font-bold text-amber-950">
                             {getWarningTitle(warning.type)}
                           </div>
-                          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${tone.badge}`}>
+                          <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${tone.badge}`}>
                             {warning.severity === 'critical' ? 'Critical' : 'Watch'}
                           </span>
                         </div>
-                        <p className="text-sm leading-6 text-gray-700">
-                          {getWarningBodyWithMetrics(warning, metrics)}
-                        </p>
-                        <div className="mt-3 text-sm font-semibold leading-6 text-copper-700">
+                        <p className="text-sm leading-6 text-slate-700">
                           {getWarningAction(warning.type)}
-                        </div>
+                        </p>
                       </div>
                     );
                   })}
                 </div>
               ) : meaningfulStrengths.length >= 1 ? (
-                <div className="space-y-4">
-                  {meaningfulStrengths.map(([pillar, pillarScore]) => {
+                <div className="space-y-3">
+                  {meaningfulStrengths.slice(0, 3).map(([pillar, pillarScore]) => {
                     const Icon = PILLAR_ICONS[pillar] || CheckCircle2;
                     return (
                       <div key={pillar} className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                        <div className="mb-2 flex items-center justify-between gap-4">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-200 bg-white">
-                              <Icon className="h-5 w-5 text-emerald-700" />
-                            </div>
-                            <div>
-                              <div className="font-bold text-navy-900">{formatPillarName(pillar)}</div>
-                              <div className="text-sm text-gray-600">{pillarScore}/100</div>
-                            </div>
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-200 bg-white">
+                            <Icon className="h-5 w-5 text-emerald-700" />
                           </div>
-                          <span className="rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-semibold text-emerald-700">
-                            Strong
-                          </span>
+                          <div>
+                            <div className="font-bold text-navy-900">{formatPillarName(pillar)}</div>
+                            <div className="text-sm text-slate-600">{pillarScore}/100</div>
+                          </div>
                         </div>
-                        <p className="text-sm leading-6 text-gray-700">
+                        <p className="mt-3 text-sm leading-6 text-slate-700">
                           {strengthDescriptions[pillar] || 'This part of your foundation is giving you something meaningful to build on.'}
                         </p>
                       </div>
@@ -2878,121 +2844,57 @@ export default function ResultsPage() {
                   <div className="mb-2 text-lg font-bold text-emerald-800">
                     No major structural warning signs were triggered
                   </div>
-                  <p className="leading-7 text-gray-700">
-                    Your current structure did not trip a major fixed-cost or debt-pressure alert under the current thresholds. Keep building from the weakest pillar first.
+                  <p className="leading-7 text-slate-700">
+                    Your current structure did not trip a major fixed-cost or debt-pressure alert. Keep building from the weakest pillar first.
                   </p>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="mt-5 grid gap-5 lg:grid-cols-2">
-            <div className="rounded-3xl border border-copper-200 bg-copper-50 p-5">
-              <div className="mb-3 flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-copper-700" />
-                <h3 className="text-xl font-bold text-navy-900">{phaseCopy.forwardLabel}</h3>
-              </div>
-              <ul className="space-y-3">
-                {stabilizeItems.map((item, index) => (
-                  <li key={`phase-item-${index}`} className="flex items-start gap-3 text-sm leading-6 text-gray-700">
-                    <span className="mt-2 h-1.5 w-1.5 rounded-full bg-copper-600" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
+          <div className="mt-5 rounded-3xl border border-copper-200 bg-copper-50 p-5 md:p-6">
+            <div className="mb-4 flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-copper-700" />
+              <h3 className="text-xl font-bold text-navy-900">How to move forward</h3>
             </div>
 
-            <div className="rounded-3xl border border-slate-200 bg-white p-5">
-              <div className="mb-3 flex items-center gap-2">
-                <Shield className="h-5 w-5 text-copper-600" />
-                <h3 className="text-xl font-bold text-navy-900">{phaseCopy.insightLabel}</h3>
+            <div className="grid gap-5 lg:grid-cols-[1fr_0.85fr]">
+              <div>
+                <div className="mb-3 text-sm font-bold uppercase tracking-[0.16em] text-copper-700">
+                  This week
+                </div>
+                <ul className="space-y-3">
+                  {(bestNextMoveCard.thisWeek.length ? bestNextMoveCard.thisWeek : stabilizeItems).map((item, index) => (
+                    <li key={`move-forward-${index}`} className="flex items-start gap-3 text-sm leading-6 text-slate-700">
+                      <span className="mt-2 h-1.5 w-1.5 rounded-full bg-copper-600" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <div className="space-y-4">
-                {carPaymentAnalysis ? (
-                  <div className="rounded-2xl border border-copper-200 bg-copper-50 p-4">
-                    <div className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-copper-700">
-                      Car Payment Insight
-                    </div>
-                    <p className="text-sm leading-7 text-slate-700">
-                      Your vehicle payment is not just transportation; it is a monthly pressure point. Once it is gone, treating that freed-up payment as margin and progress can create a meaningful lift without adding another complicated strategy.
-                    </p>
-                  </div>
-                ) : null}
 
-                {displayedInsights.length > 0 ? (
-                  displayedInsights.map((insight, index) => (
-                    <div key={index} className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                      <div className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-copper-600">
-                        Insight {index + 1}
-                      </div>
-                      <p className="text-sm leading-7 text-gray-700">{insight}</p>
-                    </div>
-                  ))
+              <div className="rounded-2xl border border-copper-200 bg-white p-4">
+                <div className="text-xs font-bold uppercase tracking-[0.16em] text-copper-700">
+                  Worth noting
+                </div>
+                {carPaymentAnalysis ? (
+                  <p className="mt-2 text-sm leading-7 text-slate-700">
+                    Your vehicle payment is a monthly pressure point. When it is gone, treating that freed-up payment as margin and progress can create a meaningful lift.
+                  </p>
+                ) : displayedInsights.length > 0 ? (
+                  <p className="mt-2 text-sm leading-7 text-slate-700">
+                    {displayedInsights[0]}
+                  </p>
                 ) : (
-                  <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                    <div className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-copper-600">
-                      Insight 1
-                    </div>
-                    <p className="text-sm leading-7 text-gray-700">
-                      Your next improvement should be chosen for leverage, not volume. Pick the move that changes monthly cash flow or removes the most pressure first.
-                    </p>
-                  </div>
+                  <p className="mt-2 text-sm leading-7 text-slate-700">
+                    Choose the move that changes monthly cash flow or removes the most pressure first. Momentum matters more than complexity right now.
+                  </p>
                 )}
               </div>
             </div>
           </div>
         </section>
 
-        {actualPlan === 'free' && !features.showPremiumGuidance && (
-          <section
-            data-pdf-ignore="true"
-            className="relative overflow-hidden rounded-3xl border border-copper-300/25 bg-gradient-to-r from-[#7c461c] via-[#b87333] to-[#d28b3c] p-5 md:p-7 mb-8 text-white shadow-[0_24px_70px_rgba(15,42,68,0.28)]"
-          >
-            <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
-            <div className="absolute -bottom-24 left-1/3 h-56 w-56 rounded-full bg-navy-900/20 blur-2xl" />
-            <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-5">
-              <div className="max-w-3xl">
-                <div className="inline-flex items-center rounded-full border border-white/20 bg-white/15 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-white/85 mb-3">
-                  Premium Roadmap
-                </div>
-                <h2 className="text-2xl md:text-3xl font-bold mb-2">
-                  Turn this into a step-by-step plan you can actually follow.
-                </h2>
-                <p className="text-white/88 leading-7">
-                  Premium adds the missing layer: what to do first, what to ignore for now,
-                  and how to move through the next 12 months without trying to fix everything at once.
-                </p>
-                <div className="mt-4 grid gap-2 text-sm text-white/90 sm:grid-cols-3">
-                  <div className="rounded-2xl border border-white/15 bg-white/10 p-3">Priority ladder</div>
-                  <div className="rounded-2xl border border-white/15 bg-white/10 p-3">Quarterly action plan</div>
-                  <div className="rounded-2xl border border-white/15 bg-white/10 p-3">Guided prompts</div>
-                </div>
-              </div>
-
-              <div className="shrink-0">
-                <button
-                  onClick={() => navigate('/pricing')}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 font-bold text-navy-900 shadow-sm hover:bg-copper-50 transition-colors"
-                >
-                  Unlock the roadmap
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </section>
-
-        )}
-        {features.showPremiumGuidance && Object.keys(pillarScores).length > 0 && (
-          <div data-pdf-page-break-before="true">
-            <PremiumGuidanceSection
-            pillarScores={pillarScores as Record<string, number>}
-            reportTier={reportTier}
-            onUnlockPremium={() => navigate('/pricing')}
-          />
-          </div>
-        )}
-
-<div data-pdf-ignore="true" className="my-10">
   <ReportNewsletterCard userEmail={user?.email} />
 </div>
 
