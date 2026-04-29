@@ -615,18 +615,18 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
 },
 {
   key: 'carPaymentOpportunityReview',
-  question: 'See how this vehicle payment affects your financial foundation',
+  question: 'Let’s look at what this vehicle payment is really costing you',
   type: 'single',
   section: 'debt',
   required: false,
-  helperText: 'This quick activity shows the monthly breathing room and long-term opportunity tied to your vehicle payment.',
+  helperText: 'This quick activity turns the payment into real monthly and long-term numbers, then saves the insight into your report.',
   options: [{ value: 'review', label: 'Show me the impact' }],
   conditions: [
     {
       operator: 'custom',
       fn: (r) =>
         (r.vehicleDebt === 'car_loan' || r.vehicleDebt === 'car_lease') &&
-        Number(r.monthlyVehiclePayment || 0) >= 250 &&
+        Number(r.monthlyVehiclePayment || 0) > 0 &&
         r.carPaymentOpportunityReview !== 'reviewed',
     },
   ],
@@ -635,7 +635,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     priority: 'conditional',
     askIf: (a) =>
       (a.vehicleDebt === 'car_loan' || a.vehicleDebt === 'car_lease') &&
-      Number(a.monthlyVehiclePayment || 0) >= 250 &&
+      Number(a.monthlyVehiclePayment || 0) > 0 &&
       a.carPaymentOpportunityReview !== 'reviewed',
   },
 },

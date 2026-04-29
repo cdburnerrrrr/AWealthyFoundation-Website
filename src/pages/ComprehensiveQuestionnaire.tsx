@@ -164,6 +164,15 @@ const INLINE_GROUPS: Record<string, string[]> = {
 };
 
 const CHILD_KEYS = new Set(Object.values(INLINE_GROUPS).flat());
+const CHILD_PARENT_KEY: Record<string, string> = Object.entries(INLINE_GROUPS).reduce(
+  (acc, [parentKey, childKeys]) => {
+    childKeys.forEach((childKey) => {
+      acc[childKey] = parentKey;
+    });
+    return acc;
+  },
+  {} as Record<string, string>
+);
 
 function getEffectiveSectionKey(question?: Question) {
   if (!question) return 'foundation';
@@ -200,7 +209,18 @@ function isAnswered(question: Question | undefined, value: ResponseValue | undef
 }
 
 function getRenderableQuestions(visibleQuestions: Question[]) {
-  return visibleQuestions.filter((question) => !CHILD_KEYS.has(question.key));
+  const visibleQuestionKeys = new Set(visibleQuestions.map((question) => question.key));
+
+  return visibleQuestions.filter((question) => {
+    if (!CHILD_KEYS.has(question.key)) return true;
+
+    const parentKey = CHILD_PARENT_KEY[question.key];
+
+    // In continue mode, a snapshot/root question may already be answered and therefore removed
+    // from the detailed flow. When that happens, its detailed follow-ups need to render as
+    // standalone questions instead of disappearing with the parent.
+    return !parentKey || !visibleQuestionKeys.has(parentKey);
+  });
 }
 
 function getSectionSequence(questions: Question[]) {
