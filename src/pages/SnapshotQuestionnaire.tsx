@@ -239,7 +239,7 @@ function getSectionLabel(section?: Question['section'], key?: string) {
 function toNumber(value: unknown): number {
   if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
   if (typeof value === 'string') {
-    const parsed = Number(value.replace(/[^d.-]/g, ''));
+    const parsed = Number(value.replace(/[^\d.-]/g, ''));
     return Number.isFinite(parsed) ? parsed : 0;
   }
   return 0;
@@ -1123,7 +1123,9 @@ export default function SnapshotQuestionnaire() {
                   <QuestionInput
                     question={currentQuestion}
                     value={responses[currentQuestion.key]}
+                    responses={responses}
                     onChange={(value) => handleValueChange(currentQuestion, value)}
+                    onFieldChange={handleFieldValueChange}
                     onEnter={() => {
                       if (canProceed && currentQuestion.type === 'number') {
                         if (currentStep === renderableQuestions.length - 1) {
