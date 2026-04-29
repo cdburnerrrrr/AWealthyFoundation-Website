@@ -2321,6 +2321,23 @@ export default function ResultsPage() {
     };
   }, [planProgressStorageKey, user?.id, planProgressAssessmentId]);
 
+  useEffect(() => {
+    const scrollToNinetyDayPlan = () => {
+      if (typeof window === 'undefined' || window.location.hash !== '#90-day-plan') return;
+
+      window.setTimeout(() => {
+        document
+          .getElementById('90-day-plan')
+          ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 250);
+    };
+
+    scrollToNinetyDayPlan();
+    window.addEventListener('hashchange', scrollToNinetyDayPlan);
+
+    return () => window.removeEventListener('hashchange', scrollToNinetyDayPlan);
+  }, []);
+
   const togglePlanAction = (actionId: string) => {
     const nextCompleted = !completedPlanActions[actionId];
     const next = {
@@ -3115,6 +3132,7 @@ export default function ResultsPage() {
   <ReportNewsletterCard userEmail={user?.email} />
 </div>
 
+        <div id="90-day-plan" className="scroll-mt-28">
         <SectionShell icon={Clock3} title="Your 90-Day Plan" className="mb-6 pdf-avoid-break">
           <div className="mb-5 rounded-2xl border border-copper-200 bg-gradient-to-r from-copper-50 to-white p-4 md:p-5">
             <div className="text-sm font-semibold uppercase tracking-[0.18em] text-copper-700">
@@ -3218,6 +3236,7 @@ export default function ResultsPage() {
             This plan works because it focuses on your biggest constraint first — not everything at once.
           </div>
         </SectionShell>
+        </div>
 
         <div data-pdf-ignore="true" className="flex justify-center pb-8">
           <button

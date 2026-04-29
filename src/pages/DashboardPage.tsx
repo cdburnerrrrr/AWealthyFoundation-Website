@@ -1789,25 +1789,35 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const totalAssets = assetRows.reduce((sum, row) => sum + row.value, 0);
   const welcomeName = user?.name || user?.email?.split('@')?.[0] || 'there';
 
-  const handleViewLatestReport = () => {
-    void track('view_latest_report_clicked', { source: 'dashboard_command_center', latestAssessmentType }, 'navigation');
+  const handleViewLatestReport = (targetHash = '') => {
+    void track(
+      targetHash === '#90-day-plan' ? 'open_full_90_day_plan_clicked' : 'view_latest_report_clicked',
+      { source: 'dashboard_command_center', latestAssessmentType, targetHash },
+      'navigation'
+    );
+
+    const suffix = targetHash || '';
 
     if (latestAssessmentType === 'free') {
-      navigate('/results/snapshot');
+      navigate(`/results/snapshot${suffix}`);
       return;
     }
 
     if (latestAssessmentType === 'detailed' || latestAssessmentType === 'premium') {
-      navigate('/results');
+      navigate(`/results${suffix}`);
       return;
     }
 
     if (showAssessment) {
-      navigate('/results');
+      navigate(`/results${suffix}`);
       return;
     }
 
     navigate('/assessment/snapshot');
+  };
+
+  const handleOpenFullNinetyDayPlan = () => {
+    handleViewLatestReport('#90-day-plan');
   };
 
   const handleRetakeAssessment = () => {
@@ -1873,7 +1883,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
               { label: 'Financial Picture', icon: BarChart3, onClick: () => navigate('/results') },
               { label: 'Action Plan', icon: Target, onClick: () => navigate('/results') },
               { label: 'Tools', icon: Zap, onClick: () => navigate('/foundation-tools') },
-              { label: 'Reports', icon: FileText, onClick: handleViewLatestReport },
+              { label: 'Reports', icon: FileText, onClick: () => handleViewLatestReport() },
             ].map(({ label, icon: Icon, onClick, active }) => (
               <button
                 key={label}
@@ -1938,7 +1948,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
             </div>
 
             <div data-pdf-ignore="true" className="hidden items-center gap-3 md:flex">
-              <button onClick={handleViewLatestReport} className="rounded-2xl border border-cyan-300/20 bg-cyan-300/8 px-4 py-2 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/12">
+              <button onClick={() => handleViewLatestReport()} className="rounded-2xl border border-cyan-300/20 bg-cyan-300/8 px-4 py-2 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/12">
                 View Report
               </button>
               <button onClick={handlePrintPDF} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-white/10">
@@ -2145,7 +2155,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                     </button>
                   )}
 
-                  <button onClick={handleViewLatestReport} className="mt-3 inline-flex items-center gap-2 rounded-2xl border border-cyan-300/35 bg-cyan-300/8 px-4 py-3 text-sm font-bold text-cyan-200 shadow-[0_0_28px_rgba(34,211,238,.12)]">
+                  <button onClick={handleOpenFullNinetyDayPlan} className="mt-3 inline-flex items-center gap-2 rounded-2xl border border-cyan-300/35 bg-cyan-300/8 px-4 py-3 text-sm font-bold text-cyan-200 shadow-[0_0_28px_rgba(34,211,238,.12)]">
                     Open full 90-day plan <ArrowRight className="h-4 w-4" />
                   </button>
                 </DashboardPanel>
