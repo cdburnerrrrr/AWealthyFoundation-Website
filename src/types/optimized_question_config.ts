@@ -80,8 +80,6 @@ export const QUESTION_STRATEGY = {
     'totalDebtBalance',
     'additionalDebt',
     'monthlyVehiclePayment',
-    'fixedCostPressureReview',
-    'emergencyFundReview',
     'carPaymentOpportunityReview',
     'netWorthEntry',
   ],
@@ -157,7 +155,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       { value: 'other_property', label: 'Other property / land / second home' },
       { value: 'none', label: 'None — I rent or do not own property' },
     ],
-    tags: { modes: ['detailed'], priority: 'core' },
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
   },
 
   {
@@ -170,7 +168,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     helperText: 'Use a rough current market value. A best estimate is fine.',
     conditions: [{ key: 'propertyOwnership', operator: 'includes', value: 'primary_home' }],
     tags: {
-      modes: ['detailed'],
+      modes: ['snapshot', 'detailed'],
       priority: 'conditional',
       askIf: (a) => Array.isArray(a.propertyOwnership) && a.propertyOwnership.includes('primary_home'),
     },
@@ -185,7 +183,22 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     helperText: 'Use $0 or leave blank if the home is paid off.',
     conditions: [{ key: 'propertyOwnership', operator: 'includes', value: 'primary_home' }],
     tags: {
-      modes: ['detailed'],
+      modes: ['snapshot', 'detailed'],
+      priority: 'conditional',
+      askIf: (a) => Array.isArray(a.propertyOwnership) && a.propertyOwnership.includes('primary_home'),
+    },
+  },
+  {
+    key: 'primaryMortgagePayment',
+    question: 'What is the monthly payment on your primary home?',
+    type: 'number',
+    section: 'spending',
+    required: false,
+    placeholder: 'e.g. 1500',
+    helperText: 'Use the mortgage payment or total monthly house payment. Use $0 if paid off.',
+    conditions: [{ key: 'propertyOwnership', operator: 'includes', value: 'primary_home' }],
+    tags: {
+      modes: ['snapshot', 'detailed'],
       priority: 'conditional',
       askIf: (a) => Array.isArray(a.propertyOwnership) && a.propertyOwnership.includes('primary_home'),
     },
@@ -221,6 +234,21 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     },
   },
   {
+    key: 'rentalPropertyPayment',
+    question: 'What is the monthly payment on your rental property?',
+    type: 'number',
+    section: 'spending',
+    required: false,
+    placeholder: 'e.g. 1200',
+    helperText: 'Use the combined payment if you own more than one rental. Use $0 if paid off.',
+    conditions: [{ key: 'propertyOwnership', operator: 'includes', value: 'rental_property' }],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => Array.isArray(a.propertyOwnership) && a.propertyOwnership.includes('rental_property'),
+    },
+  },
+  {
     key: 'otherPropertyValue',
     question: 'What is your other property worth?',
     type: 'number',
@@ -238,6 +266,22 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
   {
     key: 'otherPropertyDebt',
     question: 'What is the mortgage or debt balance on that other property?',
+    type: 'number',
+    section: 'spending',
+    required: false,
+    placeholder: 'e.g. 0',
+    helperText: 'Use $0 or leave blank if the property is paid off.',
+    conditions: [{ key: 'propertyOwnership', operator: 'includes', value: 'other_property' }],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => Array.isArray(a.propertyOwnership) && a.propertyOwnership.includes('other_property'),
+    },
+  },
+
+  {
+    key: 'otherPropertyPayment',
+    question: 'What is the monthly payment on that other property?',
     type: 'number',
     section: 'spending',
     required: false,
@@ -514,9 +558,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
   tags: {
     modes: ['detailed'],
     priority: 'conditional',
-    askIf: (a) =>
-      Boolean(a.monthlyTakeHomeIncome) &&
-      (Boolean(a.monthlyHousingCost) || Boolean(a.monthlyUtilities) || Boolean(a.monthlyDebtPayments)),
+    askIf: () => false,
   },
 },
 {
@@ -529,9 +571,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
   tags: {
     modes: ['detailed'],
     priority: 'conditional',
-    askIf: (a) =>
-      Boolean(a.totalLiquidSavings) &&
-      Boolean(a.monthlyTakeHomeIncome),
+    askIf: () => false,
   },
 },
 
@@ -588,7 +628,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
   helperText: 'A best estimate is fine.',
   conditions: [{ key: 'vehicleDebt', operator: 'equals', value: 'car_loan' }],
   tags: {
-    modes: ['detailed'],
+    modes: ['snapshot', 'detailed'],
     priority: 'conditional',
     askIf: (a) => a.vehicleDebt === 'car_loan',
   },
@@ -608,7 +648,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     },
   ],
   tags: {
-    modes: ['detailed'],
+    modes: ['snapshot', 'detailed'],
     priority: 'conditional',
     askIf: (a) => a.vehicleDebt === 'car_loan' || a.vehicleDebt === 'car_lease',
   },
@@ -630,7 +670,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     },
   ],
   tags: {
-    modes: ['detailed'],
+    modes: ['snapshot', 'detailed'],
     priority: 'conditional',
     askIf: (a) =>
       (a.vehicleDebt === 'car_loan' || a.vehicleDebt === 'car_lease') &&
@@ -664,7 +704,22 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     helperText: 'Use the current balance you are carrying, not the monthly payment.',
     conditions: [{ key: 'otherDebt', operator: 'includes', value: 'credit_card' }],
     tags: {
-      modes: ['detailed'],
+      modes: ['snapshot', 'detailed'],
+      priority: 'conditional',
+      askIf: (a) => Array.isArray(a.otherDebt) && a.otherDebt.includes('credit_card'),
+    },
+  },
+  {
+    key: 'creditCardPayment',
+    question: 'What is the minimum monthly payment on your credit cards?',
+    type: 'number',
+    section: 'debt',
+    required: false,
+    placeholder: 'e.g. 75',
+    helperText: 'Use the minimum or regular required payment. A best estimate is fine.',
+    conditions: [{ key: 'otherDebt', operator: 'includes', value: 'credit_card' }],
+    tags: {
+      modes: ['snapshot', 'detailed'],
       priority: 'conditional',
       askIf: (a) => Array.isArray(a.otherDebt) && a.otherDebt.includes('credit_card'),
     },
@@ -678,7 +733,22 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     placeholder: 'e.g. 12000',
     conditions: [{ key: 'otherDebt', operator: 'includes', value: 'student_loan' }],
     tags: {
-      modes: ['detailed'],
+      modes: ['snapshot', 'detailed'],
+      priority: 'conditional',
+      askIf: (a) => Array.isArray(a.otherDebt) && a.otherDebt.includes('student_loan'),
+    },
+  },
+  {
+    key: 'studentLoanPayment',
+    question: 'What is the monthly payment on your student loans?',
+    type: 'number',
+    section: 'debt',
+    required: false,
+    placeholder: 'e.g. 300',
+    helperText: 'Use the minimum or regular required payment. A best estimate is fine.',
+    conditions: [{ key: 'otherDebt', operator: 'includes', value: 'student_loan' }],
+    tags: {
+      modes: ['snapshot', 'detailed'],
       priority: 'conditional',
       askIf: (a) => Array.isArray(a.otherDebt) && a.otherDebt.includes('student_loan'),
     },
@@ -692,7 +762,22 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     placeholder: 'e.g. 5000',
     conditions: [{ key: 'otherDebt', operator: 'includes', value: 'personal_loan' }],
     tags: {
-      modes: ['detailed'],
+      modes: ['snapshot', 'detailed'],
+      priority: 'conditional',
+      askIf: (a) => Array.isArray(a.otherDebt) && a.otherDebt.includes('personal_loan'),
+    },
+  },
+  {
+    key: 'personalLoanPayment',
+    question: 'What is the monthly payment on your personal loans?',
+    type: 'number',
+    section: 'debt',
+    required: false,
+    placeholder: 'e.g. 175',
+    helperText: 'Use the minimum or regular required payment. A best estimate is fine.',
+    conditions: [{ key: 'otherDebt', operator: 'includes', value: 'personal_loan' }],
+    tags: {
+      modes: ['snapshot', 'detailed'],
       priority: 'conditional',
       askIf: (a) => Array.isArray(a.otherDebt) && a.otherDebt.includes('personal_loan'),
     },
@@ -706,7 +791,22 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     placeholder: 'e.g. 600',
     conditions: [{ key: 'otherDebt', operator: 'includes', value: 'bnpl' }],
     tags: {
-      modes: ['detailed'],
+      modes: ['snapshot', 'detailed'],
+      priority: 'conditional',
+      askIf: (a) => Array.isArray(a.otherDebt) && a.otherDebt.includes('bnpl'),
+    },
+  },
+  {
+    key: 'bnplPayment',
+    question: 'What is the monthly payment on buy now, pay later debt?',
+    type: 'number',
+    section: 'debt',
+    required: false,
+    placeholder: 'e.g. 60',
+    helperText: 'Use the minimum or regular required payment. A best estimate is fine.',
+    conditions: [{ key: 'otherDebt', operator: 'includes', value: 'bnpl' }],
+    tags: {
+      modes: ['snapshot', 'detailed'],
       priority: 'conditional',
       askIf: (a) => Array.isArray(a.otherDebt) && a.otherDebt.includes('bnpl'),
     },
@@ -720,7 +820,22 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     placeholder: 'e.g. 300',
     conditions: [{ key: 'otherDebt', operator: 'includes', value: 'payday' }],
     tags: {
-      modes: ['detailed'],
+      modes: ['snapshot', 'detailed'],
+      priority: 'conditional',
+      askIf: (a) => Array.isArray(a.otherDebt) && a.otherDebt.includes('payday'),
+    },
+  },
+  {
+    key: 'paydayPayment',
+    question: 'What is the monthly payment on payday or cash advance debt?',
+    type: 'number',
+    section: 'debt',
+    required: false,
+    placeholder: 'e.g. 100',
+    helperText: 'Use the minimum or regular required payment. A best estimate is fine.',
+    conditions: [{ key: 'otherDebt', operator: 'includes', value: 'payday' }],
+    tags: {
+      modes: ['snapshot', 'detailed'],
       priority: 'conditional',
       askIf: (a) => Array.isArray(a.otherDebt) && a.otherDebt.includes('payday'),
     },
@@ -734,7 +849,22 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     placeholder: 'e.g. 1500',
     conditions: [{ key: 'otherDebt', operator: 'includes', value: 'medical' }],
     tags: {
-      modes: ['detailed'],
+      modes: ['snapshot', 'detailed'],
+      priority: 'conditional',
+      askIf: (a) => Array.isArray(a.otherDebt) && a.otherDebt.includes('medical'),
+    },
+  },
+  {
+    key: 'medicalDebtPayment',
+    question: 'What is the monthly payment on your medical debt?',
+    type: 'number',
+    section: 'debt',
+    required: false,
+    placeholder: 'e.g. 50',
+    helperText: 'Use the minimum or regular required payment. A best estimate is fine.',
+    conditions: [{ key: 'otherDebt', operator: 'includes', value: 'medical' }],
+    tags: {
+      modes: ['snapshot', 'detailed'],
       priority: 'conditional',
       askIf: (a) => Array.isArray(a.otherDebt) && a.otherDebt.includes('medical'),
     },
@@ -793,22 +923,11 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     placeholder: 'e.g. 450',
     helperText:
       'Include your car or lease payment plus credit cards, student loans, personal loans, medical debt, and similar payments. A quick estimate is fine.',
-    conditions: [
-      {
-        operator: 'custom',
-        fn: (r) =>
-          r.vehicleDebt === 'car_loan' ||
-          r.vehicleDebt === 'car_lease' ||
-          (Array.isArray(r.otherDebt) && !r.otherDebt.includes('none')),
-      },
-    ],
+    conditions: [{ operator: 'custom', fn: () => false }],
     tags: {
       modes: ['snapshot', 'detailed'],
       priority: 'core',
-      askIf: (a) =>
-        a.vehicleDebt === 'car_loan' ||
-        a.vehicleDebt === 'car_lease' ||
-        (Array.isArray(a.otherDebt) && !a.otherDebt.includes('none')),
+      askIf: () => false,
     },
   },
   {
@@ -1202,7 +1321,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       required: false,
       placeholder: 'e.g. 5000',
       helperText: 'Anything valuable we have not included elsewhere.',
-      tags: { modes: ['detailed'], priority: 'core' },
+      tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
     },
 
 {

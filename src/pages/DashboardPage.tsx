@@ -1788,20 +1788,20 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Debt Status</div>
+                          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Debt Pressure</div>
                           <div className="mt-4 text-2xl font-bold text-violet-300">
                             {(snapshot?.consumerDebt ?? snapshot?.totalDebtBalance ?? 0) <= 0
                               ? 'No Consumer Debt'
                               : freedomDateScenario?.results?.freedomDate
-                                ? new Date(freedomDateScenario.results.freedomDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-                                : 'Use Debt Tool'}
+                                ? ((snapshot?.fixedCostLoad ?? 0) >= 60 || (snapshot?.netWorth ?? 0) < 0 ? 'High Pressure' : new Date(freedomDateScenario.results.freedomDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }))
+                                : ((snapshot?.fixedCostLoad ?? 0) >= 60 || (snapshot?.netWorth ?? 0) < 0 ? 'High Pressure' : 'Build Payoff Plan')}
                           </div>
                           <div className="mt-1 text-sm text-slate-400">
                             {(snapshot?.consumerDebt ?? snapshot?.totalDebtBalance ?? 0) <= 0
                               ? (snapshot?.mortgageDebt ?? 0) > 0 ? 'Mortgage only' : 'Debt-free'
                               : freedomDateScenario?.results?.monthsSaved
-                                ? `${freedomDateScenario.results.monthsSaved} months saved`
-                                : 'Open payoff planner'}
+                                ? ((snapshot?.fixedCostLoad ?? 0) >= 60 || (snapshot?.netWorth ?? 0) < 0 ? 'Stabilize cash flow first' : `${freedomDateScenario.results.monthsSaved} months saved`)
+                                : ((snapshot?.fixedCostLoad ?? 0) >= 60 || (snapshot?.netWorth ?? 0) < 0 ? 'Stabilize cash flow first' : 'Open payoff planner')}
                           </div>
                         </div>
                         <Calendar className="h-10 w-10 text-violet-300/80" />

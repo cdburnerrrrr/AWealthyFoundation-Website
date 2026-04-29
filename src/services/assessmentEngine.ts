@@ -243,11 +243,21 @@ function getConsumerDebt(answers: Record<string, any>) {
 }
 
 function getConsumerDebtPayments(answers: Record<string, any>) {
-  return firstNumber(answers, [
+  const itemized =
+    toNumber(answers.monthlyVehiclePayment) +
+    toNumber(answers.creditCardPayment) +
+    toNumber(answers.studentLoanPayment) +
+    toNumber(answers.personalLoanPayment) +
+    toNumber(answers.bnplPayment) +
+    toNumber(answers.paydayPayment) +
+    toNumber(answers.medicalDebtPayment);
+
+  const legacy = firstNumber(answers, [
     'monthlyConsumerDebtPayments',
     'monthlyDebtPayments',
-    'monthlyVehiclePayment',
   ]);
+
+  return itemized > 0 ? itemized : legacy;
 }
 
 function getRealEstateAssets(answers: Record<string, any>) {
@@ -323,6 +333,7 @@ export function buildV2FinancialMetrics(
     'monthlyHousingCost',
     'monthlyRent',
     'monthlyMortgagePayment',
+    'primaryMortgagePayment',
   ]);
   const monthlyUtilities = firstNumber(answers, ['monthlyUtilities']);
   const monthlyChildcareCost = firstNumber(answers, ['monthlyChildcareCost']);

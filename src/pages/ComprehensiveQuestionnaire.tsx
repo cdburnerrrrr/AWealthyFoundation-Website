@@ -149,9 +149,9 @@ const SECTION_META: Record<
 const INLINE_GROUPS: Record<string, string[]> = {
   relationshipStatus: ['monthlyChildcareCost', 'childcarePressure', 'lifeInsurance'],
   housingStatus: [],
-  propertyOwnership: ['primaryHomeValue', 'primaryMortgage', 'rentalPropertyValue', 'rentalMortgage', 'otherPropertyValue', 'otherPropertyDebt'],
+  propertyOwnership: ['primaryHomeValue', 'primaryMortgage', 'primaryMortgagePayment', 'rentalPropertyValue', 'rentalMortgage', 'rentalPropertyPayment', 'otherPropertyValue', 'otherPropertyDebt', 'otherPropertyPayment'],
   vehicleDebt: ['carLoanBalance', 'monthlyVehiclePayment'],
-  otherDebt: ['creditCardDebt', 'studentLoans', 'personalLoans', 'bnplDebt', 'paydayDebt', 'medicalDebt', 'additionalDebt', 'monthlyDebtPayments', 'debtManageability', 'debtPaydownStrategy', 'creditCardBehavior'],
+  otherDebt: ['creditCardDebt', 'creditCardPayment', 'studentLoans', 'studentLoanPayment', 'personalLoans', 'personalLoanPayment', 'bnplDebt', 'bnplPayment', 'paydayDebt', 'paydayPayment', 'medicalDebt', 'medicalDebtPayment', 'additionalDebt', 'debtManageability', 'debtPaydownStrategy', 'creditCardBehavior'],
   healthInsurance: ['incomeInterruptionCoverage', 'propertyCoverage', 'autoCoverage'],
   investingStatus: [
     'employerMatch',
@@ -164,6 +164,77 @@ const INLINE_GROUPS: Record<string, string[]> = {
 };
 
 const CHILD_KEYS = new Set(Object.values(INLINE_GROUPS).flat());
+
+type InlineMoneyField = {
+  key: string;
+  label: string;
+  placeholder?: string;
+};
+
+const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineMoneyField[]>> = {
+  propertyOwnership: {
+    primary_home: [
+      { key: 'primaryHomeValue', label: 'Estimated value', placeholder: 'e.g. 350000' },
+      { key: 'primaryMortgage', label: 'Mortgage balance', placeholder: 'e.g. 185000' },
+      { key: 'primaryMortgagePayment', label: 'Monthly payment', placeholder: 'e.g. 1500' },
+    ],
+    rental_property: [
+      { key: 'rentalPropertyValue', label: 'Estimated value', placeholder: 'e.g. 250000' },
+      { key: 'rentalMortgage', label: 'Mortgage balance', placeholder: 'e.g. 175000' },
+      { key: 'rentalPropertyPayment', label: 'Monthly payment', placeholder: 'e.g. 1200' },
+    ],
+    other_property: [
+      { key: 'otherPropertyValue', label: 'Estimated value', placeholder: 'e.g. 225000' },
+      { key: 'otherPropertyDebt', label: 'Mortgage or debt balance', placeholder: 'e.g. 0' },
+      { key: 'otherPropertyPayment', label: 'Monthly payment', placeholder: 'e.g. 0' },
+    ],
+  },
+  otherDebt: {
+    credit_card: [
+      { key: 'creditCardDebt', label: 'Balance', placeholder: 'e.g. 1200' },
+      { key: 'creditCardPayment', label: 'Monthly payment', placeholder: 'e.g. 75' },
+    ],
+    student_loan: [
+      { key: 'studentLoans', label: 'Balance', placeholder: 'e.g. 45000' },
+      { key: 'studentLoanPayment', label: 'Monthly payment', placeholder: 'e.g. 300' },
+    ],
+    personal_loan: [
+      { key: 'personalLoans', label: 'Balance', placeholder: 'e.g. 5000' },
+      { key: 'personalLoanPayment', label: 'Monthly payment', placeholder: 'e.g. 175' },
+    ],
+    bnpl: [
+      { key: 'bnplDebt', label: 'Balance', placeholder: 'e.g. 600' },
+      { key: 'bnplPayment', label: 'Monthly payment', placeholder: 'e.g. 60' },
+    ],
+    payday: [
+      { key: 'paydayDebt', label: 'Balance', placeholder: 'e.g. 300' },
+      { key: 'paydayPayment', label: 'Monthly payment', placeholder: 'e.g. 100' },
+    ],
+    medical: [
+      { key: 'medicalDebt', label: 'Balance', placeholder: 'e.g. 1500' },
+      { key: 'medicalDebtPayment', label: 'Monthly payment', placeholder: 'e.g. 50' },
+    ],
+  },
+};
+
+const OBJECT_INLINE_ROOT_KEYS = new Set(Object.keys(OBJECT_FIELD_GROUPS));
+
+function getRequiredObjectFieldKeys(question: Question | undefined, responses: Record<string, any>) {
+  if (!question || !OBJECT_INLINE_ROOT_KEYS.has(question.key)) return [];
+  const selected = Array.isArray(responses[question.key]) ? responses[question.key] : [];
+  return selected
+    .filter((value) => value !== 'none')
+    .flatMap((value) => OBJECT_FIELD_GROUPS[question.key]?.[value] ?? [])
+    .map((field) => field.key);
+}
+
+function objectFieldsAnswered(question: Question | undefined, responses: Record<string, any>) {
+  return getRequiredObjectFieldKeys(question, responses).every((key) => {
+    const value = responses[key];
+    return value !== '' && value !== undefined && value !== null && !Number.isNaN(Number(value));
+  });
+}
+
 const CHILD_PARENT_KEY: Record<string, string> = Object.entries(INLINE_GROUPS).reduce(
   (acc, [parentKey, childKeys]) => {
     childKeys.forEach((childKey) => {
@@ -244,6 +315,7 @@ function getSequentialVisibleChildQuestions(
   responses: Record<string, any>
 ) {
   if (!rootQuestion) return [];
+  if (OBJECT_INLINE_ROOT_KEYS.has(rootQuestion.key)) return [];
 
   const childKeys = INLINE_GROUPS[rootQuestion.key] ?? [];
   const children = childKeys
@@ -616,10 +688,12 @@ function IntroCard({ onStart, isContinueMode = false }: IntroCardProps) {
 type OptionGridProps = {
   question: Question;
   value: ResponseValue | undefined;
+  responses?: Record<string, any>;
   onChange: (value: ResponseValue) => void;
+  onFieldChange?: (key: string, value: ResponseValue) => void;
 };
 
-function OptionGrid({ question, value, onChange }: OptionGridProps) {
+function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }: OptionGridProps) {
   if (!question.options?.length) return null;
 
   if (question.type === 'multiple') {
@@ -676,6 +750,29 @@ function OptionGrid({ question, value, onChange }: OptionGridProps) {
                     {option.label}
                   </span>
                 </div>
+
+                {selected && OBJECT_FIELD_GROUPS[question.key]?.[option.value]?.length ? (
+                  <div className="mt-4 grid gap-3 md:grid-cols-2" onClick={(e) => e.stopPropagation()}>
+                    {OBJECT_FIELD_GROUPS[question.key][option.value].map((field) => (
+                      <label key={field.key} className="block">
+                        <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          {field.label}
+                        </span>
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          value={responses[field.key] ?? ''}
+                          onChange={(event) => {
+                            const raw = event.target.value;
+                            onFieldChange?.(field.key, raw === '' ? '' : Number(raw));
+                          }}
+                          placeholder={field.placeholder || 'e.g. 0'}
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
+                        />
+                      </label>
+                    ))}
+                  </div>
+                ) : null}
               </button>
             );
           })}
@@ -775,11 +872,13 @@ function ScaleInput({ question, value, onChange }: ScaleInputProps) {
 type QuestionInputProps = {
   question: Question;
   value: ResponseValue | undefined;
+  responses?: Record<string, any>;
   onChange: (value: ResponseValue) => void;
+  onFieldChange?: (key: string, value: ResponseValue) => void;
   onEnter?: () => void;
 };
 
-function QuestionInput({ question, value, onChange, onEnter }: QuestionInputProps) {
+function QuestionInput({ question, value, responses, onChange, onFieldChange, onEnter }: QuestionInputProps) {
   if (question.type === 'number') {
     return <NumberInput question={question} value={value} onChange={onChange} onEnter={onEnter} />;
   }
@@ -788,7 +887,7 @@ function QuestionInput({ question, value, onChange, onEnter }: QuestionInputProp
     return <ScaleInput question={question} value={value} onChange={onChange} />;
   }
 
-  return <OptionGrid question={question} value={value} onChange={onChange} />;
+  return <OptionGrid question={question} value={value} responses={responses} onChange={onChange} onFieldChange={onFieldChange} />;
 }
 
 type InlineChildCardProps = {
@@ -1164,7 +1263,7 @@ export default function ComprehensiveQuestionnaire() {
     return group.every((question) => {
       if (question.required === false) return true;
       return isAnswered(question, responses[question.key]);
-    });
+    }) && objectFieldsAnswered(currentQuestion, responses);
   }, [currentInlineQuestions, currentQuestion, responses, isActivityStep]);
 
   const goNext = () => {
@@ -1220,6 +1319,10 @@ export default function ComprehensiveQuestionnaire() {
     }
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleFieldValueChange = (key: string, value: ResponseValue) => {
+    updateResponses(key, value);
   };
 
   const handleValueChange = (question: Question, value: ResponseValue) => {
@@ -1465,7 +1568,9 @@ export default function ComprehensiveQuestionnaire() {
                 <QuestionInput
                   question={currentQuestion}
                   value={responses[currentQuestion.key]}
+                  responses={responses}
                   onChange={(value) => handleValueChange(currentQuestion, value)}
+                  onFieldChange={handleFieldValueChange}
                   onEnter={() => {
                     if (canProceed) {
                       if (currentStep === renderableQuestions.length - 1) {

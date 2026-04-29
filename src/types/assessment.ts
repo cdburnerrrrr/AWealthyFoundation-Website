@@ -359,7 +359,21 @@ const SNAPSHOT_QUESTION_KEYS = new Set([
   'vehicleDebt',
   'progressPriority',
   'otherDebt',
-  'monthlyDebtPayments',
+  'carLoanBalance',
+  'monthlyVehiclePayment',
+  'carPaymentOpportunityReview',
+  'creditCardDebt',
+  'creditCardPayment',
+  'studentLoans',
+  'studentLoanPayment',
+  'personalLoans',
+  'personalLoanPayment',
+  'bnplDebt',
+  'bnplPayment',
+  'paydayDebt',
+  'paydayPayment',
+  'medicalDebt',
+  'medicalDebtPayment',
   'debtManageability',
   'debtPaydownStrategy',
   'healthInsurance',
@@ -1980,6 +1994,16 @@ function homeEquityEstimate(a: Record<string, any>): number {
 }
 
 function debtPaymentEstimate(a: Record<string, any>): number {
+  const itemized =
+    toNumber(a.monthlyVehiclePayment) +
+    toNumber(a.creditCardPayment) +
+    toNumber(a.studentLoanPayment) +
+    toNumber(a.personalLoanPayment) +
+    toNumber(a.bnplPayment) +
+    toNumber(a.paydayPayment) +
+    toNumber(a.medicalDebtPayment);
+  if (itemized > 0) return itemized;
+
   const numeric = toNumber(a.monthlyDebtPayments);
   if (numeric > 0) return numeric;
 
