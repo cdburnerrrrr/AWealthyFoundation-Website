@@ -626,8 +626,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       operator: 'custom',
       fn: (r) =>
         (r.vehicleDebt === 'car_loan' || r.vehicleDebt === 'car_lease') &&
-        Number(r.monthlyVehiclePayment || 0) > 0 &&
-        r.carPaymentOpportunityReview !== 'reviewed',
+        Number(r.monthlyVehiclePayment || 0) > 0,
     },
   ],
   tags: {
@@ -635,8 +634,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     priority: 'conditional',
     askIf: (a) =>
       (a.vehicleDebt === 'car_loan' || a.vehicleDebt === 'car_lease') &&
-      Number(a.monthlyVehiclePayment || 0) > 0 &&
-      a.carPaymentOpportunityReview !== 'reviewed',
+      Number(a.monthlyVehiclePayment || 0) > 0,
   },
 },
   {
@@ -788,13 +786,13 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
 
   {
     key: 'monthlyDebtPayments',
-    question: 'About how much do you pay toward debt each month?',
+    question: 'About how much do you pay toward non-mortgage debt each month?',
     type: 'number',
     section: 'debt',
     required: true,
     placeholder: 'e.g. 450',
     helperText:
-      'Include credit cards, car loans, student loans, and personal loans. A quick estimate is fine.',
+      'Include your car or lease payment plus credit cards, student loans, personal loans, medical debt, and similar payments. A quick estimate is fine.',
     conditions: [
       {
         operator: 'custom',

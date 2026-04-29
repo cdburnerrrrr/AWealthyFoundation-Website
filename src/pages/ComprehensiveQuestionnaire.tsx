@@ -314,6 +314,26 @@ function getFixedCosts(responses: Record<string, any>) {
   );
 }
 
+function getTotalConsumerDebtFromResponses(responses: Record<string, any>) {
+  const itemized =
+    toNumber(responses.creditCardDebt) +
+    toNumber(responses.studentLoans) +
+    toNumber(responses.personalLoans) +
+    toNumber(responses.bnplDebt) +
+    toNumber(responses.paydayDebt) +
+    toNumber(responses.medicalDebt) +
+    toNumber(responses.carLoanBalance) +
+    toNumber(responses.additionalDebt);
+
+  const legacyTotal =
+    toNumber(responses.totalDebtBalance) ||
+    toNumber(responses.consumerDebtBalance) ||
+    toNumber(responses.nonMortgageDebtBalance);
+
+  // Itemized debt fields are the cleaner source of truth. The legacy total is a fallback only.
+  return itemized > 0 ? itemized : legacyTotal;
+}
+
 const PERSISTED_ACTIVITY_RESULT_KEYS = new Set([
   'netWorth',
   'assets',
@@ -323,6 +343,11 @@ const PERSISTED_ACTIVITY_RESULT_KEYS = new Set([
   'homeValue',
   'mortgageBalance',
   'consumerDebtBalance',
+  'otherAssets',
+  'rentalPropertyValue',
+  'rentalMortgage',
+  'otherPropertyValue',
+  'otherPropertyDebt',
   'carPaymentOpportunityReview',
   'carPaymentMonthlyPayment',
   'carPaymentAnnualCost',
@@ -962,10 +987,14 @@ function ActivityStep({ activityKey, responses, onComplete }: ActivityStepProps)
           totalInvestments: toNumber(responses.totalInvestments),
           homeValue: toNumber(responses.primaryHomeValue) || toNumber(responses.homeValue),
           mortgageBalance: toNumber(responses.primaryMortgage) || toNumber(responses.primaryMortgageBalance) || toNumber(responses.mortgageBalance),
-          totalDebtBalance:
-            toNumber(responses.totalDebtBalance) ||
-            toNumber(responses.consumerDebtBalance) ||
-            toNumber(responses.carLoanBalance) + toNumber(responses.additionalDebt),
+          totalDebtBalance: getTotalConsumerDebtFromResponses(responses),
+          otherAssets: toNumber(responses.otherAssets),
+          rentalPropertyValue: toNumber(responses.rentalPropertyValue),
+          rentalMortgage: toNumber(responses.rentalMortgage) || toNumber(responses.rentalMortgageBalance),
+          otherPropertyValue: toNumber(responses.otherPropertyValue),
+          otherPropertyDebt: toNumber(responses.otherPropertyDebt) || toNumber(responses.otherPropertyMortgageBalance),
+          propertyOwnership: responses.propertyOwnership,
+          housingStatus: responses.housingStatus,
         }}
         onComplete={(payload) =>
           onComplete({
@@ -974,6 +1003,12 @@ function ActivityStep({ activityKey, responses, onComplete }: ActivityStepProps)
             primaryHomeValue: payload.homeValue,
             primaryMortgage: payload.mortgageBalance,
             consumerDebtBalance: payload.totalDebtBalance,
+            totalDebtBalance: payload.totalDebtBalance,
+            otherAssets: payload.otherAssets,
+            rentalPropertyValue: payload.rentalPropertyValue,
+            rentalMortgage: payload.rentalMortgage,
+            otherPropertyValue: payload.otherPropertyValue,
+            otherPropertyDebt: payload.otherPropertyDebt,
           })
         }
       />

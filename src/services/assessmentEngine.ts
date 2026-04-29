@@ -228,17 +228,18 @@ function getConsumerDebt(answers: Record<string, any>) {
     toNumber(answers.personalLoans) +
     toNumber(answers.medicalDebt) +
     toNumber(answers.bnplDebt) +
-    toNumber(answers.paydayDebt);
+    toNumber(answers.paydayDebt) +
+    toNumber(answers.additionalDebt);
 
-  // The full assessment asks for one estimated non-mortgage debt balance.
-  // Treat that as the source of truth when users do not enter itemized balances.
   const combinedEstimate = firstNumber(answers, [
     'totalDebtBalance',
     'consumerDebtBalance',
     'nonMortgageDebtBalance',
   ]);
 
-  return Math.max(itemized, combinedEstimate);
+  // If itemized debt fields were answered, they are the cleaner source of truth.
+  // Otherwise use the legacy combined estimate. Do not add both, or we double count.
+  return itemized > 0 ? itemized : combinedEstimate;
 }
 
 function getConsumerDebtPayments(answers: Record<string, any>) {
@@ -277,8 +278,7 @@ function getOtherAssets(answers: Record<string, any>) {
 function getOtherLiabilities(answers: Record<string, any>) {
   return (
     toNumber(answers.otherLiabilities) +
-    toNumber(answers.otherDebtNotListed) +
-    toNumber(answers.additionalDebt)
+    toNumber(answers.otherDebtNotListed)
   );
 }
 
@@ -463,7 +463,7 @@ export function buildV2FinancialMetrics(
 
 export function deriveV2Signals(
   answers: Record<string, any>,
-  metrics = buildV2FinancialMetrics(answers)
+  metrics: V2FinancialMetrics = buildV2FinancialMetrics(answers)
 ): V2Signals {
   const health = hasCoverage(answers, 'hasHealthInsurance', 'healthInsurance');
   const auto = hasCoverage(answers, 'hasAutoInsurance', 'autoCoverage');
@@ -677,11 +677,10 @@ function scoreVision(answers: Record<string, any>) {
 }
 
 export function calculateV2BuildingBlockScores(
-  answers: Record<string, any>
+  answers: Record<string, any>,
+  metrics: V2FinancialMetrics = buildV2FinancialMetrics(answers),
+  signals: V2Signals = deriveV2Signals(answers, metrics)
 ): Record<BuildingBlockKey, number> {
-  const metrics = buildV2FinancialMetrics(answers);
-  const signals = deriveV2Signals(answers, metrics);
-
   return {
     income: scoreIncome(answers, metrics),
     spending: scoreSpending(answers, metrics),
@@ -707,7 +706,8 @@ export function calculateV2FoundationScore(pillars: Record<string, number>) {
 
 export function getV2BiggestOpportunity(
   pillars: Record<BuildingBlockKey, number>,
-  signals: V2Signals
+  signals: V2Signals,
+  metrics: V2FinancialMetrics
 ): BuildingBlockKey {
   const weighted = { ...pillars };
 
@@ -731,7 +731,7 @@ export function getV2BiggestOpportunity(
 
 export function determineV2LifeStage(
   answers: Record<string, any>,
-  metrics = buildV2FinancialMetrics(answers)
+  metrics: V2FinancialMetrics = buildV2FinancialMetrics(answers)
 ): LifeStage {
   if (metrics.emergencyFundMonths < 3 || metrics.consumerDebt > 10000) {
     return 'starting_out';
@@ -1017,10 +1017,10 @@ export function generateV2Report(
 ): V2Report {
   const metrics = buildV2FinancialMetrics(answers);
   const signals = deriveV2Signals(answers, metrics);
-  const buildingBlockScores = calculateV2BuildingBlockScores(answers);
+  const buildingBlockScores = calculateV2BuildingBlockScores(answers, metrics, signals);
   const pillarScores = { ...buildingBlockScores };
   const foundationScore = calculateV2FoundationScore(pillarScores);
-  const biggestOpportunity = getV2BiggestOpportunity(buildingBlockScores, signals);
+  const biggestOpportunity = getV2BiggestOpportunity(buildingBlockScores, signals, metrics);
   const lifeStage = determineV2LifeStage(answers, metrics);
   const insights = buildV2Insights(answers, metrics, signals, biggestOpportunity);
   const priorities = buildPriorities(buildingBlockScores, biggestOpportunity, signals);
