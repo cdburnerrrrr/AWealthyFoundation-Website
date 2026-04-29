@@ -2311,6 +2311,51 @@ export default function ResultsPage() {
   const comparisonProfileLabel = getBenchmarkProfileLabel(assessmentAnswers);
   const comparisonMetrics = getHouseholdComparisonMetrics(metrics, score, assessmentAnswers);
   const heroReportLabel = getHeroReportLabel(actualPlan, reportTier);
+  const hasIncomeConstraint = warnings.some((warning) => warning.type === 'income_constraint');
+  const hasStructuralPressure = warnings.some((warning) =>
+    ['income_constraint', 'housing_pressure', 'structural_pressure'].includes(warning.type)
+  );
+  const normalizedFixedCostLoad = Number(metrics?.fixedCostPressureRatio ?? 0);
+  const foundationPhase: 'stabilize' | 'build' | 'optimize' =
+    hasIncomeConstraint || normalizedFixedCostLoad >= 70 || score < 50
+      ? 'stabilize'
+      : score >= 75 && !hasStructuralPressure
+        ? 'optimize'
+        : 'build';
+  const phaseCopy = {
+    stabilize: {
+      eyebrow: 'Stabilization Plan',
+      title: 'Create breathing room before adding complexity.',
+      body:
+        'The report is pointing to a practical order of operations: reduce the pressure first, then strengthen the weaker pillars underneath it. This is less about doing everything and more about choosing the move that changes monthly cash flow fastest.',
+      primaryLabel: 'Primary Lever',
+      pressureLabel: 'What Is Creating Pressure',
+      forwardLabel: 'How To Move Forward',
+      insightLabel: 'Advisor Notes',
+    },
+    build: {
+      eyebrow: 'Next Moves',
+      title: 'Turn the strongest parts of your foundation into steady momentum.',
+      body:
+        'You have pieces to build on, but a few areas are still limiting progress. The goal now is to improve the next constraint without scattering your effort across too many goals at once.',
+      primaryLabel: 'Primary Lever',
+      pressureLabel: 'What Still Needs Attention',
+      forwardLabel: 'How To Build Momentum',
+      insightLabel: 'Advisor Notes',
+    },
+    optimize: {
+      eyebrow: 'Optimization Plan',
+      title: 'Refine what is already working so your money works harder.',
+      body:
+        'Your foundation is strong enough that the next gains may come from alignment, efficiency, and better use of existing assets rather than basic stabilization.',
+      primaryLabel: 'Optimization Lever',
+      pressureLabel: 'Fine-Tuning Areas',
+      forwardLabel: 'How To Optimize From Here',
+      insightLabel: 'Strategic Notes',
+    },
+  }[foundationPhase];
+  const displayedWarnings = warnings.slice(0, 3);
+  const displayedInsights = insights.slice(0, 2);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0f2a44] via-[#132f4c] to-[#1e3a5f]">
@@ -2673,206 +2718,229 @@ export default function ResultsPage() {
           onMoreInfo={() => setShowComparisonModal(true)}
         />
 
-        <section className="grid items-start gap-6 mb-6 lg:grid-cols-2">
-          <SectionShell icon={Target} title="Priority Opportunities">
-            {getStructuralContextNote(warnings, metrics) && (
-              <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-900">
-                {getStructuralContextNote(warnings, metrics)}
+        <section
+          data-pdf-card="true"
+          data-pdf-page-break-avoid="true"
+          className="mb-8 rounded-[2rem] border border-copper-300/20 bg-white/95 p-5 shadow-[0_24px_70px_rgba(15,42,68,0.18)] md:p-7"
+        >
+          <div className="mb-6 flex flex-col gap-4 border-b border-slate-200 pb-6 lg:flex-row lg:items-start lg:justify-between">
+            <div className="max-w-3xl">
+              <div className="inline-flex rounded-full bg-copper-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-copper-700">
+                {phaseCopy.eyebrow}
               </div>
-            )}
-
-            <div className="space-y-4">
-              {weakest.map(([pillar, pillarScore], index) => {
-                const isBiggest = pillar === biggest;
-
-                return (
-                  <div key={pillar} className="rounded-2xl border border-gray-200 border-l-4 border-l-copper-500 bg-gradient-to-r from-copper-50/70 to-gray-50 p-5">
-                    <div className="flex items-start justify-between gap-4 mb-3">
-                      <div>
-                        <div className="text-lg font-bold text-navy-900">
-                          {formatPillarName(pillar)}
-                        </div>
-                        <div className="text-sm text-copper-500">Score: {pillarScore}/100</div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {index === 0 && (
-                          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-copper-100 text-copper-700">
-                            {warnings.length > 0 ? 'Top Pillar Priority' : '#1 Priority'}
-                          </span>
-                        )}
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-semibold ${getPillarTone(pillarScore).badge}`}
-                        >
-                          {getPillarTone(pillarScore).label}
-                        </span>
-                      </div>
-                    </div>
-
-                    <p className="text-navy-900 font-semibold leading-7 mb-2">
-                      {getPriorityHeadline(pillar, isBiggest, score)}
-                    </p>
-
-                    <p className="text-gray-700 leading-7 mb-3">
-                      {getPriorityBody(pillar, isBiggest)}
-                    </p>
-
-                    <div className="h-2 rounded-full bg-gray-200 overflow-hidden mb-3">
-                      <div
-                        className={`h-full ${getPillarTone(pillarScore).bar}`}
-                        style={{ width: `${Math.max(4, pillarScore)}%` }}
-                      />
-                    </div>
-
-                    <div className="text-sm font-medium text-copper-700">
-                      {priorities.find((item) =>
-                        item.toLowerCase().includes(pillar.toLowerCase())
-                      ) || getConstraintLine(pillar)}
-                    </div>
-
-                    {getPriorityMetricLine(pillar, metrics) ? (
-                      <div className="mt-2 text-sm text-gray-600 leading-6">
-                        {getPriorityMetricLine(pillar, metrics)}
-                      </div>
-                    ) : null}
-                  </div>
-                );
-              })}
+              <h2 className="mt-3 text-2xl font-bold tracking-tight text-navy-900 md:text-3xl">
+                {phaseCopy.title}
+              </h2>
+              <p className="mt-3 text-sm leading-7 text-slate-600 md:text-base">
+                {phaseCopy.body}
+              </p>
             </div>
-          </SectionShell>
 
-          <SectionShell icon={Sparkles} title="Foundation Stress Test">
-            {warnings.length > 0 ? (
+            <div className="rounded-2xl border border-copper-200 bg-copper-50 p-4 lg:max-w-sm">
+              <div className="text-xs font-bold uppercase tracking-[0.16em] text-copper-700">
+                What matters most
+              </div>
+              <p className="mt-2 text-sm font-semibold leading-6 text-navy-900">
+                {bestNextMoveCard.nextStep}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="mb-4 flex items-center gap-2">
+                <Target className="h-5 w-5 text-copper-600" />
+                <h3 className="text-xl font-bold text-navy-900">{phaseCopy.primaryLabel}</h3>
+              </div>
+
+              {getStructuralContextNote(warnings, metrics) && (
+                <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-900">
+                  {getStructuralContextNote(warnings, metrics)}
+                </div>
+              )}
+
               <div className="space-y-4">
-                {warnings.map((warning, index) => {
-                  const tone = getWarningTone(warning.severity);
+                {weakest.map(([pillar, pillarScore], index) => {
+                  const isBiggest = pillar === biggest;
 
                   return (
-                    <div
-                      key={`${warning.type}-${index}`}
-                      className={`rounded-2xl border p-5 ${tone.card}`}
-                    >
-                      <div className="flex items-start justify-between gap-4 mb-3">
-                        <div className="text-lg font-bold text-amber-950">
-                          {getWarningTitle(warning.type)}
-                        </div>
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-semibold ${tone.badge}`}
-                        >
-                          {warning.severity === 'critical' ? 'Critical' : 'Warning'}
-                        </span>
-                      </div>
-
-                      <p className="text-gray-700 leading-7 mb-3">
-                        {getWarningBodyWithMetrics(warning, metrics)}
-                      </p>
-
-                      <div className="text-sm font-medium text-copper-700 leading-6">
-                        {getWarningAction(warning.type)}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
-                <div className="text-lg font-bold text-emerald-800 mb-2">
-                  No major structural warning signs were triggered
-                </div>
-                <p className="text-gray-700 leading-7">
-                  Your current structure did not trip a major fixed-cost or debt-pressure alert under the current thresholds. That does not mean the rest of the house is strong yet — it means the biggest issues may be showing up in your weaker pillars rather than in one obvious structural break.
-                </p>
-              </div>
-            )}
-          </SectionShell>
-
-          <SectionShell
-            icon={meaningfulStrengths.length >= 2 ? CheckCircle2 : Target}
-            title={meaningfulStrengths.length >= 2 ? 'What Is Already Working' : 'Where to Stabilize First'}
-          >
-            {meaningfulStrengths.length >= 2 ? (
-              <div className="space-y-4">
-                {meaningfulStrengths.map(([pillar, pillarScore]) => (
-                  <div key={pillar} className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
-                    <div className="flex items-start justify-between gap-4 mb-3">
-                      <div className="flex items-center gap-3">
-                        {(() => {
-                          const Icon = PILLAR_ICONS[pillar] || CheckCircle2;
-                          return (
-                            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center border border-emerald-200">
-                              <Icon className="w-5 h-5 text-emerald-700" />
-                            </div>
-                          );
-                        })()}
+                    <div key={pillar} className="rounded-2xl border border-gray-200 border-l-4 border-l-copper-500 bg-gradient-to-r from-copper-50/70 to-gray-50 p-5">
+                      <div className="mb-3 flex items-start justify-between gap-4">
                         <div>
                           <div className="text-lg font-bold text-navy-900">
                             {formatPillarName(pillar)}
                           </div>
-                          <div className="text-sm text-gray-600">{pillarScore}/100</div>
+                          <div className="text-sm text-copper-500">Score: {pillarScore}/100</div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {index === 0 && (
+                            <span className="rounded-full bg-copper-100 px-3 py-1 text-xs font-semibold text-copper-700">
+                              {foundationPhase === 'optimize' ? 'Top Lever' : 'Start Here'}
+                            </span>
+                          )}
+                          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getPillarTone(pillarScore).badge}`}>
+                            {getPillarTone(pillarScore).label}
+                          </span>
                         </div>
                       </div>
 
-                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white text-emerald-700 border border-emerald-200">
-                        Strong
-                      </span>
-                    </div>
+                      <p className="mb-2 font-semibold leading-7 text-navy-900">
+                        {getPriorityHeadline(pillar, isBiggest, score)}
+                      </p>
 
-                    <p className="text-gray-700 leading-7">
-                      {strengthDescriptions[pillar] ||
-                        'This part of your foundation is giving you something meaningful to build on.'}
-                    </p>
+                      <p className="mb-3 leading-7 text-gray-700">
+                        {getPriorityBody(pillar, isBiggest)}
+                      </p>
+
+                      <div className="mb-3 h-2 overflow-hidden rounded-full bg-gray-200">
+                        <div
+                          className={`h-full ${getPillarTone(pillarScore).bar}`}
+                          style={{ width: `${Math.max(4, pillarScore)}%` }}
+                        />
+                      </div>
+
+                      <div className="text-sm font-medium leading-6 text-copper-700">
+                        {priorities.find((item) => item.toLowerCase().includes(pillar.toLowerCase())) || getConstraintLine(pillar)}
+                      </div>
+
+                      {getPriorityMetricLine(pillar, metrics) ? (
+                        <div className="mt-2 text-sm leading-6 text-gray-600">
+                          {getPriorityMetricLine(pillar, metrics)}
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+              <div className="mb-4 flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-copper-600" />
+                <h3 className="text-xl font-bold text-navy-900">{phaseCopy.pressureLabel}</h3>
+              </div>
+
+              {displayedWarnings.length > 0 ? (
+                <div className="space-y-4">
+                  {displayedWarnings.map((warning, index) => {
+                    const tone = getWarningTone(warning.severity);
+
+                    return (
+                      <div key={`${warning.type}-${index}`} className={`rounded-2xl border p-4 ${tone.card}`}>
+                        <div className="mb-2 flex items-start justify-between gap-4">
+                          <div className="font-bold text-amber-950">
+                            {getWarningTitle(warning.type)}
+                          </div>
+                          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${tone.badge}`}>
+                            {warning.severity === 'critical' ? 'Critical' : 'Watch'}
+                          </span>
+                        </div>
+                        <p className="text-sm leading-6 text-gray-700">
+                          {getWarningBodyWithMetrics(warning, metrics)}
+                        </p>
+                        <div className="mt-3 text-sm font-semibold leading-6 text-copper-700">
+                          {getWarningAction(warning.type)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : meaningfulStrengths.length >= 1 ? (
+                <div className="space-y-4">
+                  {meaningfulStrengths.map(([pillar, pillarScore]) => {
+                    const Icon = PILLAR_ICONS[pillar] || CheckCircle2;
+                    return (
+                      <div key={pillar} className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                        <div className="mb-2 flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-200 bg-white">
+                              <Icon className="h-5 w-5 text-emerald-700" />
+                            </div>
+                            <div>
+                              <div className="font-bold text-navy-900">{formatPillarName(pillar)}</div>
+                              <div className="text-sm text-gray-600">{pillarScore}/100</div>
+                            </div>
+                          </div>
+                          <span className="rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-semibold text-emerald-700">
+                            Strong
+                          </span>
+                        </div>
+                        <p className="text-sm leading-6 text-gray-700">
+                          {strengthDescriptions[pillar] || 'This part of your foundation is giving you something meaningful to build on.'}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+                  <div className="mb-2 text-lg font-bold text-emerald-800">
+                    No major structural warning signs were triggered
                   </div>
+                  <p className="leading-7 text-gray-700">
+                    Your current structure did not trip a major fixed-cost or debt-pressure alert under the current thresholds. Keep building from the weakest pillar first.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-5 lg:grid-cols-2">
+            <div className="rounded-3xl border border-copper-200 bg-copper-50 p-5">
+              <div className="mb-3 flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-copper-700" />
+                <h3 className="text-xl font-bold text-navy-900">{phaseCopy.forwardLabel}</h3>
+              </div>
+              <ul className="space-y-3">
+                {stabilizeItems.map((item, index) => (
+                  <li key={`phase-item-${index}`} className="flex items-start gap-3 text-sm leading-6 text-gray-700">
+                    <span className="mt-2 h-1.5 w-1.5 rounded-full bg-copper-600" />
+                    <span>{item}</span>
+                  </li>
                 ))}
+              </ul>
+            </div>
+
+            <div className="rounded-3xl border border-slate-200 bg-white p-5">
+              <div className="mb-3 flex items-center gap-2">
+                <Shield className="h-5 w-5 text-copper-600" />
+                <h3 className="text-xl font-bold text-navy-900">{phaseCopy.insightLabel}</h3>
               </div>
-            ) : (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
-                <p className="text-gray-700 leading-7 mb-4">
-                  Right now, most areas of your foundation still need reinforcement. That is not unusual — it just means your focus should be on stabilizing before optimizing.
-                </p>
-                <ul className="space-y-3">
-                  {stabilizeItems.map((item, index) => (
-                    <li key={`stabilize-item-${index}`} className="flex items-start gap-2 text-sm text-gray-700">
-                      <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-copper-600" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </SectionShell>
-          <SectionShell icon={Sparkles} title="Key Insights">
-            {insights.length || carPaymentAnalysis ? (
               <div className="space-y-4">
                 {carPaymentAnalysis ? (
-                  <div className="rounded-2xl border border-copper-200 bg-copper-50 p-5">
-                    <div className="mb-3 text-sm uppercase tracking-[0.18em] text-copper-700">
+                  <div className="rounded-2xl border border-copper-200 bg-copper-50 p-4">
+                    <div className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-copper-700">
                       Car Payment Insight
                     </div>
-                    <p className="leading-8 text-slate-700">
+                    <p className="text-sm leading-7 text-slate-700">
                       Your vehicle payment is not just transportation; it is a monthly pressure point. Once it is gone, treating that freed-up payment as margin and progress can create a meaningful lift without adding another complicated strategy.
                     </p>
                   </div>
                 ) : null}
-                {insights.map((insight, index) => (
-                  <div key={index} className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
-                    <div className="text-sm uppercase tracking-[0.18em] text-copper-600 mb-3">
-                      Insight {index + 1}
+
+                {displayedInsights.length > 0 ? (
+                  displayedInsights.map((insight, index) => (
+                    <div key={index} className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                      <div className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-copper-600">
+                        Insight {index + 1}
+                      </div>
+                      <p className="text-sm leading-7 text-gray-700">{insight}</p>
                     </div>
-                    <p className="text-gray-700 leading-8">{insight}</p>
+                  ))
+                ) : (
+                  <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                    <div className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-copper-600">
+                      Insight 1
+                    </div>
+                    <p className="text-sm leading-7 text-gray-700">
+                      Your next improvement should be chosen for leverage, not volume. Pick the move that changes monthly cash flow or removes the most pressure first.
+                    </p>
                   </div>
-                ))}
+                )}
               </div>
-            ) : (
-              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
-                <div className="text-sm uppercase tracking-[0.18em] text-copper-600 mb-3">
-                  Insight 1
-                </div>
-                <p className="text-gray-700 leading-8">
-                  Your strongest habits are reinforcing each other. The next level of progress comes from tightening the few areas that still create drag.
-                </p>
-              </div>
-            )}
-          </SectionShell>
+            </div>
+          </div>
         </section>
 
         {actualPlan === 'free' && !features.showPremiumGuidance && (
@@ -2912,7 +2980,6 @@ export default function ResultsPage() {
               </div>
             </div>
           </section>
-        )}
 
         {features.showPremiumGuidance && Object.keys(pillarScores).length > 0 && (
           <div data-pdf-page-break-before="true">
