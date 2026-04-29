@@ -1743,21 +1743,17 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const nextDashboardPlanAction = dashboardPlanActions.find((action) => !completedPlanActions[action.id]) ?? dashboardPlanActions[0] ?? null;
 
   const toggleDashboardPlanAction = (actionId: string) => {
-    let nextCompleted = false;
+    const nextCompleted = !completedPlanActions[actionId];
+    const next = {
+      ...completedPlanActions,
+      [actionId]: nextCompleted,
+    };
 
-    setCompletedPlanActions((current) => {
-      nextCompleted = !current[actionId];
-      const next = {
-        ...current,
-        [actionId]: nextCompleted,
-      };
+    setCompletedPlanActions(next);
 
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(planProgressStorageKey, JSON.stringify(next));
-      }
-
-      return next;
-    });
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(planProgressStorageKey, JSON.stringify(next));
+    }
 
     void savePlanActionProgress((user as any)?.id, planProgressAssessmentId, actionId, nextCompleted);
   };

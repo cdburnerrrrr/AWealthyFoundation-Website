@@ -2322,21 +2322,17 @@ export default function ResultsPage() {
   }, [planProgressStorageKey, user?.id, planProgressAssessmentId]);
 
   const togglePlanAction = (actionId: string) => {
-    let nextCompleted = false;
+    const nextCompleted = !completedPlanActions[actionId];
+    const next = {
+      ...completedPlanActions,
+      [actionId]: nextCompleted,
+    };
 
-    setCompletedPlanActions((current) => {
-      nextCompleted = !current[actionId];
-      const next = {
-        ...current,
-        [actionId]: nextCompleted,
-      };
+    setCompletedPlanActions(next);
 
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(planProgressStorageKey, JSON.stringify(next));
-      }
-
-      return next;
-    });
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(planProgressStorageKey, JSON.stringify(next));
+    }
 
     void savePlanActionProgress(user?.id, planProgressAssessmentId, actionId, nextCompleted);
   };
