@@ -2786,9 +2786,6 @@ export default function ResultsPage() {
             )}
           </SectionShell>
 
-        </section>
-
-        <section className="grid items-start gap-6 mb-6 lg:grid-cols-2">
           <SectionShell
             icon={meaningfulStrengths.length >= 2 ? CheckCircle2 : Target}
             title={meaningfulStrengths.length >= 2 ? 'What Is Already Working' : 'Where to Stabilize First'}
