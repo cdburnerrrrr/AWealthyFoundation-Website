@@ -4,6 +4,7 @@ import { useAppStore } from '../store/appStore';
 import { getEntitlements } from '../lib/entitlements';
 import { exportReportPdf } from '../utils/pdfExport';
 import { useUserPlan } from '../hooks/useUserPlan';
+import { supabase } from '../lib/supabase';
 
 import {
   AlertCircle,
@@ -723,6 +724,56 @@ function makePlanActionId(phaseIndex: number, itemIndex: number, item: string) {
     .slice(0, 44);
 
   return `phase-${phaseIndex + 1}-${itemIndex + 1}-${slug || 'step'}`;
+}
+
+
+async function loadSavedPlanProgress(
+  userId: string | undefined,
+  assessmentId: string
+): Promise<Record<string, boolean> | null> {
+  if (!userId || !assessmentId) return null;
+
+  const { data, error } = await supabase
+    .from('plan_progress')
+    .select('action_id, completed')
+    .eq('user_id', userId)
+    .eq('assessment_id', assessmentId);
+
+  if (error) {
+    console.error('Could not load 90-day plan progress:', error);
+    return null;
+  }
+
+  return (data || []).reduce<Record<string, boolean>>((acc, row: any) => {
+    if (row?.action_id) acc[row.action_id] = !!row.completed;
+    return acc;
+  }, {});
+}
+
+async function savePlanActionProgress(
+  userId: string | undefined,
+  assessmentId: string,
+  actionId: string,
+  completed: boolean
+) {
+  if (!userId || !assessmentId || !actionId) return;
+
+  const { error } = await supabase
+    .from('plan_progress')
+    .upsert(
+      {
+        user_id: userId,
+        assessment_id: assessmentId,
+        action_id: actionId,
+        completed,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id,assessment_id,action_id' }
+    );
+
+  if (error) {
+    console.error('Could not save 90-day plan progress:', error);
+  }
 }
 
 function getStoredPlanProgress(storageKey: string): Record<string, boolean> {
@@ -1640,16 +1691,32 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     [assessment, snapshot, weakestPillar]
   );
 
-  const planProgressStorageKey = `awf-90-day-plan-progress-${(user as any)?.id ?? 'guest'}-${
+  const planProgressAssessmentId = String(
     (rawAssessment as any)?.id ?? (assessment as any)?.id ?? (latestHistoryRecord as any)?.id ?? 'latest'
-  }`;
+  );
+  const planProgressStorageKey = `awf-90-day-plan-progress-${(user as any)?.id ?? 'guest'}-${planProgressAssessmentId}`;
   const [completedPlanActions, setCompletedPlanActions] = useState<Record<string, boolean>>(() =>
     getStoredPlanProgress(planProgressStorageKey)
   );
 
   useEffect(() => {
-    setCompletedPlanActions(getStoredPlanProgress(planProgressStorageKey));
-  }, [planProgressStorageKey]);
+    let isMounted = true;
+    const localProgress = getStoredPlanProgress(planProgressStorageKey);
+    setCompletedPlanActions(localProgress);
+
+    loadSavedPlanProgress((user as any)?.id, planProgressAssessmentId).then((savedProgress) => {
+      if (!isMounted || !savedProgress) return;
+      const mergedProgress = { ...localProgress, ...savedProgress };
+      setCompletedPlanActions(mergedProgress);
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(planProgressStorageKey, JSON.stringify(mergedProgress));
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [planProgressStorageKey, (user as any)?.id, planProgressAssessmentId]);
 
   const dashboardPlanPhases = useMemo(
     () => getDashboardNinetyDayPlanPhases(dashboardNextMoveCard, snapshot, weakestPillar),
@@ -1676,10 +1743,13 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const nextDashboardPlanAction = dashboardPlanActions.find((action) => !completedPlanActions[action.id]) ?? dashboardPlanActions[0] ?? null;
 
   const toggleDashboardPlanAction = (actionId: string) => {
+    let nextCompleted = false;
+
     setCompletedPlanActions((current) => {
+      nextCompleted = !current[actionId];
       const next = {
         ...current,
-        [actionId]: !current[actionId],
+        [actionId]: nextCompleted,
       };
 
       if (typeof window !== 'undefined') {
@@ -1688,6 +1758,8 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
       return next;
     });
+
+    void savePlanActionProgress((user as any)?.id, planProgressAssessmentId, actionId, nextCompleted);
   };
 
   const assetRows = useMemo(() => {
