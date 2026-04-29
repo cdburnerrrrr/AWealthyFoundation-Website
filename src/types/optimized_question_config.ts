@@ -43,6 +43,7 @@ export const QUESTION_STRATEGY = {
     'financialConfidence',
   ],
   detailedOnly: [
+    'propertyOwnership',
     'monthlyChildcareCost',
     'childcarePressure',
     'carLoanBalance',
@@ -137,64 +138,111 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
   },
 
   {
+    key: 'propertyOwnership',
+    question: 'Which property types do you currently own?',
+    type: 'multiple',
+    section: 'spending',
+    required: true,
+    helperText:
+      'Check only the property types you currently own. If you rent or do not own property, choose none.',
+    options: [
+      { value: 'primary_home', label: 'Primary home' },
+      { value: 'rental_property', label: 'Rental property' },
+      { value: 'other_property', label: 'Other property / land / second home' },
+      { value: 'none', label: 'None — I rent or do not own property' },
+    ],
+    tags: { modes: ['detailed'], priority: 'core' },
+  },
+
+  {
     key: 'primaryHomeValue',
-    question: 'Primary home value',
+    question: 'What is your primary home worth?',
     type: 'number',
     section: 'spending',
-    required: false,
+    required: true,
     placeholder: 'e.g. 350000',
-    helperText: 'Leave blank if this does not apply.',
-    tags: { modes: ['detailed'], priority: 'core' },
+    helperText: 'Use a rough current market value. A best estimate is fine.',
+    conditions: [{ key: 'propertyOwnership', operator: 'includes', value: 'primary_home' }],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => Array.isArray(a.propertyOwnership) && a.propertyOwnership.includes('primary_home'),
+    },
   },
   {
     key: 'primaryMortgage',
-    question: 'Primary mortgage balance',
+    question: 'What is the mortgage balance on your primary home?',
     type: 'number',
     section: 'spending',
     required: false,
     placeholder: 'e.g. 185000',
-    helperText: 'Leave blank if this does not apply.',
-    tags: { modes: ['detailed'], priority: 'core' },
+    helperText: 'Use $0 or leave blank if the home is paid off.',
+    conditions: [{ key: 'propertyOwnership', operator: 'includes', value: 'primary_home' }],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => Array.isArray(a.propertyOwnership) && a.propertyOwnership.includes('primary_home'),
+    },
   },
   {
     key: 'rentalPropertyValue',
-    question: 'Rental property value',
+    question: 'What is your rental property worth?',
     type: 'number',
     section: 'spending',
-    required: false,
+    required: true,
     placeholder: 'e.g. 250000',
     helperText: 'Use the combined value if you own more than one rental.',
-    tags: { modes: ['detailed'], priority: 'core' },
+    conditions: [{ key: 'propertyOwnership', operator: 'includes', value: 'rental_property' }],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => Array.isArray(a.propertyOwnership) && a.propertyOwnership.includes('rental_property'),
+    },
   },
   {
     key: 'rentalMortgage',
-    question: 'Rental mortgage balance',
+    question: 'What is the mortgage balance on your rental property?',
     type: 'number',
     section: 'spending',
     required: false,
     placeholder: 'e.g. 175000',
-    helperText: 'Use the combined balance if you own more than one rental.',
-    tags: { modes: ['detailed'], priority: 'core' },
+    helperText: 'Use the combined balance if you own more than one rental. Use $0 or leave blank if paid off.',
+    conditions: [{ key: 'propertyOwnership', operator: 'includes', value: 'rental_property' }],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => Array.isArray(a.propertyOwnership) && a.propertyOwnership.includes('rental_property'),
+    },
   },
   {
     key: 'otherPropertyValue',
-    question: 'Other property value',
+    question: 'What is your other property worth?',
     type: 'number',
     section: 'spending',
-    required: false,
+    required: true,
     placeholder: 'e.g. 225000',
     helperText: 'Land, second homes, or other property not listed above.',
-    tags: { modes: ['detailed'], priority: 'core' },
+    conditions: [{ key: 'propertyOwnership', operator: 'includes', value: 'other_property' }],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => Array.isArray(a.propertyOwnership) && a.propertyOwnership.includes('other_property'),
+    },
   },
   {
     key: 'otherPropertyDebt',
-    question: 'Other property mortgage or debt',
+    question: 'What is the mortgage or debt balance on that other property?',
     type: 'number',
     section: 'spending',
     required: false,
     placeholder: 'e.g. 0',
-    helperText: 'Leave blank if the property is paid off.',
-    tags: { modes: ['detailed'], priority: 'core' },
+    helperText: 'Use $0 or leave blank if the property is paid off.',
+    conditions: [{ key: 'propertyOwnership', operator: 'includes', value: 'other_property' }],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => Array.isArray(a.propertyOwnership) && a.propertyOwnership.includes('other_property'),
+    },
   },
 
   // INCOME
@@ -1065,7 +1113,17 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     priority: 'conditional',
     askIf: (a) =>
       Boolean(a.totalLiquidSavings) &&
-      (Boolean(a.totalInvestments) || Boolean(a.totalDebtBalance) || Boolean(a.carLoanBalance) || Boolean(a.mortgageBalance)),
+      (
+        Boolean(a.totalInvestments) ||
+        Boolean(a.totalDebtBalance) ||
+        Boolean(a.carLoanBalance) ||
+        Boolean(a.primaryHomeValue) ||
+        Boolean(a.primaryMortgage) ||
+        Boolean(a.rentalPropertyValue) ||
+        Boolean(a.rentalMortgage) ||
+        Boolean(a.otherPropertyValue) ||
+        Boolean(a.otherPropertyDebt)
+      ),
   },
 },
 

@@ -230,9 +230,15 @@ function getConsumerDebt(answers: Record<string, any>) {
     toNumber(answers.bnplDebt) +
     toNumber(answers.paydayDebt);
 
-  const legacy = firstNumber(answers, ['consumerDebtBalance']);
+  // The full assessment asks for one estimated non-mortgage debt balance.
+  // Treat that as the source of truth when users do not enter itemized balances.
+  const combinedEstimate = firstNumber(answers, [
+    'totalDebtBalance',
+    'consumerDebtBalance',
+    'nonMortgageDebtBalance',
+  ]);
 
-  return Math.max(itemized, legacy);
+  return Math.max(itemized, combinedEstimate);
 }
 
 function getConsumerDebtPayments(answers: Record<string, any>) {
@@ -814,12 +820,16 @@ function buildPriorities(
 }
 
 function buildSummary(score: number, biggestOpportunity: BuildingBlockKey, metrics: V2FinancialMetrics) {
-  if (score >= 80) {
-    return `Your financial foundation is strong. The next opportunity is optimization: make sure your cash, investments, housing, protection, and tax buckets are working together efficiently.`;
+  if (metrics.fixedCostPressureRatio >= 60) {
+    return `Right now, about ${round(metrics.fixedCostPressureRatio)}% of take-home pay is already committed before the month really starts. That is why progress may feel tight even when the household is trying to be careful. The fastest lift will come from creating breathing room first.`;
   }
 
-  if (metrics.fixedCostPressureRatio >= 60) {
-    return `Your foundation has strengths, but fixed costs are creating meaningful pressure. Reducing housing or other fixed obligations could unlock faster progress across the system.`;
+  if (metrics.consumerDebt > 0 && metrics.monthlyDebtPayments > 0) {
+    return `Your debt balance is about ${formatCurrency(metrics.consumerDebt)}, with roughly ${formatCurrency(metrics.monthlyDebtPayments)} going toward payments each month. Reducing that pressure would free up cash flow for savings, protection, and future goals.`;
+  }
+
+  if (score >= 80) {
+    return `Your financial foundation is strong. The next opportunity is optimization: make sure your cash, investments, housing, protection, and tax buckets are working together efficiently.`;
   }
 
   return `Your foundation is building momentum. The best next move is to focus on ${biggestOpportunity} while keeping the rest of the system steady.`;
@@ -844,6 +854,10 @@ function buildNextStep(biggestOpportunity: BuildingBlockKey, metrics: V2Financia
   }
 
   if (biggestOpportunity === 'protection') {
+    if (signals.dependentsWithoutLifeInsurance) {
+      return 'Protection matters because people depend on this income. Start with the essentials: affordable life insurance, reliable health coverage, and a starter emergency buffer. If cash flow is tight, create breathing room first so the right coverage can stay in place.';
+    }
+
     return 'Review the protection checklist and close the single coverage gap that could create the biggest setback.';
   }
 
@@ -891,7 +905,7 @@ function buildStructuralWarnings(metrics: V2FinancialMetrics, signals: V2Signals
       type: 'protection_gap',
       severity: 'high',
       message:
-        'You indicated dependents but no life insurance. That is a meaningful protection gap.',
+        'You indicated dependents but no life insurance. For a household with kids, this is one of the most important protection gaps to close once cash flow allows it.',
     });
   }
 

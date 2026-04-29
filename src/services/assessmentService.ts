@@ -41,6 +41,11 @@ export async function loadAssessmentsFromSupabase() {
       priorities: item.priorities ?? [],
       milestonesCompleted: item.milestones_completed ?? [],
       nextMilestones: item.next_milestones ?? [],
+      answers: item.answers ?? {},
+      summary: item.report?.summary ?? item.summary ?? '',
+      nextStep: item.report?.nextStep ?? item.next_step ?? '',
+      actionPlan: item.report?.actionPlan ?? item.action_plan ?? null,
+      structuralWarnings: item.report?.structuralWarnings ?? [],
       report: item.report,
     }));
   } catch (err) {

@@ -910,9 +910,12 @@ function ActivityStep({ activityKey, responses, onComplete }: ActivityStepProps)
         initialValues={{
           totalLiquidSavings: toNumber(responses.totalLiquidSavings),
           totalInvestments: toNumber(responses.totalInvestments),
-          homeValue: toNumber(responses.homeValue),
-          mortgageBalance: toNumber(responses.mortgageBalance),
-          totalDebtBalance: toNumber(responses.totalDebtBalance),
+          homeValue: toNumber(responses.primaryHomeValue) || toNumber(responses.homeValue),
+          mortgageBalance: toNumber(responses.primaryMortgage) || toNumber(responses.primaryMortgageBalance) || toNumber(responses.mortgageBalance),
+          totalDebtBalance:
+            toNumber(responses.totalDebtBalance) ||
+            toNumber(responses.consumerDebtBalance) ||
+            toNumber(responses.carLoanBalance) + toNumber(responses.additionalDebt),
         }}
         onComplete={({
           netWorth,
@@ -929,7 +932,10 @@ function ActivityStep({ activityKey, responses, onComplete }: ActivityStepProps)
             totalInvestments,
             homeValue,
             mortgageBalance,
+            primaryHomeValue: homeValue,
+            primaryMortgage: mortgageBalance,
             totalDebtBalance,
+            consumerDebtBalance: totalDebtBalance,
           })
         }
       />

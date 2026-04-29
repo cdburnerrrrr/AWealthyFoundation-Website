@@ -264,11 +264,11 @@ function getDashboardNextMoveCard(
 
     return {
       title: 'Close your biggest protection gap',
-      body: 'Your next lift is less about chasing growth and more about making the foundation sturdier. Tightening protection now helps keep one setback from disrupting the rest of the plan.',
+      body: 'Protection matters because people depend on this income. The immediate goal is practical: reliable health coverage, affordable life insurance if others depend on you, and a small emergency cushion that keeps one bill from becoming new debt.',
       checklist: [
-        'Review income, health, and property protection coverage.',
-        'Identify the weakest protection area in your current setup.',
-        'Make one update this quarter to improve resilience.',
+        'Confirm health insurance status and your biggest out-of-pocket risk.',
+        'Price basic term life insurance if anyone depends on your income.',
+        'Choose a starter emergency fund target that fits current cash flow.',
       ],
     };
   }
@@ -597,6 +597,22 @@ function getStructuralSnapshot(metrics?: MetricsShape | null) {
   const fixedCostLoad = income > 0 ? (fixedCosts / income) * 100 : 0;
   const monthlyMargin = income - fixedCosts;
 
+  const totalSavings = Number(metrics.totalSavings ?? metrics.cashSavings ?? 0);
+  const totalInvestments = Number(metrics.totalInvestments ?? 0);
+  const otherAssets = Number(metrics.otherAssets ?? 0);
+  const primaryHomeValue = Number(metrics.primaryHomeValue ?? 0);
+  const rentalPropertyValue = Number(metrics.rentalPropertyValue ?? 0);
+  const otherPropertyValue = Number(metrics.otherPropertyValue ?? 0);
+  const realEstateAssets = Number(
+    metrics.realEstateAssets ?? primaryHomeValue + rentalPropertyValue + otherPropertyValue
+  );
+  const mortgageDebt = Number(metrics.mortgageDebt ?? 0);
+  const consumerDebt = Number(metrics.consumerDebt ?? metrics.totalDebtBalance ?? 0);
+  const otherLiabilities = Number(metrics.otherLiabilities ?? 0);
+  const totalAssets = Number(metrics.totalAssets ?? totalSavings + totalInvestments + realEstateAssets + otherAssets);
+  const totalLiabilities = Number(metrics.totalLiabilities ?? mortgageDebt + consumerDebt + otherLiabilities);
+  const netWorth = Number(metrics.netWorth ?? totalAssets - totalLiabilities);
+
   return {
     income,
     housing,
@@ -608,30 +624,30 @@ function getStructuralSnapshot(metrics?: MetricsShape | null) {
     monthlyMargin,
     debtToIncomeRatio: Number(metrics.debtToIncomeRatio ?? 0),
     savingsRate: Number(metrics.savingsRate ?? 0),
-    totalSavings: Number(metrics.totalSavings ?? metrics.cashSavings ?? 0),
-    totalInvestments: Number(metrics.totalInvestments ?? 0),
-    totalDebtBalance: Number(metrics.totalDebtBalance ?? metrics.consumerDebt ?? 0),
-    netWorth: Number(metrics.netWorth ?? 0),
-    homeEquity: Number(metrics.homeEquity ?? 0),
-    cashSavings: Number(metrics.cashSavings ?? metrics.totalSavings ?? 0),
+    totalSavings,
+    totalInvestments,
+    totalDebtBalance: consumerDebt,
+    netWorth,
+    homeEquity: Number(metrics.homeEquity ?? Math.max(0, realEstateAssets - mortgageDebt)),
+    cashSavings: Number(metrics.cashSavings ?? totalSavings),
     retirement401kIraBalance: Number(metrics.retirement401kIraBalance ?? 0),
     rothBalance: Number(metrics.rothBalance ?? 0),
     brokerageBalance: Number(metrics.brokerageBalance ?? 0),
     pensionBalance: Number(metrics.pensionBalance ?? 0),
     otherInvestmentAssets: Number(metrics.otherInvestmentAssets ?? 0),
-    otherAssets: Number(metrics.otherAssets ?? 0),
-    primaryHomeValue: Number(metrics.primaryHomeValue ?? 0),
+    otherAssets,
+    primaryHomeValue,
     primaryMortgageBalance: Number(metrics.primaryMortgageBalance ?? 0),
-    rentalPropertyValue: Number(metrics.rentalPropertyValue ?? 0),
+    rentalPropertyValue,
     rentalMortgageBalance: Number(metrics.rentalMortgageBalance ?? 0),
-    otherPropertyValue: Number(metrics.otherPropertyValue ?? 0),
+    otherPropertyValue,
     otherPropertyMortgageBalance: Number(metrics.otherPropertyMortgageBalance ?? 0),
-    realEstateAssets: Number(metrics.realEstateAssets ?? 0),
-    mortgageDebt: Number(metrics.mortgageDebt ?? 0),
-    consumerDebt: Number(metrics.consumerDebt ?? metrics.totalDebtBalance ?? 0),
-    otherLiabilities: Number(metrics.otherLiabilities ?? 0),
-    totalAssets: Number(metrics.totalAssets ?? 0),
-    totalLiabilities: Number(metrics.totalLiabilities ?? 0),
+    realEstateAssets,
+    mortgageDebt,
+    consumerDebt,
+    otherLiabilities,
+    totalAssets,
+    totalLiabilities,
     emergencyFundMonths: Number(metrics.emergencyFundMonths ?? 0),
     cappedEmergencyFundMonths: Number(metrics.cappedEmergencyFundMonths ?? 0),
     cushionScore: Number(metrics.cushionScore ?? 0),

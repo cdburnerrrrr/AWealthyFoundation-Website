@@ -69,6 +69,11 @@ type ResultShape = {
     totalSavings?: number;
     totalInvestments?: number;
     totalDebtBalance?: number;
+    consumerDebt?: number;
+    mortgageDebt?: number;
+    otherLiabilities?: number;
+    totalLiabilities?: number;
+    totalAssets?: number;
     netWorth?: number;
     homeEquity?: number;
     monthlyIncome?: number;
@@ -444,20 +449,21 @@ function getBestNextMoveCard(
       };
     case 'protection':
       return {
-        title: 'Close your biggest protection gap',
+        title: 'Protect the household without ignoring cash flow',
         intro:
-          'Protection is the area most likely to preserve the progress you have already built.',
+          'Protection matters most when other people depend on the income. The goal is not vague insurance advice — it is making sure one setback does not put the family in crisis.',
         rightNow: [
-          'One uncovered risk can undo progress faster than most people expect.',
-          'This is less about growth and more about making the foundation sturdier.',
+          'Start with the essentials: health coverage, affordable life insurance, and a small emergency cushion.',
+          'If monthly cash flow is already tight, creating breathing room comes first so the right coverage can actually stay in place.',
         ],
         whyThisMatters:
-          'A stronger protection layer helps keep one setback from turning into a major financial interruption.',
+          'A protection plan only works if it fits the monthly budget. The right order is margin first, then the coverage that protects the family from the biggest risks.',
         nextStep:
-          nextStep || 'Review the single protection gap that would hurt most if it failed.',
+          nextStep || 'Identify the one protection gap that would hurt your family most, then choose the smallest affordable step to address it.',
         thisWeek: [
-          'Identify the biggest protection gap in your current setup.',
-          'Choose one update to make this quarter.',
+          'Confirm health insurance status and out-of-pocket risk.',
+          'Price basic term life insurance if anyone depends on your income.',
+          'Choose a starter emergency fund target you can begin funding this month.',
         ],
       };
     case 'vision':
@@ -585,8 +591,8 @@ function getPriorityBody(pillar: string, isBiggest: boolean) {
         : 'Reducing debt further keeps more of your income available for saving, investing, and choice.';
     case 'protection':
       return isBiggest
-        ? 'Protection is the area most likely to expose the progress you have already made. Closing the right gap now helps prevent one setback from becoming a major interruption.'
-        : 'Strengthening protection helps preserve the foundation you are building.';
+        ? 'Protection matters because the household has people depending on the income. For this family, the practical needs are clear: reliable health coverage, affordable life insurance, a starter emergency fund, and enough income or margin to keep those protections in place.'
+        : 'Strengthening protection helps preserve the foundation you are building, especially when dependents or limited cash reserves raise the cost of a setback.';
     case 'vision':
       return isBiggest
         ? 'Vision is the area most in need of clarity. Sharper direction will make saving, spending, and investing decisions easier to align and follow through on.'
@@ -710,6 +716,12 @@ function getWarningTitle(type: StructuralWarning['type']) {
       return 'Income is the bottleneck right now';
     case 'structural_pressure':
       return 'Your financial structure is under pressure';
+    case 'protection_gap':
+      return 'Family protection needs attention';
+    case 'excess_cash':
+      return 'Cash may be sitting idle';
+    case 'net_worth_data_gap':
+      return 'Net worth details may be incomplete';
     default:
       return 'Foundation stress detected';
   }
@@ -1007,6 +1019,12 @@ function getWarningBodyWithMetrics(
         return `Debt payments and must-pay bills are stacking up. Non-housing debt payments are about ${debtPayment ?? 'a meaningful amount each month'}${debtToIncome ? `, or roughly ${debtToIncome} of take-home pay` : ''}. That kind of pressure can make saving, investing, and progress feel harder than they should.`;
       }
       return getWarningBody(warning.type);
+    case 'protection_gap':
+      return getWarningBody(warning.type);
+    case 'excess_cash':
+      return getWarningBody(warning.type);
+    case 'net_worth_data_gap':
+      return getWarningBody(warning.type);
     default:
       return getWarningBody(warning.type);
   }
@@ -1207,7 +1225,7 @@ function getHouseholdComparisonMetrics(
   answers?: Record<string, any>
 ): ComparisonMetric[] {
   const netWorth = Number(metrics?.netWorth ?? 0);
-  const nonMortgageDebt = Number(metrics?.totalDebtBalance ?? 0);
+  const nonMortgageDebt = Number(metrics?.totalDebtBalance ?? metrics?.consumerDebt ?? 0);
   const fixedCostRatio = normalizePercentMetric(metrics?.fixedCostPressureRatio);
   const savingsRate = normalizePercentMetric(metrics?.savingsRate);
   const investingRate = normalizePercentMetric(metrics?.investmentContributionRate);
@@ -1978,7 +1996,15 @@ export default function ResultsPage() {
 
   const reportRef = useRef<HTMLDivElement>(null);
 
-  const warnings = result?.structuralWarnings || [];
+  const warnings = useMemo(() => {
+    const seen = new Set<string>();
+    return (result?.structuralWarnings || []).filter((warning) => {
+      const key = warning?.type || warning?.message || 'unknown';
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [result]);
   const metrics = result?.metrics;
   const scoreBand = useMemo(() => getScoreBand(result?.foundationScore ?? 0), [result]);
   const pillarScores = result?.pillarScores ?? result?.pillars ?? {};
