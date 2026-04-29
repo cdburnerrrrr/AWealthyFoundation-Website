@@ -142,6 +142,19 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
   },
 
   {
+    key: 'monthlyHousingCost',
+    question: 'What is your monthly housing cost right now?',
+    type: 'number',
+    section: 'spending',
+    required: true,
+    placeholder: 'e.g. 1400',
+    helperText:
+      'If you rent, use your monthly rent. If you own, use your monthly mortgage or house payment.',
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+
+
+  {
     key: 'propertyOwnership',
     question: 'Which property types do you currently own?',
     type: 'multiple',
@@ -155,7 +168,11 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       { value: 'other_property', label: 'Other property / land / second home' },
       { value: 'none', label: 'None — I rent or do not own property' },
     ],
-    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+    tags: {
+      modes: ['snapshot', 'detailed'],
+      priority: 'conditional',
+      askIf: (a) => a.housingStatus === 'own_with_mortgage' || a.housingStatus === 'own_outright',
+    },
   },
 
   {
@@ -295,6 +312,33 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     },
   },
 
+  {
+    key: 'monthlyUtilities',
+    question: 'About how much do you spend on utilities each month?',
+    type: 'number',
+    section: 'spending',
+    required: true,
+    placeholder: 'e.g. 250',
+    helperText:
+      'Include utilities like electric, gas, water, trash, and internet if possible.',
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+  {
+    key: 'housingPressure',
+    question: 'How heavy do your housing and utility costs feel in your monthly budget?',
+    type: 'single',
+    section: 'spending',
+    required: true,
+    options: [
+      { value: 'very_manageable', label: 'Very manageable' },
+      { value: 'manageable', label: 'Manageable' },
+      { value: 'a_bit_tight', label: 'A bit tight' },
+      { value: 'tight', label: 'Tight' },
+      { value: 'stressful', label: 'Stressful' },
+    ],
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+
   // INCOME
   {
     key: 'monthlyTakeHomeIncome',
@@ -363,43 +407,6 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
   },
 
   // SPENDING / FIXED COSTS
-  {
-    key: 'monthlyHousingCost',
-    question: 'What is your monthly housing cost right now?',
-    type: 'number',
-    section: 'spending',
-    required: true,
-    placeholder: 'e.g. 1400',
-    helperText:
-      'If you rent, use your monthly rent. If you own, use your monthly mortgage or house payment.',
-    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
-  },
-  {
-    key: 'monthlyUtilities',
-    question: 'About how much do you spend on utilities each month?',
-    type: 'number',
-    section: 'spending',
-    required: true,
-    placeholder: 'e.g. 250',
-    helperText:
-      'Include utilities like electric, gas, water, trash, and internet if possible.',
-    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
-  },
-  {
-    key: 'housingPressure',
-    question: 'How heavy do your housing and utility costs feel in your monthly budget?',
-    type: 'single',
-    section: 'spending',
-    required: true,
-    options: [
-      { value: 'very_manageable', label: 'Very manageable' },
-      { value: 'manageable', label: 'Manageable' },
-      { value: 'a_bit_tight', label: 'A bit tight' },
-      { value: 'tight', label: 'Tight' },
-      { value: 'stressful', label: 'Stressful' },
-    ],
-    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
-  },
   {
     key: 'monthlyChildcareCost',
     question: 'About how much do you spend on childcare each month?',

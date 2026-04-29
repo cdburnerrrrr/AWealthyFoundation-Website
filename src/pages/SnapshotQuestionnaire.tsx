@@ -534,6 +534,22 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
   if (question.type === 'multiple') {
     const selectedValues = Array.isArray(value) ? value : [];
 
+    const toggleOption = (optionValue: string) => {
+      const selected = selectedValues.includes(optionValue);
+      let next = selected
+        ? selectedValues.filter((item) => item !== optionValue)
+        : [...selectedValues, optionValue];
+
+      // Keep “none” mutually exclusive on multi-select questions like debts/property.
+      if (optionValue === 'none' && !selected) {
+        next = ['none'];
+      } else if (optionValue !== 'none') {
+        next = next.filter((item) => item !== 'none');
+      }
+
+      onChange(next);
+    };
+
     return (
       <div>
         <div className="mb-3 inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
@@ -543,32 +559,22 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
         <div className="grid gap-3">
           {question.options.map((option) => {
             const selected = selectedValues.includes(option.value);
+            const fields = OBJECT_FIELD_GROUPS[question.key]?.[option.value] ?? [];
 
             return (
-              <button
+              <div
                 key={option.value}
-                type="button"
-                onClick={() => {
-                  let next = selected
-                    ? selectedValues.filter((item) => item !== option.value)
-                    : [...selectedValues, option.value];
-
-                  // Keep “none” mutually exclusive on multi-select questions like debts/property.
-                  if (option.value === 'none' && !selected) {
-                    next = ['none'];
-                  } else if (option.value !== 'none') {
-                    next = next.filter((item) => item !== 'none');
-                  }
-
-                  onChange(next);
-                }}
                 className={`rounded-2xl border p-4 text-left transition ${
                   selected
                     ? 'border-copper-500 bg-copper-50 shadow-sm'
                     : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
                 }`}
               >
-                <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => toggleOption(option.value)}
+                  className="flex w-full items-center gap-3 text-left"
+                >
                   <span className="shrink-0">
                     {selected ? (
                       <span className="flex h-5 w-5 items-center justify-center rounded-md bg-copper-600 text-white">
@@ -584,11 +590,11 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
                   <span className="text-sm font-semibold text-slate-900">
                     {option.label}
                   </span>
-                </div>
+                </button>
 
-                {selected && OBJECT_FIELD_GROUPS[question.key]?.[option.value]?.length ? (
-                  <div className="mt-4 grid gap-3 md:grid-cols-2" onClick={(e) => e.stopPropagation()}>
-                    {OBJECT_FIELD_GROUPS[question.key][option.value].map((field) => (
+                {selected && fields.length ? (
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    {fields.map((field) => (
                       <label key={field.key} className="block">
                         <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                           {field.label}
@@ -597,6 +603,8 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
                           type="number"
                           inputMode="decimal"
                           value={responses[field.key] ?? ''}
+                          onClick={(event) => event.stopPropagation()}
+                          onMouseDown={(event) => event.stopPropagation()}
                           onChange={(event) => {
                             const raw = event.target.value;
                             onFieldChange?.(field.key, raw === '' ? '' : Number(raw));
@@ -608,7 +616,7 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
                     ))}
                   </div>
                 ) : null}
-              </button>
+              </div>
             );
           })}
         </div>
@@ -626,13 +634,13 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
             key={option.value}
             type="button"
             onClick={() => onChange(option.value)}
-            className={`rounded-2xl border px-3 py-4 text-sm font-semibold transition ${
+            className={`rounded-2xl border p-4 text-left transition ${
               selected
-                ? 'border-copper-500 bg-copper-50 text-slate-900'
-                : 'border-gray-200 bg-white text-slate-700 hover:bg-gray-50'
+                ? 'border-copper-500 bg-copper-50 shadow-sm'
+                : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
             }`}
           >
-            {option.label}
+            <div className="text-sm font-semibold text-slate-900">{option.label}</div>
           </button>
         );
       })}
