@@ -1423,12 +1423,54 @@ function getComparisonWhyItMatters(metric?: ComparisonMetric | null) {
   }
 }
 
-function getComparisonTakeaway(metrics: ComparisonMetric[]) {
+function getComparisonTakeaway(
+  metrics: ComparisonMetric[],
+  warnings: StructuralWarning[] = []
+) {
   const strongMetrics = metrics.filter((metric) => metric.status === 'ahead' || metric.status === 'strong');
   const watchMetrics = metrics.filter((metric) => metric.status === 'watch');
   const typicalMetrics = metrics.filter((metric) => metric.status === 'average');
-  const strongest = strongMetrics[0] ?? null;
-  const needsAttention = watchMetrics[0] ?? typicalMetrics[0] ?? null;
+
+  const byLabel = (label: string) => metrics.find((metric) => metric.label === label) ?? null;
+  const firstByPriority = (pool: ComparisonMetric[]) => {
+    const priority = ['Fixed Cost Load', 'Consumer Debt', 'Savings Rate', 'Investing Rate', 'Net Worth'];
+    return priority.map(byLabel).find((metric) => metric && pool.includes(metric)) ?? pool[0] ?? null;
+  };
+
+  const hasIncomeConstraint = warnings.some((warning) => warning.type === 'income_constraint');
+  const hasHousingPressure = warnings.some((warning) => warning.type === 'housing_pressure');
+  const fixedCostMetric = byLabel('Fixed Cost Load');
+  const consumerDebtMetric = byLabel('Consumer Debt');
+
+  const strongest = firstByPriority(strongMetrics);
+  const needsAttention =
+    hasIncomeConstraint || hasHousingPressure
+      ? fixedCostMetric ?? consumerDebtMetric ?? firstByPriority(watchMetrics) ?? firstByPriority(typicalMetrics)
+      : firstByPriority(watchMetrics) ?? firstByPriority(typicalMetrics);
+
+  if (hasIncomeConstraint) {
+    return {
+      headline: 'This is less about chasing net worth and more about creating breathing room.',
+      body:
+        'The comparison shows that income and fixed costs are the real pressure points. For this household, the best next move is increasing income, reducing a major fixed cost, or both — not trying to optimize net worth first.',
+      nextMove:
+        'Start with the move that changes monthly cash flow: overtime, a side income path, a better-paying role, moving in with family temporarily, or lowering the largest housing-related cost.',
+      strongest,
+      needsAttention,
+    };
+  }
+
+  if (hasHousingPressure) {
+    return {
+      headline: 'The biggest comparison issue is monthly breathing room.',
+      body:
+        'Net worth matters over time, but the immediate issue is that housing and fixed bills are taking too much of the month. Lowering that pressure will make debt payoff, saving, and future net worth improvement more realistic.',
+      nextMove:
+        'Focus first on the housing picture and other must-pay bills. The goal is to create enough monthly margin for the rest of the plan to work.',
+      strongest,
+      needsAttention,
+    };
+  }
 
   if (strongMetrics.length >= 4 && strongest) {
     return {
@@ -1639,15 +1681,17 @@ function ComparisonBar({ metric }: { metric: ComparisonMetric }) {
 function HouseholdComparisonSection({
   profileLabel,
   comparisonMetrics,
+  warnings = [],
   onMoreInfo,
 }: {
   profileLabel: string;
   comparisonMetrics: ComparisonMetric[];
+  warnings?: StructuralWarning[];
   onMoreInfo: () => void;
 }) {
   const aheadCount = comparisonMetrics.filter((item) => item.status === 'ahead' || item.status === 'strong').length;
   const watchCount = comparisonMetrics.filter((item) => item.status === 'watch').length;
-  const comparisonTakeaway = getComparisonTakeaway(comparisonMetrics);
+  const comparisonTakeaway = getComparisonTakeaway(comparisonMetrics, warnings);
   const strongestTone = comparisonTakeaway.strongest ? getComparisonTone(comparisonTakeaway.strongest.status) : null;
   const watchTone = comparisonTakeaway.needsAttention ? getComparisonTone(comparisonTakeaway.needsAttention.status) : null;
 
@@ -2583,6 +2627,7 @@ export default function ResultsPage() {
         <HouseholdComparisonSection
           profileLabel={comparisonProfileLabel}
           comparisonMetrics={comparisonMetrics}
+          warnings={warnings}
           onMoreInfo={() => setShowComparisonModal(true)}
         />
 
