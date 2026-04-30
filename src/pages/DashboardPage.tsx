@@ -823,6 +823,52 @@ function getStoredPlanProgress(storageKey: string): Record<string, boolean> {
   }
 }
 
+async function loadLatestPlanActivity(
+  userId: string | undefined,
+  assessmentId: string,
+): Promise<string | null> {
+  if (!userId || !assessmentId) return null;
+
+  const { data, error } = await supabase
+    .from("user_plan_progress")
+    .select("updated_at")
+    .eq("user_id", userId)
+    .eq("assessment_id", assessmentId)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Could not load latest 90-day plan activity:", error);
+    return null;
+  }
+
+  return data?.updated_at ?? null;
+}
+
+function formatLastPlanActivity(dateString: string | null) {
+  if (!dateString) return null;
+
+  const timestamp = new Date(dateString).getTime();
+  if (Number.isNaN(timestamp)) return null;
+
+  const diffMs = Date.now() - timestamp;
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffMinutes < 1) return "just now";
+  if (diffMinutes < 60) return `${diffMinutes} minute${diffMinutes === 1 ? "" : "s"} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
+  if (diffDays === 1) return "yesterday";
+  if (diffDays < 30) return `${diffDays} days ago`;
+
+  return new Date(dateString).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+}
+
 function getDashboardNinetyDayPlanPhases(
   nextMoveCard: { title: string; body: string; checklist: string[] },
   snapshot: ReturnType<typeof getStructuralSnapshot>,
@@ -2028,13 +2074,16 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const [completedPlanActions, setCompletedPlanActions] = useState<
     Record<string, boolean>
   >(() => getStoredPlanProgress(planProgressStorageKey));
+  const [lastPlanActivity, setLastPlanActivity] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
     const localProgress = getStoredPlanProgress(planProgressStorageKey);
     setCompletedPlanActions(localProgress);
 
-    loadSavedPlanProgress((user as any)?.id, planProgressAssessmentId).then(
+    const userId = (user as any)?.id;
+
+    loadSavedPlanProgress(userId, planProgressAssessmentId).then(
       (savedProgress) => {
         if (!isMounted || !savedProgress) return;
         const mergedProgress = { ...localProgress, ...savedProgress };
@@ -2045,6 +2094,13 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
             JSON.stringify(mergedProgress),
           );
         }
+      },
+    );
+
+    loadLatestPlanActivity(userId, planProgressAssessmentId).then(
+      (latestActivity) => {
+        if (!isMounted) return;
+        setLastPlanActivity(latestActivity);
       },
     );
 
@@ -2090,6 +2146,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     0,
     dashboardPlanActions.length - completedDashboardPlanCount,
   );
+  const lastPlanActivityLabel = formatLastPlanActivity(lastPlanActivity);
   const dashboardDebtBalance = Number(
     snapshot?.consumerDebt ?? snapshot?.totalDebtBalance ?? 0,
   );
@@ -2112,6 +2169,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     };
 
     setCompletedPlanActions(next);
+    setLastPlanActivity(new Date().toISOString());
 
     if (typeof window !== "undefined") {
       window.localStorage.setItem(planProgressStorageKey, JSON.stringify(next));
@@ -2644,6 +2702,12 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                       {dashboardPlanPercent}% complete
                     </div>
                   </div>
+
+                  {lastPlanActivityLabel && (
+                    <div className="mb-3 inline-flex rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-semibold text-slate-300">
+                      Last activity: {lastPlanActivityLabel}
+                    </div>
+                  )}
 
                   <h2 className="text-2xl font-bold">
                     {nextDashboardPlanAction ? "Do this next" : "Plan complete"}
