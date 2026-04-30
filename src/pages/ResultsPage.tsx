@@ -2450,10 +2450,10 @@ function getNinetyDayPlanIntro(
     return {
       eyebrow: "Your next 90 days are about one thing: creating breathing room",
       body: fixedCost
-        ? "You do not need to fix everything at once. With must-pay bills around " +
+        ? "You don’t need to fix everything. With must-pay bills around " +
           fixedCost +
-          " of take-home pay, focus first on what improves monthly cash flow."
-        : "You do not need to fix everything at once. Focus on what improves monthly cash flow first so the rest of your foundation has room to improve.",
+          " of take-home pay, focus on what improves cash flow first."
+        : "You don’t need to fix everything. Focus on what improves cash flow first.",
     };
   }
 
@@ -2915,7 +2915,7 @@ export default function ResultsPage() {
   const phaseCopy = {
     stabilize: {
       eyebrow: "Stabilization Plan",
-      title: "What needs to change first",
+      title: "Your priority right now",
       body: "Right now, your biggest constraint is income relative to fixed costs. Before anything else, the goal is to create breathing room — either by increasing income, reducing a major fixed cost, or both.",
       primaryLabel: "Your highest leverage move",
       pressureLabel: "Why things feel tight",
@@ -3423,11 +3423,11 @@ export default function ResultsPage() {
                   </p>
                 </div>
 
-                <ul className="mt-4 space-y-3">
+                <ul className="mt-4 space-y-4">
                   {bestNextMoveCard.rightNow.map((item, index) => (
                     <li
                       key={`focus-${index}`}
-                      className="flex items-start gap-3 text-sm leading-6 text-slate-700"
+                      className="mb-2 flex items-start gap-3 text-sm leading-6 text-slate-700"
                     >
                       <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-copper-600" />
                       <span>{item}</span>
@@ -3662,7 +3662,7 @@ export default function ResultsPage() {
                   </div>
 
                   <p className="mt-3 text-xs leading-5 text-slate-600">
-                    Momentum builds fast — aim for 1–2 steps per week. The 90-day target is 6–9 meaningful steps.
+                    Momentum builds fast — aim for 1–2 steps per week. A strong 90-day target is 6–9 meaningful steps.
                     The goal is not a perfect checklist — it is visible progress
                     you can actually sustain.
                   </p>

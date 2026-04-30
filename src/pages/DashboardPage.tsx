@@ -2101,15 +2101,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     dashboardPlanActions[0] ??
     null;
   const nextDashboardPlanActionLabel = nextDashboardPlanAction
-    ? nextDashboardPlanAction.label
-        .replace(
-          "Keep any income gain or cost reduction visible in one monthly margin number.",
-          "Focus on increasing your monthly margin this week.",
-        )
-        .replace(
-          "Look for immediate income options: extra shifts, overtime, side work, selling unused items, or applying for a better role.",
-          "Take one visible action to increase income this week.",
-        )
+    ? "Increase your monthly margin this week. Start with one action: income or a fixed cost."
     : null;
 
   const toggleDashboardPlanAction = (actionId: string) => {
@@ -2616,7 +2608,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                           </div>
                           <div className="mt-1 text-sm text-slate-400">
                             {isDashboardDebtUnderPressure
-                              ? "Reduce monthly obligations first"
+                              ? "Create breathing room first"
                               : dashboardDebtBalance <= 0
                                 ? (snapshot?.mortgageDebt ?? 0) > 0
                                   ? "Mortgage only"
@@ -2627,8 +2619,8 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                           </div>
                           {isDashboardDebtUnderPressure && (
                             <div className="mt-3 rounded-xl border border-copper-300/25 bg-copper-300/10 p-3 text-xs leading-5 text-copper-100/90">
-                              Focus on lowering required payments or increasing
-                              income before relying on payoff-date projections.
+                              Focus on creating breathing room before relying on
+                              payoff-date projections.
                             </div>
                           )}
                         </div>
@@ -2658,7 +2650,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                   </h2>
                   <p className="mt-3 text-sm leading-6 text-slate-400">
                     {nextDashboardPlanActionLabel
-                      ? `${nextDashboardPlanActionLabel} This is what turns small wins into real progress.`
+                      ? nextDashboardPlanActionLabel
                       : "You have completed the current 90-day plan. Review your report or retake the assessment to choose the next priority."}
                   </p>
 
@@ -2678,8 +2670,11 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                     <p className="mt-3 text-xs leading-5 text-slate-400">
                       Momentum builds fast — aim for 1–2 steps per week.
                     </p>
+                    <p className="mt-1 text-xs leading-5 text-slate-400">
+                      You’re already ahead of most people who never take action.
+                    </p>
                     <p className="mt-1 text-xs leading-5 text-slate-500">
-                      The 90-day target is 6–9 meaningful steps — not a
+                      A strong 90-day target is 6–9 meaningful steps — not a
                       perfect checklist.
                     </p>
                   </div>
