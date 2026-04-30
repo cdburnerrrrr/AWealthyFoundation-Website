@@ -2450,10 +2450,10 @@ function getNinetyDayPlanIntro(
     return {
       eyebrow: "Your next 90 days are about one thing: creating breathing room",
       body: fixedCost
-        ? "Right now, income and fixed costs are out of balance. With must-pay bills around " +
+        ? "You do not need to fix everything at once. With must-pay bills around " +
           fixedCost +
-          " of take-home pay, this plan is designed to improve your position as quickly as possible."
-        : "Right now, income and fixed costs are out of balance. This plan is designed to improve monthly cash flow first so the rest of your foundation has room to improve.",
+          " of take-home pay, focus first on what improves monthly cash flow."
+        : "You do not need to fix everything at once. Focus on what improves monthly cash flow first so the rest of your foundation has room to improve.",
     };
   }
 
@@ -2917,7 +2917,7 @@ export default function ResultsPage() {
       eyebrow: "Stabilization Plan",
       title: "What needs to change first",
       body: "Right now, your biggest constraint is income relative to fixed costs. Before anything else, the goal is to create breathing room — either by increasing income, reducing a major fixed cost, or both.",
-      primaryLabel: "Your primary lever",
+      primaryLabel: "Your highest leverage move",
       pressureLabel: "Why things feel tight",
       forwardLabel: "What to do next",
       insightLabel: "Worth noting",
@@ -2926,7 +2926,7 @@ export default function ResultsPage() {
       eyebrow: "Next Moves",
       title: "What needs to improve next",
       body: "You have pieces to build on, but one constraint is still limiting momentum. The goal now is to choose the move that creates the most relief or progress without scattering effort across too many goals.",
-      primaryLabel: "Your primary lever",
+      primaryLabel: "Your highest leverage move",
       pressureLabel: "What still needs attention",
       forwardLabel: "What to do next",
       insightLabel: "Worth noting",
@@ -3624,7 +3624,7 @@ export default function ResultsPage() {
             <ReportNewsletterCard userEmail={user?.email} />
           </div>
 
-          <div id="90-day-plan" className="scroll-mt-28">
+          <div id="90-day-plan" className="scroll-mt-24">
             <SectionShell
               icon={Clock3}
               title="Your 90-Day Plan"
@@ -3645,8 +3645,7 @@ export default function ResultsPage() {
                         Track your 90-day progress
                       </div>
                       <div className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                        {completedPlanActionCount} of{" "}
-                        {ninetyDayPlanActions.length} steps complete
+                        {completedPlanActionCount} steps complete • {Math.max(0, ninetyDayPlanActions.length - completedPlanActionCount)} to go
                       </div>
                     </div>
                     <div className="inline-flex items-center gap-2 rounded-full border border-copper-200 bg-copper-50 px-3 py-1 text-xs font-bold text-copper-700">
@@ -3663,7 +3662,7 @@ export default function ResultsPage() {
                   </div>
 
                   <p className="mt-3 text-xs leading-5 text-slate-600">
-                    Aim to complete 6–9 meaningful steps over the next 90 days.
+                    Momentum builds fast — aim for 1–2 steps per week. The 90-day target is 6–9 meaningful steps.
                     The goal is not a perfect checklist — it is visible progress
                     you can actually sustain.
                   </p>
@@ -3687,7 +3686,7 @@ export default function ResultsPage() {
                       ? "Create breathing room fast"
                       : index === 1
                         ? "Stabilize cash flow"
-                        : "Build forward with control";
+                        : "Build forward momentum";
 
                   return (
                     <div
@@ -3728,9 +3727,9 @@ export default function ResultsPage() {
                               key={`${phase.title}-${itemIndex}`}
                               type="button"
                               onClick={() => togglePlanAction(actionId)}
-                              className={`flex w-full items-start gap-3 rounded-xl border p-3 text-left text-sm transition ${
+                              className={`flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left text-sm transition ${
                                 isComplete
-                                  ? "border-emerald-200 bg-white text-slate-500"
+                                  ? "border-emerald-300 bg-emerald-50 text-emerald-900 shadow-sm"
                                   : "border-white/70 bg-white/55 text-navy-900 hover:border-copper-200 hover:bg-white"
                               }`}
                             >
@@ -3753,7 +3752,7 @@ export default function ResultsPage() {
                                 {item}
                                 {isComplete && (
                                   <span className="ml-2 inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-700">
-                                    Completed
+                                    Completed ✓
                                   </span>
                                 )}
                               </span>
@@ -3772,9 +3771,8 @@ export default function ResultsPage() {
               </div>
 
               <div className="mt-5 rounded-2xl border border-copper-200 bg-copper-50/70 p-4 text-sm font-semibold leading-6 text-navy-900">
-                This plan works because it gives the user a measurable 90-day
-                outcome: fewer decisions, clearer next steps, and a visible
-                progress loop they can return to.
+                Most people who improve their financial position start with a
+                few focused changes — not everything at once.
               </div>
             </SectionShell>
           </div>

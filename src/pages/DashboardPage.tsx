@@ -2086,10 +2086,31 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
         (completedDashboardPlanCount / dashboardPlanActions.length) * 100,
       )
     : 0;
+  const dashboardPlanRemainingCount = Math.max(
+    0,
+    dashboardPlanActions.length - completedDashboardPlanCount,
+  );
+  const dashboardDebtBalance = Number(
+    snapshot?.consumerDebt ?? snapshot?.totalDebtBalance ?? 0,
+  );
+  const isDashboardDebtUnderPressure =
+    (snapshot?.fixedCostLoad ?? 0) >= 70 ||
+    (snapshot?.debtToIncomeRatio ?? 0) >= 60;
   const nextDashboardPlanAction =
     dashboardPlanActions.find((action) => !completedPlanActions[action.id]) ??
     dashboardPlanActions[0] ??
     null;
+  const nextDashboardPlanActionLabel = nextDashboardPlanAction
+    ? nextDashboardPlanAction.label
+        .replace(
+          "Keep any income gain or cost reduction visible in one monthly margin number.",
+          "Focus on increasing your monthly margin this week.",
+        )
+        .replace(
+          "Look for immediate income options: extra shifts, overtime, side work, selling unused items, or applying for a better role.",
+          "Take one visible action to increase income this week.",
+        )
+    : null;
 
   const toggleDashboardPlanAction = (actionId: string) => {
     const nextCompleted = !completedPlanActions[actionId];
@@ -2573,31 +2594,43 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                           <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                             Debt Status
                           </div>
-                          <div className="mt-4 text-2xl font-bold text-violet-300">
-                            {(snapshot?.consumerDebt ??
-                              snapshot?.totalDebtBalance ??
-                              0) <= 0
-                              ? "No Consumer Debt"
-                              : freedomDateScenario?.results?.freedomDate
-                                ? new Date(
-                                    freedomDateScenario.results.freedomDate,
-                                  ).toLocaleDateString("en-US", {
-                                    month: "short",
-                                    year: "numeric",
-                                  })
-                                : "Use Debt Tool"}
+                          <div
+                            className={`mt-4 text-2xl font-bold ${
+                              isDashboardDebtUnderPressure
+                                ? "text-copper-300"
+                                : "text-violet-300"
+                            }`}
+                          >
+                            {isDashboardDebtUnderPressure
+                              ? "Under Pressure"
+                              : dashboardDebtBalance <= 0
+                                ? "No Consumer Debt"
+                                : freedomDateScenario?.results?.freedomDate
+                                  ? new Date(
+                                      freedomDateScenario.results.freedomDate,
+                                    ).toLocaleDateString("en-US", {
+                                      month: "short",
+                                      year: "numeric",
+                                    })
+                                  : "Use Debt Tool"}
                           </div>
                           <div className="mt-1 text-sm text-slate-400">
-                            {(snapshot?.consumerDebt ??
-                              snapshot?.totalDebtBalance ??
-                              0) <= 0
-                              ? (snapshot?.mortgageDebt ?? 0) > 0
-                                ? "Mortgage only"
-                                : "Debt-free"
-                              : freedomDateScenario?.results?.monthsSaved
-                                ? `${freedomDateScenario.results.monthsSaved} months saved`
-                                : "Open payoff planner"}
+                            {isDashboardDebtUnderPressure
+                              ? "Reduce monthly obligations first"
+                              : dashboardDebtBalance <= 0
+                                ? (snapshot?.mortgageDebt ?? 0) > 0
+                                  ? "Mortgage only"
+                                  : "Debt-free"
+                                : freedomDateScenario?.results?.monthsSaved
+                                  ? `${freedomDateScenario.results.monthsSaved} months saved`
+                                  : "Open payoff planner"}
                           </div>
+                          {isDashboardDebtUnderPressure && (
+                            <div className="mt-3 rounded-xl border border-copper-300/25 bg-copper-300/10 p-3 text-xs leading-5 text-copper-100/90">
+                              Focus on lowering required payments or increasing
+                              income before relying on payoff-date projections.
+                            </div>
+                          )}
                         </div>
                         <Calendar className="h-10 w-10 text-violet-300/80" />
                       </div>
@@ -2606,7 +2639,74 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                 </DashboardPanel>
               </section>
 
-              <section className="mb-6 grid gap-4 xl:grid-cols-[1.35fr_.65fr]">
+              <section className="mb-6">
+                <DashboardPanel className="p-5 md:p-6">
+                  <div className="mb-4 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2 text-cyan-300">
+                      <Sparkles className="h-5 w-5" />
+                      <div className="text-xs font-semibold uppercase tracking-[0.16em]">
+                        Your 90-Day Focus
+                      </div>
+                    </div>
+                    <div className="rounded-full border border-cyan-300/20 bg-cyan-300/8 px-3 py-1 text-xs font-bold text-cyan-200">
+                      {dashboardPlanPercent}% complete
+                    </div>
+                  </div>
+
+                  <h2 className="text-2xl font-bold">
+                    {nextDashboardPlanAction ? "Do this next" : "Plan complete"}
+                  </h2>
+                  <p className="mt-3 text-sm leading-6 text-slate-400">
+                    {nextDashboardPlanActionLabel
+                      ? `${nextDashboardPlanActionLabel} This is what turns small wins into real progress.`
+                      : "You have completed the current 90-day plan. Review your report or retake the assessment to choose the next priority."}
+                  </p>
+
+                  <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                    <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                      <span>
+                        {completedDashboardPlanCount} steps complete • {dashboardPlanRemainingCount} to go
+                      </span>
+                      <span>{dashboardPlanPercent}%</span>
+                    </div>
+                    <div className="h-2.5 overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-copper-400 transition-all duration-300"
+                        style={{ width: `${dashboardPlanPercent}%` }}
+                      />
+                    </div>
+                    <p className="mt-3 text-xs leading-5 text-slate-400">
+                      Momentum builds fast — aim for 1–2 steps per week.
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                      The 90-day target is 6–9 meaningful steps — not a
+                      perfect checklist.
+                    </p>
+                  </div>
+
+                  {nextDashboardPlanAction && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        toggleDashboardPlanAction(nextDashboardPlanAction.id)
+                      }
+                      className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-300/30 bg-emerald-300/10 px-4 py-3 text-sm font-bold text-emerald-200 hover:bg-emerald-300/15"
+                    >
+                      <CheckCircle2 className="h-5 w-5" />
+                      Complete this step
+                    </button>
+                  )}
+
+                  <button
+                    onClick={handleOpenFullNinetyDayPlan}
+                    className="mt-3 inline-flex items-center gap-2 rounded-2xl border border-cyan-300/35 bg-cyan-300/8 px-4 py-3 text-sm font-bold text-cyan-200 shadow-[0_0_28px_rgba(34,211,238,.12)]"
+                  >
+                    View your full plan <ArrowRight className="h-4 w-4" />
+                  </button>
+                </DashboardPanel>
+              </section>
+
+              <section className="mb-6">
                 <DashboardPanel className="p-5 md:p-6">
                   <div className="mb-4 flex items-center justify-between">
                     <div>
@@ -2696,72 +2796,6 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                   </div>
                 </DashboardPanel>
 
-                <DashboardPanel className="p-5 md:p-6">
-                  <div className="mb-4 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-2 text-cyan-300">
-                      <Sparkles className="h-5 w-5" />
-                      <div className="text-xs font-semibold uppercase tracking-[0.16em]">
-                        Your 90-Day Focus
-                      </div>
-                    </div>
-                    <div className="rounded-full border border-cyan-300/20 bg-cyan-300/8 px-3 py-1 text-xs font-bold text-cyan-200">
-                      {dashboardPlanPercent}% complete
-                    </div>
-                  </div>
-
-                  <h2 className="text-2xl font-bold">
-                    {nextDashboardPlanAction ? "Next step" : "Plan complete"}
-                  </h2>
-                  <p className="mt-3 text-sm leading-6 text-slate-400">
-                    {nextDashboardPlanAction
-                      ? `${nextDashboardPlanAction.label} This is what turns small wins into real progress.`
-                      : "You have completed the current 90-day plan. Review your report or retake the assessment to choose the next priority."}
-                  </p>
-
-                  <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                    <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                      <span>
-                        {completedDashboardPlanCount} of{" "}
-                        {dashboardPlanActions.length} steps complete
-                      </span>
-                      <span>{dashboardPlanPercent}%</span>
-                    </div>
-                    <div className="h-2.5 overflow-hidden rounded-full bg-white/10">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-copper-400 transition-all duration-300"
-                        style={{ width: `${dashboardPlanPercent}%` }}
-                      />
-                    </div>
-                    <p className="mt-3 text-xs leading-5 text-slate-400">
-                      This stays synced with the checklist in your report.
-                      Complete 1–2 steps per week to build momentum.
-                    </p>
-                    <p className="mt-1 text-xs leading-5 text-slate-500">
-                      90-day target: complete 6–9 meaningful steps, not a
-                      perfect checklist.
-                    </p>
-                  </div>
-
-                  {nextDashboardPlanAction && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        toggleDashboardPlanAction(nextDashboardPlanAction.id)
-                      }
-                      className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-300/30 bg-emerald-300/10 px-4 py-3 text-sm font-bold text-emerald-200 hover:bg-emerald-300/15"
-                    >
-                      <CheckCircle2 className="h-5 w-5" />
-                      Mark this step complete
-                    </button>
-                  )}
-
-                  <button
-                    onClick={handleOpenFullNinetyDayPlan}
-                    className="mt-3 inline-flex items-center gap-2 rounded-2xl border border-cyan-300/35 bg-cyan-300/8 px-4 py-3 text-sm font-bold text-cyan-200 shadow-[0_0_28px_rgba(34,211,238,.12)]"
-                  >
-                    Open full 90-day plan <ArrowRight className="h-4 w-4" />
-                  </button>
-                </DashboardPanel>
               </section>
 
               <section className="mb-6 grid gap-4 xl:grid-cols-[1.1fr_.8fr_.9fr]">
