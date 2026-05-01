@@ -850,25 +850,23 @@ async function savePlanActionProgress(
   }
 
   const { data: eventData, error: eventError } = await supabase
-  .from("user_engagement_events")
-  .insert({
-    user_id: userId,
-    assessment_id: assessmentId,
-    event_type: completed ? "step_completed" : "step_unchecked",
-    event_payload: {
-      actionId,
-      timestamp: now,
-    },
-  })
-  .select();
+    .from("user_engagement_events")
+    .insert({
+      user_id: userId,
+      assessment_id: assessmentId,
+      event_type: completed ? "step_completed" : "step_unchecked",
+      event_payload: {
+        actionId,
+        timestamp: now,
+      },
+    })
+    .select();
 
-console.log("Engagement event result:", { eventData, eventError });
+  console.log("Engagement event result:", { eventData, eventError });
 
-if (eventError) {
-  console.error("Engagement event failed:", eventError);
-}
-  };
-
+  if (eventError) {
+    console.error("Engagement event failed:", eventError);
+  }
 
   if (completed) {
     const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
@@ -882,10 +880,9 @@ if (eventError) {
 
     if (momentumError) {
       console.error("Could not check weekly momentum:", momentumError);
-      return;
     }
 
-    if (rows && rows.length >= 3) {
+    if (!momentumError && rows && rows.length >= 3) {
       console.log("🔥 MOMENTUM TRIGGERED", {
         userId,
         email: userEmail,
@@ -911,6 +908,7 @@ if (eventError) {
     }
   }
 }
+
 
 function getStoredPlanProgress(storageKey: string): Record<string, boolean> {
   if (typeof window === "undefined") return {};
