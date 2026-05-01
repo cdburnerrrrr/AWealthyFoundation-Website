@@ -4,7 +4,9 @@ import { useAppStore } from "../store/appStore";
 import { getEntitlements } from "../lib/entitlements";
 import { exportReportPdf } from "../utils/pdfExport";
 import { useUserPlan } from "../hooks/useUserPlan";
+import MomentumPanel from '../components/dashboard/MomentumPanel';
 import { supabase } from "../lib/supabase";
+
 
 import {
   AlertCircle,
@@ -2188,6 +2190,27 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     [dashboardPlanPhases],
   );
 
+  const momentumActions = useMemo(
+    () =>
+      dashboardPlanActions.map((action, index) => {
+        const progressRow = planProgressRows.find(
+          (row) => row.action_id === action.id,
+        );
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + Math.min(index, 4));
+
+        return {
+          id: action.id,
+          title: action.label,
+          completed: Boolean(completedPlanActions[action.id]),
+          completedAt: progressRow?.completed_at ?? null,
+          dueDate: dueDate.toISOString(),
+          pillar: weakestPillar ?? undefined,
+        };
+      }),
+    [dashboardPlanActions, completedPlanActions, planProgressRows, weakestPillar],
+  );
+
   const completedDashboardPlanCount = dashboardPlanActions.filter(
     (action) => completedPlanActions[action.id],
   ).length;
@@ -2775,190 +2798,6 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                 </DashboardPanel>
               </section>
 
-              <section className="mb-6">
-                <DashboardPanel className="p-5 md:p-6">
-                  <div className="mb-4 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-2 text-cyan-300">
-                      <Sparkles className="h-5 w-5" />
-                      <div className="text-xs font-semibold uppercase tracking-[0.16em]">
-                        Your 90-Day Focus
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <div className="rounded-full border border-cyan-300/20 bg-cyan-300/8 px-3 py-1 text-xs font-bold text-cyan-200">
-                        {dashboardPlanPercent}% complete
-                      </div>
-                      {momentum.completedThisWeek > 0 && (
-                        <div className="rounded-full border border-emerald-300/25 bg-emerald-300/10 px-3 py-1 text-xs font-bold text-emerald-200">
-                          +{momentum.completedThisWeek} this week
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {lastPlanActivityLabel && (
-                    <div className="mb-3 inline-flex rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-semibold text-slate-300">
-                      Last activity: {lastPlanActivityLabel}
-                    </div>
-                  )}
-
-                  <h2 className="text-2xl font-bold">
-                    {nextDashboardPlanAction ? "Do this next" : "Plan complete"}
-                  </h2>
-                  <p className="mt-3 text-sm leading-6 text-slate-400">
-                    {nextDashboardPlanActionLabel
-                      ? nextDashboardPlanActionLabel
-                      : "You have completed the current 90-day plan. Review your report or retake the assessment to choose the next priority."}
-                  </p>
-
-                  <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                    <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                      <span>
-                        {completedDashboardPlanCount} steps complete • {dashboardPlanRemainingCount} to go
-                      </span>
-                      <span>{dashboardPlanPercent}%</span>
-                    </div>
-                    <div className="h-2.5 overflow-hidden rounded-full bg-white/10">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-copper-400 transition-all duration-300"
-                        style={{ width: `${dashboardPlanPercent}%` }}
-                      />
-                    </div>
-                    <p className="mt-3 text-xs leading-5 text-slate-400">
-                      Momentum builds fast — aim for 1–2 steps per week.
-                    </p>
-                    {momentum.completedThisWeek > 0 ? (
-                      <p className="mt-1 text-sm font-semibold leading-5 text-emerald-300">
-                        You completed {momentum.completedThisWeek} step{momentum.completedThisWeek > 1 ? "s" : ""} this week — momentum is building.
-                      </p>
-                    ) : (
-                      <p className="mt-1 text-sm font-semibold leading-5 text-slate-400">
-                        Complete 1–2 steps this week to build momentum.
-                      </p>
-                    )}
-                    <p className="mt-1 text-xs leading-5 text-slate-400">
-                      You’re already ahead of most people who never take action.
-                    </p>
-                    <p className="mt-1 text-xs leading-5 text-slate-500">
-                      A strong 90-day target is 6–9 meaningful steps — not a
-                      perfect checklist.
-                    </p>
-                  </div>
-
-                  {nextDashboardPlanAction && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        toggleDashboardPlanAction(nextDashboardPlanAction.id)
-                      }
-                      className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-300/30 bg-emerald-300/10 px-4 py-3 text-sm font-bold text-emerald-200 hover:bg-emerald-300/15"
-                    >
-                      <CheckCircle2 className="h-5 w-5" />
-                      Complete this step
-                    </button>
-                  )}
-
-                  <button
-                    onClick={handleOpenFullNinetyDayPlan}
-                    className="mt-3 inline-flex items-center gap-2 rounded-2xl border border-cyan-300/35 bg-cyan-300/8 px-4 py-3 text-sm font-bold text-cyan-200 shadow-[0_0_28px_rgba(34,211,238,.12)]"
-                  >
-                    View your full plan <ArrowRight className="h-4 w-4" />
-                  </button>
-                </DashboardPanel>
-              </section>
-
-              <section className="mb-6">
-                <DashboardPanel className="p-5 md:p-6">
-                  <div className="mb-4 flex items-center justify-between">
-                    <div>
-                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                        Your Financial Foundation
-                      </div>
-                      <h2 className="mt-2 text-2xl font-bold">House View</h2>
-                    </div>
-                    <button
-                      onClick={() => navigate("/results")}
-                      className="inline-flex items-center gap-2 rounded-xl border border-cyan-300/20 px-3 py-2 text-sm font-semibold text-cyan-200"
-                    >
-                      View Details <ArrowRight className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <div className="grid gap-5 lg:grid-cols-[1.15fr_.75fr]">
-                    <DashboardHouseVisual pillarScores={pillarScores} />
-
-                    <div className="rounded-[1.6rem] border border-cyan-200/10 bg-white/[0.045] p-5 backdrop-blur-xl">
-                      <div className="mb-3 flex items-center gap-2 text-cyan-300">
-                        <Zap className="h-4 w-4" />
-                        <div className="text-xs font-semibold uppercase tracking-[0.16em]">
-                          What-If Calculator
-                        </div>
-                      </div>
-
-                      <p className="mb-4 text-sm text-slate-400">
-                        See how small changes impact your financial foundation.
-                      </p>
-
-                      {snapshot && scenarioResult ? (
-                        <>
-                          <div className="grid grid-cols-2 gap-3">
-                            <label className="rounded-xl bg-white/[0.04] p-3">
-                              <div className="text-xs text-slate-500">
-                                Extra Income
-                              </div>
-                              <input
-                                type="number"
-                                value={whatIf.income}
-                                onChange={(e) =>
-                                  setWhatIf((prev) => ({
-                                    ...prev,
-                                    income: Number(e.target.value || 0),
-                                  }))
-                                }
-                                className="mt-1 w-full bg-transparent text-lg font-bold text-emerald-300 outline-none"
-                              />
-                            </label>
-                            <label className="rounded-xl bg-white/[0.04] p-3">
-                              <div className="text-xs text-slate-500">
-                                Lower Costs
-                              </div>
-                              <input
-                                type="number"
-                                value={whatIf.housing}
-                                onChange={(e) =>
-                                  setWhatIf((prev) => ({
-                                    ...prev,
-                                    housing: Number(e.target.value || 0),
-                                  }))
-                                }
-                                className="mt-1 w-full bg-transparent text-lg font-bold text-emerald-300 outline-none"
-                              />
-                            </label>
-                            <div className="col-span-2 rounded-xl bg-white/[0.04] p-3">
-                              <div className="text-xs text-slate-500">
-                                New Monthly Margin
-                              </div>
-                              <div className="text-xl font-bold text-cyan-300">
-                                {formatCurrency(scenarioResult.adjustedMargin)}
-                              </div>
-                              <div className="mt-1 text-xs text-slate-500">
-                                Fixed load would become{" "}
-                                {formatPercent(scenarioResult.adjustedLoad)}
-                              </div>
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="rounded-xl bg-white/[0.04] p-3 text-sm text-slate-400">
-                          Metrics will appear after your full report is
-                          generated.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </DashboardPanel>
-
-              </section>
-
               <section className="mb-6 grid gap-4 xl:grid-cols-[1.1fr_.8fr_.9fr]">
                 <DashboardPanel className="p-5">
                   <div className="mb-3 flex items-center justify-between">
@@ -3075,6 +2914,199 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                     className="mt-4 flex items-center gap-2 text-sm font-semibold text-cyan-300"
                   >
                     View Details <ArrowRight className="h-4 w-4" />
+                  </button>
+                </DashboardPanel>
+              </section>
+
+              <section className="mb-6">
+                <DashboardPanel className="p-5 md:p-6">
+                  <div className="mb-4 flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                        Your Financial Foundation
+                      </div>
+                      <h2 className="mt-2 text-2xl font-bold">House View</h2>
+                    </div>
+                    <button
+                      onClick={() => navigate("/results")}
+                      className="inline-flex items-center gap-2 rounded-xl border border-cyan-300/20 px-3 py-2 text-sm font-semibold text-cyan-200"
+                    >
+                      View Details <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="grid gap-5 lg:grid-cols-[1.15fr_.75fr]">
+                    <DashboardHouseVisual pillarScores={pillarScores} />
+
+                    <div className="rounded-[1.6rem] border border-cyan-200/10 bg-white/[0.045] p-5 backdrop-blur-xl">
+                      <div className="mb-3 flex items-center gap-2 text-cyan-300">
+                        <Zap className="h-4 w-4" />
+                        <div className="text-xs font-semibold uppercase tracking-[0.16em]">
+                          What-If Calculator
+                        </div>
+                      </div>
+
+                      <p className="mb-4 text-sm text-slate-400">
+                        See how small changes impact your financial foundation.
+                      </p>
+
+                      {snapshot && scenarioResult ? (
+                        <>
+                          <div className="grid grid-cols-2 gap-3">
+                            <label className="rounded-xl bg-white/[0.04] p-3">
+                              <div className="text-xs text-slate-500">
+                                Extra Income
+                              </div>
+                              <input
+                                type="number"
+                                value={whatIf.income}
+                                onChange={(e) =>
+                                  setWhatIf((prev) => ({
+                                    ...prev,
+                                    income: Number(e.target.value || 0),
+                                  }))
+                                }
+                                className="mt-1 w-full bg-transparent text-lg font-bold text-emerald-300 outline-none"
+                              />
+                            </label>
+                            <label className="rounded-xl bg-white/[0.04] p-3">
+                              <div className="text-xs text-slate-500">
+                                Lower Costs
+                              </div>
+                              <input
+                                type="number"
+                                value={whatIf.housing}
+                                onChange={(e) =>
+                                  setWhatIf((prev) => ({
+                                    ...prev,
+                                    housing: Number(e.target.value || 0),
+                                  }))
+                                }
+                                className="mt-1 w-full bg-transparent text-lg font-bold text-emerald-300 outline-none"
+                              />
+                            </label>
+                            <div className="col-span-2 rounded-xl bg-white/[0.04] p-3">
+                              <div className="text-xs text-slate-500">
+                                New Monthly Margin
+                              </div>
+                              <div className="text-xl font-bold text-cyan-300">
+                                {formatCurrency(scenarioResult.adjustedMargin)}
+                              </div>
+                              <div className="mt-1 text-xs text-slate-500">
+                                Fixed load would become{" "}
+                                {formatPercent(scenarioResult.adjustedLoad)}
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="rounded-xl bg-white/[0.04] p-3 text-sm text-slate-400">
+                          Metrics will appear after your full report is
+                          generated.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </DashboardPanel>
+
+              </section>
+
+              <section id="ninety-day-plan" className="mb-6 space-y-4">
+                <MomentumPanel
+                  actions={momentumActions}
+                  onNextMove={() => {
+                    document
+                      .getElementById("ninety-day-plan")
+                      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                />
+
+                <DashboardPanel className="p-5 md:p-6">
+                  <div className="mb-4 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2 text-cyan-300">
+                      <Sparkles className="h-5 w-5" />
+                      <div className="text-xs font-semibold uppercase tracking-[0.16em]">
+                        Your 90-Day Focus
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="rounded-full border border-cyan-300/20 bg-cyan-300/8 px-3 py-1 text-xs font-bold text-cyan-200">
+                        {dashboardPlanPercent}% complete
+                      </div>
+                      {momentum.completedThisWeek > 0 && (
+                        <div className="rounded-full border border-emerald-300/25 bg-emerald-300/10 px-3 py-1 text-xs font-bold text-emerald-200">
+                          +{momentum.completedThisWeek} this week
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {lastPlanActivityLabel && (
+                    <div className="mb-3 inline-flex rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-semibold text-slate-300">
+                      Last activity: {lastPlanActivityLabel}
+                    </div>
+                  )}
+
+                  <h2 className="text-2xl font-bold">
+                    {nextDashboardPlanAction ? "Do this next" : "Plan complete"}
+                  </h2>
+                  <p className="mt-3 text-sm leading-6 text-slate-400">
+                    {nextDashboardPlanActionLabel
+                      ? nextDashboardPlanActionLabel
+                      : "You have completed the current 90-day plan. Review your report or retake the assessment to choose the next priority."}
+                  </p>
+
+                  <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                    <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                      <span>
+                        {completedDashboardPlanCount} steps complete • {dashboardPlanRemainingCount} to go
+                      </span>
+                      <span>{dashboardPlanPercent}%</span>
+                    </div>
+                    <div className="h-2.5 overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-copper-400 transition-all duration-300"
+                        style={{ width: `${dashboardPlanPercent}%` }}
+                      />
+                    </div>
+                    <p className="mt-3 text-xs leading-5 text-slate-400">
+                      Momentum builds fast — aim for 1–2 steps per week.
+                    </p>
+                    {momentum.completedThisWeek > 0 ? (
+                      <p className="mt-1 text-sm font-semibold leading-5 text-emerald-300">
+                        You completed {momentum.completedThisWeek} step{momentum.completedThisWeek > 1 ? "s" : ""} this week — momentum is building.
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-sm font-semibold leading-5 text-slate-400">
+                        Complete 1–2 steps this week to build momentum.
+                      </p>
+                    )}
+                    <p className="mt-1 text-xs leading-5 text-slate-400">
+                      You’re already ahead of most people who never take action.
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                      A strong 90-day target is 6–9 meaningful steps — not a
+                      perfect checklist.
+                    </p>
+                  </div>
+
+                  {nextDashboardPlanAction && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        toggleDashboardPlanAction(nextDashboardPlanAction.id)
+                      }
+                      className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-300/30 bg-emerald-300/10 px-4 py-3 text-sm font-bold text-emerald-200 hover:bg-emerald-300/15"
+                    >
+                      <CheckCircle2 className="h-5 w-5" />
+                      Complete this step
+                    </button>
+                  )}
+
+                  <button
+                    onClick={handleOpenFullNinetyDayPlan}
+                    className="mt-3 inline-flex items-center gap-2 rounded-2xl border border-cyan-300/35 bg-cyan-300/8 px-4 py-3 text-sm font-bold text-cyan-200 shadow-[0_0_28px_rgba(34,211,238,.12)]"
+                  >
+                    View your full plan <ArrowRight className="h-4 w-4" />
                   </button>
                 </DashboardPanel>
               </section>
