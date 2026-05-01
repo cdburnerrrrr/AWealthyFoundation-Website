@@ -849,21 +849,18 @@ async function savePlanActionProgress(
     return;
   }
 
-  const { error: engagementError } = await supabase
-    .from("user_engagement_events")
-    .insert({
-      user_id: userId,
-      assessment_id: assessmentId,
-      event_type: completed ? "step_completed" : "step_unchecked",
-      event_payload: {
-        actionId,
-        timestamp: now,
-      },
-    });
+  const { error: eventError } = await supabase
+  .from("user_engagement_events")
+  .insert({
+    user_id: userId,
+    assessment_id: assessmentId,
+    event_type: completed ? "step_completed" : "step_unchecked",
+    event_payload: {
+      actionId,
+      timestamp: now,
+    },
+  });
 
-  if (engagementError) {
-    console.error("Could not log engagement event:", engagementError);
-  }
 
   if (completed) {
     const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
