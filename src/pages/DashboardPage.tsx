@@ -38,6 +38,7 @@ import {
   loadFreedomDatePlan,
   type FreedomDateScenario,
 } from "../lib/freedomDatePlanService";
+import { buildBaselineVsPlan } from "../lib/freedomDateEngine";
 import { getScoreBand } from "../types/assessment";
 
 interface DashboardPageProps {
@@ -1985,7 +1986,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
   const entitlements = getEntitlements(currentPlan, planIsActive);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [whatIf, setWhatIf] = useState({ income: 500, housing: 300, debt: 0 });
+  const [whatIf, setWhatIf] = useState({ income: 300, housing: 300, debt: 300 });
   const [guidanceTab, setGuidanceTab] = useState<GuidanceTab>("roadmap");
   const [activeDetail, setActiveDetail] = useState<
     "financial" | "netWorth" | "assetAllocation" | null
@@ -2233,31 +2234,33 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const scenarioResult = useMemo(() => {
     if (!snapshot) return null;
 
-    const adjustedIncome = snapshot.income + Number(whatIf.income || 0);
-    const adjustedFixedCosts =
-      Math.max(0, snapshot.housing - Number(whatIf.housing || 0)) +
-      snapshot.utilities +
-      snapshot.childcare +
-      Math.max(0, snapshot.debt - Number(whatIf.debt || 0));
+    const extraIncome = Math.max(0, Number(whatIf.income || 0));
+    const lowerFixedCosts = Math.max(0, Number(whatIf.housing || 0));
+    const extraDebtPayoff = Math.max(0, Number(whatIf.debt || 0));
 
+    const adjustedIncome = snapshot.income + extraIncome;
+    const adjustedFixedCosts = Math.max(0, snapshot.fixedCosts - lowerFixedCosts);
     const adjustedLoad =
       adjustedIncome > 0 ? (adjustedFixedCosts / adjustedIncome) * 100 : 0;
     const adjustedMargin = adjustedIncome - adjustedFixedCosts;
+    const marginGain = adjustedMargin - snapshot.monthlyMargin;
+    const payoffPower = Math.max(0, marginGain) + extraDebtPayoff;
 
     return {
       adjustedLoad,
       adjustedMargin,
       adjustedIncome,
       adjustedFixedCosts,
+      extraIncome,
+      lowerFixedCosts,
+      extraDebtPayoff,
+      marginGain,
+      payoffPower,
     };
   }, [snapshot, whatIf]);
 
-  const scenarioMarginGain =
-    snapshot && scenarioResult ? scenarioResult.adjustedMargin - snapshot.monthlyMargin : 0;
-  const scenarioLoadImprovement =
-    snapshot && scenarioResult ? snapshot.fixedCostLoad - scenarioResult.adjustedLoad : 0;
-  const scenarioExtraMonthlyPower =
-    Number(whatIf.income || 0) + Number(whatIf.housing || 0) + Number(whatIf.debt || 0);
+  const scenarioMarginGain = scenarioResult?.marginGain ?? 0;
+  const scenarioMonthlyPower = scenarioResult?.payoffPower ?? 0;
 
   const fixedCostTone = getLoadTone(snapshot?.fixedCostLoad || 0);
   const dashboardNextMoveCard = useMemo(
@@ -2404,6 +2407,97 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const dashboardDebtBalance = Number(
     snapshot?.consumerDebt ?? snapshot?.totalDebtBalance ?? 0,
   );
+  const dashboardDebtInputs = useMemo(() => {
+    const savedDebts = (freedomDateScenario as any)?.debts;
+
+    if (Array.isArray(savedDebts) && savedDebts.length > 0) {
+      return savedDebts
+        .map((debt: any, index: number) => ({
+          id: String(debt.id ?? `debt-${index}`),
+          name: String(debt.name || `Debt ${index + 1}`),
+          balance: Math.max(0, Number(debt.balance || 0)),
+          apr: Math.max(0, Number(debt.apr || debt.interestRate || 0)),
+          minPayment:
+            debt.minPayment === undefined || debt.minPayment === null
+              ? undefined
+              : Math.max(0, Number(debt.minPayment || 0)),
+        }))
+        .filter((debt: any) => debt.balance > 0);
+    }
+
+    if (dashboardDebtBalance <= 0) return [];
+
+    return [
+      {
+        id: "dashboard-consumer-debt",
+        name: "Consumer debt",
+        balance: dashboardDebtBalance,
+        apr: 18,
+        minPayment: Math.max(
+          Number(snapshot?.debt ?? 0),
+          Math.round(dashboardDebtBalance * 0.03),
+          25,
+        ),
+      },
+    ];
+  }, [freedomDateScenario, dashboardDebtBalance, snapshot?.debt]);
+
+  const scenarioDebtImpact = useMemo(() => {
+    if (!scenarioResult || dashboardDebtInputs.length === 0) return null;
+
+    const extraMonthlyPayoff = Math.max(0, scenarioResult.payoffPower);
+    if (extraMonthlyPayoff <= 0) return null;
+
+    const priority =
+      (freedomDateScenario as any)?.priority === "interest" ? "interest" : "balance";
+    const currentExtraPayment = Math.max(
+      0,
+      Number((freedomDateScenario as any)?.extraPayment || 0),
+    );
+
+    try {
+      const baseline = buildBaselineVsPlan(
+        dashboardDebtInputs as any,
+        priority,
+        currentExtraPayment,
+      );
+      const adjusted = buildBaselineVsPlan(
+        dashboardDebtInputs as any,
+        priority,
+        currentExtraPayment + extraMonthlyPayoff,
+      );
+
+      const monthsSaved = Math.max(
+        0,
+        Math.round(
+          baseline.plan.monthsToFreedom - adjusted.plan.monthsToFreedom,
+        ),
+      );
+      const interestSaved = Math.max(
+        0,
+        Math.round(
+          baseline.plan.totalInterestPaid - adjusted.plan.totalInterestPaid,
+        ),
+      );
+
+      return {
+        extraMonthlyPayoff,
+        monthsSaved,
+        interestSaved,
+        baselineMonths: baseline.plan.monthsToFreedom,
+        adjustedMonths: adjusted.plan.monthsToFreedom,
+        baselineFreedomDate: baseline.plan.freedomDate,
+        adjustedFreedomDate: adjusted.plan.freedomDate,
+        usesSavedFreedomPlan:
+          Array.isArray((freedomDateScenario as any)?.debts) &&
+          (freedomDateScenario as any).debts.length > 0,
+      };
+    } catch (error) {
+      console.error("Could not calculate What-If debt impact", error);
+      return null;
+    }
+  }, [dashboardDebtInputs, freedomDateScenario, scenarioResult]);
+
   const isDashboardDebtUnderPressure =
     (snapshot?.fixedCostLoad ?? 0) >= 70 ||
     (snapshot?.debtToIncomeRatio ?? 0) >= 60;
@@ -3164,13 +3258,13 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                       <div>
                         <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-cyan-300/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200">
                           <Zap className="h-3.5 w-3.5" />
-                          What-If Calculator
+                          Future Simulator
                         </div>
                         <h2 className="text-2xl font-bold text-white">
-                          Test the small changes that can change the whole plan.
+                          Find the move that creates your “aha” moment.
                         </h2>
                         <p className="mt-3 text-sm leading-6 text-slate-300">
-                          This tool shows how extra income, lower fixed costs, or faster debt payoff would change your monthly margin and fixed-cost load before you make a real-world decision.
+                          Test practical levers: extra income, lower fixed costs, and extra debt payoff. The goal is not just a better ratio — it is seeing how a real move could create breathing room or pull your debt-free date closer.
                         </p>
                       </div>
 
@@ -3179,7 +3273,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                           Why it matters
                         </div>
                         <p className="mt-2 text-sm leading-6 text-slate-300">
-                          A stronger monthly margin gives every other part of your foundation more room to work — saving, debt payoff, protection, and long-term investing.
+                          Extra margin becomes powerful when it has a job. If you point it at debt, the same money that helps this month can also move your freedom date forward.
                         </p>
                       </div>
                     </div>
@@ -3189,7 +3283,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                         <div className="grid gap-3 md:grid-cols-3">
                           <label className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                             <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                              Extra Income
+                              Extra Income / mo
                             </div>
                             <div className="mt-2 flex items-center gap-2">
                               <span className="text-slate-500">$</span>
@@ -3206,6 +3300,9 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                                 className="w-full bg-transparent text-2xl font-bold text-emerald-300 outline-none"
                               />
                             </div>
+                            <p className="mt-1 text-xs leading-5 text-slate-500">
+                              Side income, overtime, extra shifts, or selling unused items.
+                            </p>
                             <input
                               type="range"
                               min="0"
@@ -3224,7 +3321,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
                           <label className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                             <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                              Lower Fixed Costs
+                              Lower Fixed Costs / mo
                             </div>
                             <div className="mt-2 flex items-center gap-2">
                               <span className="text-slate-500">$</span>
@@ -3241,6 +3338,9 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                                 className="w-full bg-transparent text-2xl font-bold text-emerald-300 outline-none"
                               />
                             </div>
+                            <p className="mt-1 text-xs leading-5 text-slate-500">
+                              Bills, subscriptions, insurance, vehicles, utilities, or daycare pressure.
+                            </p>
                             <input
                               type="range"
                               min="0"
@@ -3259,7 +3359,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
                           <label className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                             <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                              Debt Payment Relief
+                              Extra Debt Payoff / mo
                             </div>
                             <div className="mt-2 flex items-center gap-2">
                               <span className="text-slate-500">$</span>
@@ -3276,6 +3376,9 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                                 className="w-full bg-transparent text-2xl font-bold text-emerald-300 outline-none"
                               />
                             </div>
+                            <p className="mt-1 text-xs leading-5 text-slate-500">
+                              Money you intentionally send toward debt on top of normal payments.
+                            </p>
                             <input
                               type="range"
                               min="0"
@@ -3293,24 +3396,31 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                           </label>
                         </div>
 
-                        <div className="grid gap-3 md:grid-cols-3">
+                        <div className="grid gap-3 md:grid-cols-4">
                           <button
                             type="button"
-                            onClick={() => setWhatIf({ income: 250, housing: 0, debt: 0 })}
+                            onClick={() => setWhatIf({ income: 300, housing: 0, debt: 0 })}
                             className="rounded-2xl border border-cyan-300/20 bg-cyan-300/8 px-4 py-3 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/12"
                           >
-                            Test +$250 income
+                            Test +$300 income
                           </button>
                           <button
                             type="button"
-                            onClick={() => setWhatIf({ income: 0, housing: 250, debt: 0 })}
+                            onClick={() => setWhatIf({ income: 0, housing: 300, debt: 0 })}
                             className="rounded-2xl border border-cyan-300/20 bg-cyan-300/8 px-4 py-3 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/12"
                           >
-                            Test -$250 costs
+                            Test -$300 costs
                           </button>
                           <button
                             type="button"
-                            onClick={() => setWhatIf({ income: 500, housing: 300, debt: 0 })}
+                            onClick={() => setWhatIf({ income: 0, housing: 0, debt: 300 })}
+                            className="rounded-2xl border border-cyan-300/20 bg-cyan-300/8 px-4 py-3 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/12"
+                          >
+                            Test +$300 to debt
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setWhatIf({ income: 300, housing: 300, debt: 300 })}
                             className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-white/[0.07]"
                           >
                             Reset scenario
@@ -3319,18 +3429,28 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
                         <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
                           <div className="mb-2 flex items-center justify-between text-xs text-slate-400">
-                            <span>Fixed-cost load after changes</span>
-                            <span>{formatPercent(scenarioResult.adjustedLoad)}</span>
+                            <span>Breathing room after changes</span>
+                            <span>{formatCurrency(scenarioResult.adjustedMargin)}</span>
                           </div>
                           <div className="h-3 overflow-hidden rounded-full bg-white/10">
                             <div
                               className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-cyan-300 to-copper-400 transition-all duration-500"
-                              style={{ width: `${Math.max(4, Math.min(100, scenarioResult.adjustedLoad))}%` }}
+                              style={{
+                                width: `${Math.max(
+                                  6,
+                                  Math.min(
+                                    100,
+                                    Math.max(0, scenarioResult.adjustedMargin) /
+                                      Math.max(1, scenarioResult.adjustedIncome) *
+                                      100,
+                                  ),
+                                )}%`,
+                              }}
                             />
                           </div>
                           <div className="mt-2 flex justify-between text-[11px] text-slate-500">
-                            <span>More breathing room</span>
-                            <span>More pressure</span>
+                            <span>Less room</span>
+                            <span>More room</span>
                           </div>
                         </div>
                       </div>
@@ -3344,7 +3464,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                       <div className="grid gap-3">
                         <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/8 p-4">
                           <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                            New Monthly Margin
+                            Monthly Breathing Room
                           </div>
                           <div className="mt-2 text-3xl font-bold text-cyan-200">
                             {formatCurrency(scenarioResult.adjustedMargin)}
@@ -3354,28 +3474,74 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                           </div>
                         </div>
 
-                        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                        <div className="rounded-2xl border border-violet-300/15 bg-violet-300/8 p-4">
                           <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                            Fixed Load Improvement
+                            Debt Freedom Impact
                           </div>
-                          <div className="mt-2 text-2xl font-bold text-white">
-                            {scenarioLoadImprovement >= 0 ? "-" : "+"}{Math.abs(Math.round(scenarioLoadImprovement))} pts
-                          </div>
-                          <div className="mt-1 text-sm text-slate-400">
-                            Current load: {formatPercent(snapshot.fixedCostLoad)}
-                          </div>
+                          {scenarioDebtImpact ? (
+                            <>
+                              <div className="mt-2 text-3xl font-bold text-violet-200">
+                                {scenarioDebtImpact.monthsSaved > 0
+                                  ? `${scenarioDebtImpact.monthsSaved} mo faster`
+                                  : "Same payoff date"}
+                              </div>
+                              <div className="mt-1 text-sm leading-5 text-slate-400">
+                                If you put {formatCurrency(scenarioDebtImpact.extraMonthlyPayoff)}/mo toward debt, payoff moves from {scenarioDebtImpact.baselineMonths} months to {scenarioDebtImpact.adjustedMonths} months.
+                              </div>
+                            </>
+                          ) : dashboardDebtBalance > 0 ? (
+                            <>
+                              <div className="mt-2 text-2xl font-bold text-violet-200">
+                                Add a payoff move
+                              </div>
+                              <div className="mt-1 text-sm leading-5 text-slate-400">
+                                Enter extra debt payoff, extra income, or lower costs to estimate how much sooner debt freedom could arrive.
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="mt-2 text-2xl font-bold text-violet-200">
+                                No consumer debt
+                              </div>
+                              <div className="mt-1 text-sm leading-5 text-slate-400">
+                                Use extra margin for savings, protection, investing, or your next priority.
+                              </div>
+                            </>
+                          )}
                         </div>
 
                         <div className="rounded-2xl border border-emerald-300/15 bg-emerald-300/8 p-4">
                           <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                            Extra Monthly Power
+                            Aha Moment
                           </div>
                           <div className="mt-2 text-2xl font-bold text-emerald-300">
-                            {formatCurrency(scenarioExtraMonthlyPower)}
+                            {scenarioDebtImpact
+                              ? formatCurrency(scenarioDebtImpact.interestSaved)
+                              : formatCurrency(scenarioMonthlyPower)}
                           </div>
                           <div className="mt-1 text-sm leading-5 text-slate-400">
-                            Give this money a job before it disappears into daily spending.
+                            {scenarioDebtImpact
+                              ? "estimated interest saved by pointing this monthly power at debt."
+                              : "of monthly power available to give a job."}
                           </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                          <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                            Financial Details
+                          </div>
+                          <div className="mt-2 text-sm leading-6 text-slate-300">
+                            Fixed-cost load changes from {formatPercent(snapshot.fixedCostLoad)} to {formatPercent(scenarioResult.adjustedLoad)}. This is useful, but the main win is the real-world outcome: more margin and a faster path out of debt.
+                          </div>
+                          {!scenarioDebtImpact && dashboardDebtBalance > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => navigate("/foundation-tools/my-freedom-date")}
+                              className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-cyan-300"
+                            >
+                              Add exact debts <ArrowRight className="h-4 w-4" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     )}
