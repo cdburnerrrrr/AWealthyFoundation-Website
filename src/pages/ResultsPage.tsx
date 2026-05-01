@@ -849,7 +849,7 @@ async function savePlanActionProgress(
     return;
   }
 
-  const { error: eventError } = await supabase
+  const { data: eventData, error: eventError } = await supabase
   .from("user_engagement_events")
   .insert({
     user_id: userId,
@@ -859,7 +859,15 @@ async function savePlanActionProgress(
       actionId,
       timestamp: now,
     },
-  });
+  })
+  .select();
+
+console.log("Engagement event result:", { eventData, eventError });
+
+if (eventError) {
+  console.error("Engagement event failed:", eventError);
+}
+  };
 
 
   if (completed) {
