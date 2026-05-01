@@ -803,7 +803,7 @@ async function loadSavedPlanProgress(
 
   const { data, error } = await supabase
     .from("user_plan_progress")
-    .select("action_id, completed")
+    .select("action_id, completed, completed_at, updated_at")
     .eq("user_id", userId)
     .eq("assessment_id", assessmentId);
 
@@ -826,13 +826,16 @@ async function savePlanActionProgress(
 ) {
   if (!userId || !assessmentId || !actionId) return;
 
+  const now = new Date().toISOString();
+
   const { error } = await supabase.from("user_plan_progress").upsert(
     {
       user_id: userId,
       assessment_id: assessmentId,
       action_id: actionId,
       completed,
-      updated_at: new Date().toISOString(),
+      updated_at: now,
+      completed_at: completed ? now : null,
     },
     { onConflict: "user_id,assessment_id,action_id" },
   );
@@ -2886,6 +2889,9 @@ export default function ResultsPage() {
   const planCompletionPercent = ninetyDayPlanActions.length
     ? Math.round((completedPlanActionCount / ninetyDayPlanActions.length) * 100)
     : 0;
+  const isRoadmapLocked = !features.showPremiumGuidance;
+  const shouldShowRoadmapUpgradeTrigger =
+    actualPlan === "free" && isRoadmapLocked && completedPlanActionCount >= 2;
   const assessmentAnswers = ((currentAssessment as any)?.answers ??
     (latestHistoryRecord as any)?.answers ??
     {}) as Record<string, any>;
@@ -3667,6 +3673,24 @@ export default function ResultsPage() {
                     you can actually sustain.
                   </p>
                 </div>
+
+                {shouldShowRoadmapUpgradeTrigger && (
+                  <div className="mt-4 rounded-2xl border border-copper-300 bg-white/85 p-4 shadow-sm">
+                    <div className="text-sm font-bold text-navy-900">
+                      You’re making progress — keep the system working.
+                    </div>
+                    <p className="mt-2 text-sm leading-6 text-gray-700">
+                      You have started the plan. Unlock the full Foundation Roadmap to keep momentum going with guided next steps, check-ins, and the rest of your 90-day system.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => navigate("/pricing")}
+                      className="mt-3 inline-flex items-center gap-2 rounded-xl bg-copper-600 px-4 py-2 text-sm font-bold text-white hover:bg-copper-700"
+                    >
+                      Unlock Your Plan <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="grid lg:grid-cols-3 gap-4">
@@ -3687,6 +3711,69 @@ export default function ResultsPage() {
                       : index === 1
                         ? "Stabilize cash flow"
                         : "Build forward momentum";
+                  const phaseLocked = isRoadmapLocked && index > 0;
+
+                  if (phaseLocked) {
+                    return (
+                      <div
+                        key={phase.title}
+                        className={`flex min-h-[300px] flex-col rounded-2xl border p-5 ${phaseStyles[index] ?? "border-gray-200 bg-gray-50"}`}
+                      >
+                        <div className="mb-4 flex items-start gap-3">
+                          <div
+                            className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${dotStyles[index] ?? "bg-copper-600"}`}
+                          >
+                            {index + 1}
+                          </div>
+                          <div>
+                            <div className="text-sm font-bold text-navy-900">
+                              {phase.title}
+                            </div>
+                            <div className="mt-1 text-xs uppercase tracking-[0.16em] text-gray-500">
+                              {phaseLabel}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="relative flex flex-1 flex-col rounded-2xl border border-copper-200 bg-white/80 p-4 shadow-sm">
+                          <div className="pointer-events-none select-none opacity-45 blur-[1px]">
+                            <p className="text-sm leading-6 text-navy-900">
+                              {phase.body}
+                            </p>
+                            <div className="mt-4 space-y-2">
+                              {phase.checklist.slice(0, 3).map((item) => (
+                                <div
+                                  key={item}
+                                  className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500"
+                                >
+                                  {item}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-white/80 p-5 text-center backdrop-blur-[1px]">
+                            <div className="text-xs font-bold uppercase tracking-[0.18em] text-copper-700">
+                              Roadmap locked
+                            </div>
+                            <div className="mt-2 text-lg font-bold text-navy-900">
+                              Unlock the full 90-day roadmap
+                            </div>
+                            <p className="mt-2 text-sm leading-6 text-gray-600">
+                              Keep tracking free. Upgrade when you want the full guided sequence, check-ins, and implementation prompts.
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => navigate("/pricing")}
+                              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-copper-600 px-4 py-2 text-sm font-bold text-white hover:bg-copper-700"
+                            >
+                              Unlock Full Plan <ArrowRight className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
 
                   return (
                     <div

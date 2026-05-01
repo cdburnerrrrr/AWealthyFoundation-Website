@@ -771,7 +771,7 @@ async function loadSavedPlanProgress(
 
   const { data, error } = await supabase
     .from("user_plan_progress")
-    .select("action_id, completed")
+    .select("action_id, completed, completed_at, updated_at")
     .eq("user_id", userId)
     .eq("assessment_id", assessmentId);
 
@@ -794,16 +794,19 @@ async function savePlanActionProgress(
 ) {
   if (!userId || !assessmentId || !actionId) return;
 
-  const { error } = await supabase.from("user_plan_progress").upsert(
-    {
-      user_id: userId,
-      assessment_id: assessmentId,
-      action_id: actionId,
-      completed,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id,assessment_id,action_id" },
-  );
+  const now = new Date().toISOString();
+
+const { error } = await supabase.from("user_plan_progress").upsert(
+  {
+    user_id: userId,
+    assessment_id: assessmentId,
+    action_id: actionId,
+    completed,
+    updated_at: now,
+    completed_at: completed ? now : null,
+  },
+  { onConflict: "user_id,assessment_id,action_id" },
+);
 
   if (error) {
     console.error("Could not save 90-day plan progress:", error);
@@ -821,6 +824,51 @@ function getStoredPlanProgress(storageKey: string): Record<string, boolean> {
   } catch {
     return {};
   }
+}
+
+type PlanProgressRow = {
+  action_id: string;
+  completed: boolean;
+  completed_at?: string | null;
+  updated_at?: string | null;
+};
+
+async function loadPlanProgressRows(
+  userId: string | undefined,
+  assessmentId: string,
+): Promise<PlanProgressRow[]> {
+  if (!userId || !assessmentId) return [];
+
+  const { data, error } = await supabase
+    .from("user_plan_progress")
+    .select("action_id, completed, completed_at, updated_at")
+    .eq("user_id", userId)
+    .eq("assessment_id", assessmentId);
+
+  if (error) {
+    console.error("Could not load 90-day plan momentum:", error);
+    return [];
+  }
+
+  return (data || []) as PlanProgressRow[];
+}
+
+function getWeeklyMomentum(progressRows: PlanProgressRow[]) {
+  const now = new Date();
+  const weekAgo = new Date(now);
+  weekAgo.setDate(now.getDate() - 7);
+
+  const completedThisWeek = progressRows.filter((row) => {
+    if (!row.completed || !row.completed_at) return false;
+    return new Date(row.completed_at) >= weekAgo;
+  }).length;
+
+  const totalCompleted = progressRows.filter((row) => row.completed).length;
+
+  return {
+    completedThisWeek,
+    totalCompleted,
+  };
 }
 
 async function loadLatestPlanActivity(
@@ -2074,6 +2122,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const [completedPlanActions, setCompletedPlanActions] = useState<
     Record<string, boolean>
   >(() => getStoredPlanProgress(planProgressStorageKey));
+  const [planProgressRows, setPlanProgressRows] = useState<PlanProgressRow[]>([]);
   const [lastPlanActivity, setLastPlanActivity] = useState<string | null>(null);
 
   useEffect(() => {
@@ -2096,6 +2145,11 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
         }
       },
     );
+
+    loadPlanProgressRows(userId, planProgressAssessmentId).then((rows) => {
+      if (!isMounted) return;
+      setPlanProgressRows(rows);
+    });
 
     loadLatestPlanActivity(userId, planProgressAssessmentId).then(
       (latestActivity) => {
@@ -2146,6 +2200,16 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     0,
     dashboardPlanActions.length - completedDashboardPlanCount,
   );
+  const momentum = useMemo(
+    () => getWeeklyMomentum(planProgressRows),
+    [planProgressRows],
+  );
+  const completedForScoreBoost = Math.max(
+    momentum.totalCompleted,
+    completedDashboardPlanCount,
+  );
+  const progressBoost = Math.min(completedForScoreBoost * 1.5, 10);
+  const displayedFoundationScore = Math.min(100, foundationScore + progressBoost);
   const lastPlanActivityLabel = formatLastPlanActivity(lastPlanActivity);
   const dashboardDebtBalance = Number(
     snapshot?.consumerDebt ?? snapshot?.totalDebtBalance ?? 0,
@@ -2168,8 +2232,25 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
       [actionId]: nextCompleted,
     };
 
+    const now = new Date().toISOString();
+
     setCompletedPlanActions(next);
-    setLastPlanActivity(new Date().toISOString());
+    setLastPlanActivity(now);
+    setPlanProgressRows((rows) => {
+      const existingIndex = rows.findIndex((row) => row.action_id === actionId);
+      const updatedRow: PlanProgressRow = {
+        action_id: actionId,
+        completed: nextCompleted,
+        completed_at: nextCompleted ? now : null,
+        updated_at: now,
+      };
+
+      if (existingIndex === -1) return [...rows, updatedRow];
+
+      return rows.map((row, index) =>
+        index === existingIndex ? { ...row, ...updatedRow } : row,
+      );
+    });
 
     if (typeof window !== "undefined") {
       window.localStorage.setItem(planProgressStorageKey, JSON.stringify(next));
@@ -2562,15 +2643,20 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                           </div>
                           <div className="mt-4 flex items-end gap-2">
                             <span className="text-4xl font-bold text-cyan-300">
-                              {foundationScore}
+                              {Math.round(displayedFoundationScore)}
                             </span>
                             <span className="pb-1 text-slate-500">/100</span>
                           </div>
                           <div className="mt-2 text-sm font-semibold text-cyan-200">
                             {scoreBand?.label ?? "Foundation Score"}
                           </div>
+                          {progressBoost > 0 && (
+                            <div className="mt-1 text-xs font-semibold text-emerald-300">
+                              +{Math.round(progressBoost)} from progress
+                            </div>
+                          )}
                         </div>
-                        <ScoreRing value={foundationScore} />
+                        <ScoreRing value={Math.round(displayedFoundationScore)} />
                       </div>
                     </div>
 
@@ -2698,8 +2784,15 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                         Your 90-Day Focus
                       </div>
                     </div>
-                    <div className="rounded-full border border-cyan-300/20 bg-cyan-300/8 px-3 py-1 text-xs font-bold text-cyan-200">
-                      {dashboardPlanPercent}% complete
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="rounded-full border border-cyan-300/20 bg-cyan-300/8 px-3 py-1 text-xs font-bold text-cyan-200">
+                        {dashboardPlanPercent}% complete
+                      </div>
+                      {momentum.completedThisWeek > 0 && (
+                        <div className="rounded-full border border-emerald-300/25 bg-emerald-300/10 px-3 py-1 text-xs font-bold text-emerald-200">
+                          +{momentum.completedThisWeek} this week
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -2734,6 +2827,15 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                     <p className="mt-3 text-xs leading-5 text-slate-400">
                       Momentum builds fast — aim for 1–2 steps per week.
                     </p>
+                    {momentum.completedThisWeek > 0 ? (
+                      <p className="mt-1 text-sm font-semibold leading-5 text-emerald-300">
+                        You completed {momentum.completedThisWeek} step{momentum.completedThisWeek > 1 ? "s" : ""} this week — momentum is building.
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-sm font-semibold leading-5 text-slate-400">
+                        Complete 1–2 steps this week to build momentum.
+                      </p>
+                    )}
                     <p className="mt-1 text-xs leading-5 text-slate-400">
                       You’re already ahead of most people who never take action.
                     </p>
