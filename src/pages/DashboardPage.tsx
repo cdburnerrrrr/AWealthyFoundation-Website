@@ -1845,95 +1845,85 @@ function DashboardMomentumPanel({
 
   const headline =
     weeklyCompleted >= 3
-      ? "Your momentum is strong"
+      ? "Strong momentum"
       : weeklyCompleted > 0
-        ? "You are building momentum"
-        : "Your plan is ready for action";
-  const message =
-    weeklyCompleted >= 3
-      ? "You are stacking small wins. Keep the rhythm going this week."
-      : weeklyCompleted > 0
-        ? "One more focused action can keep your plan moving."
-        : "Start with one simple move. The goal is progress, not perfection.";
+        ? "Momentum building"
+        : "Ready to start";
   const streakText =
     streakDays === 1
-      ? "You’ve taken action 1 day in a row"
+      ? "1-day action streak"
       : streakDays > 1
-        ? `You’ve taken action ${streakDays} days in a row`
-        : "Take one action today to start a streak";
+        ? `${streakDays}-day action streak`
+        : "Start a streak today";
+  const encouragement =
+    weeklyCompleted >= 3
+      ? "You are stacking small wins. Keep the rhythm going."
+      : weeklyCompleted > 0
+        ? "You’ve started — that’s the hardest part."
+        : "Most people never start. One small move puts you ahead.";
 
   return (
-    <DashboardPanel className="overflow-hidden p-5 md:p-6">
-      <div className="grid gap-5 lg:grid-cols-[1fr_270px]">
-        <div>
-          <div className="mb-4 flex flex-wrap items-center gap-2">
-            <div className="inline-flex items-center gap-2 rounded-full bg-cyan-300/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200">
-              <TrendingUp className="h-3.5 w-3.5" />
-              Momentum Engine
-            </div>
-            {lastActivityLabel && (
-              <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-semibold text-slate-300">
-                Last activity: {lastActivityLabel}
-              </div>
-            )}
+    <DashboardPanel className="flex h-full flex-col justify-between overflow-hidden p-5">
+      <div>
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <div className="inline-flex items-center gap-2 rounded-full bg-cyan-300/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200">
+            <TrendingUp className="h-3.5 w-3.5" />
+            Momentum
           </div>
-
-          <h2 className="text-2xl font-bold text-white">{headline}</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-            {message}
-          </p>
+          {lastActivityLabel && (
+            <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-semibold text-slate-300">
+              {lastActivityLabel}
+            </div>
+          )}
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+        <h3 className="text-xl font-bold text-white">{headline}</h3>
+        <p className="mt-2 text-sm leading-6 text-slate-300">{encouragement}</p>
+
+        <div className="mt-5 grid grid-cols-2 gap-3">
           <div className="rounded-2xl bg-white/[0.06] p-4">
-            <div className="flex items-center gap-2 text-slate-400">
-              <Target className="h-4 w-4" />
-              <span className="text-xs font-semibold uppercase tracking-wide">
-                This Week
-              </span>
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              This Week
             </div>
-            <div className="mt-3 text-2xl font-bold">
+            <div className="mt-2 text-2xl font-bold text-white">
               {weeklyCompleted}/{weeklyTotal}
             </div>
-            <div className="text-xs text-slate-400">actions completed</div>
+            <div className="text-xs text-slate-400">actions</div>
           </div>
 
           <div className="rounded-2xl bg-white/[0.06] p-4">
-            <div className="flex items-center gap-2 text-slate-400">
-              <Zap className="h-4 w-4" />
-              <span className="text-xs font-semibold uppercase tracking-wide">
-                Streak
-              </span>
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              Streak
             </div>
-            <div className="mt-3 text-sm font-semibold leading-5 text-slate-200">
+            <div className="mt-2 text-sm font-bold leading-5 text-white">
               {streakText}
             </div>
           </div>
+        </div>
 
-          <div className="rounded-2xl bg-white/[0.06] p-4">
-            <div className="mb-2 flex items-center justify-between text-xs text-slate-400">
-              <span>Weekly progress</span>
-              <span>{weeklyPercent}%</span>
-            </div>
-            <div className="h-2 overflow-hidden rounded-full bg-white/15">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-copper-400 transition-all duration-500"
-                style={{ width: `${weeklyPercent}%` }}
-              />
-            </div>
+        <div className="mt-4 rounded-2xl bg-white/[0.06] p-4">
+          <div className="mb-2 flex items-center justify-between text-xs text-slate-400">
+            <span>Weekly progress</span>
+            <span>{weeklyPercent}%</span>
           </div>
-
-          {nextAction && (
-            <button
-              type="button"
-              onClick={onNextMove}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#d6a14f] px-4 py-3 text-sm font-bold text-[#06172b] hover:bg-[#e0b462] sm:col-span-3 lg:col-span-1"
-            >
-              Start Today’s Move <ArrowRight className="h-4 w-4" />
-            </button>
-          )}
+          <div className="h-2 overflow-hidden rounded-full bg-white/15">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-copper-400 transition-all duration-500"
+              style={{ width: `${weeklyPercent}%` }}
+            />
+          </div>
         </div>
       </div>
+
+      {nextAction && (
+        <button
+          type="button"
+          onClick={onNextMove}
+          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#d6a14f] px-4 py-3 text-sm font-bold text-[#06172b] hover:bg-[#e0b462]"
+        >
+          Start Today’s Move <ArrowRight className="h-4 w-4" />
+        </button>
+      )}
     </DashboardPanel>
   );
 }
@@ -2261,6 +2251,13 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
       adjustedFixedCosts,
     };
   }, [snapshot, whatIf]);
+
+  const scenarioMarginGain =
+    snapshot && scenarioResult ? scenarioResult.adjustedMargin - snapshot.monthlyMargin : 0;
+  const scenarioLoadImprovement =
+    snapshot && scenarioResult ? snapshot.fixedCostLoad - scenarioResult.adjustedLoad : 0;
+  const scenarioExtraMonthlyPower =
+    Number(whatIf.income || 0) + Number(whatIf.housing || 0) + Number(whatIf.debt || 0);
 
   const fixedCostTone = getLoadTone(snapshot?.fixedCostLoad || 0);
   const dashboardNextMoveCard = useMemo(
@@ -3144,30 +3141,61 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                       View Details <ArrowRight className="h-4 w-4" />
                     </button>
                   </div>
-                  <div className="grid gap-5 lg:grid-cols-[1.15fr_.75fr]">
+                  <div className="grid gap-5 lg:grid-cols-[1.45fr_.8fr]">
                     <DashboardHouseVisual pillarScores={pillarScores} />
+                    <DashboardMomentumPanel
+                      actions={momentumActions}
+                      nextActionOverride={nextDashboardMomentumAction}
+                      lastActivityLabel={lastPlanActivityLabel}
+                      onNextMove={() => {
+                        document
+                          .getElementById("today-plan-action")
+                          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                      }}
+                    />
+                  </div>
+                </DashboardPanel>
+              </section>
 
-                    <div className="rounded-[1.6rem] border border-cyan-200/10 bg-white/[0.045] p-5 backdrop-blur-xl">
-                      <div className="mb-3 flex items-center gap-2 text-cyan-300">
-                        <Zap className="h-4 w-4" />
-                        <div className="text-xs font-semibold uppercase tracking-[0.16em]">
+              <section className="mb-6">
+                <DashboardPanel className="overflow-hidden p-5 md:p-6">
+                  <div className="grid gap-6 lg:grid-cols-[.9fr_1.35fr_.9fr] lg:items-stretch">
+                    <div className="flex flex-col justify-between">
+                      <div>
+                        <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-cyan-300/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200">
+                          <Zap className="h-3.5 w-3.5" />
                           What-If Calculator
                         </div>
+                        <h2 className="text-2xl font-bold text-white">
+                          Test the small changes that can change the whole plan.
+                        </h2>
+                        <p className="mt-3 text-sm leading-6 text-slate-300">
+                          This tool shows how extra income, lower fixed costs, or faster debt payoff would change your monthly margin and fixed-cost load before you make a real-world decision.
+                        </p>
                       </div>
 
-                      <p className="mb-4 text-sm text-slate-400">
-                        See how small changes impact your financial foundation.
-                      </p>
+                      <div className="mt-5 rounded-2xl border border-copper-300/20 bg-copper-400/10 p-4">
+                        <div className="text-xs font-semibold uppercase tracking-[0.16em] text-copper-200">
+                          Why it matters
+                        </div>
+                        <p className="mt-2 text-sm leading-6 text-slate-300">
+                          A stronger monthly margin gives every other part of your foundation more room to work — saving, debt payoff, protection, and long-term investing.
+                        </p>
+                      </div>
+                    </div>
 
-                      {snapshot && scenarioResult ? (
-                        <>
-                          <div className="grid grid-cols-2 gap-3">
-                            <label className="rounded-xl bg-white/[0.04] p-3">
-                              <div className="text-xs text-slate-500">
-                                Extra Income
-                              </div>
+                    {snapshot && scenarioResult ? (
+                      <div className="space-y-4">
+                        <div className="grid gap-3 md:grid-cols-3">
+                          <label className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                            <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                              Extra Income
+                            </div>
+                            <div className="mt-2 flex items-center gap-2">
+                              <span className="text-slate-500">$</span>
                               <input
                                 type="number"
+                                min="0"
                                 value={whatIf.income}
                                 onChange={(e) =>
                                   setWhatIf((prev) => ({
@@ -3175,15 +3203,34 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                                     income: Number(e.target.value || 0),
                                   }))
                                 }
-                                className="mt-1 w-full bg-transparent text-lg font-bold text-emerald-300 outline-none"
+                                className="w-full bg-transparent text-2xl font-bold text-emerald-300 outline-none"
                               />
-                            </label>
-                            <label className="rounded-xl bg-white/[0.04] p-3">
-                              <div className="text-xs text-slate-500">
-                                Lower Costs
-                              </div>
+                            </div>
+                            <input
+                              type="range"
+                              min="0"
+                              max="3000"
+                              step="50"
+                              value={whatIf.income}
+                              onChange={(e) =>
+                                setWhatIf((prev) => ({
+                                  ...prev,
+                                  income: Number(e.target.value || 0),
+                                }))
+                              }
+                              className="mt-3 w-full accent-cyan-300"
+                            />
+                          </label>
+
+                          <label className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                            <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                              Lower Fixed Costs
+                            </div>
+                            <div className="mt-2 flex items-center gap-2">
+                              <span className="text-slate-500">$</span>
                               <input
                                 type="number"
+                                min="0"
                                 value={whatIf.housing}
                                 onChange={(e) =>
                                   setWhatIf((prev) => ({
@@ -3191,47 +3238,152 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                                     housing: Number(e.target.value || 0),
                                   }))
                                 }
-                                className="mt-1 w-full bg-transparent text-lg font-bold text-emerald-300 outline-none"
+                                className="w-full bg-transparent text-2xl font-bold text-emerald-300 outline-none"
                               />
-                            </label>
-                            <div className="col-span-2 rounded-xl bg-white/[0.04] p-3">
-                              <div className="text-xs text-slate-500">
-                                New Monthly Margin
-                              </div>
-                              <div className="text-xl font-bold text-cyan-300">
-                                {formatCurrency(scenarioResult.adjustedMargin)}
-                              </div>
-                              <div className="mt-1 text-xs text-slate-500">
-                                Fixed load would become{" "}
-                                {formatPercent(scenarioResult.adjustedLoad)}
-                              </div>
                             </div>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="rounded-xl bg-white/[0.04] p-3 text-sm text-slate-400">
-                          Metrics will appear after your full report is
-                          generated.
+                            <input
+                              type="range"
+                              min="0"
+                              max="3000"
+                              step="50"
+                              value={whatIf.housing}
+                              onChange={(e) =>
+                                setWhatIf((prev) => ({
+                                  ...prev,
+                                  housing: Number(e.target.value || 0),
+                                }))
+                              }
+                              className="mt-3 w-full accent-cyan-300"
+                            />
+                          </label>
+
+                          <label className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                            <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                              Debt Payment Relief
+                            </div>
+                            <div className="mt-2 flex items-center gap-2">
+                              <span className="text-slate-500">$</span>
+                              <input
+                                type="number"
+                                min="0"
+                                value={whatIf.debt}
+                                onChange={(e) =>
+                                  setWhatIf((prev) => ({
+                                    ...prev,
+                                    debt: Number(e.target.value || 0),
+                                  }))
+                                }
+                                className="w-full bg-transparent text-2xl font-bold text-emerald-300 outline-none"
+                              />
+                            </div>
+                            <input
+                              type="range"
+                              min="0"
+                              max="3000"
+                              step="50"
+                              value={whatIf.debt}
+                              onChange={(e) =>
+                                setWhatIf((prev) => ({
+                                  ...prev,
+                                  debt: Number(e.target.value || 0),
+                                }))
+                              }
+                              className="mt-3 w-full accent-cyan-300"
+                            />
+                          </label>
                         </div>
-                      )}
-                    </div>
+
+                        <div className="grid gap-3 md:grid-cols-3">
+                          <button
+                            type="button"
+                            onClick={() => setWhatIf({ income: 250, housing: 0, debt: 0 })}
+                            className="rounded-2xl border border-cyan-300/20 bg-cyan-300/8 px-4 py-3 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/12"
+                          >
+                            Test +$250 income
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setWhatIf({ income: 0, housing: 250, debt: 0 })}
+                            className="rounded-2xl border border-cyan-300/20 bg-cyan-300/8 px-4 py-3 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/12"
+                          >
+                            Test -$250 costs
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setWhatIf({ income: 500, housing: 300, debt: 0 })}
+                            className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-white/[0.07]"
+                          >
+                            Reset scenario
+                          </button>
+                        </div>
+
+                        <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+                          <div className="mb-2 flex items-center justify-between text-xs text-slate-400">
+                            <span>Fixed-cost load after changes</span>
+                            <span>{formatPercent(scenarioResult.adjustedLoad)}</span>
+                          </div>
+                          <div className="h-3 overflow-hidden rounded-full bg-white/10">
+                            <div
+                              className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-cyan-300 to-copper-400 transition-all duration-500"
+                              style={{ width: `${Math.max(4, Math.min(100, scenarioResult.adjustedLoad))}%` }}
+                            />
+                          </div>
+                          <div className="mt-2 flex justify-between text-[11px] text-slate-500">
+                            <span>More breathing room</span>
+                            <span>More pressure</span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl bg-white/[0.04] p-5 text-sm text-slate-400 lg:col-span-2">
+                        Metrics will appear after your full report is generated.
+                      </div>
+                    )}
+
+                    {snapshot && scenarioResult && (
+                      <div className="grid gap-3">
+                        <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/8 p-4">
+                          <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                            New Monthly Margin
+                          </div>
+                          <div className="mt-2 text-3xl font-bold text-cyan-200">
+                            {formatCurrency(scenarioResult.adjustedMargin)}
+                          </div>
+                          <div className="mt-1 text-sm font-semibold text-emerald-300">
+                            {scenarioMarginGain >= 0 ? "+" : ""}{formatCurrency(scenarioMarginGain)} vs. today
+                          </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                          <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                            Fixed Load Improvement
+                          </div>
+                          <div className="mt-2 text-2xl font-bold text-white">
+                            {scenarioLoadImprovement >= 0 ? "-" : "+"}{Math.abs(Math.round(scenarioLoadImprovement))} pts
+                          </div>
+                          <div className="mt-1 text-sm text-slate-400">
+                            Current load: {formatPercent(snapshot.fixedCostLoad)}
+                          </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-emerald-300/15 bg-emerald-300/8 p-4">
+                          <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                            Extra Monthly Power
+                          </div>
+                          <div className="mt-2 text-2xl font-bold text-emerald-300">
+                            {formatCurrency(scenarioExtraMonthlyPower)}
+                          </div>
+                          <div className="mt-1 text-sm leading-5 text-slate-400">
+                            Give this money a job before it disappears into daily spending.
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </DashboardPanel>
-
               </section>
 
               <section id="ninety-day-plan" className="mb-6 space-y-4">
-                <DashboardMomentumPanel
-                  actions={momentumActions}
-                  nextActionOverride={nextDashboardMomentumAction}
-                  lastActivityLabel={lastPlanActivityLabel}
-                  onNextMove={() => {
-                    document
-                      .getElementById("today-plan-action")
-                      ?.scrollIntoView({ behavior: "smooth", block: "center" });
-                  }}
-                />
-
                 <DashboardPanel className="p-5 md:p-6">
                   <div className="mb-4 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2 text-cyan-300">
