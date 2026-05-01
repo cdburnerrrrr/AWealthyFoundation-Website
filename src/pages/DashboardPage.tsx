@@ -1882,20 +1882,6 @@ function DashboardMomentumPanel({
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
             {message}
           </p>
-
-          {nextAction && (
-            <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.07] p-4">
-              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                Today’s Next Best Move
-              </div>
-              <div className="mt-2 text-lg font-bold text-white">
-                {nextAction.title}
-              </div>
-              <div className="mt-2 text-xs font-semibold text-cyan-200">
-                This is pulled directly from your 90-day focus below.
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
@@ -1943,7 +1929,7 @@ function DashboardMomentumPanel({
               onClick={onNextMove}
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#d6a14f] px-4 py-3 text-sm font-bold text-[#06172b] hover:bg-[#e0b462] sm:col-span-3 lg:col-span-1"
             >
-              Do Today’s Move <ArrowRight className="h-4 w-4" />
+              Start Today’s Move <ArrowRight className="h-4 w-4" />
             </button>
           )}
         </div>
@@ -2401,10 +2387,12 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
         (completedDashboardPlanCount / dashboardPlanActions.length) * 100,
       )
     : 0;
-  const dashboardPlanRemainingCount = Math.max(
-    0,
-    dashboardPlanActions.length - completedDashboardPlanCount,
-  );
+  const currentDashboardStepNumber = dashboardPlanActions.length
+    ? Math.min(completedDashboardPlanCount + 1, dashboardPlanActions.length)
+    : 0;
+  const currentDashboardWeekNumber = dashboardPlanActions.length
+    ? Math.min(12, Math.max(1, Math.ceil(currentDashboardStepNumber / 1)))
+    : 1;
   const momentum = useMemo(
     () => getWeeklyMomentum(planProgressRows),
     [planProgressRows],
@@ -2992,13 +2980,16 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                   </div>
 
                   {nextDashboardPlanAction && (
-                    <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-cyan-300/15 bg-cyan-300/8 p-4 md:flex-row md:items-center md:justify-between">
+                    <div className="mt-5 flex flex-col gap-4 rounded-2xl border border-copper-300/25 bg-gradient-to-r from-copper-400/14 via-cyan-300/8 to-transparent p-5 shadow-[0_0_32px_rgba(214,161,79,.08)] md:flex-row md:items-center md:justify-between">
                       <div>
-                        <div className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200">
+                        <div className="text-xs font-semibold uppercase tracking-[0.16em] text-copper-200">
                           Today’s action
                         </div>
-                        <div className="mt-1 text-sm font-semibold text-white">
+                        <div className="mt-2 text-base font-bold leading-6 text-white">
                           {nextDashboardPlanAction.label}
+                        </div>
+                        <div className="mt-1 text-xs text-slate-400">
+                          This should take less than 10 minutes.
                         </div>
                       </div>
                       <button
@@ -3008,9 +2999,9 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                             .getElementById("today-plan-action")
                             ?.scrollIntoView({ behavior: "smooth", block: "center" })
                         }
-                        className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-[#d6a14f] px-4 py-3 text-sm font-bold text-[#06172b] hover:bg-[#e0b462]"
+                        className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-[#d6a14f] px-5 py-3 text-sm font-bold text-[#06172b] hover:bg-[#e0b462]"
                       >
-                        Continue Your Plan <ArrowRight className="h-4 w-4" />
+                        Start Today’s Move <ArrowRight className="h-4 w-4" />
                       </button>
                     </div>
                   )}
@@ -3267,6 +3258,15 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                     </div>
                   )}
 
+                  <div className="mb-3 rounded-2xl border border-copper-300/20 bg-copper-400/10 p-4">
+                    <div className="text-xs font-semibold uppercase tracking-[0.18em] text-copper-200">
+                      Week {currentDashboardWeekNumber} of 12
+                    </div>
+                    <p className="mt-2 text-sm leading-6 text-slate-300">
+                      You’re building your foundation step by step. One completed move this week is real progress.
+                    </p>
+                  </div>
+
                   <h2 id="today-plan-action" className="scroll-mt-28 text-2xl font-bold">
                     {nextDashboardPlanAction ? "Do this next" : "Plan complete"}
                   </h2>
@@ -3292,7 +3292,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                   <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                     <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
                       <span>
-                        {completedDashboardPlanCount} steps complete • {dashboardPlanRemainingCount} to go
+                        {dashboardPlanActions.length ? `Step ${currentDashboardStepNumber} of ${dashboardPlanActions.length}` : "Plan complete"}
                       </span>
                       <span>{dashboardPlanPercent}%</span>
                     </div>
@@ -3305,18 +3305,19 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                     <p className="mt-3 text-xs leading-5 text-slate-400">
                       1–2 actions per week is enough to build real progress.
                     </p>
-                    {momentum.completedThisWeek > 0 ? (
+                    {momentum.completedThisWeek > 1 ? (
                       <p className="mt-1 text-sm font-semibold leading-5 text-emerald-300">
-                        You completed {momentum.completedThisWeek} step{momentum.completedThisWeek > 1 ? "s" : ""} this week — momentum is building.
+                        You completed {momentum.completedThisWeek} steps this week — momentum is building.
+                      </p>
+                    ) : momentum.completedThisWeek === 1 ? (
+                      <p className="mt-1 text-sm font-semibold leading-5 text-emerald-300">
+                        You’ve started — that’s the hardest part.
                       </p>
                     ) : (
-                      <p className="mt-1 text-sm font-semibold leading-5 text-slate-400">
-                        Complete 1–2 steps this week to build momentum.
+                      <p className="mt-1 text-sm font-semibold leading-5 text-slate-300">
+                        Most people never start. Starting today puts you ahead.
                       </p>
                     )}
-                    <p className="mt-1 text-xs leading-5 text-slate-400">
-                      You’re already ahead of most people who never take action.
-                    </p>
                     <p className="mt-1 text-xs leading-5 text-slate-500">
                       A strong 90-day target is 6–9 meaningful steps — not a
                       perfect checklist.
@@ -3332,7 +3333,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                       className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-300/30 bg-emerald-300/10 px-4 py-3 text-sm font-bold text-emerald-200 hover:bg-emerald-300/15"
                     >
                       <CheckCircle2 className="h-5 w-5" />
-                      Complete this step
+                      Mark as Complete
                     </button>
                   )}
 
