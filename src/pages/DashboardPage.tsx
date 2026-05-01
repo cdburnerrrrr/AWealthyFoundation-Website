@@ -4,7 +4,6 @@ import { useAppStore } from "../store/appStore";
 import { getEntitlements } from "../lib/entitlements";
 import { exportReportPdf } from "../utils/pdfExport";
 import { useUserPlan } from "../hooks/useUserPlan";
-import MomentumPanel from '../components/dashboard/MomentumPanel';
 import { supabase } from "../lib/supabase";
 
 
@@ -975,26 +974,26 @@ function getDashboardNinetyDayPlanPhases(
         title: "Phase 1: Create breathing room",
         body: `Start with the move that creates the fastest improvement in monthly cash flow${fixedCost ? ` — your must-pay bills are around ${fixedCost} of take-home pay` : ""}.`,
         checklist: [
-          "Look for immediate income options: extra shifts, overtime, side work, selling unused items, or applying for a better role.",
-          "Identify one major fixed cost to challenge: housing, vehicle, utilities, insurance, or another required bill.",
-          "Avoid adding any new fixed payment while the foundation is under pressure.",
+          "Write your income, fixed costs, and monthly margin in one place.",
+          "Pick one income action to take this week: ask, apply, pitch, sell, or schedule extra work.",
+          "Choose one fixed cost to challenge: housing, vehicle, utilities, insurance, or another required bill.",
         ],
       },
       {
         title: "Phase 2: Stabilize your cash flow",
         body: "Once you create some breathing room, protect it so new expenses do not absorb the progress.",
         checklist: [
-          "Keep any income gain or cost reduction visible in one monthly margin number.",
-          "Build a small cash buffer so surprise expenses do not push you backward.",
-          "Give freed-up money a job before it disappears into daily spending.",
+          "Write the new monthly margin number after your income or cost change.",
+          "Move the first freed-up dollars into a starter cash buffer or priority debt payment.",
+          "Set a 15-minute calendar reminder to review the same number next week.",
         ],
       },
       {
         title: "Phase 3: Build momentum",
         body: "With more stability, start building forward into saving, protection, debt payoff, and long-term growth.",
         checklist: [
-          "Direct the first stable margin toward a starter emergency fund or priority debt.",
-          "Review basic protection needs, especially health coverage and affordable term life if others depend on your income.",
+          "Send the first stable margin to your starter emergency fund or priority debt.",
+          "Check one protection gap: health coverage, term life, disability, or emergency cash.",
           "Rerun the assessment after meaningful progress and choose the next highest-leverage area.",
         ],
       },
@@ -1013,7 +1012,7 @@ function getDashboardNinetyDayPlanPhases(
       title: "Phase 2: Make it repeatable",
       body: "The next step is making the first action reliable. One good move helps, but one repeatable system changes the foundation.",
       checklist: [
-        "Pick one number or behavior to track weekly.",
+        "Choose one number to update every week.",
         "Schedule a 15-minute check-in before the month ends.",
       ],
     },
@@ -1770,6 +1769,189 @@ function NetWorthMiniChart({
   );
 }
 
+type DashboardMomentumAction = {
+  id: string;
+  title: string;
+  completed?: boolean;
+  completedAt?: string | null;
+  dueDate?: string | null;
+  pillar?: string;
+};
+
+function isDashboardDateThisWeek(dateString?: string | null) {
+  if (!dateString) return false;
+
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return false;
+
+  const now = new Date();
+  const start = new Date(now);
+  start.setDate(now.getDate() - now.getDay());
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(start);
+  end.setDate(start.getDate() + 7);
+
+  return date >= start && date < end;
+}
+
+function getDashboardActionStreak(actions: DashboardMomentumAction[]) {
+  const completedDays = Array.from(
+    new Set(
+      actions
+        .filter((action) => action.completed && action.completedAt)
+        .map((action) => new Date(action.completedAt as string))
+        .filter((date) => !Number.isNaN(date.getTime()))
+        .map((date) => date.toDateString()),
+    ),
+  );
+
+  let streak = 0;
+  const cursor = new Date();
+
+  while (completedDays.includes(cursor.toDateString())) {
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+
+  return streak;
+}
+
+function DashboardMomentumPanel({
+  actions,
+  nextActionOverride,
+  lastActivityLabel,
+  onNextMove,
+}: {
+  actions: DashboardMomentumAction[];
+  nextActionOverride?: DashboardMomentumAction | null;
+  lastActivityLabel?: string | null;
+  onNextMove?: () => void;
+}) {
+  const weeklyActions = actions.filter(
+    (action) =>
+      isDashboardDateThisWeek(action.dueDate) ||
+      isDashboardDateThisWeek(action.completedAt),
+  );
+  const weeklyCompleted = weeklyActions.filter((action) => action.completed).length;
+  const weeklyTotal = Math.max(weeklyActions.length || actions.slice(0, 3).length, 1);
+  const weeklyPercent = Math.round((weeklyCompleted / weeklyTotal) * 100);
+  const streakDays = getDashboardActionStreak(actions);
+  const nextAction =
+    nextActionOverride ??
+    actions.find((action) => !action.completed && isDashboardDateThisWeek(action.dueDate)) ??
+    actions.find((action) => !action.completed) ??
+    null;
+
+  const headline =
+    weeklyCompleted >= 3
+      ? "Your momentum is strong"
+      : weeklyCompleted > 0
+        ? "You are building momentum"
+        : "Your plan is ready for action";
+  const message =
+    weeklyCompleted >= 3
+      ? "You are stacking small wins. Keep the rhythm going this week."
+      : weeklyCompleted > 0
+        ? "One more focused action can keep your plan moving."
+        : "Start with one simple move. The goal is progress, not perfection.";
+  const streakText =
+    streakDays === 1
+      ? "You’ve taken action 1 day in a row"
+      : streakDays > 1
+        ? `You’ve taken action ${streakDays} days in a row`
+        : "Take one action today to start a streak";
+
+  return (
+    <DashboardPanel className="overflow-hidden p-5 md:p-6">
+      <div className="grid gap-5 lg:grid-cols-[1fr_270px]">
+        <div>
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <div className="inline-flex items-center gap-2 rounded-full bg-cyan-300/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200">
+              <TrendingUp className="h-3.5 w-3.5" />
+              Momentum Engine
+            </div>
+            {lastActivityLabel && (
+              <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-semibold text-slate-300">
+                Last activity: {lastActivityLabel}
+              </div>
+            )}
+          </div>
+
+          <h2 className="text-2xl font-bold text-white">{headline}</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+            {message}
+          </p>
+
+          {nextAction && (
+            <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.07] p-4">
+              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Today’s Next Best Move
+              </div>
+              <div className="mt-2 text-lg font-bold text-white">
+                {nextAction.title}
+              </div>
+              <div className="mt-2 text-xs font-semibold text-cyan-200">
+                This is pulled directly from your 90-day focus below.
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+          <div className="rounded-2xl bg-white/[0.06] p-4">
+            <div className="flex items-center gap-2 text-slate-400">
+              <Target className="h-4 w-4" />
+              <span className="text-xs font-semibold uppercase tracking-wide">
+                This Week
+              </span>
+            </div>
+            <div className="mt-3 text-2xl font-bold">
+              {weeklyCompleted}/{weeklyTotal}
+            </div>
+            <div className="text-xs text-slate-400">actions completed</div>
+          </div>
+
+          <div className="rounded-2xl bg-white/[0.06] p-4">
+            <div className="flex items-center gap-2 text-slate-400">
+              <Zap className="h-4 w-4" />
+              <span className="text-xs font-semibold uppercase tracking-wide">
+                Streak
+              </span>
+            </div>
+            <div className="mt-3 text-sm font-semibold leading-5 text-slate-200">
+              {streakText}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-white/[0.06] p-4">
+            <div className="mb-2 flex items-center justify-between text-xs text-slate-400">
+              <span>Weekly progress</span>
+              <span>{weeklyPercent}%</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-white/15">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-copper-400 transition-all duration-500"
+                style={{ width: `${weeklyPercent}%` }}
+              />
+            </div>
+          </div>
+
+          {nextAction && (
+            <button
+              type="button"
+              onClick={onNextMove}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#d6a14f] px-4 py-3 text-sm font-bold text-[#06172b] hover:bg-[#e0b462] sm:col-span-3 lg:col-span-1"
+            >
+              Do Today’s Move <ArrowRight className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      </div>
+    </DashboardPanel>
+  );
+}
+
 function AssetDonut({
   rows,
   total,
@@ -2245,7 +2427,20 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     dashboardPlanActions[0] ??
     null;
   const nextDashboardPlanActionLabel = nextDashboardPlanAction
-    ? "Increase your monthly margin this week. Start with one action: income or a fixed cost."
+    ? nextDashboardPlanAction.label
+    : null;
+
+  const nextDashboardMomentumAction = nextDashboardPlanAction
+    ? momentumActions.find((action) => action.id === nextDashboardPlanAction.id) ?? {
+        id: nextDashboardPlanAction.id,
+        title: nextDashboardPlanAction.label,
+        completed: Boolean(completedPlanActions[nextDashboardPlanAction.id]),
+        completedAt:
+          planProgressRows.find((row) => row.action_id === nextDashboardPlanAction.id)
+            ?.completed_at ?? null,
+        dueDate: new Date().toISOString(),
+        pillar: weakestPillar ?? undefined,
+      }
     : null;
 
   const toggleDashboardPlanAction = (actionId: string) => {
@@ -2795,6 +2990,30 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                       </div>
                     </button>
                   </div>
+
+                  {nextDashboardPlanAction && (
+                    <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-cyan-300/15 bg-cyan-300/8 p-4 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <div className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200">
+                          Today’s action
+                        </div>
+                        <div className="mt-1 text-sm font-semibold text-white">
+                          {nextDashboardPlanAction.label}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          document
+                            .getElementById("today-plan-action")
+                            ?.scrollIntoView({ behavior: "smooth", block: "center" })
+                        }
+                        className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-[#d6a14f] px-4 py-3 text-sm font-bold text-[#06172b] hover:bg-[#e0b462]"
+                      >
+                        Continue Your Plan <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
                 </DashboardPanel>
               </section>
 
@@ -3011,12 +3230,14 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
               </section>
 
               <section id="ninety-day-plan" className="mb-6 space-y-4">
-                <MomentumPanel
+                <DashboardMomentumPanel
                   actions={momentumActions}
+                  nextActionOverride={nextDashboardMomentumAction}
+                  lastActivityLabel={lastPlanActivityLabel}
                   onNextMove={() => {
                     document
-                      .getElementById("ninety-day-plan")
-                      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      .getElementById("today-plan-action")
+                      ?.scrollIntoView({ behavior: "smooth", block: "center" });
                   }}
                 />
 
@@ -3046,14 +3267,27 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                     </div>
                   )}
 
-                  <h2 className="text-2xl font-bold">
+                  <h2 id="today-plan-action" className="scroll-mt-28 text-2xl font-bold">
                     {nextDashboardPlanAction ? "Do this next" : "Plan complete"}
                   </h2>
-                  <p className="mt-3 text-sm leading-6 text-slate-400">
-                    {nextDashboardPlanActionLabel
-                      ? nextDashboardPlanActionLabel
-                      : "You have completed the current 90-day plan. Review your report or retake the assessment to choose the next priority."}
-                  </p>
+                  {nextDashboardPlanAction && (
+                    <div className="mt-3 rounded-2xl border border-cyan-300/20 bg-cyan-300/8 p-4">
+                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200/80">
+                        {nextDashboardPlanAction.phaseTitle}
+                      </div>
+                      <p className="mt-2 text-lg font-bold leading-7 text-white">
+                        {nextDashboardPlanActionLabel}
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-slate-400">
+                        This should take less than 10 minutes and gives your plan a clear next win.
+                      </p>
+                    </div>
+                  )}
+                  {!nextDashboardPlanAction && (
+                    <p className="mt-3 text-sm leading-6 text-slate-400">
+                      You have completed the current 90-day plan. Review your report or retake the assessment to choose the next priority.
+                    </p>
+                  )}
 
                   <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                     <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
@@ -3069,7 +3303,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                       />
                     </div>
                     <p className="mt-3 text-xs leading-5 text-slate-400">
-                      Momentum builds fast — aim for 1–2 steps per week.
+                      1–2 actions per week is enough to build real progress.
                     </p>
                     {momentum.completedThisWeek > 0 ? (
                       <p className="mt-1 text-sm font-semibold leading-5 text-emerald-300">
