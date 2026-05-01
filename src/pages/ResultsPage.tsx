@@ -827,6 +827,10 @@ async function savePlanActionProgress(
   if (!userId || !assessmentId || !actionId) return;
 
   const now = new Date().toISOString();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const userEmail = user?.email;
 
   const { error } = await supabase.from("user_plan_progress").upsert(
     {
@@ -842,6 +846,64 @@ async function savePlanActionProgress(
 
   if (error) {
     console.error("Could not save 90-day plan progress:", error);
+    return;
+  }
+
+  const { error: engagementError } = await supabase
+    .from("user_engagement_events")
+    .insert({
+      user_id: userId,
+      assessment_id: assessmentId,
+      event_type: completed ? "step_completed" : "step_unchecked",
+      event_payload: {
+        actionId,
+        timestamp: now,
+      },
+    });
+
+  if (engagementError) {
+    console.error("Could not log engagement event:", engagementError);
+  }
+
+  if (completed) {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+
+    const { data: rows, error: momentumError } = await supabase
+      .from("user_plan_progress")
+      .select("completed_at")
+      .eq("user_id", userId)
+      .eq("completed", true)
+      .gte("completed_at", sevenDaysAgo);
+
+    if (momentumError) {
+      console.error("Could not check weekly momentum:", momentumError);
+      return;
+    }
+
+    if (rows && rows.length >= 3) {
+      console.log("🔥 MOMENTUM TRIGGERED", {
+        userId,
+        email: userEmail,
+        steps: rows.length,
+      });
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (supabaseUrl && userEmail) {
+        try {
+          await fetch(`${supabaseUrl}/functions/v1/send-momentum-email`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId,
+              email: userEmail,
+              steps: rows.length,
+            }),
+          });
+        } catch (emailError) {
+          console.warn("Momentum email function is not available yet:", emailError);
+        }
+      }
+    }
   }
 }
 
@@ -2637,7 +2699,11 @@ export default function ResultsPage() {
     (derivedTier === "standard" || derivedTier === "premium");
 
   const effectiveTier = shouldGateFullReport ? "free" : derivedTier;
-  const reportTier: ReportTier = getReportTier(effectiveTier);
+  const paidAccessTier =
+    actualPlan === "premium" || actualPlan === "standard" ? actualPlan : effectiveTier;
+  const reportTier: ReportTier = getReportTier(
+    shouldGateFullReport ? "free" : paidAccessTier,
+  );
   const features = getReportFeatures(reportTier);
   const planBadge = getPlanBadgeMeta(
     shouldGateFullReport ? "free" : actualPlan,
