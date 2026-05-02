@@ -2836,23 +2836,11 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     <div className="min-h-screen bg-[#04111f] text-slate-100">
       <div className="flex min-h-screen">
         <aside className="hidden w-64 shrink-0 border-r border-white/10 bg-[#06172b]/90 p-4 xl:block">
-          <div className="mb-6 flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#b87333] to-amber-300 text-[#06172b] shadow-lg">
-              <img
-                src={logoImage}
-                alt="A Wealthy Foundation"
-                className="h-7 w-7 object-contain"
-              />
-            </div>
-            <div>
-              <div className="text-lg font-bold leading-5">A Wealthy</div>
-              <div className="text-lg font-bold leading-5 text-[#d18a3a]">
-                Foundation
-              </div>
-            </div>
+          <div className="mb-4 px-2 text-xs uppercase tracking-wide text-slate-400">
+            Navigation
           </div>
-
-          <nav className="space-y-1.5">
+  
+          <nav className="mt-2 space-y-1.5">
             {[
               {
                 label: "Dashboard",
