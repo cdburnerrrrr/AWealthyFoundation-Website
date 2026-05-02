@@ -12,7 +12,6 @@ import {
   ArrowRight,
   BarChart3,
   Calendar,
-  CheckCircle2,
   Clock3,
   CreditCard,
   DollarSign,
@@ -32,7 +31,6 @@ import {
   Zap,
 } from "lucide-react";
 
-import logoImage from "../assets/house-icon.png";
 import { useTrackEvent } from "../hooks/useTrackEvent";
 import {
   loadFreedomDatePlan,
@@ -2387,12 +2385,6 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
         (completedDashboardPlanCount / dashboardPlanActions.length) * 100,
       )
     : 0;
-  const currentDashboardStepNumber = dashboardPlanActions.length
-    ? Math.min(completedDashboardPlanCount + 1, dashboardPlanActions.length)
-    : 0;
-  const currentDashboardWeekNumber = dashboardPlanActions.length
-    ? Math.min(12, Math.max(1, Math.ceil(currentDashboardStepNumber / 1)))
-    : 1;
   const momentum = useMemo(
     () => getWeeklyMomentum(planProgressRows),
     [planProgressRows],
@@ -2606,10 +2598,6 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     dashboardPlanActions.find((action) => !completedPlanActions[action.id]) ??
     dashboardPlanActions[0] ??
     null;
-  const nextDashboardPlanActionLabel = nextDashboardPlanAction
-    ? nextDashboardPlanAction.label
-    : null;
-
   const nextDashboardMomentumAction = nextDashboardPlanAction
     ? momentumActions.find((action) => action.id === nextDashboardPlanAction.id) ?? {
         id: nextDashboardPlanAction.id,
@@ -2622,45 +2610,6 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
         pillar: weakestPillar ?? undefined,
       }
     : null;
-
-  const toggleDashboardPlanAction = (actionId: string) => {
-    const nextCompleted = !completedPlanActions[actionId];
-    const next = {
-      ...completedPlanActions,
-      [actionId]: nextCompleted,
-    };
-
-    const now = new Date().toISOString();
-
-    setCompletedPlanActions(next);
-    setLastPlanActivity(now);
-    setPlanProgressRows((rows) => {
-      const existingIndex = rows.findIndex((row) => row.action_id === actionId);
-      const updatedRow: PlanProgressRow = {
-        action_id: actionId,
-        completed: nextCompleted,
-        completed_at: nextCompleted ? now : null,
-        updated_at: now,
-      };
-
-      if (existingIndex === -1) return [...rows, updatedRow];
-
-      return rows.map((row, index) =>
-        index === existingIndex ? { ...row, ...updatedRow } : row,
-      );
-    });
-
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(planProgressStorageKey, JSON.stringify(next));
-    }
-
-    void savePlanActionProgress(
-      (user as any)?.id,
-      planProgressAssessmentId,
-      actionId,
-      nextCompleted,
-    );
-  };
 
   const assetRows = useMemo(() => {
     const detailedInvestmentTotal =
@@ -3163,7 +3112,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                     <div className="mt-5 flex flex-col gap-4 rounded-2xl border border-copper-300/25 bg-gradient-to-r from-copper-400/14 via-cyan-300/8 to-transparent p-5 shadow-[0_0_32px_rgba(214,161,79,.08)] md:flex-row md:items-center md:justify-between">
                       <div>
                         <div className="text-xs font-semibold uppercase tracking-[0.16em] text-copper-200">
-                          Today’s action
+                          Today’s move
                         </div>
                         <div className="mt-2 text-base font-bold leading-6 text-white">
                           {nextDashboardPlanAction.label}
@@ -3719,69 +3668,60 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                     </p>
                   </div>
 
-                  <h2 id="today-plan-action" className="mt-5 scroll-mt-28 text-2xl font-bold">
-                    {nextDashboardPlanAction ? "Current move" : "Plan complete"}
-                  </h2>
-
-                  {nextDashboardPlanAction ? (
-                    <div className="mt-3 rounded-2xl border border-cyan-300/20 bg-cyan-300/8 p-4">
-                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200/80">
-                        {nextDashboardPlanAction.phaseTitle}
+                  <div id="today-plan-action" className="mt-5 scroll-mt-28 rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold text-white">
+                          Your 90-Day Focus
+                        </h3>
+                        <p className="mt-1 text-sm leading-6 text-slate-400">
+                          You’re building your foundation step by step. Stay consistent — momentum compounds.
+                        </p>
                       </div>
-                      <p className="mt-2 text-lg font-bold leading-7 text-white">
-                        {nextDashboardPlanActionLabel}
-                      </p>
-                      <p className="mt-2 text-sm leading-6 text-slate-400">
-                        This should take less than 10 minutes and gives your plan a clear next win.
-                      </p>
-
-                      <div className="mt-4 flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            toggleDashboardPlanAction(nextDashboardPlanAction.id)
-                          }
-                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#d6a14f] px-4 py-2 text-sm font-bold text-[#06172b] transition hover:bg-[#e0b462]"
-                        >
-                          <CheckCircle2 className="h-4 w-4" />
-                          Complete This Move
-                        </button>
-                        <span className="text-xs leading-5 text-slate-400">
-                          Updates your momentum without marking the full report plan complete.
-                        </span>
+                      <div className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-xs font-bold text-cyan-200">
+                        {completedDashboardPlanCount}/{dashboardPlanActions.length || 1} moves
                       </div>
                     </div>
-                  ) : (
-                    <p className="mt-3 text-sm leading-6 text-slate-400">
-                      You have completed the current dashboard focus. Review your report or retake the assessment to choose the next priority.
-                    </p>
-                  )}
 
-                  <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                    {momentum.completedThisWeek > 1 ? (
-                      <p className="text-sm font-semibold leading-5 text-emerald-300">
-                        Nice — you completed {momentum.completedThisWeek} moves this week. Momentum is building.
+                    <div className="mt-5">
+                      <div className="mb-2 flex items-center justify-between text-xs text-slate-400">
+                        <span>Dashboard progress</span>
+                        <span>{dashboardPlanPercent}%</span>
+                      </div>
+                      <div className="h-2.5 overflow-hidden rounded-full bg-white/15">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-[#d6a14f] transition-all duration-500"
+                          style={{ width: `${dashboardPlanPercent}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-4 rounded-2xl border border-white/10 bg-[#06172b]/45 p-4">
+                      {momentum.completedThisWeek > 1 ? (
+                        <p className="text-sm font-semibold leading-5 text-emerald-300">
+                          Nice — you completed {momentum.completedThisWeek} moves this week. Momentum is building.
+                        </p>
+                      ) : momentum.completedThisWeek === 1 ? (
+                        <p className="text-sm font-semibold leading-5 text-emerald-300">
+                          You’ve started — that’s the hardest part.
+                        </p>
+                      ) : (
+                        <p className="text-sm font-semibold leading-5 text-slate-300">
+                          Most people never start. Starting today puts you ahead.
+                        </p>
+                      )}
+                      <p className="mt-2 text-xs leading-5 text-slate-500">
+                        The dashboard is intentionally lighter than the report: one progress signal, one clear next move at the top, and a full plan link when you want the details.
                       </p>
-                    ) : momentum.completedThisWeek === 1 ? (
-                      <p className="text-sm font-semibold leading-5 text-emerald-300">
-                        You’ve started — that’s the hardest part.
-                      </p>
-                    ) : (
-                      <p className="text-sm font-semibold leading-5 text-slate-300">
-                        Most people never start. Starting today puts you ahead.
-                      </p>
-                    )}
-                    <p className="mt-2 text-xs leading-5 text-slate-500">
-                      The dashboard is intentionally lighter than the report: one move, one completion, one momentum signal.
-                    </p>
+                    </div>
+
+                    <button
+                      onClick={handleOpenFullNinetyDayPlan}
+                      className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-cyan-300/35 bg-cyan-300/8 px-4 py-3 text-sm font-bold text-cyan-200 shadow-[0_0_28px_rgba(34,211,238,.12)]"
+                    >
+                      View full plan in report <ArrowRight className="h-4 w-4" />
+                    </button>
                   </div>
-
-                  <button
-                    onClick={handleOpenFullNinetyDayPlan}
-                    className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-cyan-300/35 bg-cyan-300/8 px-4 py-3 text-sm font-bold text-cyan-200 shadow-[0_0_28px_rgba(34,211,238,.12)]"
-                  >
-                    View full plan in report <ArrowRight className="h-4 w-4" />
-                  </button>
                 </DashboardPanel>
               </section>
 
