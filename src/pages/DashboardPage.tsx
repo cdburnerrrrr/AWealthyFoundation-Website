@@ -239,25 +239,27 @@ function getDashboardNextMoveCard(
   }
 
   if (snapshot && snapshot.fixedCostLoad >= 65) {
+    const neededMargin = Math.max(300, Math.min(750, Math.round(Math.max(0, 1000 - snapshot.monthlyMargin) / 50) * 50));
     return {
-      title: "Free up $300–$500/month first",
-      body: `With about ${formatCurrency(snapshot.fixedCosts)} of ${formatCurrency(snapshot.income)} already committed each month, your next move should focus on freeing up monthly breathing room before optimizing anything else. The fastest lift will likely come from changing one major fixed-cost pressure point.`,
+      title: `Free up ${formatCurrency(neededMargin)}/month first`,
+      body: `You currently have ${formatCurrency(snapshot.fixedCosts)} committed each month, leaving about ${formatCurrency(snapshot.monthlyMargin)} of breathing room. Your highest-leverage move is to free up margin before optimizing anything else.`,
       checklist: [
-        "List housing, utilities, required bills, and debt payments in one place.",
-        "Identify the single fixed cost creating the most pressure.",
-        "Decide whether the clearest win is lower costs, more income, or both.",
+        "Write down your top 3 fixed costs.",
+        "Circle the one creating the most pressure.",
+        "Pick one change to test this week: lower costs, more income, or both.",
       ],
     };
   }
 
   if (snapshot && snapshot.fixedCostLoad >= 50) {
+    const neededMargin = Math.max(200, Math.min(500, Math.round(Math.max(0, 800 - snapshot.monthlyMargin) / 50) * 50));
     return {
-      title: "Protect your monthly breathing room",
-      body: `With fixed costs around ${formatCurrency(snapshot.fixedCosts)} a month, your structure is workable, but still tight enough to slow progress. Creating even a little more monthly margin should make the rest of the plan easier to execute.`,
+      title: `Protect your ${formatCurrency(snapshot.monthlyMargin)} monthly margin`,
+      body: `You have about ${formatCurrency(snapshot.monthlyMargin)} left after fixed costs. That is workable, but still tight enough that one intentional ${formatCurrency(neededMargin)} swing could make the rest of your plan easier to follow.`,
       checklist: [
-        "Review the top one or two fixed costs in your budget.",
-        "Choose one realistic change to test over the next 30 days.",
-        "Redirect any freed-up cash toward your highest-priority goal.",
+        "Review your two largest fixed costs.",
+        "Choose one realistic change to test this week.",
+        "Send any freed-up cash toward your highest-priority goal.",
       ],
     };
   }
@@ -786,7 +788,7 @@ function getDashboardNextMove(
   weakestPillar?: string,
 ): string {
   if (snapshot && snapshot.fixedCostLoad >= 65) {
-    return "Free up $300–$500/month first. Review housing, utilities, and other fixed bills together, then decide whether the fastest win is a cost cut, an income increase, or both.";
+    return "Create breathing room first. Review housing, utilities, and other fixed bills together, then decide whether the fastest win is a cost cut, an income increase, or both.";
   }
 
   if (snapshot && snapshot.fixedCostLoad >= 50) {
@@ -1760,7 +1762,9 @@ function getDashboardActionStreak(actions: DashboardMomentumAction[]) {
 
 function DashboardMomentumPanel({
   actions,
+  nextActionOverride,
   lastActivityLabel,
+  onNextMove,
 }: {
   actions: DashboardMomentumAction[];
   nextActionOverride?: DashboardMomentumAction | null;
@@ -1776,14 +1780,20 @@ function DashboardMomentumPanel({
   const weeklyTotal = Math.max(weeklyActions.length || actions.slice(0, 3).length, 1);
   const weeklyPercent = Math.round((weeklyCompleted / weeklyTotal) * 100);
   const streakDays = getDashboardActionStreak(actions);
-  const remainingThisWeek = Math.max(0, weeklyTotal - weeklyCompleted);
+  const nextAction =
+    nextActionOverride ??
+    actions.find((action) => !action.completed && isDashboardDateThisWeek(action.dueDate)) ??
+    actions.find((action) => !action.completed) ??
+    null;
 
   const headline =
-    weeklyCompleted >= 3
+    weeklyCompleted >= 5
       ? "Strong momentum"
-      : weeklyCompleted > 0
-        ? "Momentum building"
-        : "Ready to start";
+      : weeklyCompleted >= 3
+        ? "You’re on a roll"
+        : weeklyCompleted > 0
+          ? "Momentum building"
+          : "Ready to start";
   const streakText =
     streakDays === 1
       ? "1-day action streak"
@@ -1791,11 +1801,13 @@ function DashboardMomentumPanel({
         ? `${streakDays}-day action streak`
         : "Start a streak today";
   const encouragement =
-    weeklyCompleted >= 3
-      ? "You are stacking small wins. Keep the rhythm going."
-      : weeklyCompleted > 0
-        ? `${remainingThisWeek} more move${remainingThisWeek === 1 ? "" : "s"} keeps this week on track.`
-        : "Most people never start. Mark today’s move done when you finish it.";
+    weeklyCompleted >= 5
+      ? "You are stacking small wins into a real rhythm. Keep going."
+      : weeklyCompleted >= 3
+        ? "You are ahead of the curve. A few more small moves can turn into real progress."
+        : weeklyCompleted > 0
+          ? "You’ve started — that’s the hardest part. Keep the loop going."
+          : "Most people never start. Mark today’s move done when you finish it.";
 
   return (
     <DashboardPanel className="flex h-full flex-col justify-between overflow-hidden p-5">
@@ -1823,7 +1835,7 @@ function DashboardMomentumPanel({
             <div className="mt-2 text-2xl font-bold text-white">
               {weeklyCompleted}/{weeklyTotal}
             </div>
-            <div className="text-xs text-slate-400">moves done</div>
+            <div className="text-xs text-slate-400">actions</div>
           </div>
 
           <div className="rounded-2xl bg-white/[0.06] p-4">
@@ -1850,7 +1862,7 @@ function DashboardMomentumPanel({
         </div>
       </div>
 
-      <div className="mt-5 rounded-2xl border border-cyan-300/15 bg-cyan-300/8 p-4 text-sm leading-6 text-slate-300">
+      <div className="mt-5 rounded-2xl border border-cyan-300/15 bg-cyan-300/6 p-4 text-sm leading-6 text-slate-300">
         Next milestone: complete 3 small moves this week. The action lives above; this card tracks momentum.
       </div>
     </DashboardPanel>
@@ -2450,9 +2462,9 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
     if (highFixedLoad || tightMargin || weakestPillar === "spending") {
       suggestions.push({
-        label: `Cut ${formatCurrency(costCutAmount)} fixed costs`,
+        label: hasChildcare ? "Offset daycare pressure" : `Cut ${formatCurrency(costCutAmount)} costs`,
         description: hasChildcare
-          ? "Test what happens if one required cost gets smaller — childcare, insurance, utilities, or another fixed bill."
+          ? "See how much breathing room you create by offsetting part of childcare with one income or cost move."
           : "Test a bill cut, subscription cleanup, insurance shop, utility change, or cheaper plan.",
         scenario: { income: 0, housing: costCutAmount, debt: 0 },
         priority: highFixedLoad ? 1 : 4,
@@ -3067,7 +3079,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                           </div>
                           <div className="mt-1 text-sm text-slate-400">
                             {isDashboardDebtUnderPressure
-                              ? "Free up margin first"
+                              ? "Create breathing room first"
                               : dashboardDebtBalance <= 0
                                 ? (snapshot?.mortgageDebt ?? 0) > 0
                                   ? "Mortgage only"
@@ -3111,6 +3123,9 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                           <p className="mt-2 text-sm leading-6 text-slate-400">
                             {dashboardWhyThisMatters}
                           </p>
+                          <p className="mt-2 text-sm font-semibold leading-6 text-copper-200/90">
+                            Most people never do this step. It’s where real progress starts.
+                          </p>
                         </div>
 
                         <div className="flex shrink-0 flex-col gap-2 sm:flex-row lg:flex-col">
@@ -3135,7 +3150,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                             }`}
                           >
                             {completedPlanActions[nextDashboardPlanAction.id]
-                              ? "Done"
+                              ? "Nice — want your next move?"
                               : "Mark as Done"}
                           </button>
                         </div>
@@ -3501,7 +3516,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                                 Smart starting points
                               </div>
                               <p className="mt-1 text-sm leading-6 text-slate-300">
-                                These only appear when the user’s actual numbers support them.
+                                These only appear when this user’s actual numbers support them.
                               </p>
                             </div>
                           </div>
