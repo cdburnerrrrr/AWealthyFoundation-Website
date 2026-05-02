@@ -2498,6 +2498,47 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     }
   }, [dashboardDebtInputs, freedomDateScenario, scenarioResult]);
 
+
+
+  const suggestedWhatIfScenarios = useMemo(() => {
+    const suggestions = [
+      {
+        label: "Try +$300 income",
+        description: "A weekend shift, side job, overtime, or selling unused items.",
+        scenario: { income: 300, housing: 0, debt: 0 },
+      },
+      {
+        label: "Cut $300 costs",
+        description: "A lower bill, subscription cleanup, insurance shop, or cheaper plan.",
+        scenario: { income: 0, housing: 300, debt: 0 },
+      },
+    ];
+
+    if ((dashboardDebtBalance ?? 0) > 0) {
+      suggestions.push({
+        label: "Add $300 to debt",
+        description: "Point extra margin at payoff and see how much time it buys back.",
+        scenario: { income: 0, housing: 0, debt: 300 },
+      });
+    }
+
+    if ((snapshot?.childcare ?? 0) > 0) {
+      suggestions.push({
+        label: "Offset daycare pressure",
+        description: "Test whether one practical monthly change can cover part of childcare.",
+        scenario: { income: 0, housing: Math.min(500, Math.max(100, Math.round((snapshot?.childcare ?? 300) / 50) * 50)), debt: 0 },
+      });
+    } else {
+      suggestions.push({
+        label: "Find a $600 swing",
+        description: "Combine a small income move with a small expense cut.",
+        scenario: { income: 300, housing: 300, debt: 0 },
+      });
+    }
+
+    return suggestions.slice(0, 4);
+  }, [dashboardDebtBalance, snapshot?.childcare]);
+
   const isDashboardDebtUnderPressure =
     (snapshot?.fixedCostLoad ?? 0) >= 70 ||
     (snapshot?.debtToIncomeRatio ?? 0) >= 60;
@@ -3261,21 +3302,40 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                           Future Simulator
                         </div>
                         <h2 className="text-2xl font-bold text-white">
-                          Find the move that creates your “aha” moment.
+                          What happens if you change just one number?
                         </h2>
                         <p className="mt-3 text-sm leading-6 text-slate-300">
-                          Test practical levers: extra income, lower fixed costs, and extra debt payoff. The goal is not just a better ratio — it is seeing how a real move could create breathing room or pull your debt-free date closer.
+                          Even small changes can create real breathing room — or cut months off your path out of debt.
                         </p>
                       </div>
 
-                      <div className="mt-5 rounded-2xl border border-copper-300/20 bg-copper-400/10 p-4">
-                        <div className="text-xs font-semibold uppercase tracking-[0.16em] text-copper-200">
-                          Why it matters
+                      {snapshot && scenarioResult && (
+                        <div className="mt-5 rounded-2xl border border-cyan-300/15 bg-cyan-300/8 p-4">
+                          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200">
+                            Smart starting points
+                          </div>
+                          <p className="mt-2 text-sm leading-6 text-slate-300">
+                            Pick a realistic scenario and watch the outcomes change instantly.
+                          </p>
+                          <div className="mt-4 grid gap-2">
+                            {suggestedWhatIfScenarios.map((suggestion) => (
+                              <button
+                                key={suggestion.label}
+                                type="button"
+                                onClick={() => setWhatIf(suggestion.scenario)}
+                                className="rounded-xl border border-cyan-300/20 bg-[#071827]/55 px-3 py-2 text-left transition hover:bg-cyan-300/10"
+                              >
+                                <div className="text-sm font-bold text-cyan-100">
+                                  {suggestion.label}
+                                </div>
+                                <div className="mt-1 text-xs leading-5 text-slate-400">
+                                  {suggestion.description}
+                                </div>
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                        <p className="mt-2 text-sm leading-6 text-slate-300">
-                          Extra margin becomes powerful when it has a job. If you point it at debt, the same money that helps this month can also move your freedom date forward.
-                        </p>
-                      </div>
+                      )}
                     </div>
 
                     {snapshot && scenarioResult ? (
@@ -3402,25 +3462,25 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                             onClick={() => setWhatIf({ income: 300, housing: 0, debt: 0 })}
                             className="rounded-2xl border border-cyan-300/20 bg-cyan-300/8 px-4 py-3 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/12"
                           >
-                            Test +$300 income
+                            Try +$300 income
                           </button>
                           <button
                             type="button"
                             onClick={() => setWhatIf({ income: 0, housing: 300, debt: 0 })}
                             className="rounded-2xl border border-cyan-300/20 bg-cyan-300/8 px-4 py-3 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/12"
                           >
-                            Test -$300 costs
+                            Cut $300 costs
                           </button>
                           <button
                             type="button"
                             onClick={() => setWhatIf({ income: 0, housing: 0, debt: 300 })}
                             className="rounded-2xl border border-cyan-300/20 bg-cyan-300/8 px-4 py-3 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/12"
                           >
-                            Test +$300 to debt
+                            Add $300 to debt
                           </button>
                           <button
                             type="button"
-                            onClick={() => setWhatIf({ income: 300, housing: 300, debt: 300 })}
+                            onClick={() => setWhatIf({ income: 0, housing: 0, debt: 0 })}
                             className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-white/[0.07]"
                           >
                             Reset scenario
@@ -3466,23 +3526,23 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                           <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                             Monthly Breathing Room
                           </div>
-                          <div className="mt-2 text-3xl font-bold text-cyan-200">
+                          <div className="mt-2 text-3xl font-bold text-[#d6a14f]">
                             {formatCurrency(scenarioResult.adjustedMargin)}
                           </div>
-                          <div className="mt-1 text-sm font-semibold text-emerald-300">
+                          <div className="mt-1 text-sm font-semibold text-[#d6a14f]/80">
                             {scenarioMarginGain >= 0 ? "+" : ""}{formatCurrency(scenarioMarginGain)} vs. today
                           </div>
                         </div>
 
-                        <div className="rounded-2xl border border-violet-300/15 bg-violet-300/8 p-4">
+                        <div className="rounded-2xl border border-copper-300/20 bg-copper-400/10 p-4">
                           <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                             Debt Freedom Impact
                           </div>
                           {scenarioDebtImpact ? (
                             <>
-                              <div className="mt-2 text-3xl font-bold text-violet-200">
+                              <div className="mt-2 text-3xl font-bold text-[#d6a14f]">
                                 {scenarioDebtImpact.monthsSaved > 0
-                                  ? `${scenarioDebtImpact.monthsSaved} mo faster`
+                                  ? `${scenarioDebtImpact.monthsSaved} months faster`
                                   : "Same payoff date"}
                               </div>
                               <div className="mt-1 text-sm leading-5 text-slate-400">
@@ -3491,7 +3551,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                             </>
                           ) : dashboardDebtBalance > 0 ? (
                             <>
-                              <div className="mt-2 text-2xl font-bold text-violet-200">
+                              <div className="mt-2 text-2xl font-bold text-[#d6a14f]">
                                 Add a payoff move
                               </div>
                               <div className="mt-1 text-sm leading-5 text-slate-400">
@@ -3500,7 +3560,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                             </>
                           ) : (
                             <>
-                              <div className="mt-2 text-2xl font-bold text-violet-200">
+                              <div className="mt-2 text-2xl font-bold text-[#d6a14f]">
                                 No consumer debt
                               </div>
                               <div className="mt-1 text-sm leading-5 text-slate-400">
@@ -3510,29 +3570,94 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                           )}
                         </div>
 
-                        <div className="rounded-2xl border border-emerald-300/15 bg-emerald-300/8 p-4">
+                        <div className="rounded-2xl border border-copper-300/20 bg-copper-400/10 p-4">
                           <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                            Aha Moment
+                            Interest Saved
                           </div>
-                          <div className="mt-2 text-2xl font-bold text-emerald-300">
+                          <div className="mt-2 text-2xl font-bold text-[#d6a14f]">
                             {scenarioDebtImpact
                               ? formatCurrency(scenarioDebtImpact.interestSaved)
-                              : formatCurrency(scenarioMonthlyPower)}
+                              : dashboardDebtBalance > 0
+                                ? "$0"
+                                : "No debt"}
                           </div>
                           <div className="mt-1 text-sm leading-5 text-slate-400">
                             {scenarioDebtImpact
-                              ? "estimated interest saved by pointing this monthly power at debt."
-                              : "of monthly power available to give a job."}
+                              ? "estimated interest saved by applying your extra monthly power to debt."
+                              : dashboardDebtBalance > 0
+                                ? "Add extra debt payoff or point new margin at debt to estimate interest savings."
+                                : "With consumer debt out of the way, use margin for savings, protection, investing, or your next priority."}
                           </div>
                         </div>
 
                         <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                           <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                            Financial Details
+                            Your Scenario
                           </div>
-                          <div className="mt-2 text-sm leading-6 text-slate-300">
-                            Fixed-cost load changes from {formatPercent(snapshot.fixedCostLoad)} to {formatPercent(scenarioResult.adjustedLoad)}. This is useful, but the main win is the real-world outcome: more margin and a faster path out of debt.
+
+                          <div className="mt-3 space-y-2 text-sm text-slate-300">
+                            {scenarioResult.extraIncome > 0 && (
+                              <div className="flex justify-between gap-3">
+                                <span>Extra income</span>
+                                <span className="font-semibold text-cyan-200">
+                                  +{formatCurrency(scenarioResult.extraIncome)}/mo
+                                </span>
+                              </div>
+                            )}
+                            {scenarioResult.lowerFixedCosts > 0 && (
+                              <div className="flex justify-between gap-3">
+                                <span>Lower fixed costs</span>
+                                <span className="font-semibold text-cyan-200">
+                                  +{formatCurrency(scenarioResult.lowerFixedCosts)}/mo
+                                </span>
+                              </div>
+                            )}
+                            {scenarioResult.extraDebtPayoff > 0 && (
+                              <div className="flex justify-between gap-3">
+                                <span>Extra debt payoff</span>
+                                <span className="font-semibold text-cyan-200">
+                                  +{formatCurrency(scenarioResult.extraDebtPayoff)}/mo
+                                </span>
+                              </div>
+                            )}
+                            {scenarioResult.extraIncome === 0 &&
+                              scenarioResult.lowerFixedCosts === 0 &&
+                              scenarioResult.extraDebtPayoff === 0 && (
+                                <div className="text-slate-400">
+                                  Try a scenario to see the story of the change.
+                                </div>
+                              )}
                           </div>
+
+                          <div className="mt-4 space-y-2 border-t border-white/10 pt-4 text-sm">
+                            <div className="flex justify-between gap-3 text-[#d6a14f]">
+                              <span>Breathing room gained</span>
+                              <span className="font-bold">
+                                {scenarioMarginGain >= 0 ? "+" : ""}{formatCurrency(scenarioMarginGain)}/mo
+                              </span>
+                            </div>
+                            {scenarioDebtImpact && (
+                              <>
+                                <div className="flex justify-between gap-3 text-[#d6a14f]">
+                                  <span>Debt-free timeline</span>
+                                  <span className="font-bold">
+                                    {scenarioDebtImpact.monthsSaved} months faster
+                                  </span>
+                                </div>
+                                <div className="flex justify-between gap-3 text-[#d6a14f]">
+                                  <span>Interest saved</span>
+                                  <span className="font-bold">
+                                    {formatCurrency(scenarioDebtImpact.interestSaved)}
+                                  </span>
+                                </div>
+                              </>
+                            )}
+                          </div>
+
+                          <div className="mt-4 text-xs leading-5 text-slate-500">
+                            Details: fixed-cost load changes from {formatPercent(snapshot.fixedCostLoad)} to {formatPercent(scenarioResult.adjustedLoad)}.
+                          </div>
+
                           {!scenarioDebtImpact && dashboardDebtBalance > 0 && (
                             <button
                               type="button"
