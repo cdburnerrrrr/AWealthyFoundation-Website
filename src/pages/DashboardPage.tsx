@@ -500,6 +500,57 @@ function getDashboardWhyThisMatters(
   return "The right next move should strengthen the weakest part of the system first so the rest of your progress becomes easier to sustain.";
 }
 
+
+type DashboardMovePriority = {
+  label: string;
+  className: string;
+};
+
+function getTodayMovePriority(
+  snapshot: ReturnType<typeof getStructuralSnapshot>,
+  weakestPillar?: string | null,
+): DashboardMovePriority {
+  if ((snapshot?.monthlyMargin ?? 0) < 0) {
+    return {
+      label: "High Priority",
+      className: "border-red-300/30 bg-red-400/10 text-red-100",
+    };
+  }
+
+  if ((snapshot?.fixedCostLoad ?? 0) >= 65) {
+    return {
+      label: "High Priority",
+      className: "border-copper-300/35 bg-copper-400/12 text-copper-100",
+    };
+  }
+
+  if ((snapshot?.emergencyFundMonths ?? 0) > 0 && (snapshot?.emergencyFundMonths ?? 0) < 3) {
+    return {
+      label: "Stability Move",
+      className: "border-amber-300/30 bg-amber-300/10 text-amber-100",
+    };
+  }
+
+  if ((snapshot?.consumerDebt ?? snapshot?.totalDebtBalance ?? 0) > 0 && weakestPillar === "debt") {
+    return {
+      label: "Debt Move",
+      className: "border-violet-300/30 bg-violet-300/10 text-violet-100",
+    };
+  }
+
+  if (weakestPillar) {
+    return {
+      label: `${formatPillarName(weakestPillar)} Focus`,
+      className: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
+    };
+  }
+
+  return {
+    label: "Next Best Move",
+    className: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
+  };
+}
+
 const PILLAR_LABELS: Record<string, string> = {
   income: "Income",
   spending: "Spending",
@@ -2279,6 +2330,10 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
       ),
     [assessment, snapshot, weakestPillar],
   );
+  const todayMovePriority = useMemo(
+    () => getTodayMovePriority(snapshot, weakestPillar),
+    [snapshot, weakestPillar],
+  );
 
   const planProgressAssessmentId = String(
     (rawAssessment as any)?.id ??
@@ -2356,9 +2411,22 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     [dashboardPlanPhases],
   );
 
+  const dashboardTodayActions = useMemo(
+    () =>
+      safeArray(dashboardNextMoveCard.checklist)
+        .slice(0, 3)
+        .map((item, itemIndex) => ({
+          id: makePlanActionId(0, itemIndex, item),
+          label: item,
+          phaseTitle: dashboardNextMoveCard.title,
+          phaseIndex: 0,
+        })),
+    [dashboardNextMoveCard],
+  );
+
   const momentumActions = useMemo(
     () =>
-      dashboardPlanActions.map((action, index) => {
+      dashboardTodayActions.map((action, index) => {
         const progressRow = planProgressRows.find(
           (row) => row.action_id === action.id,
         );
@@ -2374,15 +2442,15 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
           pillar: weakestPillar ?? undefined,
         };
       }),
-    [dashboardPlanActions, completedPlanActions, planProgressRows, weakestPillar],
+    [dashboardTodayActions, completedPlanActions, planProgressRows, weakestPillar],
   );
 
-  const completedDashboardPlanCount = dashboardPlanActions.filter(
+  const completedDashboardPlanCount = dashboardTodayActions.filter(
     (action) => completedPlanActions[action.id],
   ).length;
-  const dashboardPlanPercent = dashboardPlanActions.length
+  const dashboardPlanPercent = dashboardTodayActions.length
     ? Math.round(
-        (completedDashboardPlanCount / dashboardPlanActions.length) * 100,
+        (completedDashboardPlanCount / dashboardTodayActions.length) * 100,
       )
     : 0;
   const momentum = useMemo(
@@ -2595,8 +2663,8 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     (snapshot?.fixedCostLoad ?? 0) >= 70 ||
     (snapshot?.debtToIncomeRatio ?? 0) >= 60;
   const nextDashboardPlanAction =
-    dashboardPlanActions.find((action) => !completedPlanActions[action.id]) ??
-    dashboardPlanActions[0] ??
+    dashboardTodayActions.find((action) => !completedPlanActions[action.id]) ??
+    dashboardTodayActions[0] ??
     null;
   const nextDashboardMomentumAction = nextDashboardPlanAction
     ? momentumActions.find((action) => action.id === nextDashboardPlanAction.id) ?? {
@@ -2726,6 +2794,64 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
   const handleOpenFullNinetyDayPlan = () => {
     handleViewLatestReport("#90-day-plan");
+  };
+
+
+  const handleCompleteCurrentMove = () => {
+    if (!nextDashboardPlanAction) return;
+
+    const nextCompletedState = !completedPlanActions[nextDashboardPlanAction.id];
+    const updatedProgress = {
+      ...completedPlanActions,
+      [nextDashboardPlanAction.id]: nextCompletedState,
+    };
+
+    setCompletedPlanActions(updatedProgress);
+
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(
+        planProgressStorageKey,
+        JSON.stringify(updatedProgress),
+      );
+    }
+
+    const now = new Date().toISOString();
+    setLastPlanActivity(now);
+    setPlanProgressRows((rows) => {
+      const existing = rows.filter(
+        (row) => row.action_id !== nextDashboardPlanAction.id,
+      );
+
+      return [
+        ...existing,
+        {
+          action_id: nextDashboardPlanAction.id,
+          completed: nextCompletedState,
+          completed_at: nextCompletedState ? now : null,
+          updated_at: now,
+        },
+      ];
+    });
+
+    void savePlanActionProgress(
+      (user as any)?.id,
+      planProgressAssessmentId,
+      nextDashboardPlanAction.id,
+      nextCompletedState,
+    );
+
+    void track(
+      nextCompletedState
+        ? "dashboard_today_move_completed"
+        : "dashboard_today_move_reopened",
+      {
+        source: "dashboard_today_move",
+        actionId: nextDashboardPlanAction.id,
+        actionLabel: nextDashboardPlanAction.label,
+        moveTitle: dashboardNextMoveCard.title,
+      },
+      "engagement",
+    );
   };
 
   const handleRetakeAssessment = () => {
@@ -3109,29 +3235,77 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                   </div>
 
                   {nextDashboardPlanAction && (
-                    <div className="mt-5 flex flex-col gap-4 rounded-2xl border border-copper-300/25 bg-gradient-to-r from-copper-400/14 via-cyan-300/8 to-transparent p-5 shadow-[0_0_32px_rgba(214,161,79,.08)] md:flex-row md:items-center md:justify-between">
-                      <div>
-                        <div className="text-xs font-semibold uppercase tracking-[0.16em] text-copper-200">
-                          Today’s move
+                    <div className="mt-5 rounded-2xl border border-copper-300/25 bg-gradient-to-r from-copper-400/14 via-cyan-300/8 to-transparent p-5 shadow-[0_0_32px_rgba(214,161,79,.08)]">
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="max-w-3xl">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-copper-200">
+                              Today’s move
+                            </div>
+                            <span
+                              className={`rounded-full border px-3 py-1 text-xs font-bold ${todayMovePriority.className}`}
+                            >
+                              {todayMovePriority.label}
+                            </span>
+                          </div>
+                          <div className="mt-2 text-lg font-bold leading-6 text-white">
+                            {dashboardNextMoveCard.title}
+                          </div>
+                          <p className="mt-2 text-sm leading-6 text-slate-300">
+                            {dashboardNextMoveCard.body}
+                          </p>
+                          <p className="mt-2 text-sm leading-6 text-slate-400">
+                            {dashboardWhyThisMatters}
+                          </p>
                         </div>
-                        <div className="mt-2 text-base font-bold leading-6 text-white">
-                          {nextDashboardPlanAction.label}
-                        </div>
-                        <div className="mt-1 text-xs text-slate-400">
-                          This should take less than 10 minutes.
+
+                        <div className="flex shrink-0 flex-col gap-2 sm:flex-row lg:flex-col">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              document
+                                .getElementById("today-plan-action")
+                                ?.scrollIntoView({ behavior: "smooth", block: "center" })
+                            }
+                            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#d6a14f] px-5 py-3 text-sm font-bold text-[#06172b] hover:bg-[#e0b462]"
+                          >
+                            Start Today’s Move <ArrowRight className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCompleteCurrentMove}
+                            className={`inline-flex items-center justify-center gap-2 rounded-2xl border px-5 py-3 text-sm font-bold transition ${
+                              completedPlanActions[nextDashboardPlanAction.id]
+                                ? "border-emerald-300/35 bg-emerald-300/10 text-emerald-200"
+                                : "border-cyan-300/25 bg-cyan-300/8 text-cyan-200 hover:bg-cyan-300/12"
+                            }`}
+                          >
+                            {completedPlanActions[nextDashboardPlanAction.id]
+                              ? "Completed"
+                              : "Complete This Move"}
+                          </button>
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          document
-                            .getElementById("today-plan-action")
-                            ?.scrollIntoView({ behavior: "smooth", block: "center" })
-                        }
-                        className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-[#d6a14f] px-5 py-3 text-sm font-bold text-[#06172b] hover:bg-[#e0b462]"
-                      >
-                        Start Today’s Move <ArrowRight className="h-4 w-4" />
-                      </button>
+
+                      {dashboardTodayActions.length > 0 && (
+                        <div className="mt-4 grid gap-3 md:grid-cols-3">
+                          {dashboardTodayActions.map((action) => (
+                            <div
+                              key={action.id}
+                              className={`rounded-xl border p-3 text-sm leading-5 ${
+                                completedPlanActions[action.id]
+                                  ? "border-emerald-300/25 bg-emerald-300/10 text-emerald-100"
+                                  : "border-white/10 bg-white/[0.04] text-slate-300"
+                              }`}
+                            >
+                              <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                Action
+                              </div>
+                              {action.label}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </DashboardPanel>
@@ -3664,7 +3838,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                       Dashboard focus
                     </div>
                     <p className="mt-2 text-sm leading-6 text-slate-300">
-                      The full 90-day plan lives in your report. This dashboard keeps one current move in front of you so it is easy to act and come back.
+                      The full 90-day plan lives in your report. This dashboard keeps the current move, progress signal, and next action connected.
                     </p>
                   </div>
 
@@ -3675,11 +3849,11 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                           Your 90-Day Focus
                         </h3>
                         <p className="mt-1 text-sm leading-6 text-slate-400">
-                          You’re building your foundation step by step. Stay consistent — momentum compounds.
+                          Current focus: {dashboardNextMoveCard.title}. Complete one small action, then come back for the next move.
                         </p>
                       </div>
                       <div className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-xs font-bold text-cyan-200">
-                        {completedDashboardPlanCount}/{dashboardPlanActions.length || 1} moves
+                        {completedDashboardPlanCount}/{dashboardTodayActions.length || 1} current actions
                       </div>
                     </div>
 
