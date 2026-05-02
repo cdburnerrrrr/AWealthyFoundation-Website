@@ -2501,43 +2501,103 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
 
   const suggestedWhatIfScenarios = useMemo(() => {
-    const suggestions = [
-      {
-        label: "Try +$300 income",
-        description: "A weekend shift, side job, overtime, or selling unused items.",
-        scenario: { income: 300, housing: 0, debt: 0 },
-      },
-      {
-        label: "Cut $300 costs",
-        description: "A lower bill, subscription cleanup, insurance shop, or cheaper plan.",
-        scenario: { income: 0, housing: 300, debt: 0 },
-      },
-    ];
+    if (!snapshot) return [];
 
-    if ((dashboardDebtBalance ?? 0) > 0) {
+    const hasConsumerDebt = dashboardDebtBalance > 0;
+    const hasChildcare = (snapshot.childcare ?? 0) > 0;
+    const tightMargin = snapshot.monthlyMargin < 500;
+    const highFixedLoad = snapshot.fixedCostLoad >= 50;
+    const debtPayoffAmount = Math.min(
+      500,
+      Math.max(100, Math.round(Math.max(snapshot.debt || 0, 300) / 50) * 50),
+    );
+    const costCutAmount = hasChildcare
+      ? Math.min(500, Math.max(100, Math.round((snapshot.childcare ?? 0) / 50) * 50))
+      : highFixedLoad
+        ? 300
+        : 200;
+    const incomeAmount = tightMargin || highFixedLoad ? 300 : 200;
+
+    const suggestions: {
+      label: string;
+      description: string;
+      scenario: { income: number; housing: number; debt: number };
+      priority: number;
+    }[] = [];
+
+    if (tightMargin || highFixedLoad || weakestPillar === "income") {
       suggestions.push({
-        label: "Add $300 to debt",
-        description: "Point extra margin at payoff and see how much time it buys back.",
-        scenario: { income: 0, housing: 0, debt: 300 },
+        label: `Try +${formatCurrency(incomeAmount)} income`,
+        description: "Test a realistic extra-income move like overtime, a weekend shift, side work, or selling unused items.",
+        scenario: { income: incomeAmount, housing: 0, debt: 0 },
+        priority: tightMargin ? 1 : 3,
       });
     }
 
-    if ((snapshot?.childcare ?? 0) > 0) {
+    if (highFixedLoad || tightMargin || weakestPillar === "spending") {
       suggestions.push({
-        label: "Offset daycare pressure",
-        description: "Test whether one practical monthly change can cover part of childcare.",
-        scenario: { income: 0, housing: Math.min(500, Math.max(100, Math.round((snapshot?.childcare ?? 300) / 50) * 50)), debt: 0 },
-      });
-    } else {
-      suggestions.push({
-        label: "Find a $600 swing",
-        description: "Combine a small income move with a small expense cut.",
-        scenario: { income: 300, housing: 300, debt: 0 },
+        label: hasChildcare ? "Offset daycare pressure" : `Cut ${formatCurrency(costCutAmount)} costs`,
+        description: hasChildcare
+          ? "See how much breathing room you create by offsetting part of childcare with one income or cost move."
+          : "Test a bill cut, subscription cleanup, insurance shop, utility change, or cheaper plan.",
+        scenario: { income: 0, housing: costCutAmount, debt: 0 },
+        priority: highFixedLoad ? 1 : 4,
       });
     }
 
-    return suggestions.slice(0, 4);
-  }, [dashboardDebtBalance, snapshot?.childcare]);
+    if (hasConsumerDebt) {
+      suggestions.push({
+        label: `Add ${formatCurrency(debtPayoffAmount)} to debt`,
+        description: "Point extra margin at payoff and see how many months it could buy back.",
+        scenario: { income: 0, housing: 0, debt: debtPayoffAmount },
+        priority: weakestPillar === "debt" || snapshot.debtToIncomeRatio >= 30 ? 1 : 2,
+      });
+    }
+
+    if (hasConsumerDebt && (tightMargin || highFixedLoad)) {
+      suggestions.push({
+        label: "Create a payoff swing",
+        description: "Combine a modest income move with a modest expense cut, then aim the new margin at debt.",
+        scenario: { income: 200, housing: 200, debt: 0 },
+        priority: 2,
+      });
+    }
+
+    if (!hasConsumerDebt) {
+      suggestions.push({
+        label: `Build ${formatCurrency(costCutAmount)} more margin`,
+        description: "With consumer debt out of the way, see how extra room could strengthen savings, protection, or investing.",
+        scenario: { income: 0, housing: costCutAmount, debt: 0 },
+        priority: highFixedLoad ? 1 : 3,
+      });
+    }
+
+    if (suggestions.length < 3) {
+      suggestions.push({
+        label: `Try +${formatCurrency(incomeAmount)} income`,
+        description: "Test one practical income lever and see how quickly the monthly picture changes.",
+        scenario: { income: incomeAmount, housing: 0, debt: 0 },
+        priority: 5,
+      });
+    }
+
+    if (suggestions.length < 3 && !hasChildcare) {
+      suggestions.push({
+        label: "Find a small monthly win",
+        description: "Try one realistic bill cut or spending change and see what it does to breathing room.",
+        scenario: { income: 0, housing: 150, debt: 0 },
+        priority: 6,
+      });
+    }
+
+    return suggestions
+      .sort((a, b) => a.priority - b.priority)
+      .filter(
+        (suggestion, index, all) =>
+          all.findIndex((item) => item.label === suggestion.label) === index,
+      )
+      .slice(0, 3);
+  }, [dashboardDebtBalance, snapshot, weakestPillar]);
 
   const isDashboardDebtUnderPressure =
     (snapshot?.fixedCostLoad ?? 0) >= 70 ||
@@ -3294,51 +3354,33 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
               <section className="mb-6">
                 <DashboardPanel className="overflow-hidden p-5 md:p-6">
-                  <div className="grid gap-6 lg:grid-cols-[.9fr_1.35fr_.9fr] lg:items-stretch">
-                    <div className="flex flex-col justify-between">
-                      <div>
-                        <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-cyan-300/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200">
-                          <Zap className="h-3.5 w-3.5" />
-                          Future Simulator
-                        </div>
-                        <h2 className="text-2xl font-bold text-white">
-                          What happens if you change just one number?
-                        </h2>
-                        <p className="mt-3 text-sm leading-6 text-slate-300">
-                          Even small changes can create real breathing room — or cut months off your path out of debt.
-                        </p>
+                  <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-cyan-300/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200">
+                        <Zap className="h-3.5 w-3.5" />
+                        Future Simulator
                       </div>
-
-                      {snapshot && scenarioResult && (
-                        <div className="mt-5 rounded-2xl border border-cyan-300/15 bg-cyan-300/8 p-4">
-                          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200">
-                            Smart starting points
-                          </div>
-                          <p className="mt-2 text-sm leading-6 text-slate-300">
-                            Pick a realistic scenario and watch the outcomes change instantly.
-                          </p>
-                          <div className="mt-4 grid gap-2">
-                            {suggestedWhatIfScenarios.map((suggestion) => (
-                              <button
-                                key={suggestion.label}
-                                type="button"
-                                onClick={() => setWhatIf(suggestion.scenario)}
-                                className="rounded-xl border border-cyan-300/20 bg-[#071827]/55 px-3 py-2 text-left transition hover:bg-cyan-300/10"
-                              >
-                                <div className="text-sm font-bold text-cyan-100">
-                                  {suggestion.label}
-                                </div>
-                                <div className="mt-1 text-xs leading-5 text-slate-400">
-                                  {suggestion.description}
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                      <h2 className="text-2xl font-bold text-white">
+                        What happens if you change just one number?
+                      </h2>
+                      <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
+                        Even small changes can create real breathing room — or cut months off your path out of debt.
+                      </p>
                     </div>
 
-                    {snapshot && scenarioResult ? (
+                    {snapshot && scenarioResult && (
+                      <button
+                        type="button"
+                        onClick={() => setWhatIf({ income: 0, housing: 0, debt: 0 })}
+                        className="inline-flex shrink-0 items-center justify-center rounded-2xl border border-cyan-300/25 bg-cyan-300/8 px-4 py-2 text-sm font-bold text-cyan-200 hover:bg-cyan-300/12"
+                      >
+                        Reset scenario
+                      </button>
+                    )}
+                  </div>
+
+                  {snapshot && scenarioResult ? (
+                    <div className="grid gap-5 xl:grid-cols-[1.5fr_.95fr]">
                       <div className="space-y-4">
                         <div className="grid gap-3 md:grid-cols-3">
                           <label className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
@@ -3361,7 +3403,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                               />
                             </div>
                             <p className="mt-1 text-xs leading-5 text-slate-500">
-                              Side income, overtime, extra shifts, or selling unused items.
+                              Overtime, extra shifts, side work, or selling unused items.
                             </p>
                             <input
                               type="range"
@@ -3399,7 +3441,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                               />
                             </div>
                             <p className="mt-1 text-xs leading-5 text-slate-500">
-                              Bills, subscriptions, insurance, vehicles, utilities, or daycare pressure.
+                              Bills, subscriptions, insurance, utilities, vehicles, or childcare pressure.
                             </p>
                             <input
                               type="range"
@@ -3417,7 +3459,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                             />
                           </label>
 
-                          <label className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                          <label className={`rounded-2xl border border-white/10 bg-white/[0.04] p-4 ${dashboardDebtBalance <= 0 ? "opacity-60" : ""}`}>
                             <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                               Extra Debt Payoff / mo
                             </div>
@@ -3427,81 +3469,54 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                                 type="number"
                                 min="0"
                                 value={whatIf.debt}
+                                disabled={dashboardDebtBalance <= 0}
                                 onChange={(e) =>
                                   setWhatIf((prev) => ({
                                     ...prev,
                                     debt: Number(e.target.value || 0),
                                   }))
                                 }
-                                className="w-full bg-transparent text-2xl font-bold text-emerald-300 outline-none"
+                                className="w-full bg-transparent text-2xl font-bold text-emerald-300 outline-none disabled:cursor-not-allowed"
                               />
                             </div>
                             <p className="mt-1 text-xs leading-5 text-slate-500">
-                              Money you intentionally send toward debt on top of normal payments.
+                              {dashboardDebtBalance > 0
+                                ? "Aim extra money at debt and see how many months it can buy back."
+                                : "No consumer debt detected — use margin for the next priority instead."}
                             </p>
                             <input
                               type="range"
                               min="0"
                               max="3000"
                               step="50"
-                              value={whatIf.debt}
+                              value={dashboardDebtBalance > 0 ? whatIf.debt : 0}
+                              disabled={dashboardDebtBalance <= 0}
                               onChange={(e) =>
                                 setWhatIf((prev) => ({
                                   ...prev,
                                   debt: Number(e.target.value || 0),
                                 }))
                               }
-                              className="mt-3 w-full accent-cyan-300"
+                              className="mt-3 w-full accent-cyan-300 disabled:cursor-not-allowed"
                             />
                           </label>
                         </div>
 
-                        <div className="grid gap-3 md:grid-cols-4">
-                          <button
-                            type="button"
-                            onClick={() => setWhatIf({ income: 300, housing: 0, debt: 0 })}
-                            className="rounded-2xl border border-cyan-300/20 bg-cyan-300/8 px-4 py-3 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/12"
-                          >
-                            Try +$300 income
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setWhatIf({ income: 0, housing: 300, debt: 0 })}
-                            className="rounded-2xl border border-cyan-300/20 bg-cyan-300/8 px-4 py-3 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/12"
-                          >
-                            Cut $300 costs
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setWhatIf({ income: 0, housing: 0, debt: 300 })}
-                            className="rounded-2xl border border-cyan-300/20 bg-cyan-300/8 px-4 py-3 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/12"
-                          >
-                            Add $300 to debt
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setWhatIf({ income: 0, housing: 0, debt: 0 })}
-                            className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-white/[0.07]"
-                          >
-                            Reset scenario
-                          </button>
-                        </div>
-
-                        <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                          <div className="mb-2 flex items-center justify-between text-xs text-slate-400">
-                            <span>Breathing room after changes</span>
+                        <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/8 p-4">
+                          <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                            <span>Breathing room progress</span>
                             <span>{formatCurrency(scenarioResult.adjustedMargin)}</span>
                           </div>
                           <div className="h-3 overflow-hidden rounded-full bg-white/10">
                             <div
-                              className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-cyan-300 to-copper-400 transition-all duration-500"
+                              className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-copper-400 transition-all duration-500"
                               style={{
                                 width: `${Math.max(
                                   6,
                                   Math.min(
                                     100,
-                                    Math.max(0, scenarioResult.adjustedMargin) /
-                                      Math.max(1, scenarioResult.adjustedIncome) *
+                                    (Math.max(0, scenarioResult.adjustedMargin) /
+                                      Math.max(1, scenarioResult.adjustedIncome)) *
                                       100,
                                   ),
                                 )}%`,
@@ -3513,14 +3528,38 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                             <span>More room</span>
                           </div>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="rounded-2xl bg-white/[0.04] p-5 text-sm text-slate-400 lg:col-span-2">
-                        Metrics will appear after your full report is generated.
-                      </div>
-                    )}
 
-                    {snapshot && scenarioResult && (
+                        <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/8 p-4">
+                          <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                            <div>
+                              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200">
+                                Smart starting points
+                              </div>
+                              <p className="mt-1 text-sm leading-6 text-slate-300">
+                                These adapt to this user’s actual debt, fixed-cost, income, and childcare picture.
+                              </p>
+                            </div>
+                          </div>
+                          <div className="grid gap-2 md:grid-cols-3">
+                            {suggestedWhatIfScenarios.map((suggestion) => (
+                              <button
+                                key={suggestion.label}
+                                type="button"
+                                onClick={() => setWhatIf(suggestion.scenario)}
+                                className="rounded-xl border border-cyan-300/20 bg-[#071827]/55 px-3 py-2 text-left transition hover:bg-cyan-300/10"
+                              >
+                                <div className="text-sm font-bold text-cyan-100">
+                                  {suggestion.label}
+                                </div>
+                                <div className="mt-1 text-xs leading-5 text-slate-400">
+                                  {suggestion.description}
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
                       <div className="grid gap-3">
                         <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/8 p-4">
                           <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
@@ -3546,7 +3585,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                                   : "Same payoff date"}
                               </div>
                               <div className="mt-1 text-sm leading-5 text-slate-400">
-                                If you put {formatCurrency(scenarioDebtImpact.extraMonthlyPayoff)}/mo toward debt, payoff moves from {scenarioDebtImpact.baselineMonths} months to {scenarioDebtImpact.adjustedMonths} months.
+                                Payoff moves from {scenarioDebtImpact.baselineMonths} months to {scenarioDebtImpact.adjustedMonths} months.
                               </div>
                             </>
                           ) : dashboardDebtBalance > 0 ? (
@@ -3555,7 +3594,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                                 Add a payoff move
                               </div>
                               <div className="mt-1 text-sm leading-5 text-slate-400">
-                                Enter extra debt payoff, extra income, or lower costs to estimate how much sooner debt freedom could arrive.
+                                Add income, lower costs, or extra debt payoff to estimate the timeline impact.
                               </div>
                             </>
                           ) : (
@@ -3564,7 +3603,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                                 No consumer debt
                               </div>
                               <div className="mt-1 text-sm leading-5 text-slate-400">
-                                Use extra margin for savings, protection, investing, or your next priority.
+                                Use margin for savings, protection, investing, or your next priority.
                               </div>
                             </>
                           )}
@@ -3583,10 +3622,10 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                           </div>
                           <div className="mt-1 text-sm leading-5 text-slate-400">
                             {scenarioDebtImpact
-                              ? "estimated interest saved by applying your extra monthly power to debt."
+                              ? "Estimated interest saved by applying your extra monthly power to debt."
                               : dashboardDebtBalance > 0
-                                ? "Add extra debt payoff or point new margin at debt to estimate interest savings."
-                                : "With consumer debt out of the way, use margin for savings, protection, investing, or your next priority."}
+                                ? "Point new margin at debt to estimate interest savings."
+                                : "With consumer debt out of the way, use margin for the next priority."}
                           </div>
                         </div>
 
@@ -3594,70 +3633,52 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                           <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                             Your Scenario
                           </div>
-
                           <div className="mt-3 space-y-2 text-sm text-slate-300">
                             {scenarioResult.extraIncome > 0 && (
                               <div className="flex justify-between gap-3">
                                 <span>Extra income</span>
-                                <span className="font-semibold text-cyan-200">
-                                  +{formatCurrency(scenarioResult.extraIncome)}/mo
-                                </span>
+                                <span className="font-semibold text-cyan-200">+{formatCurrency(scenarioResult.extraIncome)}/mo</span>
                               </div>
                             )}
                             {scenarioResult.lowerFixedCosts > 0 && (
                               <div className="flex justify-between gap-3">
                                 <span>Lower fixed costs</span>
-                                <span className="font-semibold text-cyan-200">
-                                  +{formatCurrency(scenarioResult.lowerFixedCosts)}/mo
-                                </span>
+                                <span className="font-semibold text-cyan-200">+{formatCurrency(scenarioResult.lowerFixedCosts)}/mo</span>
                               </div>
                             )}
-                            {scenarioResult.extraDebtPayoff > 0 && (
+                            {scenarioResult.extraDebtPayoff > 0 && dashboardDebtBalance > 0 && (
                               <div className="flex justify-between gap-3">
                                 <span>Extra debt payoff</span>
-                                <span className="font-semibold text-cyan-200">
-                                  +{formatCurrency(scenarioResult.extraDebtPayoff)}/mo
-                                </span>
+                                <span className="font-semibold text-cyan-200">+{formatCurrency(scenarioResult.extraDebtPayoff)}/mo</span>
                               </div>
                             )}
                             {scenarioResult.extraIncome === 0 &&
                               scenarioResult.lowerFixedCosts === 0 &&
-                              scenarioResult.extraDebtPayoff === 0 && (
-                                <div className="text-slate-400">
-                                  Try a scenario to see the story of the change.
-                                </div>
+                              (scenarioResult.extraDebtPayoff === 0 || dashboardDebtBalance <= 0) && (
+                                <div className="text-slate-400">Try a scenario to see the story of the change.</div>
                               )}
                           </div>
-
                           <div className="mt-4 space-y-2 border-t border-white/10 pt-4 text-sm">
                             <div className="flex justify-between gap-3 text-[#d6a14f]">
                               <span>Breathing room gained</span>
-                              <span className="font-bold">
-                                {scenarioMarginGain >= 0 ? "+" : ""}{formatCurrency(scenarioMarginGain)}/mo
-                              </span>
+                              <span className="font-bold">{scenarioMarginGain >= 0 ? "+" : ""}{formatCurrency(scenarioMarginGain)}/mo</span>
                             </div>
                             {scenarioDebtImpact && (
                               <>
                                 <div className="flex justify-between gap-3 text-[#d6a14f]">
                                   <span>Debt-free timeline</span>
-                                  <span className="font-bold">
-                                    {scenarioDebtImpact.monthsSaved} months faster
-                                  </span>
+                                  <span className="font-bold">{scenarioDebtImpact.monthsSaved} months faster</span>
                                 </div>
                                 <div className="flex justify-between gap-3 text-[#d6a14f]">
                                   <span>Interest saved</span>
-                                  <span className="font-bold">
-                                    {formatCurrency(scenarioDebtImpact.interestSaved)}
-                                  </span>
+                                  <span className="font-bold">{formatCurrency(scenarioDebtImpact.interestSaved)}</span>
                                 </div>
                               </>
                             )}
                           </div>
-
                           <div className="mt-4 text-xs leading-5 text-slate-500">
                             Details: fixed-cost load changes from {formatPercent(snapshot.fixedCostLoad)} to {formatPercent(scenarioResult.adjustedLoad)}.
                           </div>
-
                           {!scenarioDebtImpact && dashboardDebtBalance > 0 && (
                             <button
                               type="button"
@@ -3669,14 +3690,18 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                           )}
                         </div>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl bg-white/[0.04] p-5 text-sm text-slate-400">
+                      Metrics will appear after your full report is generated.
+                    </div>
+                  )}
                 </DashboardPanel>
               </section>
 
               <section id="ninety-day-plan" className="mb-6 space-y-4">
                 <DashboardPanel className="p-5 md:p-6">
-                  <div className="mb-4 flex items-center justify-between gap-4">
+                  <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-2 text-cyan-300">
                       <Sparkles className="h-5 w-5" />
                       <div className="text-xs font-semibold uppercase tracking-[0.16em]">
@@ -3684,9 +3709,11 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                       </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <div className="rounded-full border border-cyan-300/20 bg-cyan-300/8 px-3 py-1 text-xs font-bold text-cyan-200">
-                        {dashboardPlanPercent}% complete
-                      </div>
+                      {lastPlanActivityLabel && (
+                        <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-semibold text-slate-300">
+                          Last activity: {lastPlanActivityLabel}
+                        </div>
+                      )}
                       {momentum.completedThisWeek > 0 && (
                         <div className="rounded-full border border-emerald-300/25 bg-emerald-300/10 px-3 py-1 text-xs font-bold text-emerald-200">
                           +{momentum.completedThisWeek} this week
@@ -3695,25 +3722,20 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                     </div>
                   </div>
 
-                  {lastPlanActivityLabel && (
-                    <div className="mb-3 inline-flex rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-semibold text-slate-300">
-                      Last activity: {lastPlanActivityLabel}
-                    </div>
-                  )}
-
-                  <div className="mb-3 rounded-2xl border border-copper-300/20 bg-copper-400/10 p-4">
+                  <div className="rounded-2xl border border-copper-300/20 bg-copper-400/10 p-4">
                     <div className="text-xs font-semibold uppercase tracking-[0.18em] text-copper-200">
-                      Week {currentDashboardWeekNumber} of 12
+                      Dashboard focus
                     </div>
                     <p className="mt-2 text-sm leading-6 text-slate-300">
-                      You’re building your foundation step by step. One completed move this week is real progress.
+                      The full 90-day plan lives in your report. This dashboard keeps one current move in front of you so it is easy to act and come back.
                     </p>
                   </div>
 
-                  <h2 id="today-plan-action" className="scroll-mt-28 text-2xl font-bold">
-                    {nextDashboardPlanAction ? "Do this next" : "Plan complete"}
+                  <h2 id="today-plan-action" className="mt-5 scroll-mt-28 text-2xl font-bold">
+                    {nextDashboardPlanAction ? "Current move" : "Plan complete"}
                   </h2>
-                  {nextDashboardPlanAction && (
+
+                  {nextDashboardPlanAction ? (
                     <div className="mt-3 rounded-2xl border border-cyan-300/20 bg-cyan-300/8 p-4">
                       <div className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200/80">
                         {nextDashboardPlanAction.phaseTitle}
@@ -3724,67 +3746,53 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                       <p className="mt-2 text-sm leading-6 text-slate-400">
                         This should take less than 10 minutes and gives your plan a clear next win.
                       </p>
+
+                      <div className="mt-4 flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            toggleDashboardPlanAction(nextDashboardPlanAction.id)
+                          }
+                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#d6a14f] px-4 py-2 text-sm font-bold text-[#06172b] transition hover:bg-[#e0b462]"
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
+                          Complete This Move
+                        </button>
+                        <span className="text-xs leading-5 text-slate-400">
+                          Updates your momentum without marking the full report plan complete.
+                        </span>
+                      </div>
                     </div>
-                  )}
-                  {!nextDashboardPlanAction && (
+                  ) : (
                     <p className="mt-3 text-sm leading-6 text-slate-400">
-                      You have completed the current 90-day plan. Review your report or retake the assessment to choose the next priority.
+                      You have completed the current dashboard focus. Review your report or retake the assessment to choose the next priority.
                     </p>
                   )}
 
                   <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                    <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                      <span>
-                        {dashboardPlanActions.length ? `Step ${currentDashboardStepNumber} of ${dashboardPlanActions.length}` : "Plan complete"}
-                      </span>
-                      <span>{dashboardPlanPercent}%</span>
-                    </div>
-                    <div className="h-2.5 overflow-hidden rounded-full bg-white/10">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-copper-400 transition-all duration-300"
-                        style={{ width: `${dashboardPlanPercent}%` }}
-                      />
-                    </div>
-                    <p className="mt-3 text-xs leading-5 text-slate-400">
-                      1–2 actions per week is enough to build real progress.
-                    </p>
                     {momentum.completedThisWeek > 1 ? (
-                      <p className="mt-1 text-sm font-semibold leading-5 text-emerald-300">
-                        You completed {momentum.completedThisWeek} steps this week — momentum is building.
+                      <p className="text-sm font-semibold leading-5 text-emerald-300">
+                        Nice — you completed {momentum.completedThisWeek} moves this week. Momentum is building.
                       </p>
                     ) : momentum.completedThisWeek === 1 ? (
-                      <p className="mt-1 text-sm font-semibold leading-5 text-emerald-300">
+                      <p className="text-sm font-semibold leading-5 text-emerald-300">
                         You’ve started — that’s the hardest part.
                       </p>
                     ) : (
-                      <p className="mt-1 text-sm font-semibold leading-5 text-slate-300">
+                      <p className="text-sm font-semibold leading-5 text-slate-300">
                         Most people never start. Starting today puts you ahead.
                       </p>
                     )}
-                    <p className="mt-1 text-xs leading-5 text-slate-500">
-                      A strong 90-day target is 6–9 meaningful steps — not a
-                      perfect checklist.
+                    <p className="mt-2 text-xs leading-5 text-slate-500">
+                      The dashboard is intentionally lighter than the report: one move, one completion, one momentum signal.
                     </p>
                   </div>
 
-                  {nextDashboardPlanAction && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        toggleDashboardPlanAction(nextDashboardPlanAction.id)
-                      }
-                      className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-300/30 bg-emerald-300/10 px-4 py-3 text-sm font-bold text-emerald-200 hover:bg-emerald-300/15"
-                    >
-                      <CheckCircle2 className="h-5 w-5" />
-                      Mark as Complete
-                    </button>
-                  )}
-
                   <button
                     onClick={handleOpenFullNinetyDayPlan}
-                    className="mt-3 inline-flex items-center gap-2 rounded-2xl border border-cyan-300/35 bg-cyan-300/8 px-4 py-3 text-sm font-bold text-cyan-200 shadow-[0_0_28px_rgba(34,211,238,.12)]"
+                    className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-cyan-300/35 bg-cyan-300/8 px-4 py-3 text-sm font-bold text-cyan-200 shadow-[0_0_28px_rgba(34,211,238,.12)]"
                   >
-                    View your full plan <ArrowRight className="h-4 w-4" />
+                    View full plan in report <ArrowRight className="h-4 w-4" />
                   </button>
                 </DashboardPanel>
               </section>
