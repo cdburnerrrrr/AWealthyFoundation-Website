@@ -968,115 +968,6 @@ function formatLastPlanActivity(dateString: string | null) {
   });
 }
 
-function getDashboardNinetyDayPlanPhases(
-  nextMoveCard: { title: string; body: string; checklist: string[] },
-  snapshot: ReturnType<typeof getStructuralSnapshot>,
-  weakestPillar?: string | null,
-): ActionPlanStep[] {
-  const title = nextMoveCard.title.toLowerCase();
-  const fixedCost = formatPercent(snapshot?.fixedCostLoad ?? 0);
-  const excessCash = snapshot?.excessCashEstimate ?? 0;
-  const cashMonths = snapshot?.fixedCosts
-    ? (snapshot.totalSavings ?? 0) / snapshot.fixedCosts
-    : 0;
-  const pillarLabel = weakestPillar
-    ? formatPillarName(weakestPillar)
-    : "your next priority";
-
-  if (title.includes("excess cash")) {
-    return [
-      {
-        title: "Phase 1: Define “enough” cash",
-        body: `Start by deciding how much cash reserve still feels safe. Your current cushion is about ${cashMonths.toFixed(1)} months, so the goal is to separate safety money from idle money.`,
-        checklist: [
-          "Pick a cash reserve target in months of expenses.",
-          excessCash > 0
-            ? `Mark the estimated excess cash amount: ${formatCurrency(excessCash)}.`
-            : "Estimate how much cash sits above that target.",
-        ],
-      },
-      {
-        title: "Phase 2: Move in stages",
-        body: "Choose one staged move for excess cash instead of making one large emotional decision.",
-        checklist: [
-          "Move a first portion to HYSA, brokerage, Roth, debt, or another priority.",
-          "Set a simple date to review the result before moving more.",
-        ],
-      },
-      {
-        title: "Phase 3: Rebalance the system",
-        body: "After the first move, review how cash, investments, debt, and home equity fit together.",
-        checklist: [
-          "Compare cash vs. investments vs. real estate equity.",
-          "Rerun the assessment after meaningful changes.",
-        ],
-      },
-    ];
-  }
-
-  if (
-    title.includes("income") ||
-    title.includes("fixed") ||
-    title.includes("breathing")
-  ) {
-    return [
-      {
-        title: "Phase 1: Create breathing room",
-        body: `Start with the move that creates the fastest improvement in monthly cash flow${fixedCost ? ` — your must-pay bills are around ${fixedCost} of take-home pay` : ""}.`,
-        checklist: [
-          "Write your income, fixed costs, and monthly margin in one place.",
-          "Pick one income action to take this week: ask, apply, pitch, sell, or schedule extra work.",
-          "Choose one fixed cost to challenge: housing, vehicle, utilities, insurance, or another required bill.",
-        ],
-      },
-      {
-        title: "Phase 2: Stabilize your cash flow",
-        body: "Once you create some breathing room, protect it so new expenses do not absorb the progress.",
-        checklist: [
-          "Write the new monthly margin number after your income or cost change.",
-          "Move the first freed-up dollars into a starter cash buffer or priority debt payment.",
-          "Set a 15-minute calendar reminder to review the same number next week.",
-        ],
-      },
-      {
-        title: "Phase 3: Build momentum",
-        body: "With more stability, start building forward into saving, protection, debt payoff, and long-term growth.",
-        checklist: [
-          "Send the first stable margin to your starter emergency fund or priority debt.",
-          "Check one protection gap: health coverage, term life, disability, or emergency cash.",
-          "Rerun the assessment after meaningful progress and choose the next highest-leverage area.",
-        ],
-      },
-    ];
-  }
-
-  return [
-    {
-      title: "Phase 1: Focus the first move",
-      body:
-        nextMoveCard.body ||
-        `Start with ${pillarLabel}. One focused improvement here should create the biggest ripple effect.`,
-      checklist: nextMoveCard.checklist.slice(0, 3),
-    },
-    {
-      title: "Phase 2: Make it repeatable",
-      body: "The next step is making the first action reliable. One good move helps, but one repeatable system changes the foundation.",
-      checklist: [
-        "Choose one number to update every week.",
-        "Schedule a 15-minute check-in before the month ends.",
-      ],
-    },
-    {
-      title: "Phase 3: Reassess and advance",
-      body: "After the first 90 days, compare your score and building blocks. Keep what improved and move to the next highest-leverage area.",
-      checklist: [
-        "Rerun the assessment after meaningful progress.",
-        "Choose the next building block to strengthen.",
-      ],
-    },
-  ];
-}
-
 function getPillarTone(score: number) {
   if (score >= 80) {
     return {
@@ -2385,31 +2276,6 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
       isMounted = false;
     };
   }, [planProgressStorageKey, (user as any)?.id, planProgressAssessmentId]);
-
-  const dashboardPlanPhases = useMemo(
-    () =>
-      getDashboardNinetyDayPlanPhases(
-        dashboardNextMoveCard,
-        snapshot,
-        weakestPillar,
-      ),
-    [dashboardNextMoveCard, snapshot, weakestPillar],
-  );
-
-  const dashboardPlanActions = useMemo(
-    () =>
-      dashboardPlanPhases.flatMap((phase, phaseIndex) =>
-        safeArray(phase.checklist)
-          .slice(0, 3)
-          .map((item, itemIndex) => ({
-            id: makePlanActionId(phaseIndex, itemIndex, item),
-            label: item,
-            phaseTitle: phase.title,
-            phaseIndex,
-          })),
-      ),
-    [dashboardPlanPhases],
-  );
 
   const dashboardTodayActions = useMemo(
     () =>
@@ -3812,86 +3678,23 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
               <section id="ninety-day-plan" className="mb-6 space-y-4">
                 <DashboardPanel className="p-5 md:p-6">
-                  <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-2 text-cyan-300">
-                      <Sparkles className="h-5 w-5" />
-                      <div className="text-xs font-semibold uppercase tracking-[0.16em]">
-                        Your 90-Day Focus
+                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-cyan-300/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200">
+                        <Sparkles className="h-4 w-4" />
+                        Control Panel Focus
                       </div>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {lastPlanActivityLabel && (
-                        <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-semibold text-slate-300">
-                          Last activity: {lastPlanActivityLabel}
-                        </div>
-                      )}
-                      {momentum.completedThisWeek > 0 && (
-                        <div className="rounded-full border border-emerald-300/25 bg-emerald-300/10 px-3 py-1 text-xs font-bold text-emerald-200">
-                          +{momentum.completedThisWeek} this week
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-copper-300/20 bg-copper-400/10 p-4">
-                    <div className="text-xs font-semibold uppercase tracking-[0.18em] text-copper-200">
-                      Dashboard focus
-                    </div>
-                    <p className="mt-2 text-sm leading-6 text-slate-300">
-                      The full 90-day plan lives in your report. This dashboard keeps the current move, progress signal, and next action connected.
-                    </p>
-                  </div>
-
-                  <div id="today-plan-action" className="mt-5 scroll-mt-28 rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <h3 className="text-lg font-semibold text-white">
-                          Your 90-Day Focus
-                        </h3>
-                        <p className="mt-1 text-sm leading-6 text-slate-400">
-                          Current focus: {dashboardNextMoveCard.title}. Complete one small action, then come back for the next move.
-                        </p>
-                      </div>
-                      <div className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-xs font-bold text-cyan-200">
-                        {completedDashboardPlanCount}/{dashboardTodayActions.length || 1} current actions
-                      </div>
-                    </div>
-
-                    <div className="mt-5">
-                      <div className="mb-2 flex items-center justify-between text-xs text-slate-400">
-                        <span>Dashboard progress</span>
-                        <span>{dashboardPlanPercent}%</span>
-                      </div>
-                      <div className="h-2.5 overflow-hidden rounded-full bg-white/15">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-[#d6a14f] transition-all duration-500"
-                          style={{ width: `${dashboardPlanPercent}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="mt-4 rounded-2xl border border-white/10 bg-[#06172b]/45 p-4">
-                      {momentum.completedThisWeek > 1 ? (
-                        <p className="text-sm font-semibold leading-5 text-emerald-300">
-                          Nice — you completed {momentum.completedThisWeek} moves this week. Momentum is building.
-                        </p>
-                      ) : momentum.completedThisWeek === 1 ? (
-                        <p className="text-sm font-semibold leading-5 text-emerald-300">
-                          You’ve started — that’s the hardest part.
-                        </p>
-                      ) : (
-                        <p className="text-sm font-semibold leading-5 text-slate-300">
-                          Most people never start. Starting today puts you ahead.
-                        </p>
-                      )}
-                      <p className="mt-2 text-xs leading-5 text-slate-500">
-                        The dashboard is intentionally lighter than the report: one progress signal, one clear next move at the top, and a full plan link when you want the details.
+                      <h3 className="text-xl font-bold text-white">
+                        Your dashboard stays focused on action.
+                      </h3>
+                      <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
+                        The full 90-day roadmap and deeper analysis live in your report. This dashboard is your control panel: current numbers, one current move, momentum, and the simulator that shows how small changes affect the outcome.
                       </p>
                     </div>
 
                     <button
                       onClick={handleOpenFullNinetyDayPlan}
-                      className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-cyan-300/35 bg-cyan-300/8 px-4 py-3 text-sm font-bold text-cyan-200 shadow-[0_0_28px_rgba(34,211,238,.12)]"
+                      className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl border border-cyan-300/35 bg-cyan-300/8 px-4 py-3 text-sm font-bold text-cyan-200 shadow-[0_0_28px_rgba(34,211,238,.12)] hover:bg-cyan-300/12"
                     >
                       View full plan in report <ArrowRight className="h-4 w-4" />
                     </button>
