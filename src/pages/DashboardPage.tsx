@@ -3383,8 +3383,8 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                     <div className="grid gap-5 xl:grid-cols-[1.5fr_.95fr]">
                       <div className="space-y-4">
                         <div className="grid gap-3 md:grid-cols-3">
-                          <label className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                            <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                          <label className="min-h-[158px] rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition hover:bg-white/[0.06]">
+                            <div className="text-sm font-semibold uppercase tracking-wide text-slate-300">
                               Extra Income / mo
                             </div>
                             <div className="mt-2 flex items-center gap-2">
@@ -3402,7 +3402,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                                 className="w-full bg-transparent text-2xl font-bold text-emerald-300 outline-none"
                               />
                             </div>
-                            <p className="mt-1 text-xs leading-5 text-slate-500">
+                            <p className="mt-3 text-sm leading-relaxed text-slate-300">
                               Overtime, extra shifts, side work, or selling unused items.
                             </p>
                             <input
@@ -3417,12 +3417,12 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                                   income: Number(e.target.value || 0),
                                 }))
                               }
-                              className="mt-3 w-full accent-cyan-300"
+                              className="mt-4 w-full accent-cyan-300"
                             />
                           </label>
 
-                          <label className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                            <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                          <label className="min-h-[158px] rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition hover:bg-white/[0.06]">
+                            <div className="text-sm font-semibold uppercase tracking-wide text-slate-300">
                               Lower Fixed Costs / mo
                             </div>
                             <div className="mt-2 flex items-center gap-2">
@@ -3440,7 +3440,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                                 className="w-full bg-transparent text-2xl font-bold text-emerald-300 outline-none"
                               />
                             </div>
-                            <p className="mt-1 text-xs leading-5 text-slate-500">
+                            <p className="mt-3 text-sm leading-relaxed text-slate-300">
                               Bills, subscriptions, insurance, utilities, vehicles, or childcare pressure.
                             </p>
                             <input
@@ -3455,12 +3455,12 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                                   housing: Number(e.target.value || 0),
                                 }))
                               }
-                              className="mt-3 w-full accent-cyan-300"
+                              className="mt-4 w-full accent-cyan-300"
                             />
                           </label>
 
-                          <label className={`rounded-2xl border border-white/10 bg-white/[0.04] p-4 ${dashboardDebtBalance <= 0 ? "opacity-60" : ""}`}>
-                            <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                          <label className={`min-h-[158px] rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition hover:bg-white/[0.06] ${dashboardDebtBalance <= 0 ? "opacity-60" : ""}`}>
+                            <div className="text-sm font-semibold uppercase tracking-wide text-slate-300">
                               Extra Debt Payoff / mo
                             </div>
                             <div className="mt-2 flex items-center gap-2">
@@ -3479,7 +3479,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                                 className="w-full bg-transparent text-2xl font-bold text-emerald-300 outline-none disabled:cursor-not-allowed"
                               />
                             </div>
-                            <p className="mt-1 text-xs leading-5 text-slate-500">
+                            <p className="mt-3 text-sm leading-relaxed text-slate-300">
                               {dashboardDebtBalance > 0
                                 ? "Aim extra money at debt and see how many months it can buy back."
                                 : "No consumer debt detected — use margin for the next priority instead."}
@@ -3497,7 +3497,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                                   debt: Number(e.target.value || 0),
                                 }))
                               }
-                              className="mt-3 w-full accent-cyan-300 disabled:cursor-not-allowed"
+                              className="mt-4 w-full accent-cyan-300 disabled:cursor-not-allowed"
                             />
                           </label>
                         </div>
@@ -3532,7 +3532,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                         <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/8 p-4">
                           <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                             <div>
-                              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200">
+                              <div className="text-sm font-semibold uppercase tracking-[0.16em] text-cyan-200">
                                 Smart starting points
                               </div>
                               <p className="mt-1 text-sm leading-6 text-slate-300">
@@ -3540,18 +3540,18 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                               </p>
                             </div>
                           </div>
-                          <div className="grid gap-2 md:grid-cols-3">
+                          <div className="grid gap-3 md:grid-cols-3">
                             {suggestedWhatIfScenarios.map((suggestion) => (
                               <button
                                 key={suggestion.label}
                                 type="button"
                                 onClick={() => setWhatIf(suggestion.scenario)}
-                                className="rounded-xl border border-cyan-300/20 bg-[#071827]/55 px-3 py-2 text-left transition hover:bg-cyan-300/10"
+                                className="min-h-[92px] rounded-xl border border-cyan-300/20 bg-[#071827]/55 px-4 py-3 text-left transition hover:bg-cyan-300/10"
                               >
                                 <div className="text-sm font-bold text-cyan-100">
                                   {suggestion.label}
                                 </div>
-                                <div className="mt-1 text-xs leading-5 text-slate-400">
+                                <div className="mt-2 text-sm leading-relaxed text-slate-300">
                                   {suggestion.description}
                                 </div>
                               </button>
@@ -3562,7 +3562,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
                       <div className="grid gap-3">
                         <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/8 p-4">
-                          <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                          <div className="text-sm font-semibold uppercase tracking-wide text-slate-300">
                             Monthly Breathing Room
                           </div>
                           <div className="mt-2 text-3xl font-bold text-[#d6a14f]">
@@ -3574,7 +3574,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                         </div>
 
                         <div className="rounded-2xl border border-copper-300/20 bg-copper-400/10 p-4">
-                          <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                          <div className="text-sm font-semibold uppercase tracking-wide text-slate-300">
                             Debt Freedom Impact
                           </div>
                           {scenarioDebtImpact ? (
@@ -3610,7 +3610,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                         </div>
 
                         <div className="rounded-2xl border border-copper-300/20 bg-copper-400/10 p-4">
-                          <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                          <div className="text-sm font-semibold uppercase tracking-wide text-slate-300">
                             Interest Saved
                           </div>
                           <div className="mt-2 text-2xl font-bold text-[#d6a14f]">
@@ -3629,11 +3629,11 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                           </div>
                         </div>
 
-                        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                          <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        <div className="min-h-[158px] rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition hover:bg-white/[0.06]">
+                          <div className="text-sm font-semibold uppercase tracking-wide text-slate-300">
                             Your Scenario
                           </div>
-                          <div className="mt-3 space-y-2 text-sm text-slate-300">
+                          <div className="mt-3 space-y-3 text-sm leading-relaxed text-slate-300">
                             {scenarioResult.extraIncome > 0 && (
                               <div className="flex justify-between gap-3">
                                 <span>Extra income</span>
@@ -3676,7 +3676,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                               </>
                             )}
                           </div>
-                          <div className="mt-4 text-xs leading-5 text-slate-500">
+                          <div className="mt-4 text-sm leading-relaxed text-slate-400">
                             Details: fixed-cost load changes from {formatPercent(snapshot.fixedCostLoad)} to {formatPercent(scenarioResult.adjustedLoad)}.
                           </div>
                           {!scenarioDebtImpact && dashboardDebtBalance > 0 && (
