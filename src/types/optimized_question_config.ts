@@ -43,7 +43,7 @@ export const QUESTION_STRATEGY = {
     'financialConfidence',
   ],
   detailedOnly: [
-    'propertyOwnership',
+    'additionalPropertyOwnership',
     'monthlyChildcareCost',
     'childcarePressure',
     'carLoanBalance',
@@ -202,7 +202,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
   },
 
   {
-    key: 'propertyOwnership',
+    key: 'additionalPropertyOwnership',
     question: 'Do you own any real estate besides your primary home?',
     type: 'multiple',
     section: 'spending',
@@ -229,11 +229,11 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     required: true,
     placeholder: 'e.g. 250000',
     helperText: 'Use the combined value if you own more than one rental.',
-    conditions: [{ key: 'propertyOwnership', operator: 'includes', value: 'rental_property' }],
+    conditions: [{ key: 'additionalPropertyOwnership', operator: 'includes', value: 'rental_property' }],
     tags: {
       modes: ['detailed'],
       priority: 'conditional',
-      askIf: (a) => Array.isArray(a.propertyOwnership) && a.propertyOwnership.includes('rental_property'),
+      askIf: (a) => Array.isArray(a.additionalPropertyOwnership) && a.additionalPropertyOwnership.includes('rental_property'),
     },
   },
   {
@@ -244,11 +244,11 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     required: false,
     placeholder: 'e.g. 175000',
     helperText: 'Use the combined balance if you own more than one rental. Use $0 or leave blank if paid off.',
-    conditions: [{ key: 'propertyOwnership', operator: 'includes', value: 'rental_property' }],
+    conditions: [{ key: 'additionalPropertyOwnership', operator: 'includes', value: 'rental_property' }],
     tags: {
       modes: ['detailed'],
       priority: 'conditional',
-      askIf: (a) => Array.isArray(a.propertyOwnership) && a.propertyOwnership.includes('rental_property'),
+      askIf: (a) => Array.isArray(a.additionalPropertyOwnership) && a.additionalPropertyOwnership.includes('rental_property'),
     },
   },
   {
@@ -259,11 +259,11 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     required: false,
     placeholder: 'e.g. 1200',
     helperText: 'Use the combined payment if you own more than one rental. Use $0 if paid off.',
-    conditions: [{ key: 'propertyOwnership', operator: 'includes', value: 'rental_property' }],
+    conditions: [{ key: 'additionalPropertyOwnership', operator: 'includes', value: 'rental_property' }],
     tags: {
       modes: ['detailed'],
       priority: 'conditional',
-      askIf: (a) => Array.isArray(a.propertyOwnership) && a.propertyOwnership.includes('rental_property'),
+      askIf: (a) => Array.isArray(a.additionalPropertyOwnership) && a.additionalPropertyOwnership.includes('rental_property'),
     },
   },
   {
@@ -274,11 +274,11 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     required: true,
     placeholder: 'e.g. 225000',
     helperText: 'Land, second homes, or other property not listed above.',
-    conditions: [{ key: 'propertyOwnership', operator: 'includes', value: 'other_property' }],
+    conditions: [{ key: 'additionalPropertyOwnership', operator: 'includes', value: 'other_property' }],
     tags: {
       modes: ['detailed'],
       priority: 'conditional',
-      askIf: (a) => Array.isArray(a.propertyOwnership) && a.propertyOwnership.includes('other_property'),
+      askIf: (a) => Array.isArray(a.additionalPropertyOwnership) && a.additionalPropertyOwnership.includes('other_property'),
     },
   },
   {
@@ -289,11 +289,11 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     required: false,
     placeholder: 'e.g. 0',
     helperText: 'Use $0 or leave blank if the property is paid off.',
-    conditions: [{ key: 'propertyOwnership', operator: 'includes', value: 'other_property' }],
+    conditions: [{ key: 'additionalPropertyOwnership', operator: 'includes', value: 'other_property' }],
     tags: {
       modes: ['detailed'],
       priority: 'conditional',
-      askIf: (a) => Array.isArray(a.propertyOwnership) && a.propertyOwnership.includes('other_property'),
+      askIf: (a) => Array.isArray(a.additionalPropertyOwnership) && a.additionalPropertyOwnership.includes('other_property'),
     },
   },
 
@@ -305,11 +305,11 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     required: false,
     placeholder: 'e.g. 0',
     helperText: 'Use $0 or leave blank if the property is paid off.',
-    conditions: [{ key: 'propertyOwnership', operator: 'includes', value: 'other_property' }],
+    conditions: [{ key: 'additionalPropertyOwnership', operator: 'includes', value: 'other_property' }],
     tags: {
       modes: ['detailed'],
       priority: 'conditional',
-      askIf: (a) => Array.isArray(a.propertyOwnership) && a.propertyOwnership.includes('other_property'),
+      askIf: (a) => Array.isArray(a.additionalPropertyOwnership) && a.additionalPropertyOwnership.includes('other_property'),
     },
   },
 
