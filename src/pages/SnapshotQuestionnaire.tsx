@@ -137,7 +137,7 @@ const SECTION_META: Record<
 const INLINE_GROUPS: Record<string, string[]> = {
   relationshipStatus: ['monthlyChildcareCost', 'childcarePressure', 'lifeInsurance'],
   housingStatus: ['monthlyHousingCost', 'primaryHomeValue', 'primaryMortgage'],
-  propertyOwnership: ['rentalPropertyValue', 'rentalMortgage', 'rentalPropertyPayment', 'otherPropertyValue', 'otherPropertyDebt', 'otherPropertyPayment'],
+  additionalPropertyOwnership: ['rentalPropertyValue', 'rentalMortgage', 'rentalPropertyPayment', 'otherPropertyValue', 'otherPropertyDebt', 'otherPropertyPayment'],
   vehicleDebt: ['carLoanBalance', 'monthlyVehiclePayment'],
   otherDebt: ['creditCardDebt', 'creditCardPayment', 'studentLoans', 'studentLoanPayment', 'personalLoans', 'personalLoanPayment', 'bnplDebt', 'bnplPayment', 'paydayDebt', 'paydayPayment', 'medicalDebt', 'medicalDebtPayment', 'additionalDebt', 'debtManageability', 'debtPaydownStrategy', 'creditCardBehavior'],
   healthInsurance: ['incomeInterruptionCoverage', 'propertyCoverage', 'autoCoverage'],
@@ -176,7 +176,7 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineMoneyField[]>> = 
       { key: 'primaryHomeValue', label: 'Estimated home value', placeholder: 'e.g. 350000' },
     ],
   },
-  propertyOwnership: {
+  additionalPropertyOwnership: {
     rental_property: [
       { key: 'rentalPropertyValue', label: 'Estimated value', placeholder: 'e.g. 250000' },
       { key: 'rentalMortgage', label: 'Mortgage balance', placeholder: 'e.g. 175000' },
@@ -893,8 +893,9 @@ export default function SnapshotQuestionnaire() {
   
       const answeredRoot = isAnswered(question, value);
       const hasInlineFollowUps = nextVisibleChildren.length > 0;
+      const hasInlineObjectFields = getRequiredObjectFieldKeys(question, nextResponses).length > 0;
   
-      if (answeredRoot && !hasInlineFollowUps) {
+      if (answeredRoot && !hasInlineFollowUps && !hasInlineObjectFields) {
         setTimeout(() => {
           if (currentStep < renderableQuestions.length - 1) {
             goNext();
