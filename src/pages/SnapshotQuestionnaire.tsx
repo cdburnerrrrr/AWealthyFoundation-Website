@@ -618,11 +618,12 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
                           type="number"
                           inputMode="decimal"
                           value={responses[field.key] ?? ''}
+                          onPointerDownCapture={(event) => event.stopPropagation()}
                           onClick={(event) => event.stopPropagation()}
                           onMouseDown={(event) => event.stopPropagation()}
                           onChange={(event) => {
                             const raw = event.target.value;
-                            onFieldChange?.(field.key, raw === '' ? '' : Number(raw));
+                            onFieldChange?.(field.key, raw === '' ? '' : raw);
                           }}
                           placeholder={field.placeholder || 'e.g. 0'}
                           className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
@@ -677,7 +678,7 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
                       onMouseDown={(event) => event.stopPropagation()}
                       onChange={(event) => {
                         const raw = event.target.value;
-                        onFieldChange?.(field.key, raw === '' ? '' : Number(raw));
+                        onFieldChange?.(field.key, raw === '' ? '' : raw);
                       }}
                       placeholder={field.placeholder || 'e.g. 0'}
                       className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
@@ -705,11 +706,13 @@ function NumberInput({ question, value, onChange, onEnter }: NumberInputProps) {
     <div>
       <input
         type="number"
+        inputMode="decimal"
         value={value ?? ''}
         placeholder={question.placeholder ?? 'Enter an amount'}
-        onChange={(e) =>
-          onChange(e.target.value === '' ? null : (e.target.value as unknown as number))
-        }
+        onChange={(e) => {
+          const raw = e.target.value;
+          onChange(raw === '' ? '' : raw);
+        }}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && onEnter) onEnter();
         }}
