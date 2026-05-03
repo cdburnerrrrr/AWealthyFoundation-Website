@@ -392,12 +392,30 @@ function formatPercent(value: number) {
   return `${Math.round(value)}%`;
 }
 
+function getTotalDebtPaymentsFromResponses(responses: Record<string, any>) {
+  const itemized =
+    toNumber(responses.monthlyVehiclePayment) +
+    toNumber(responses.creditCardPayment) +
+    toNumber(responses.studentLoanPayment) +
+    toNumber(responses.personalLoanPayment) +
+    toNumber(responses.bnplPayment) +
+    toNumber(responses.paydayPayment) +
+    toNumber(responses.medicalDebtPayment);
+
+  const legacyTotal =
+    getTotalDebtPaymentsFromResponses(responses) ||
+    toNumber(responses.monthlyConsumerDebtPayments);
+
+  // Itemized payment fields are the source of truth. Legacy totals are fallbacks only.
+  return itemized > 0 ? itemized : legacyTotal;
+}
+
 function getFixedCosts(responses: Record<string, any>) {
   return (
     toNumber(responses.monthlyHousingCost) +
     toNumber(responses.monthlyUtilities) +
     toNumber(responses.monthlyChildcareCost) +
-    toNumber(responses.monthlyDebtPayments)
+    getTotalDebtPaymentsFromResponses(responses)
   );
 }
 
