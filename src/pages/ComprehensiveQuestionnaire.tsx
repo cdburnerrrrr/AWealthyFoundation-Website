@@ -744,17 +744,22 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
             return (
               <div
                 key={option.value}
-                className={`rounded-2xl border p-4 text-left transition ${
+                role="button"
+                tabIndex={0}
+                onClick={() => toggleOption(option.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    toggleOption(option.value);
+                  }
+                }}
+                className={`cursor-pointer rounded-2xl border p-4 text-left transition ${
                   selected
                     ? 'border-copper-500 bg-copper-50 shadow-sm'
                     : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
                 }`}
               >
-                <button
-                  type="button"
-                  onClick={() => toggleOption(option.value)}
-                  className="flex w-full items-center gap-3 text-left"
-                >
+                <div className="flex w-full items-center gap-3 text-left">
                   <span className="shrink-0">
                     {selected ? (
                       <span className="flex h-5 w-5 items-center justify-center rounded-md bg-copper-600 text-white">
@@ -770,12 +775,17 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
                   <span className="text-sm font-semibold text-slate-900">
                     {option.label}
                   </span>
-                </button>
+                </div>
 
                 {selected && fields.length ? (
                   <div className="mt-4 grid gap-3 md:grid-cols-2">
                     {fields.map((field) => (
-                      <label key={field.key} className="block">
+                      <label
+                        key={field.key}
+                        className="block cursor-text"
+                        onClick={(event) => event.stopPropagation()}
+                        onPointerDownCapture={(event) => event.stopPropagation()}
+                      >
                         <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                           {field.label}
                         </span>
@@ -814,19 +824,24 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
         return (
           <div
             key={option.value}
-            className={`rounded-2xl border p-4 text-left transition ${
+            role="button"
+            tabIndex={0}
+            onClick={() => onChange(option.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onChange(option.value);
+              }
+            }}
+            className={`cursor-pointer rounded-2xl border p-4 text-left transition ${
               selected
                 ? 'border-copper-500 bg-copper-50 shadow-sm'
                 : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
             }`}
           >
-            <button
-              type="button"
-              onClick={() => onChange(option.value)}
-              className="w-full text-left"
-            >
+            <div className="w-full text-left">
               <div className="text-sm font-semibold text-slate-900">{option.label}</div>
-            </button>
+            </div>
 
             {selected && fields.length ? (
               <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -839,6 +854,7 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
                       type="number"
                       inputMode="decimal"
                       value={responses[field.key] ?? ''}
+                      onPointerDownCapture={(event) => event.stopPropagation()}
                       onClick={(event) => event.stopPropagation()}
                       onMouseDown={(event) => event.stopPropagation()}
                       onChange={(event) => {
