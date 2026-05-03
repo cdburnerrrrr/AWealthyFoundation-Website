@@ -150,7 +150,7 @@ const INLINE_GROUPS: Record<string, string[]> = {
   relationshipStatus: ['monthlyChildcareCost', 'childcarePressure', 'lifeInsurance'],
   housingStatus: ['monthlyHousingCost', 'primaryHomeValue', 'primaryMortgage'],
   additionalPropertyOwnership: ['rentalPropertyValue', 'rentalMortgage', 'rentalPropertyPayment', 'otherPropertyValue', 'otherPropertyDebt', 'otherPropertyPayment'],
-  vehicleDebt: ['carLoanBalance', 'monthlyVehiclePayment'],
+  vehicleDebt: ['carLoanBalance', 'monthlyVehiclePayment', 'vehicleValue'],
   otherDebt: ['creditCardDebt', 'creditCardPayment', 'studentLoans', 'studentLoanPayment', 'personalLoans', 'personalLoanPayment', 'bnplDebt', 'bnplPayment', 'paydayDebt', 'paydayPayment', 'medicalDebt', 'medicalDebtPayment', 'additionalDebt', 'debtManageability', 'debtPaydownStrategy', 'creditCardBehavior'],
   healthInsurance: ['incomeInterruptionCoverage', 'propertyCoverage', 'autoCoverage'],
   investingStatus: [
@@ -187,6 +187,16 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineMoneyField[]>> = 
     own_outright: [
       { key: 'monthlyHousingCost', label: 'Monthly housing costs, if any', placeholder: 'e.g. 0' },
       { key: 'primaryHomeValue', label: 'Estimated home value', placeholder: 'e.g. 350000' },
+    ],
+  },
+  vehicleDebt: {
+    car_loan: [
+      { key: 'carLoanBalance', label: 'Loan balance', placeholder: 'e.g. 18000' },
+      { key: 'monthlyVehiclePayment', label: 'Monthly payment', placeholder: 'e.g. 540' },
+      { key: 'vehicleValue', label: 'Estimated vehicle value', placeholder: 'e.g. 15000' },
+    ],
+    car_lease: [
+      { key: 'monthlyVehiclePayment', label: 'Monthly lease payment', placeholder: 'e.g. 420' },
     ],
   },
   additionalPropertyOwnership: {
@@ -1450,7 +1460,8 @@ export default function ComprehensiveQuestionnaire() {
       });
 
       const shouldAutoAdvanceChild =
-        question.type === 'single' || question.type === 'scale';
+        !OBJECT_INLINE_ROOT_KEYS.has(root.key) &&
+        (question.type === 'single' || question.type === 'scale');
 
       if (allAnswered && shouldAutoAdvanceChild) {
         setTimeout(() => {
