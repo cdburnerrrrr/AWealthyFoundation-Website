@@ -48,8 +48,6 @@ export const QUESTION_STRATEGY = {
     'childcarePressure',
     'carLoanBalance',
     'monthlyVehiclePayment',
-    'primaryHomeValue',
-    'primaryMortgage',
     'rentalPropertyValue',
     'rentalMortgage',
     'otherPropertyValue',
@@ -132,6 +130,8 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     type: 'single',
     section: 'spending',
     required: true,
+    helperText:
+      'Choose the option that fits your primary residence. We’ll collect the key housing numbers right here so we do not ask for your primary home again later.',
     options: [
       { value: 'living_with_family', label: 'Living with family' },
       { value: 'rent', label: 'Renting' },
@@ -141,40 +141,30 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
   },
 
+  // These fields are collected inline from housingStatus.
+  // They stay in the question list for scoring, saving, continue-mode, and backwards compatibility,
+  // but the questionnaire hides them as standalone questions.
   {
     key: 'monthlyHousingCost',
-    question: 'What is your monthly housing cost right now?',
+    question: 'What is your monthly rent or primary housing payment?',
     type: 'number',
     section: 'spending',
     required: true,
     placeholder: 'e.g. 1400',
     helperText:
-      'If you rent, use your monthly rent. If you own, use your monthly mortgage or house payment.',
-    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
-  },
-
-
-  {
-    key: 'propertyOwnership',
-    question: 'Which property types do you currently own?',
-    type: 'multiple',
-    section: 'spending',
-    required: true,
-    helperText:
-      'Check only the property types you currently own. If you rent or do not own property, choose none.',
-    options: [
-      { value: 'primary_home', label: 'Primary home' },
-      { value: 'rental_property', label: 'Rental property' },
-      { value: 'other_property', label: 'Other property / land / second home' },
-      { value: 'none', label: 'None — I rent or do not own property' },
+      'Renters: use rent. Owners: use your monthly mortgage or regular house payment. If you live with family or own outright, use your monthly contribution, taxes, insurance, HOA, or $0.',
+    conditions: [
+      {
+        operator: 'custom',
+        fn: (r) => ['living_with_family', 'rent', 'own_with_mortgage', 'own_outright'].includes(r.housingStatus),
+      },
     ],
     tags: {
       modes: ['snapshot', 'detailed'],
-      priority: 'conditional',
-      askIf: (a) => a.housingStatus === 'own_with_mortgage' || a.housingStatus === 'own_outright',
+      priority: 'core',
+      askIf: (a) => ['living_with_family', 'rent', 'own_with_mortgage', 'own_outright'].includes(a.housingStatus),
     },
   },
-
   {
     key: 'primaryHomeValue',
     question: 'What is your primary home worth?',
@@ -183,11 +173,16 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     required: true,
     placeholder: 'e.g. 350000',
     helperText: 'Use a rough current market value. A best estimate is fine.',
-    conditions: [{ key: 'propertyOwnership', operator: 'includes', value: 'primary_home' }],
+    conditions: [
+      {
+        operator: 'custom',
+        fn: (r) => r.housingStatus === 'own_with_mortgage' || r.housingStatus === 'own_outright',
+      },
+    ],
     tags: {
       modes: ['snapshot', 'detailed'],
       priority: 'conditional',
-      askIf: (a) => Array.isArray(a.propertyOwnership) && a.propertyOwnership.includes('primary_home'),
+      askIf: (a) => a.housingStatus === 'own_with_mortgage' || a.housingStatus === 'own_outright',
     },
   },
   {
@@ -198,28 +193,34 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     required: false,
     placeholder: 'e.g. 185000',
     helperText: 'Use $0 or leave blank if the home is paid off.',
-    conditions: [{ key: 'propertyOwnership', operator: 'includes', value: 'primary_home' }],
+    conditions: [{ key: 'housingStatus', operator: 'equals', value: 'own_with_mortgage' }],
     tags: {
       modes: ['snapshot', 'detailed'],
       priority: 'conditional',
-      askIf: (a) => Array.isArray(a.propertyOwnership) && a.propertyOwnership.includes('primary_home'),
+      askIf: (a) => a.housingStatus === 'own_with_mortgage',
     },
   },
+
   {
-    key: 'primaryMortgagePayment',
-    question: 'What is the monthly payment on your primary home?',
-    type: 'number',
+    key: 'propertyOwnership',
+    question: 'Do you own any real estate besides your primary home?',
+    type: 'multiple',
     section: 'spending',
-    required: false,
-    placeholder: 'e.g. 1500',
-    helperText: 'Use the mortgage payment or total monthly house payment. Use $0 if paid off.',
-    conditions: [{ key: 'propertyOwnership', operator: 'includes', value: 'primary_home' }],
+    required: true,
+    helperText:
+      'Your primary home was already captured in the housing question. Only include rental property, land, second homes, or other property here.',
+    options: [
+      { value: 'rental_property', label: 'Rental property' },
+      { value: 'other_property', label: 'Other property / land / second home' },
+      { value: 'none', label: 'No additional property' },
+    ],
     tags: {
-      modes: ['snapshot', 'detailed'],
+      modes: ['detailed'],
       priority: 'conditional',
-      askIf: (a) => Array.isArray(a.propertyOwnership) && a.propertyOwnership.includes('primary_home'),
+      askIf: () => true,
     },
   },
+
   {
     key: 'rentalPropertyValue',
     question: 'What is your rental property worth?',

@@ -1989,8 +1989,14 @@ export function getPillarReasons(
 // =====================================================
 
 function homeEquityEstimate(a: Record<string, any>): number {
-  if (!hasMortgage(a)) return 0;
-  return Math.max(0, toNumber(a.homeValue) - toNumber(a.mortgageBalance));
+  const primaryHomeValue = toNumber(a.primaryHomeValue) || toNumber(a.homeValue);
+  const mortgageBalance =
+    toNumber(a.primaryMortgageBalance) ||
+    toNumber(a.primaryMortgage) ||
+    toNumber(a.mortgageBalance);
+
+  if (primaryHomeValue <= 0) return 0;
+  return Math.max(0, primaryHomeValue - mortgageBalance);
 }
 
 function debtPaymentEstimate(a: Record<string, any>): number {
@@ -2022,7 +2028,7 @@ function debtPaymentEstimate(a: Record<string, any>): number {
 export function calculateAllFinancialMetrics(answers: Record<string, any>): FinancialMetrics {
   const monthlyIncome = toNumber(answers.monthlyTakeHomeIncome);
   const monthlyDebtPayments = debtPaymentEstimate(answers);
-  const monthlyHousingCost = toNumber(answers.monthlyHousingCost);
+  const monthlyHousingCost = toNumber(answers.monthlyHousingCost) || toNumber(answers.primaryMortgagePayment);
   const monthlyUtilities = toNumber(answers.monthlyUtilities);
   const monthlyChildcareCost = toNumber(answers.monthlyChildcareCost);
   const monthlyFixedCosts = monthlyHousingCost + monthlyUtilities + monthlyChildcareCost + monthlyDebtPayments;

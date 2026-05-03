@@ -261,24 +261,26 @@ function getConsumerDebtPayments(answers: Record<string, any>) {
 }
 
 function getRealEstateAssets(answers: Record<string, any>) {
-  return (
-    toNumber(answers.primaryHomeValue) +
-    toNumber(answers.homeValue) +
-    toNumber(answers.rentalPropertyValue) +
-    toNumber(answers.otherPropertyValue)
-  );
+  const primaryHomeValue = firstNumber(answers, ['primaryHomeValue', 'homeValue']);
+  const rentalPropertyValue = firstNumber(answers, ['rentalPropertyValue']);
+  const otherPropertyValue = firstNumber(answers, ['otherPropertyValue']);
+
+  return primaryHomeValue + rentalPropertyValue + otherPropertyValue;
 }
 
 function getMortgageDebt(answers: Record<string, any>) {
-  return (
-    toNumber(answers.primaryMortgageBalance) +
-    toNumber(answers.primaryMortgage) +
-    toNumber(answers.mortgageBalance) +
-    toNumber(answers.rentalMortgageBalance) +
-    toNumber(answers.rentalMortgage) +
-    toNumber(answers.otherPropertyMortgageBalance) +
-    toNumber(answers.otherPropertyDebt)
-  );
+  const primaryMortgage = firstNumber(answers, [
+    'primaryMortgageBalance',
+    'primaryMortgage',
+    'mortgageBalance',
+  ]);
+  const rentalMortgage = firstNumber(answers, ['rentalMortgageBalance', 'rentalMortgage']);
+  const otherPropertyDebt = firstNumber(answers, [
+    'otherPropertyMortgageBalance',
+    'otherPropertyDebt',
+  ]);
+
+  return primaryMortgage + rentalMortgage + otherPropertyDebt;
 }
 
 function getOtherAssets(answers: Record<string, any>) {

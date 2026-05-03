@@ -136,8 +136,8 @@ const SECTION_META: Record<
 
 const INLINE_GROUPS: Record<string, string[]> = {
   relationshipStatus: ['monthlyChildcareCost', 'childcarePressure', 'lifeInsurance'],
-  housingStatus: [],
-  propertyOwnership: ['primaryHomeValue', 'primaryMortgage', 'primaryMortgagePayment', 'rentalPropertyValue', 'rentalMortgage', 'rentalPropertyPayment', 'otherPropertyValue', 'otherPropertyDebt', 'otherPropertyPayment'],
+  housingStatus: ['monthlyHousingCost', 'primaryHomeValue', 'primaryMortgage'],
+  propertyOwnership: ['rentalPropertyValue', 'rentalMortgage', 'rentalPropertyPayment', 'otherPropertyValue', 'otherPropertyDebt', 'otherPropertyPayment'],
   vehicleDebt: ['carLoanBalance', 'monthlyVehiclePayment'],
   otherDebt: ['creditCardDebt', 'creditCardPayment', 'studentLoans', 'studentLoanPayment', 'personalLoans', 'personalLoanPayment', 'bnplDebt', 'bnplPayment', 'paydayDebt', 'paydayPayment', 'medicalDebt', 'medicalDebtPayment', 'additionalDebt', 'debtManageability', 'debtPaydownStrategy', 'creditCardBehavior'],
   healthInsurance: ['incomeInterruptionCoverage', 'propertyCoverage', 'autoCoverage'],
@@ -159,12 +159,24 @@ type InlineMoneyField = {
 };
 
 const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineMoneyField[]>> = {
-  propertyOwnership: {
-    primary_home: [
-      { key: 'primaryHomeValue', label: 'Estimated value', placeholder: 'e.g. 350000' },
-      { key: 'primaryMortgage', label: 'Mortgage balance', placeholder: 'e.g. 185000' },
-      { key: 'primaryMortgagePayment', label: 'Monthly payment', placeholder: 'e.g. 1500' },
+  housingStatus: {
+    living_with_family: [
+      { key: 'monthlyHousingCost', label: 'Monthly contribution, if any', placeholder: 'e.g. 0' },
     ],
+    rent: [
+      { key: 'monthlyHousingCost', label: 'Monthly rent', placeholder: 'e.g. 1400' },
+    ],
+    own_with_mortgage: [
+      { key: 'monthlyHousingCost', label: 'Monthly house payment', placeholder: 'e.g. 1500' },
+      { key: 'primaryHomeValue', label: 'Estimated home value', placeholder: 'e.g. 350000' },
+      { key: 'primaryMortgage', label: 'Mortgage balance', placeholder: 'e.g. 185000' },
+    ],
+    own_outright: [
+      { key: 'monthlyHousingCost', label: 'Monthly housing costs, if any', placeholder: 'e.g. 0' },
+      { key: 'primaryHomeValue', label: 'Estimated home value', placeholder: 'e.g. 350000' },
+    ],
+  },
+  propertyOwnership: {
     rental_property: [
       { key: 'rentalPropertyValue', label: 'Estimated value', placeholder: 'e.g. 250000' },
       { key: 'rentalMortgage', label: 'Mortgage balance', placeholder: 'e.g. 175000' },
@@ -208,7 +220,10 @@ const OBJECT_INLINE_ROOT_KEYS = new Set(Object.keys(OBJECT_FIELD_GROUPS));
 
 function getRequiredObjectFieldKeys(question: Question | undefined, responses: Record<string, any>) {
   if (!question || !OBJECT_INLINE_ROOT_KEYS.has(question.key)) return [];
-  const selected = Array.isArray(responses[question.key]) ? responses[question.key] : [];
+
+  const raw = responses[question.key];
+  const selected = Array.isArray(raw) ? raw : raw ? [raw] : [];
+
   return selected
     .filter((value) => value !== 'none')
     .flatMap((value) => OBJECT_FIELD_GROUPS[question.key]?.[value] ?? [])
@@ -628,20 +643,50 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
     <div className="grid gap-3">
       {question.options.map((option) => {
         const selected = value === option.value;
+        const fields = OBJECT_FIELD_GROUPS[question.key]?.[option.value] ?? [];
 
         return (
-          <button
+          <div
             key={option.value}
-            type="button"
-            onClick={() => onChange(option.value)}
             className={`rounded-2xl border p-4 text-left transition ${
               selected
                 ? 'border-copper-500 bg-copper-50 shadow-sm'
                 : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
             }`}
           >
-            <div className="text-sm font-semibold text-slate-900">{option.label}</div>
-          </button>
+            <button
+              type="button"
+              onClick={() => onChange(option.value)}
+              className="w-full text-left"
+            >
+              <div className="text-sm font-semibold text-slate-900">{option.label}</div>
+            </button>
+
+            {selected && fields.length ? (
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                {fields.map((field) => (
+                  <label key={field.key} className="block">
+                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      {field.label}
+                    </span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      value={responses[field.key] ?? ''}
+                      onClick={(event) => event.stopPropagation()}
+                      onMouseDown={(event) => event.stopPropagation()}
+                      onChange={(event) => {
+                        const raw = event.target.value;
+                        onFieldChange?.(field.key, raw === '' ? '' : Number(raw));
+                      }}
+                      placeholder={field.placeholder || 'e.g. 0'}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
+                    />
+                  </label>
+                ))}
+              </div>
+            ) : null}
+          </div>
         );
       })}
     </div>
