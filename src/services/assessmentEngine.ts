@@ -80,6 +80,14 @@ export type V2FinancialMetrics = {
   cushionScore: number;
   cashExcessMonths: number;
   excessCashEstimate: number;
+
+  vehicleLoanBalance: number;
+  vehicleValue: number;
+  vehicleEquity: number;
+  vehicleUnderwaterAmount: number;
+  monthlyVehiclePayment: number;
+  vehiclePaymentRatio: number;
+  estimatedVehiclePayoffMonths: number;
 };
 
 export type V2Signals = {
@@ -99,6 +107,11 @@ export type V2Signals = {
   dependentsWithoutLifeInsurance: boolean;
   protectionCoverageCount: number;
   incompleteNetWorthData: boolean;
+  hasVehicleLoan: boolean;
+  hasVehiclePaymentPressure: boolean;
+  hasSevereVehiclePaymentPressure: boolean;
+  vehicleLoanUnderwater: boolean;
+  vehicleDecisionPriority: 'low' | 'medium' | 'high';
 };
 
 export type V2Report = {
@@ -121,7 +134,8 @@ export type V2Report = {
       | 'structural_pressure'
       | 'excess_cash'
       | 'protection_gap'
-      | 'net_worth_data_gap';
+      | 'net_worth_data_gap'
+      | 'vehicle_pressure';
     severity: 'medium' | 'high';
     message: string;
   }[];
@@ -260,6 +274,7 @@ function getConsumerDebtPayments(answers: Record<string, any>) {
   return itemized > 0 ? itemized : legacy;
 }
 
+
 function getRealEstateAssets(answers: Record<string, any>) {
   const primaryHomeValue = firstNumber(answers, ['primaryHomeValue', 'homeValue']);
   const rentalPropertyValue = firstNumber(answers, ['rentalPropertyValue']);
@@ -347,6 +362,17 @@ export function buildV2FinancialMetrics(
     'monthlyInvestingAmount',
     'monthlyInvestmentAmount',
   ]);
+
+  const vehicleLoanBalance = firstNumber(answers, ['carLoanBalance', 'vehicleLoanBalance', 'autoLoanBalance']);
+  const vehicleValue = firstNumber(answers, ['vehicleValue', 'carValue', 'estimatedVehicleValue']);
+  const monthlyVehiclePayment = firstNumber(answers, ['monthlyVehiclePayment', 'vehiclePayment', 'carPayment']);
+  const vehicleEquity = vehicleValue > 0 ? vehicleValue - vehicleLoanBalance : 0;
+  const vehicleUnderwaterAmount = vehicleValue > 0 ? Math.max(0, vehicleLoanBalance - vehicleValue) : 0;
+  const vehiclePaymentRatio = monthlyIncome > 0 ? (monthlyVehiclePayment / monthlyIncome) * 100 : 0;
+  const estimatedVehiclePayoffMonths =
+    monthlyVehiclePayment > 0 && vehicleLoanBalance > 0
+      ? Math.ceil(vehicleLoanBalance / monthlyVehiclePayment)
+      : 0;
 
   const monthlyFixedCosts =
     firstNumber(answers, ['monthlyFixedCosts']) ||
@@ -471,6 +497,14 @@ export function buildV2FinancialMetrics(
     cushionScore,
     cashExcessMonths,
     excessCashEstimate,
+
+    vehicleLoanBalance,
+    vehicleValue,
+    vehicleEquity,
+    vehicleUnderwaterAmount,
+    monthlyVehiclePayment,
+    vehiclePaymentRatio,
+    estimatedVehiclePayoffMonths,
   };
 }
 
@@ -516,6 +550,16 @@ export function deriveV2Signals(
     hasLifeInsurance: life,
     dependentsWithoutLifeInsurance: dependents && !life,
     protectionCoverageCount,
+    hasVehicleLoan: metrics.vehicleLoanBalance > 0,
+    hasVehiclePaymentPressure: metrics.vehiclePaymentRatio >= 10,
+    hasSevereVehiclePaymentPressure: metrics.vehiclePaymentRatio >= 15,
+    vehicleLoanUnderwater: metrics.vehicleUnderwaterAmount > 0,
+    vehicleDecisionPriority:
+      metrics.vehicleUnderwaterAmount > 0 || metrics.vehiclePaymentRatio >= 15
+        ? 'high'
+        : metrics.vehiclePaymentRatio >= 10
+          ? 'medium'
+          : 'low',
     incompleteNetWorthData:
       metrics.cashSavings > 0 &&
       metrics.totalInvestments === 0 &&
@@ -791,6 +835,21 @@ export function buildV2Insights(
     );
   }
 
+
+  if (signals.vehicleLoanUnderwater) {
+    insights.push(
+      `Your vehicle loan may be limiting flexibility. Based on the numbers entered, you may owe about ${formatCurrency(
+        metrics.vehicleUnderwaterAmount
+      )} more than the vehicle is worth, so selling or trading it may not fully eliminate the debt.`
+    );
+  } else if (signals.hasSevereVehiclePaymentPressure) {
+    insights.push(
+      `Your vehicle payment is about ${round(
+        metrics.vehiclePaymentRatio
+      )}% of take-home pay. That makes it a meaningful fixed obligation and a possible source of quick breathing room.`
+    );
+  }
+
   if (metrics.consumerDebt === 0 && metrics.mortgageDebt > 0) {
     insights.push(
       'Your debt picture appears to be mostly mortgage-related. Affordable mortgage debt should be treated differently than consumer debt, but it still matters for net worth and housing pressure.'
@@ -896,6 +955,14 @@ function buildNextStep(biggestOpportunity: BuildingBlockKey, metrics: V2Financia
     return 'Move from building to optimizing. Review your cash target, account mix, tax buckets, and asset allocation so the money you already have is working as efficiently as your habits.';
   }
 
+  if (signals.vehicleLoanUnderwater) {
+    return `Review your vehicle loan before making a move. You may owe about ${formatCurrency(metrics.vehicleUnderwaterAmount)} more than the vehicle is worth, so selling or trading it may not fully eliminate the debt. Compare keeping it, refinancing, selling and covering the gap, or asking a local credit union what a smaller loan for the difference would actually cost.`;
+  }
+
+  if (signals.hasSevereVehiclePaymentPressure) {
+    return `Review your vehicle payment. At about ${round(metrics.vehiclePaymentRatio)}% of take-home pay, this payment may be one of the fastest ways to create breathing room if refinancing, trading down, selling, or accelerating payoff makes sense.`;
+  }
+
   if (signals.housePoorRisk && metrics.fixedCostPressureRatio >= 60) {
     if ((signals.hasDependents && metrics.monthlyIncome < 5000) || metrics.monthlyIncome < 4000) {
       return 'Create breathing room first. Review housing, utilities, and fixed obligations, but also treat more income as a primary lever — overtime, a second income stream, a better-paying role, or temporary family support may matter more than small cuts.';
@@ -953,6 +1020,24 @@ function buildStructuralWarnings(metrics: V2FinancialMetrics, signals: V2Signals
       message: `Fixed costs are about ${round(
         metrics.fixedCostPressureRatio
       )}% of take-home pay, which can make progress difficult even with good habits.`,
+    });
+  }
+
+  if (signals.vehicleLoanUnderwater) {
+    warnings.push({
+      type: 'vehicle_pressure',
+      severity: 'high',
+      message: `Vehicle flexibility may be limited. You may owe about ${formatCurrency(
+        metrics.vehicleUnderwaterAmount
+      )} more than the vehicle is worth, so selling or trading it may not fully eliminate the debt.`,
+    });
+  } else if (signals.hasSevereVehiclePaymentPressure) {
+    warnings.push({
+      type: 'vehicle_pressure',
+      severity: 'medium',
+      message: `Vehicle payment pressure is meaningful at about ${round(
+        metrics.vehiclePaymentRatio
+      )}% of take-home pay. Reducing this fixed payment could improve monthly breathing room.`,
     });
   }
 

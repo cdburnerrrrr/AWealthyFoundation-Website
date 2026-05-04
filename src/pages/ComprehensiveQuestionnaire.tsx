@@ -150,7 +150,7 @@ const INLINE_GROUPS: Record<string, string[]> = {
   relationshipStatus: ['monthlyChildcareCost', 'childcarePressure', 'lifeInsurance'],
   housingStatus: ['monthlyHousingCost', 'primaryHomeValue', 'primaryMortgage'],
   additionalPropertyOwnership: ['rentalPropertyValue', 'rentalMortgage', 'rentalPropertyPayment', 'otherPropertyValue', 'otherPropertyDebt', 'otherPropertyPayment'],
-  vehicleDebt: ['carLoanBalance', 'monthlyVehiclePayment', 'vehicleValue'],
+  vehicleDebt: ['carLoanBalance', 'monthlyVehiclePayment'],
   otherDebt: ['creditCardDebt', 'creditCardPayment', 'studentLoans', 'studentLoanPayment', 'personalLoans', 'personalLoanPayment', 'bnplDebt', 'bnplPayment', 'paydayDebt', 'paydayPayment', 'medicalDebt', 'medicalDebtPayment', 'additionalDebt', 'debtManageability', 'debtPaydownStrategy', 'creditCardBehavior'],
   healthInsurance: ['incomeInterruptionCoverage', 'propertyCoverage', 'autoCoverage'],
   investingStatus: [
@@ -187,16 +187,6 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineMoneyField[]>> = 
     own_outright: [
       { key: 'monthlyHousingCost', label: 'Monthly housing costs, if any', placeholder: 'e.g. 0' },
       { key: 'primaryHomeValue', label: 'Estimated home value', placeholder: 'e.g. 350000' },
-    ],
-  },
-  vehicleDebt: {
-    car_loan: [
-      { key: 'carLoanBalance', label: 'Loan balance', placeholder: 'e.g. 18000' },
-      { key: 'monthlyVehiclePayment', label: 'Monthly payment', placeholder: 'e.g. 540' },
-      { key: 'vehicleValue', label: 'Estimated vehicle value', placeholder: 'e.g. 15000' },
-    ],
-    car_lease: [
-      { key: 'monthlyVehiclePayment', label: 'Monthly lease payment', placeholder: 'e.g. 420' },
     ],
   },
   additionalPropertyOwnership: {
@@ -402,30 +392,12 @@ function formatPercent(value: number) {
   return `${Math.round(value)}%`;
 }
 
-function getTotalDebtPaymentsFromResponses(responses: Record<string, any>) {
-  const itemized =
-    toNumber(responses.monthlyVehiclePayment) +
-    toNumber(responses.creditCardPayment) +
-    toNumber(responses.studentLoanPayment) +
-    toNumber(responses.personalLoanPayment) +
-    toNumber(responses.bnplPayment) +
-    toNumber(responses.paydayPayment) +
-    toNumber(responses.medicalDebtPayment);
-
-  const legacyTotal =
-    getTotalDebtPaymentsFromResponses(responses) ||
-    toNumber(responses.monthlyConsumerDebtPayments);
-
-  // Itemized payment fields are the source of truth. Legacy totals are fallbacks only.
-  return itemized > 0 ? itemized : legacyTotal;
-}
-
 function getFixedCosts(responses: Record<string, any>) {
   return (
     toNumber(responses.monthlyHousingCost) +
     toNumber(responses.monthlyUtilities) +
     toNumber(responses.monthlyChildcareCost) +
-    getTotalDebtPaymentsFromResponses(responses)
+    toNumber(responses.monthlyDebtPayments)
   );
 }
 
@@ -1174,6 +1146,8 @@ function ActivityStep({ activityKey, responses, onComplete }: ActivityStepProps)
       <CarPaymentActivity
         monthlyVehiclePayment={toNumber(responses.monthlyVehiclePayment)}
         carLoanBalance={toNumber(responses.carLoanBalance)}
+        vehicleValue={toNumber(responses.vehicleValue)}
+        monthlyIncome={toNumber(responses.monthlyTakeHomeIncome)}
         onContinue={(payload) => onComplete(payload)}
       />
     ),
@@ -1460,8 +1434,7 @@ export default function ComprehensiveQuestionnaire() {
       });
 
       const shouldAutoAdvanceChild =
-        !OBJECT_INLINE_ROOT_KEYS.has(root.key) &&
-        (question.type === 'single' || question.type === 'scale');
+        question.type === 'single' || question.type === 'scale';
 
       if (allAnswered && shouldAutoAdvanceChild) {
         setTimeout(() => {

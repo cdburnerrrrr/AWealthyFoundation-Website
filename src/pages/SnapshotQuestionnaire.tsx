@@ -836,6 +836,8 @@ function ActivityStep({ activityKey, responses, onComplete }: ActivityStepProps)
       <CarPaymentActivity
         monthlyVehiclePayment={toNumber(responses.monthlyVehiclePayment)}
         carLoanBalance={toNumber(responses.carLoanBalance)}
+        vehicleValue={toNumber(responses.vehicleValue)}
+        monthlyIncome={toNumber(responses.monthlyTakeHomeIncome)}
         onContinue={(payload) => onComplete(payload)}
       />
     );

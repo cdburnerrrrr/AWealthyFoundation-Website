@@ -240,6 +240,13 @@ export interface FinancialMetrics {
   monthlyUtilities?: number;
   monthlyChildcareCost?: number;
   monthlyFixedCosts?: number;
+  vehicleLoanBalance?: number;
+  vehicleValue?: number;
+  vehicleEquity?: number;
+  vehicleUnderwaterAmount?: number;
+  monthlyVehiclePayment?: number;
+  vehiclePaymentRatio?: number;
+  estimatedVehiclePayoffMonths?: number;
 }
 
 
@@ -269,6 +276,11 @@ export interface UserSignals {
   housingRatio: number;
   obligationPressure: number;
   debtPaymentRatio: number;
+  hasVehicleLoan?: boolean;
+  hasVehiclePaymentPressure?: boolean;
+  hasSevereVehiclePaymentPressure?: boolean;
+  vehicleLoanUnderwater?: boolean;
+  vehicleDecisionPriority?: 'low' | 'medium' | 'high';
 }
 
 

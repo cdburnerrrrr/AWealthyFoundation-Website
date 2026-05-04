@@ -91,6 +91,13 @@ type MetricsShape = {
   totalLiabilities?: number;
   cappedEmergencyFundMonths?: number;
   cushionScore?: number;
+  vehicleLoanBalance?: number;
+  vehicleValue?: number;
+  vehicleEquity?: number;
+  vehicleUnderwaterAmount?: number;
+  monthlyVehiclePayment?: number;
+  vehiclePaymentRatio?: number;
+  estimatedVehiclePayoffMonths?: number;
 };
 
 type ActionPlanStep = {
@@ -104,6 +111,7 @@ type StructuralWarning = {
     | "housing_pressure"
     | "income_constraint"
     | "structural_pressure"
+    | "vehicle_pressure"
     | string;
   severity: "high" | "critical" | string;
 };
@@ -180,6 +188,59 @@ function getPlanBadgeClass(plan: PlanTier) {
   return "";
 }
 
+
+function getVehicleDecisionFromSnapshot(
+  snapshot: ReturnType<typeof getStructuralSnapshot>,
+): { priority: "low" | "medium" | "high"; title: string; body: string; checklist: string[] } | null {
+  if (!snapshot || snapshot.monthlyVehiclePayment <= 0) return null;
+
+  const yearsText =
+    snapshot.estimatedVehiclePayoffMonths > 0
+      ? ` for roughly ${Math.max(1, Math.round(snapshot.estimatedVehiclePayoffMonths / 12))} more year${Math.round(snapshot.estimatedVehiclePayoffMonths / 12) === 1 ? "" : "s"}`
+      : "";
+
+  if (snapshot.vehicleUnderwaterAmount > 0) {
+    return {
+      priority: "high",
+      title: "Review your vehicle loan before making a move",
+      body: `You may owe about ${formatCurrency(snapshot.vehicleUnderwaterAmount)} more than the vehicle is worth. Selling or trading it may not fully eliminate the debt, so compare your options before acting.`,
+      checklist: [
+        `Confirm the payoff amount, vehicle value, and whether the ${formatCurrency(snapshot.monthlyVehiclePayment)} payment${yearsText} is worth keeping.`,
+        `Ask a local credit union what a smaller loan for the ${formatCurrency(snapshot.vehicleUnderwaterAmount)} gap could look like, then compare total cost and monthly relief.`,
+        "Avoid rolling the gap into a more expensive vehicle unless the full cost clearly improves your foundation.",
+      ],
+    };
+  }
+
+  if (snapshot.vehiclePaymentRatio >= 15) {
+    return {
+      priority: "high",
+      title: "Reduce vehicle payment pressure",
+      body: `Your vehicle payment is about ${Math.round(snapshot.vehiclePaymentRatio)}% of take-home pay. Reducing or eliminating this payment could quickly create more monthly breathing room.`,
+      checklist: [
+        "Compare refinance, trade-down, private sale, and accelerated payoff options.",
+        `Measure each option by how much of the ${formatCurrency(snapshot.monthlyVehiclePayment)} monthly payment it frees up.`,
+        "Choose the option that improves cash flow without stretching debt longer than necessary.",
+      ],
+    };
+  }
+
+  if (snapshot.vehiclePaymentRatio >= 10) {
+    return {
+      priority: "medium",
+      title: "Keep vehicle costs from becoming pressure",
+      body: `Your vehicle payment is about ${Math.round(snapshot.vehiclePaymentRatio)}% of take-home pay. It may be manageable, but it is worth watching before upgrading or adding more vehicle debt.`,
+      checklist: [
+        "Avoid upgrading while higher-priority goals need attention.",
+        "Consider small extra principal payments after your emergency fund is stable.",
+        "Review the payment, insurance, and maintenance as one vehicle cost.",
+      ],
+    };
+  }
+
+  return null;
+}
+
 function getDashboardNextMoveCard(
   assessment: CurrentAssessmentShape | null,
   snapshot: ReturnType<typeof getStructuralSnapshot>,
@@ -213,6 +274,16 @@ function getDashboardNextMoveCard(
       : 0);
   const excessCashEstimate = snapshot?.excessCashEstimate ?? 0;
   const investingRate = snapshot?.investmentContributionRate ?? 0;
+
+  const vehicleDecision = getVehicleDecisionFromSnapshot(snapshot);
+
+  if (vehicleDecision?.priority === "high") {
+    return {
+      title: vehicleDecision.title,
+      body: vehicleDecision.body,
+      checklist: vehicleDecision.checklist,
+    };
+  }
 
   if (foundationScore >= 80 && (cashMonths >= 24 || excessCashEstimate > 0)) {
     return {
@@ -519,6 +590,13 @@ function getTodayMovePriority(
     };
   }
 
+  if ((snapshot?.vehicleUnderwaterAmount ?? 0) > 0 || (snapshot?.vehiclePaymentRatio ?? 0) >= 15) {
+    return {
+      label: "Vehicle Move",
+      className: "border-copper-300/35 bg-copper-400/12 text-copper-100",
+    };
+  }
+
   if ((snapshot?.fixedCostLoad ?? 0) >= 65) {
     return {
       label: "High Priority",
@@ -743,6 +821,14 @@ function getStructuralSnapshot(metrics?: MetricsShape | null) {
     cappedEmergencyFundMonths: Number(metrics.cappedEmergencyFundMonths ?? 0),
     cushionScore: Number(metrics.cushionScore ?? 0),
     excessCashEstimate: Number(metrics.excessCashEstimate ?? 0),
+    investmentContributionRate: Number(metrics.investmentContributionRate ?? 0),
+    vehicleLoanBalance: Number(metrics.vehicleLoanBalance ?? 0),
+    vehicleValue: Number(metrics.vehicleValue ?? 0),
+    vehicleEquity: Number(metrics.vehicleEquity ?? 0),
+    vehicleUnderwaterAmount: Number(metrics.vehicleUnderwaterAmount ?? 0),
+    monthlyVehiclePayment: Number(metrics.monthlyVehiclePayment ?? 0),
+    vehiclePaymentRatio: Number(metrics.vehiclePaymentRatio ?? 0),
+    estimatedVehiclePayoffMonths: Number(metrics.estimatedVehiclePayoffMonths ?? 0),
   };
 }
 
