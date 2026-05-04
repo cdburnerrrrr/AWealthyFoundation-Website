@@ -77,6 +77,10 @@ type ResultShape = {
     totalAssets?: number;
     netWorth?: number;
     homeEquity?: number;
+    rentalPropertyValue?: number;
+    rentalMortgageBalance?: number;
+    otherPropertyValue?: number;
+    otherPropertyMortgageBalance?: number;
     monthlyIncome?: number;
     monthlyHousingCost?: number;
     monthlyUtilities?: number;
@@ -301,6 +305,34 @@ function getBestNextMoveCard(
   const investingRate = Number(
     metrics?.investmentContributionRate ?? metrics?.savingsRate ?? 0,
   );
+  const monthlyHousing = Number(metrics?.monthlyHousingCost ?? 0);
+  const nonPrimaryPropertyEquity =
+    Math.max(0, Number(metrics?.rentalPropertyValue ?? 0) - Number(metrics?.rentalMortgageBalance ?? 0)) +
+    Math.max(0, Number(metrics?.otherPropertyValue ?? 0) - Number(metrics?.otherPropertyMortgageBalance ?? 0));
+  const consumerDebt = Number(metrics?.consumerDebt ?? metrics?.totalDebtBalance ?? 0);
+
+  if (nonPrimaryPropertyEquity > 0 && monthlyHousing > 0 && Number(metrics?.fixedCostPressureRatio ?? 0) >= 65) {
+    return {
+      title: "Use the asset picture to create breathing room",
+      intro:
+        "The biggest opportunity may not be another small budget cut. You appear to be paying for housing while also holding meaningful property equity.",
+      rightNow: [
+        `You have about ${formatCurrency(nonPrimaryPropertyEquity)} of non-primary-property equity in the numbers entered.`,
+        `Your current housing payment is about ${formatCurrency(monthlyHousing)}/month, while must-pay bills are taking about ${formatPercent(metrics?.fixedCostPressureRatio)} of take-home pay.`,
+      ],
+      whyThisMatters:
+        "When cash flow is this tight, a usable asset can matter more than a small spending tweak. If the property is local and livable, moving into it could free up rent. If it is not practical to use, selling or borrowing against it may still be worth comparing carefully.",
+      nextStep:
+        consumerDebt > 0
+          ? `Compare three paths before cutting smaller expenses: move into the property if practical, sell it to eliminate up to ${formatCurrency(Math.min(nonPrimaryPropertyEquity, consumerDebt))} of debt, or keep it only if it clearly supports the plan.`
+          : "Compare moving into the property, selling it, or keeping it based on which option creates the most monthly breathing room with the least risk.",
+      thisWeek: [
+        "Confirm whether the property is local, livable, rentable, or sellable.",
+        `Calculate the real monthly impact of removing the ${formatCurrency(monthlyHousing)} housing payment.`,
+        "Choose the option that creates the most reliable breathing room before optimizing anything else.",
+      ],
+    };
+  }
 
   if (
     (cashMonths >= 24 || excessCash > 0) &&
@@ -923,6 +955,13 @@ function getStoredPlanProgress(storageKey: string): Record<string, boolean> {
   }
 }
 
+function estimateFutureValueFromMonthlyContribution(monthlyContribution: number, years = 30, annualReturn = 0.07) {
+  const monthlyRate = annualReturn / 12;
+  const months = years * 12;
+  if (!Number.isFinite(monthlyContribution) || monthlyContribution <= 0) return 0;
+  return monthlyContribution * ((Math.pow(1 + monthlyRate, months) - 1) / monthlyRate);
+}
+
 function getCarPaymentAnalysis(answers?: Record<string, any>) {
   if (!answers) return null;
 
@@ -939,12 +978,18 @@ function getCarPaymentAnalysis(answers?: Record<string, any>) {
   const monthlyInvestment = Number(
     answers.carPaymentMonthlyInvestment ?? Math.max(0, payment - monthlyRaise),
   );
-  const futureValue = Number(answers.carPaymentFutureValue ?? 0);
+  const futureValue = Number(
+    answers.carPaymentFutureValue ?? estimateFutureValueFromMonthlyContribution(monthlyInvestment, 30),
+  );
   const reducedRedirect = Number(
     answers.carPaymentReducedRedirect ?? Math.max(100, Math.round(payment / 5)),
   );
-  const reducedFutureValue = Number(answers.carPaymentReducedFutureValue ?? 0);
+  const reducedFutureValue = Number(
+    answers.carPaymentReducedFutureValue ?? estimateFutureValueFromMonthlyContribution(reducedRedirect, 30),
+  );
   const balance = Number(answers.carLoanBalance ?? 0);
+  const vehicleValue = Number(answers.vehicleValue ?? 0);
+  const underwaterAmount = vehicleValue > 0 ? Math.max(0, balance - vehicleValue) : 0;
 
   return {
     payment,
@@ -956,6 +1001,8 @@ function getCarPaymentAnalysis(answers?: Record<string, any>) {
     reducedRedirect,
     reducedFutureValue,
     balance,
+    vehicleValue,
+    underwaterAmount,
     reviewed: answers.carPaymentOpportunityReview === "reviewed",
   };
 }
@@ -1365,14 +1412,20 @@ function getReportSummaryCards({
         ? `${debtPayments}/month debt payments`
         : "Your money picture";
 
+  const assets = metrics?.totalAssets || metrics?.totalAssets === 0 ? formatCurrency(metrics.totalAssets) : null;
+  const liabilities = metrics?.totalLiabilities || metrics?.totalLiabilities === 0 ? formatCurrency(metrics.totalLiabilities) : null;
+  const homeEquity = metrics?.homeEquity || metrics?.homeEquity === 0 ? formatCurrency(metrics.homeEquity) : null;
+
   const numbersBody =
-    cashMonths > 0
-      ? `Your cash cushion covers about ${cashMonths.toFixed(1)} months of core expenses${fixedCost ? `, while mortgage/rent, utilities, and must-pay bills are taking about ${fixedCost} of take-home pay` : ""}. That combination tells us whether the next move should focus on safety, margin, or optimization.`
-      : fixedCost
-        ? `Mortgage/rent, utilities, and other must-pay bills are running around ${fixedCost} of take-home pay${debtPayments ? `, with debt payments near ${debtPayments}/month` : ""}. That shows how much room is left to save, invest, and absorb surprises.`
-        : investments
-          ? `Investments are about ${investments}. The question now is whether your current contribution habit and cash reserve are aligned with the future you want.`
-          : "The numbers below provide context for the recommendation. The value of the report is not more information — it is choosing the next move with confidence.";
+    netWorth
+      ? `Your estimated net worth is ${netWorth}${assets && liabilities ? `, built from about ${assets} in assets minus about ${liabilities} in liabilities` : ""}${homeEquity ? `. Real estate equity accounts for roughly ${homeEquity} of that picture` : ""}. This is separate from cash-flow pressure: a household can have positive net worth and still need monthly breathing room first.`
+      : cashMonths > 0
+        ? `Your cash cushion covers about ${cashMonths.toFixed(1)} months of core expenses${fixedCost ? `, while mortgage/rent, utilities, and must-pay bills are taking about ${fixedCost} of take-home pay` : ""}. That combination tells us whether the next move should focus on safety, margin, or optimization.`
+        : fixedCost
+          ? `Mortgage/rent, utilities, and other must-pay bills are running around ${fixedCost} of take-home pay${debtPayments ? `, with debt payments near ${debtPayments}/month` : ""}. That shows how much room is left to save, invest, and absorb surprises.`
+          : investments
+            ? `Investments are about ${investments}. The question now is whether your current contribution habit and cash reserve are aligned with the future you want.`
+            : "The numbers below provide context for the recommendation. The value of the report is not more information — it is choosing the next move with confidence.";
 
   return [
     {
@@ -3413,16 +3466,13 @@ export default function ResultsPage() {
                 </div>
                 <div className="rounded-2xl border border-copper-200 bg-white p-4">
                   <div className="text-sm font-semibold text-copper-700">
-                    Long-term opportunity
+                    30-year opportunity
                   </div>
                   <div className="mt-2 text-2xl font-bold text-navy-900">
-                    {carPaymentAnalysis.futureValue > 0
-                      ? formatCurrency(carPaymentAnalysis.futureValue)
-                      : formatCurrency(carPaymentAnalysis.reducedFutureValue)}
+                    {formatCurrency(carPaymentAnalysis.futureValue || carPaymentAnalysis.reducedFutureValue)}
                   </div>
                   <p className="mt-2 text-sm leading-6 text-slate-600">
-                    Potential future value from redirecting part of the old
-                    payment over time.
+                    Illustrative future value if about {formatCurrency(carPaymentAnalysis.monthlyInvestment || carPaymentAnalysis.reducedRedirect)}/month from the old payment were redirected for 30 years.
                   </p>
                 </div>
               </div>

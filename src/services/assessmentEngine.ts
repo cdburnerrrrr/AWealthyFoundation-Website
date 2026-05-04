@@ -197,6 +197,21 @@ function formatCurrency(value: number) {
   }).format(round(value));
 }
 
+function getNonPrimaryPropertyEquity(metrics: V2FinancialMetrics) {
+  return (
+    Math.max(0, metrics.rentalPropertyValue - metrics.rentalMortgageBalance) +
+    Math.max(0, metrics.otherPropertyValue - metrics.otherPropertyMortgageBalance)
+  );
+}
+
+function hasPotentialPropertyRelief(metrics: V2FinancialMetrics) {
+  return (
+    metrics.monthlyHousingCost > 0 &&
+    getNonPrimaryPropertyEquity(metrics) > 0 &&
+    metrics.fixedCostPressureRatio >= 65
+  );
+}
+
 function getScoreBand(score: number): string {
   if (score >= 80) return 'Strong Foundation';
   if (score >= 60) return 'Building Momentum';
@@ -836,6 +851,17 @@ export function buildV2Insights(
   }
 
 
+  if (hasPotentialPropertyRelief(metrics)) {
+    const propertyEquity = getNonPrimaryPropertyEquity(metrics);
+    insights.push(
+      `There may be a larger pressure-relief opportunity in the property picture. You appear to be paying about ${formatCurrency(
+        metrics.monthlyHousingCost
+      )}/month for housing while also holding about ${formatCurrency(
+        propertyEquity
+      )} of non-primary-property equity. If the property is usable and local, moving into it may create more monthly relief than selling it; if it is not practical to use, selling it may still be worth comparing against current debt.`
+    );
+  }
+
   if (signals.vehicleLoanUnderwater) {
     insights.push(
       `Your vehicle loan may be limiting flexibility. Based on the numbers entered, you may owe about ${formatCurrency(
@@ -926,6 +952,10 @@ function buildPriorities(
 }
 
 function buildSummary(score: number, biggestOpportunity: BuildingBlockKey, metrics: V2FinancialMetrics) {
+  if (hasPotentialPropertyRelief(metrics)) {
+    return `Right now, monthly pressure matters more than small optimizations. You are paying about ${formatCurrency(metrics.monthlyHousingCost)}/month for housing while also holding about ${formatCurrency(getNonPrimaryPropertyEquity(metrics))} of property equity outside your primary residence. The smartest next step is to compare whether moving into that property, selling it, or keeping it creates the most reliable breathing room.`;
+  }
+
   if (metrics.fixedCostPressureRatio >= 60) {
     return `Right now, about ${round(metrics.fixedCostPressureRatio)}% of take-home pay is already committed before the month really starts. That is why progress may feel tight even when the household is trying to be careful. The fastest lift will come from creating breathing room first.`;
   }
@@ -946,6 +976,14 @@ function buildNextStep(biggestOpportunity: BuildingBlockKey, metrics: V2Financia
     metrics.netWorth >= 250000 ||
     metrics.totalInvestments >= 100000 ||
     signals.eliteCashCushion;
+
+  if (hasPotentialPropertyRelief(metrics)) {
+    const propertyEquity = getNonPrimaryPropertyEquity(metrics);
+    const debtOffset = Math.min(propertyEquity, metrics.consumerDebt);
+    return metrics.consumerDebt > 0
+      ? `Compare the property options before making smaller cuts. If the property is local and livable, moving into it could free up about ${formatCurrency(metrics.monthlyHousingCost)}/month. If moving in is not realistic, selling could potentially eliminate up to ${formatCurrency(debtOffset)} of current non-mortgage debt. Choose the option that creates the most monthly breathing room with the least new risk.`
+      : `Compare moving into the property, selling it, or keeping it. The goal is not just higher net worth — it is creating reliable monthly breathing room while fixed costs are high.`;
+  }
 
   if (strongOverallPosition && signals.excessCashLikely && metrics.excessCashEstimate > 0) {
     return 'Optimize your cash position. Keep the reserve that gives you confidence, then decide how much excess cash should move into higher-yield savings, investments, or another priority that can work harder for your household.';

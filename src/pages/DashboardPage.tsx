@@ -276,6 +276,25 @@ function getDashboardNextMoveCard(
   const investingRate = snapshot?.investmentContributionRate ?? 0;
 
   const vehicleDecision = getVehicleDecisionFromSnapshot(snapshot);
+  const nonPrimaryPropertyEquity =
+    Math.max(0, (snapshot?.rentalPropertyValue ?? 0) - (snapshot?.rentalMortgageBalance ?? 0)) +
+    Math.max(0, (snapshot?.otherPropertyValue ?? 0) - (snapshot?.otherPropertyMortgageBalance ?? 0));
+  const ownsUsablePropertyWhileRenting =
+    answers.housingStatus === "rent" &&
+    nonPrimaryPropertyEquity > 0 &&
+    (snapshot?.housing ?? 0) > 0;
+
+  if (ownsUsablePropertyWhileRenting && (snapshot?.fixedCostLoad ?? 0) >= 65) {
+    return {
+      title: "Review the property you own before making smaller cuts",
+      body: `You are renting while also holding about ${formatCurrency(nonPrimaryPropertyEquity)} of property equity. If that property is usable and local, moving into it could free up about ${formatCurrency(snapshot?.housing ?? 0)}/month before smaller budget changes even matter.`,
+      checklist: [
+        "Confirm whether the property is usable, local, and realistic to live in.",
+        `Compare moving in and saving about ${formatCurrency(snapshot?.housing ?? 0)}/month against selling it to reduce debt.`,
+        "Choose the option that creates the most monthly breathing room without creating new risk.",
+      ],
+    };
+  }
 
   if (vehicleDecision?.priority === "high") {
     return {
@@ -1499,6 +1518,33 @@ function ScoreRing({ value }: { value: number }) {
   );
 }
 
+function getHouseBlockTone(score: number) {
+  if (score >= 70) {
+    return {
+      color: "#34d399",
+      fill: "rgba(16,185,129,.22)",
+      glow: "rgba(16,185,129,.42)",
+      text: "#86efac",
+    };
+  }
+
+  if (score >= 40) {
+    return {
+      color: "#fbbf24",
+      fill: "rgba(251,191,36,.20)",
+      glow: "rgba(251,191,36,.42)",
+      text: "#fde68a",
+    };
+  }
+
+  return {
+    color: "#ef4444",
+    fill: "rgba(239,68,68,.20)",
+    glow: "rgba(239,68,68,.50)",
+    text: "#fca5a5",
+  };
+}
+
 function DashboardHouseVisual({
   pillarScores,
 }: {
@@ -1629,31 +1675,46 @@ function DashboardHouseVisual({
 
         {blocks.map((block) => {
           const score = getScore(block.key);
+          const tone = getHouseBlockTone(score);
           return (
-            <g key={block.key} filter="url(#blockGlowLive)">
+            <g key={block.key}>
               <rect
                 x={block.x}
                 y={block.y}
                 width={block.w}
                 height={block.h}
                 rx="8"
-                fill={`${block.color}22`}
-                stroke={block.color}
+                fill={tone.fill}
+                stroke={tone.color}
                 strokeWidth="2"
+                style={{ filter: `drop-shadow(0 0 ${score < 40 ? 10 : 5}px ${tone.glow})` }}
               />
+              {score < 40 ? (
+                <rect
+                  x={block.x - 2}
+                  y={block.y - 2}
+                  width={block.w + 4}
+                  height={block.h + 4}
+                  rx="10"
+                  fill="none"
+                  stroke={tone.color}
+                  strokeOpacity="0.32"
+                  strokeWidth="2"
+                />
+              ) : null}
               <rect
                 x={block.x}
                 y={block.y + block.h - 6}
                 width={(block.w * score) / 100}
                 height="6"
                 rx="3"
-                fill={block.color}
+                fill={tone.color}
                 opacity="0.95"
               />
               <text
                 x={block.x + 12}
                 y={block.y + (block.key === "vision" ? 15 : 24)}
-                fill="rgba(226,232,240,.9)"
+                fill="rgba(226,232,240,.92)"
                 fontSize={block.key === "vision" ? "11" : "12"}
                 fontWeight="700"
               >
@@ -1662,7 +1723,7 @@ function DashboardHouseVisual({
               <text
                 x={block.x + block.w - 12}
                 y={block.y + (block.key === "vision" ? 15 : 24)}
-                fill={block.color}
+                fill={tone.text}
                 fontSize={block.key === "vision" ? "11" : "13"}
                 fontWeight="800"
                 textAnchor="end"
