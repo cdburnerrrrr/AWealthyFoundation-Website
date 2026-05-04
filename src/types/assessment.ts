@@ -388,6 +388,8 @@ const SNAPSHOT_QUESTION_KEYS = new Set([
   'medicalDebtPayment',
   'debtManageability',
   'debtPaydownStrategy',
+  'incomeProtectionLevel',
+  'protectionCoverage',
   'healthInsurance',
   'investingStatus',
   'employerMatch',

@@ -29,12 +29,14 @@ import { useUserPlan } from '../hooks/useUserPlan';
 import NetWorthActivity from '../components/activities/NetWorthActivity';
 import { generateV2Report } from '../services/assessmentEngine';
 import CarPaymentActivity from '../components/activities/CarPaymentActivity';
+import IncomeProtectionActivity from '../components/activities/IncomeProtectionActivity';
 
 type ResponseValue = string | string[] | number | null;
 type ActivityKey =
   | 'fixedCostPressureReview'
   | 'emergencyFundReview'
   | 'carPaymentOpportunityReview'
+  | 'incomeProtectionRealityCheck'
   | 'netWorthEntry';
 
 const SECTION_ICONS: Record<string, React.ElementType> = {
@@ -59,6 +61,7 @@ const ACTIVITY_KEYS = new Set<ActivityKey>([
   'fixedCostPressureReview',
   'emergencyFundReview',
   'carPaymentOpportunityReview',
+  'incomeProtectionRealityCheck',
   'netWorthEntry',
 ]);
 
@@ -150,9 +153,9 @@ const INLINE_GROUPS: Record<string, string[]> = {
   relationshipStatus: ['monthlyChildcareCost', 'childcarePressure', 'lifeInsurance'],
   housingStatus: ['monthlyHousingCost', 'primaryHomeValue', 'primaryMortgage'],
   additionalPropertyOwnership: ['rentalPropertyValue', 'rentalMortgage', 'rentalPropertyPayment', 'otherPropertyValue', 'otherPropertyDebt', 'otherPropertyPayment'],
-  vehicleDebt: ['carLoanBalance', 'monthlyVehiclePayment'],
+  vehicleDebt: ['carLoanBalance', 'monthlyVehiclePayment', 'vehicleValue'],
   otherDebt: ['creditCardDebt', 'creditCardPayment', 'studentLoans', 'studentLoanPayment', 'personalLoans', 'personalLoanPayment', 'bnplDebt', 'bnplPayment', 'paydayDebt', 'paydayPayment', 'medicalDebt', 'medicalDebtPayment', 'additionalDebt', 'debtManageability', 'debtPaydownStrategy', 'creditCardBehavior'],
-  healthInsurance: ['incomeInterruptionCoverage', 'propertyCoverage', 'autoCoverage'],
+  protectionCoverage: ['lifeInsurance', 'propertyCoverage', 'autoCoverage'],
   investingStatus: [
     'employerMatch',
     'investmentAccounts',
@@ -1181,6 +1184,12 @@ function ActivityStep({ activityKey, responses, onComplete }: ActivityStepProps)
         carLoanBalance={toNumber(responses.carLoanBalance)}
         vehicleValue={toNumber(responses.vehicleValue)}
         monthlyIncome={toNumber(responses.monthlyTakeHomeIncome)}
+        onContinue={(payload) => onComplete(payload)}
+      />
+    ),
+    incomeProtectionRealityCheck: (
+      <IncomeProtectionActivity
+        responses={responses}
         onContinue={(payload) => onComplete(payload)}
       />
     ),

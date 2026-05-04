@@ -337,6 +337,7 @@ function hasDependents(answers: Record<string, any>) {
 function hasCoverage(answers: Record<string, any>, key: string, legacyKey?: string) {
   const coverage =
     answers.protectionCoverage ??
+    answers.insuranceCoverage ??
     answers.protectionCoverages ??
     answers.insuranceCoverages ??
     [];
@@ -907,6 +908,23 @@ export function buildV2Insights(
       `You may be holding more cash than needed. After keeping your chosen emergency reserve, roughly ${formatCurrency(
         metrics.excessCashEstimate
       )} could potentially be redirected toward higher-yield savings, investing, or other priorities.`
+    );
+  }
+
+  const incomeProtectionShift = answers.incomeProtectionShift;
+  const calculatedProtectionMonths = toNumber(answers.incomeProtectionCalculatedMonths) || metrics.emergencyFundMonths;
+
+  if (incomeProtectionShift === 'overestimated') {
+    insights.push(
+      `Your income protection reality check was an important aha moment: your numbers show about ${calculatedProtectionMonths.toFixed(1)} months of must-pay bill coverage, which felt less protected than your first impression.`
+    );
+  } else if (incomeProtectionShift === 'underestimated') {
+    insights.push(
+      `Your income protection reality check showed more backup than you initially felt, with about ${calculatedProtectionMonths.toFixed(1)} months of must-pay bill coverage based on the numbers entered.`
+    );
+  } else if (calculatedProtectionMonths < 3 && !signals.hasVehiclePaymentPressure) {
+    insights.push(
+      'If income stopped, your current emergency savings may not cover even a few months of must-pay bills. Strengthening this layer protects the rest of your foundation.'
     );
   }
 

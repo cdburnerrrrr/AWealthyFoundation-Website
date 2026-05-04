@@ -140,7 +140,7 @@ const INLINE_GROUPS: Record<string, string[]> = {
   additionalPropertyOwnership: ['rentalPropertyValue', 'rentalMortgage', 'rentalPropertyPayment', 'otherPropertyValue', 'otherPropertyDebt', 'otherPropertyPayment'],
   vehicleDebt: ['carLoanBalance', 'monthlyVehiclePayment', 'vehicleValue'],
   otherDebt: ['creditCardDebt', 'creditCardPayment', 'studentLoans', 'studentLoanPayment', 'personalLoans', 'personalLoanPayment', 'bnplDebt', 'bnplPayment', 'paydayDebt', 'paydayPayment', 'medicalDebt', 'medicalDebtPayment', 'additionalDebt', 'debtManageability', 'debtPaydownStrategy', 'creditCardBehavior'],
-  healthInsurance: ['incomeInterruptionCoverage', 'propertyCoverage', 'autoCoverage'],
+  protectionCoverage: ['lifeInsurance', 'propertyCoverage', 'autoCoverage'],
   investingStatus: [
     'employerMatch',
     'investmentAccounts',

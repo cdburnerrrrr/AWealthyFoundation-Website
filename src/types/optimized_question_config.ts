@@ -34,7 +34,8 @@ export const QUESTION_STRATEGY = {
     'debtManageability',
     'progressPriority',
     'debtPaydownStrategy',
-    'healthInsurance',
+    'incomeProtectionLevel',
+    'protectionCoverage',
     'investingStatus',
     'employerMatch',
     'financialDirection',
@@ -53,6 +54,7 @@ export const QUESTION_STRATEGY = {
     'otherPropertyValue',
     'otherPropertyDebt',
     'creditCardBehavior',
+    'incomeProtectionRealityCheck',
     'incomeInterruptionCoverage',
     'lifeInsurance',
     'propertyCoverage',
@@ -1040,9 +1042,26 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
   // PROTECTION
 
   {
+    key: 'incomeProtectionLevel',
+    question: 'If your income stopped tomorrow, how protected would you feel?',
+    type: 'single',
+    section: 'protection',
+    required: true,
+    helperText:
+      'Your income is the engine that drives most households. If it stops, everything else is affected. In the full assessment, we will compare this feeling to your real savings and must-pay monthly bills.',
+    options: [
+      { value: 'well_protected', label: 'Well protected' },
+      { value: 'somewhat_protected', label: 'Somewhat protected' },
+      { value: 'not_protected', label: 'Not protected' },
+    ],
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+
+  {
     key: 'protectionCoverage',
-    question: 'Which protections do you have in place?',
-    helperText: 'Check everything that applies. Leave anything unchecked if you do not have it or are unsure.',
+    question: 'Which insurance protections do you currently have in place?',
+    helperText:
+      'Check everything that applies. This is a quick snapshot, not a full policy review. Leave anything unchecked if you do not have it or are unsure.',
     type: 'multiple',
     section: 'protection',
     required: true,
@@ -1051,42 +1070,62 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       { value: 'auto', label: 'Auto insurance' },
       { value: 'home_or_renters', label: 'Homeowners / renters insurance' },
       { value: 'life', label: 'Life insurance' },
-      { value: 'disability', label: 'Disability / income interruption coverage' },
+      { value: 'disability', label: 'Disability / income protection' },
       { value: 'umbrella', label: 'Umbrella policy' },
+      { value: 'none', label: 'None of these / not sure' },
     ],
-    tags: { modes: ['detailed'], priority: 'core' },
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
   },
 
+  {
+    key: 'incomeProtectionRealityCheck',
+    question: 'See your income protection reality check',
+    type: 'single',
+    section: 'protection',
+    required: false,
+    helperText:
+      'This uses the savings and monthly obligation numbers you already entered to show how long your household could cover must-pay bills if income stopped.',
+    options: [{ value: 'review', label: 'Show me the reality check' }],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: () => true,
+    },
+  },
+
+  // Legacy compatibility fields. These are no longer shown as standalone questions.
   {
     key: 'incomeInterruptionCoverage',
     question: 'If your income stopped for a while, how prepared would you be?',
     type: 'single',
     section: 'protection',
-    required: true,
+    required: false,
     options: [
       { value: 'very_prepared', label: 'Very prepared' },
       { value: 'somewhat_prepared', label: 'Somewhat prepared' },
       { value: 'not_prepared', label: 'Not prepared' },
     ],
-    tags: { modes: ['detailed'], priority: 'conditional' },
+    conditions: [{ operator: 'custom', fn: () => false }],
+    tags: { modes: ['detailed'], priority: 'conditional', askIf: () => false },
   },
   {
     key: 'healthInsurance',
     question: 'Do you have health insurance coverage?',
     type: 'single',
     section: 'protection',
-    required: true,
+    required: false,
     options: [
       { value: 'good_coverage', label: 'Yes, solid coverage' },
       { value: 'basic_coverage', label: 'Yes, basic coverage' },
       { value: 'limited_coverage', label: 'Limited coverage' },
       { value: 'none', label: 'No coverage' },
     ],
-    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+    conditions: [{ operator: 'custom', fn: () => false }],
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core', askIf: () => false },
   },
   {
     key: 'lifeInsurance',
-    question: 'Do you have life insurance coverage?',
+    question: 'Do you have enough life insurance for the people who depend on you?',
     type: 'single',
     section: 'protection',
     required: true,
@@ -1106,12 +1145,14 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       modes: ['detailed'],
       priority: 'conditional',
       askIf: (a) =>
+        Array.isArray(a.protectionCoverage) &&
+        a.protectionCoverage.includes('life') &&
         ['single_with_dependents', 'partnered_with_dependents'].includes(a.relationshipStatus),
     },
   },
   {
     key: 'propertyCoverage',
-    question: 'How would you describe your home or renter coverage?',
+    question: 'How would you describe your homeowners or renters coverage?',
     type: 'single',
     section: 'protection',
     required: true,
@@ -1125,7 +1166,10 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     tags: {
       modes: ['detailed'],
       priority: 'conditional',
-      askIf: (a) => a.housingStatus !== 'living_with_family',
+      askIf: (a) =>
+        Array.isArray(a.protectionCoverage) &&
+        a.protectionCoverage.includes('home_or_renters') &&
+        a.housingStatus !== 'living_with_family',
     },
   },
   {
@@ -1145,7 +1189,10 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     tags: {
       modes: ['detailed'],
       priority: 'conditional',
-      askIf: (a) => a.vehicleDebt !== 'no_vehicle',
+      askIf: (a) =>
+        Array.isArray(a.protectionCoverage) &&
+        a.protectionCoverage.includes('auto') &&
+        a.vehicleDebt !== 'no_vehicle',
     },
   },
 
