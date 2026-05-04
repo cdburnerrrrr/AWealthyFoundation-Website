@@ -148,7 +148,7 @@ const INLINE_GROUPS: Record<string, string[]> = {
     'healthCoverage',
     'umbrellaCoverage',
   ],
-  investingStatus: ['employerMatch'],
+  investingStatus: [],
   investmentAccounts: [
     'k401Balance',
     'k401Contribution',
@@ -206,34 +206,6 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
     ],
     car_lease: [
       { key: 'monthlyVehiclePayment', label: 'Monthly lease payment', placeholder: 'e.g. 420' },
-    ],
-  },
-  investingStatus: {
-    yes_consistently: [
-      {
-        key: 'employerMatch',
-        label: 'Employer match status',
-        type: 'select',
-        options: [
-          { value: 'maximizing_match', label: 'I am getting the full match' },
-          { value: 'have_match_not_maxing', label: 'I have a match but am not getting all of it' },
-          { value: 'have_match_not_contributing', label: 'I have a match but am not contributing right now' },
-          { value: 'no_match_or_no_access', label: 'No match or no workplace plan access' },
-        ],
-      },
-    ],
-    yes_irregularly: [
-      {
-        key: 'employerMatch',
-        label: 'Employer match status',
-        type: 'select',
-        options: [
-          { value: 'maximizing_match', label: 'I am getting the full match' },
-          { value: 'have_match_not_maxing', label: 'I have a match but am not getting all of it' },
-          { value: 'have_match_not_contributing', label: 'I have a match but am not contributing right now' },
-          { value: 'no_match_or_no_access', label: 'No match or no workplace plan access' },
-        ],
-      },
     ],
   },
   additionalPropertyOwnership: {

@@ -1465,50 +1465,6 @@ function normalizePercentMetric(value?: number) {
   return numeric > 1 ? numeric : numeric * 100;
 }
 
-
-function getIncomeProtectionReflection(answers?: Record<string, any>, metrics?: ResultShape["metrics"]) {
-  if (!answers) return null;
-
-  const shift = answers.incomeProtectionShift;
-  const months = Number(
-    answers.incomeProtectionCalculatedMonths ?? metrics?.emergencyFundMonths ?? 0,
-  );
-  const savings = Number(
-    answers.incomeProtectionSavingsUsed ?? metrics?.totalSavings ?? 0,
-  );
-  const essentialCosts = Number(
-    answers.incomeProtectionEssentialMonthlyCosts ?? metrics?.monthlyFixedCosts ?? 0,
-  );
-
-  if (!shift && !answers.incomeProtectionRealityCheck) return null;
-
-  const monthText = Number.isFinite(months)
-    ? `${months.toFixed(months < 10 ? 1 : 0)} months`
-    : "—";
-
-  if (shift === "overestimated") {
-    return {
-      eyebrow: "Income Protection Aha Moment",
-      title: "Your first impression was more confident than the numbers",
-      body: `You initially felt more protected, but your real numbers showed about ${monthText} of must-pay bill coverage. With about ${formatCurrency(savings)} in emergency savings and roughly ${formatCurrency(essentialCosts)} in essential monthly obligations, this is a key stability gap to strengthen.`,
-    };
-  }
-
-  if (shift === "underestimated") {
-    return {
-      eyebrow: "Income Protection Check",
-      title: "Your numbers showed more backup than you felt",
-      body: `The reality check showed about ${monthText} of must-pay bill coverage. That does not mean the job is finished, but it may mean your emergency base is stronger than your first instinct suggested.`,
-    };
-  }
-
-  return {
-    eyebrow: "Income Protection Check",
-    title: "Your income backup matched your first impression",
-    body: `The reality check showed about ${monthText} of must-pay bill coverage based on the numbers entered. This helps confirm whether your protection layer is strong enough or needs to become a priority.`,
-  };
-}
-
 function getBenchmarkProfileLabel(answers?: Record<string, any>) {
   const ageRange =
     answers?.ageRange ||
@@ -2046,6 +2002,39 @@ function FoundationScoreBubble({
   );
 }
 
+
+function getSnapshotPressureHelper(
+  bestNextMoveCard: BestNextMoveCard,
+  metrics?: ResultShape["metrics"],
+  fixedCost?: string,
+) {
+  const title = bestNextMoveCard.title.toLowerCase();
+  const cashMonths = Number(metrics?.emergencyFundMonths ?? 0);
+  const excessCash = Number(metrics?.excessCashEstimate ?? 0);
+  const netWorth = Number(metrics?.netWorth ?? 0);
+  const investingRate = Number(metrics?.investmentContributionRate ?? 0);
+
+  if (title.includes("cash") || title.includes("excess")) {
+    if (cashMonths > 0) return `Cash cushion: ${cashMonths.toFixed(1)} months of core expenses`;
+    if (excessCash > 0) return `Possible excess cash: ${formatCurrency(excessCash)}`;
+    return "Cash may be stronger than the rest of the plan needs right now";
+  }
+
+  if (title.includes("net worth") || title.includes("asset") || title.includes("property")) {
+    return `Estimated net worth: ${formatCurrency(netWorth)}`;
+  }
+
+  if (title.includes("invest")) {
+    return investingRate > 0
+      ? `Investing rate: ${Math.round(investingRate)}% of take-home pay`
+      : "Investing data is based on the monthly contribution entered";
+  }
+
+  return fixedCost
+    ? `Must-pay monthly bills: ${fixedCost} of take-home pay`
+    : "This is where progress may feel stuck";
+}
+
 function ReportSnapshotRow({
   score,
   metrics,
@@ -2088,9 +2077,7 @@ function ReportSnapshotRow({
     {
       label: "Main Pressure Point",
       value: primaryConstraint,
-      helper: fixedCost
-        ? `Must-pay monthly bills: ${fixedCost} of take-home pay`
-        : "This is where progress may feel stuck",
+      helper: getSnapshotPressureHelper(bestNextMoveCard, metrics, fixedCost),
     },
     {
       label: "90-Day Focus",
@@ -3062,7 +3049,6 @@ export default function ResultsPage() {
     (latestHistoryRecord as any)?.answers ??
     {}) as Record<string, any>;
   const carPaymentAnalysis = getCarPaymentAnalysis(assessmentAnswers);
-  const incomeProtectionReflection = getIncomeProtectionReflection(assessmentAnswers, metrics);
   const comparisonProfileLabel = getBenchmarkProfileLabel(assessmentAnswers);
   const comparisonMetrics = getHouseholdComparisonMetrics(
     metrics,
@@ -3388,23 +3374,6 @@ export default function ResultsPage() {
               <ReportMiniBarChart entries={pillarEntries} />
             </div>
           </section>
-
-          {incomeProtectionReflection && (
-            <section
-              data-pdf-page-break-avoid="true"
-              className="mb-8 rounded-3xl border border-copper-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,42,68,0.10)] md:p-7"
-            >
-              <div className="mb-2 text-sm font-semibold uppercase tracking-[0.18em] text-copper-700">
-                {incomeProtectionReflection.eyebrow}
-              </div>
-              <h2 className="text-2xl font-bold text-navy-900">
-                {incomeProtectionReflection.title}
-              </h2>
-              <p className="mt-3 text-base leading-8 text-slate-700">
-                {incomeProtectionReflection.body}
-              </p>
-            </section>
-          )}
 
           <section
             data-pdf-dark-card="true"

@@ -37,7 +37,6 @@ export const QUESTION_STRATEGY = {
     'incomeProtectionLevel',
     'protectionCoverage',
     'investingStatus',
-    'employerMatch',
     'financialDirection',
     'primaryFinancialPriority',
     'financialConfidence',
@@ -82,6 +81,7 @@ export const QUESTION_STRATEGY = {
     'otherAssets',
     'investmentMix',
     'savingsAutomation',
+    'monthlySavingsContribution',
     'creditCardDebt',
     'studentLoans',
     'personalLoans',
@@ -1207,6 +1207,18 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     },
   },
 
+
+  {
+    key: 'monthlySavingsContribution',
+    question: 'About how much do you intentionally save each month?',
+    type: 'number',
+    section: 'saving',
+    required: false,
+    placeholder: 'e.g. 500',
+    helperText: 'Do not include investment contributions here. Use the amount that goes into savings or cash reserves each month.',
+    tags: { modes: ['detailed'], priority: 'conditional' },
+  },
+
   // INVESTING
   {
     key: 'investingStatus',
@@ -1234,7 +1246,8 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       { value: 'have_match_not_contributing', label: 'Yes, but I am not contributing right now' },
       { value: 'no_match_or_no_access', label: 'No match or no workplace plan access' },
     ],
-    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+    conditions: [{ operator: 'custom', fn: () => false }],
+    tags: { modes: ['detailed'], priority: 'conditional', askIf: () => false },
   },
   {
     key: 'investmentAccounts',
@@ -1249,7 +1262,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       { value: '401k', label: '401(k) / workplace plan' },
       { value: 'roth_ira', label: 'Roth IRA' },
       { value: 'traditional_ira', label: 'Traditional IRA' },
-      { value: 'brokerage', label: 'Taxable brokerage account' },
+      { value: 'brokerage', label: 'Taxable brokerage / individual stocks' },
       { value: 'hsa', label: 'HSA invested for the future' },
       { value: 'other', label: 'Other investment account' },
       { value: 'none', label: 'None yet' },

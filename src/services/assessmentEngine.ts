@@ -246,6 +246,7 @@ function getInvestmentTotal(answers: Record<string, any>) {
 
   const legacy = firstNumber(answers, ['totalInvestments', 'investmentBalance']);
 
+  if (answers.netWorthEntry === 'completed' && legacy >= 0) return legacy;
   return Math.max(itemized, legacy);
 }
 
@@ -437,9 +438,19 @@ export function buildV2FinancialMetrics(
   const otherAssets = getOtherAssets(answers);
   const otherLiabilities = getOtherLiabilities(answers);
 
-  const totalAssets = cashSavings + totalInvestments + realEstateAssets + otherAssets;
-  const totalLiabilities = mortgageDebt + consumerDebt + otherLiabilities;
-  const netWorth = totalAssets - totalLiabilities;
+  const calculatedTotalAssets = cashSavings + totalInvestments + realEstateAssets + otherAssets;
+  const calculatedTotalLiabilities = mortgageDebt + consumerDebt + otherLiabilities;
+  const explicitTotalAssets = toNumber(answers.totalAssets);
+  const explicitTotalLiabilities = toNumber(answers.totalLiabilities);
+  const explicitNetWorth = answers.netWorth !== undefined && answers.netWorth !== null && answers.netWorth !== ''
+    ? toNumber(answers.netWorth)
+    : 0;
+
+  const totalAssets = answers.netWorthEntry === 'completed' && explicitTotalAssets > 0 ? explicitTotalAssets : calculatedTotalAssets;
+  const totalLiabilities = answers.netWorthEntry === 'completed' && explicitTotalLiabilities >= 0 ? explicitTotalLiabilities : calculatedTotalLiabilities;
+  const netWorth = answers.netWorthEntry === 'completed' && (explicitNetWorth !== 0 || explicitTotalAssets > 0 || explicitTotalLiabilities > 0)
+    ? explicitNetWorth
+    : totalAssets - totalLiabilities;
   const homeEquity = Math.max(0, realEstateAssets - mortgageDebt);
   const liquidAssets = cashSavings + brokerageBalance;
   const illiquidAssets = retirement401kIraBalance + rothBalance + pensionBalance + otherInvestmentAssets + homeEquity;
@@ -456,11 +467,17 @@ export function buildV2FinancialMetrics(
   const investmentContributionRate =
     monthlyIncome > 0 ? (monthlyInvestmentContribution / monthlyIncome) * 100 : 0;
 
+  const monthlySavingsContribution = firstNumber(answers, [
+    'monthlySavingsContribution',
+    'monthlySavings',
+    'monthlyCashSavings',
+    'monthlyEmergencyFundContribution',
+  ]);
+
   const savingsRate =
     monthlyIncome > 0
-      ? (firstNumber(answers, ['monthlySavings', 'monthlyInvestmentContribution', 'monthly401kContribution', 'monthlyRetirementContribution', 'monthlyInvestingAmount']) / monthlyIncome) *
-        100
-      : toNumber(answers.investingPercent) || toNumber(answers.retirementContributionPercent);
+      ? (monthlySavingsContribution / monthlyIncome) * 100
+      : 0;
 
   const emergencyFundMonths =
     monthlyFixedCosts > 0 ? cashSavings / monthlyFixedCosts : 0;
