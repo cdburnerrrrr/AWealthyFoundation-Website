@@ -273,6 +273,39 @@ function getSectionLabel(section?: Question['section'], key?: string) {
   return BUILDING_BLOCK_LABELS[section as BuildingBlockKey] ?? 'Assessment';
 }
 
+
+function getQuestionDisplayText(question: Question | undefined, responses: Record<string, any>) {
+  if (!question) return '';
+
+  if (question.key === 'additionalPropertyOwnership') {
+    if (responses.housingStatus === 'rent') {
+      return 'We know you are currently renting, but do you own any rental property, land, or other real estate?';
+    }
+
+    if (responses.housingStatus === 'living_with_family') {
+      return 'Do you own any rental property, land, or other real estate?';
+    }
+
+    return 'Do you own any real estate besides your primary home?';
+  }
+
+  return question.question;
+}
+
+function getQuestionDisplayHelper(question: Question | undefined, responses: Record<string, any>) {
+  if (!question) return undefined;
+
+  if (question.key === 'additionalPropertyOwnership') {
+    if (responses.housingStatus === 'rent' || responses.housingStatus === 'living_with_family') {
+      return 'Only include property you own, such as rental property, land, second homes, or other real estate.';
+    }
+
+    return 'Your primary home was already captured in the housing question. Only include rental property, land, second homes, or other property here.';
+  }
+
+  return question.helperText;
+}
+
 function isAnswered(question: Question | undefined, value: ResponseValue | undefined) {
   if (!question) return false;
 
@@ -1629,11 +1662,11 @@ export default function ComprehensiveQuestionnaire() {
 
               <div className="rounded-2xl border-l-4 border-copper-500 bg-slate-100 border border-slate-200 px-4 py-4 mb-6">
                 <h1 className="text-2xl md:text-3xl font-bold text-navy-900 leading-tight">
-                  {currentQuestion.question}
+                  {getQuestionDisplayText(currentQuestion, responses)}
                 </h1>
 
-                {currentQuestion.helperText ? (
-                  <p className="mt-3 text-gray-600 leading-7">{currentQuestion.helperText}</p>
+                {getQuestionDisplayHelper(currentQuestion, responses) ? (
+                  <p className="mt-3 text-gray-600 leading-7">{getQuestionDisplayHelper(currentQuestion, responses)}</p>
                 ) : null}
               </div>
 

@@ -202,12 +202,12 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
 
   {
     key: 'additionalPropertyOwnership',
-    question: 'Do you own any real estate besides your primary home?',
+    question: 'Do you own any rental property, land, second home, or other real estate?',
     type: 'multiple',
     section: 'spending',
     required: true,
     helperText:
-      'Your primary home was already captured in the housing question. Only include rental property, land, second homes, or other property here.',
+      'Only include real estate you own outside your primary residence, such as rental property, land, or a second home.',
     options: [
       { value: 'rental_property', label: 'Rental property' },
       { value: 'other_property', label: 'Other property / land / second home' },
