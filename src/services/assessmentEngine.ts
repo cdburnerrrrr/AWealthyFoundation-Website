@@ -239,6 +239,7 @@ function getInvestmentTotal(answers: Record<string, any>) {
     toNumber(answers.rothAccounts) +
     toNumber(answers.brokerageBalance) +
     toNumber(answers.brokerageAccounts) +
+    toNumber(answers.hsaBalance) +
     toNumber(answers.pensionBalance) +
     toNumber(answers.otherInvestmentAssets) +
     toNumber(answers.otherInvestments);
@@ -343,12 +344,12 @@ function hasCoverage(answers: Record<string, any>, key: string, legacyKey?: stri
     [];
 
   const aliases: Record<string, string[]> = {
-    hasHealthInsurance: ['health', 'health_insurance', 'good_coverage', 'basic_coverage'],
-    hasAutoInsurance: ['auto', 'auto_insurance', 'full', 'basic'],
-    hasHomeInsurance: ['home_or_renters', 'home', 'renters', 'property', 'solid', 'basic'],
-    hasLifeInsurance: ['life', 'life_insurance', 'enough', 'some'],
-    hasDisabilityInsurance: ['disability', 'income_interruption', 'very_prepared', 'somewhat_prepared'],
-    hasUmbrellaPolicy: ['umbrella', 'umbrella_policy'],
+    hasHealthInsurance: ['health', 'health_insurance', 'healthCoverage', 'good_coverage', 'basic_coverage'],
+    hasAutoInsurance: ['auto', 'auto_insurance', 'autoCoverage', 'full', 'basic'],
+    hasHomeInsurance: ['home_or_renters', 'home', 'renters', 'property', 'propertyCoverage', 'solid', 'basic'],
+    hasLifeInsurance: ['life', 'life_insurance', 'lifeInsurance', 'enough', 'some'],
+    hasDisabilityInsurance: ['disability', 'income_interruption', 'disabilityCoverage', 'strong', 'employer_basic', 'very_prepared', 'somewhat_prepared'],
+    hasUmbrellaPolicy: ['umbrella', 'umbrella_policy', 'umbrellaCoverage'],
   };
 
   const accepted = [key, legacyKey, ...(aliases[key] ?? []), ...(legacyKey ? aliases[legacyKey] ?? [] : [])]
@@ -371,13 +372,24 @@ export function buildV2FinancialMetrics(
   const monthlyUtilities = firstNumber(answers, ['monthlyUtilities']);
   const monthlyChildcareCost = firstNumber(answers, ['monthlyChildcareCost']);
   const monthlyDebtPayments = getConsumerDebtPayments(answers);
-  const monthlyInvestmentContribution = firstNumber(answers, [
+  const itemizedInvestmentContribution =
+    toNumber(answers.k401Contribution) +
+    toNumber(answers.iraContribution) +
+    toNumber(answers.rothContribution) +
+    toNumber(answers.brokerageContribution) +
+    toNumber(answers.hsaContribution) +
+    toNumber(answers.otherInvestmentContribution);
+
+  const legacyInvestmentContribution = firstNumber(answers, [
     'monthlyInvestmentContribution',
     'monthly401kContribution',
     'monthlyRetirementContribution',
     'monthlyInvestingAmount',
     'monthlyInvestmentAmount',
   ]);
+
+  const monthlyInvestmentContribution =
+    itemizedInvestmentContribution > 0 ? itemizedInvestmentContribution : legacyInvestmentContribution;
 
   const vehicleLoanBalance = firstNumber(answers, ['carLoanBalance', 'vehicleLoanBalance', 'autoLoanBalance']);
   const vehicleValue = firstNumber(answers, ['vehicleValue', 'carValue', 'estimatedVehicleValue']);
@@ -404,7 +416,10 @@ export function buildV2FinancialMetrics(
   const rothBalance = toNumber(answers.rothBalance) + toNumber(answers.rothAccounts);
   const brokerageBalance = toNumber(answers.brokerageBalance) + toNumber(answers.brokerageAccounts);
   const pensionBalance = toNumber(answers.pensionBalance);
-  const otherInvestmentAssets = toNumber(answers.otherInvestmentAssets) + toNumber(answers.otherInvestments);
+  const otherInvestmentAssets =
+    toNumber(answers.hsaBalance) +
+    toNumber(answers.otherInvestmentAssets) +
+    toNumber(answers.otherInvestments);
 
   const totalInvestments = getInvestmentTotal(answers);
   const primaryHomeValue = toNumber(answers.primaryHomeValue) || toNumber(answers.homeValue);

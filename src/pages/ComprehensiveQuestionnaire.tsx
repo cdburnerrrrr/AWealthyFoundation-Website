@@ -155,12 +155,30 @@ const INLINE_GROUPS: Record<string, string[]> = {
   additionalPropertyOwnership: ['rentalPropertyValue', 'rentalMortgage', 'rentalPropertyPayment', 'otherPropertyValue', 'otherPropertyDebt', 'otherPropertyPayment'],
   vehicleDebt: ['carLoanBalance', 'monthlyVehiclePayment', 'vehicleValue'],
   otherDebt: ['creditCardDebt', 'creditCardPayment', 'studentLoans', 'studentLoanPayment', 'personalLoans', 'personalLoanPayment', 'bnplDebt', 'bnplPayment', 'paydayDebt', 'paydayPayment', 'medicalDebt', 'medicalDebtPayment', 'additionalDebt', 'debtManageability', 'debtPaydownStrategy', 'creditCardBehavior'],
-  protectionCoverage: ['lifeInsurance', 'propertyCoverage', 'autoCoverage'],
-  investingStatus: [
-    'employerMatch',
-    'investmentAccounts',
+  protectionCoverage: [
+    'lifeInsurance',
+    'propertyCoverage',
+    'autoCoverage',
+    'disabilityCoverage',
+    'healthCoverage',
+    'umbrellaCoverage',
+  ],
+  investingStatus: ['employerMatch'],
+  investmentAccounts: [
+    'k401Balance',
+    'k401Contribution',
+    'k401Match',
+    'iraBalance',
+    'iraContribution',
+    'rothBalance',
+    'rothContribution',
+    'brokerageBalance',
+    'brokerageContribution',
+    'hsaBalance',
+    'hsaContribution',
+    'otherInvestmentAssets',
+    'otherInvestmentContribution',
     'investmentConfidence',
-    'totalInvestments',
     'investmentMix',
   ],
   savingConsistency: ['savingsAutomation'],
@@ -168,13 +186,16 @@ const INLINE_GROUPS: Record<string, string[]> = {
 
 const CHILD_KEYS = new Set(Object.values(INLINE_GROUPS).flat());
 
-type InlineMoneyField = {
+type InlineField = {
   key: string;
   label: string;
   placeholder?: string;
+  type?: 'number' | 'select';
+  options?: { value: string; label: string }[];
+  required?: boolean;
 };
 
-const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineMoneyField[]>> = {
+const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
   housingStatus: {
     living_with_family: [
       { key: 'monthlyHousingCost', label: 'Monthly contribution, if any', placeholder: 'e.g. 0' },
@@ -190,6 +211,44 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineMoneyField[]>> = 
     own_outright: [
       { key: 'monthlyHousingCost', label: 'Monthly housing costs, if any', placeholder: 'e.g. 0' },
       { key: 'primaryHomeValue', label: 'Estimated home value', placeholder: 'e.g. 350000' },
+    ],
+  },
+  vehicleDebt: {
+    car_loan: [
+      { key: 'carLoanBalance', label: 'Loan balance', placeholder: 'e.g. 18000' },
+      { key: 'monthlyVehiclePayment', label: 'Monthly payment', placeholder: 'e.g. 540' },
+      { key: 'vehicleValue', label: 'Estimated vehicle value', placeholder: 'e.g. 15000' },
+    ],
+    car_lease: [
+      { key: 'monthlyVehiclePayment', label: 'Monthly lease payment', placeholder: 'e.g. 420' },
+    ],
+  },
+  investingStatus: {
+    yes_consistently: [
+      {
+        key: 'employerMatch',
+        label: 'Employer match status',
+        type: 'select',
+        options: [
+          { value: 'maximizing_match', label: 'I am getting the full match' },
+          { value: 'have_match_not_maxing', label: 'I have a match but am not getting all of it' },
+          { value: 'have_match_not_contributing', label: 'I have a match but am not contributing right now' },
+          { value: 'no_match_or_no_access', label: 'No match or no workplace plan access' },
+        ],
+      },
+    ],
+    yes_irregularly: [
+      {
+        key: 'employerMatch',
+        label: 'Employer match status',
+        type: 'select',
+        options: [
+          { value: 'maximizing_match', label: 'I am getting the full match' },
+          { value: 'have_match_not_maxing', label: 'I have a match but am not getting all of it' },
+          { value: 'have_match_not_contributing', label: 'I have a match but am not contributing right now' },
+          { value: 'no_match_or_no_access', label: 'No match or no workplace plan access' },
+        ],
+      },
     ],
   },
   additionalPropertyOwnership: {
@@ -230,6 +289,121 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineMoneyField[]>> = 
       { key: 'medicalDebtPayment', label: 'Monthly payment', placeholder: 'e.g. 50' },
     ],
   },
+  protectionCoverage: {
+    health: [
+      {
+        key: 'healthCoverage',
+        label: 'Health coverage quality',
+        type: 'select',
+        options: [
+          { value: 'good_coverage', label: 'Solid coverage' },
+          { value: 'basic_coverage', label: 'Basic coverage' },
+          { value: 'limited_coverage', label: 'Limited or high deductible' },
+          { value: 'not_sure', label: 'Not sure' },
+        ],
+      },
+    ],
+    auto: [
+      {
+        key: 'autoCoverage',
+        label: 'Auto coverage level',
+        type: 'select',
+        options: [
+          { value: 'full', label: 'Full coverage' },
+          { value: 'basic', label: 'Basic but reasonable' },
+          { value: 'minimal', label: 'Minimal' },
+          { value: 'minimum', label: 'State minimum only' },
+        ],
+      },
+    ],
+    home_or_renters: [
+      {
+        key: 'propertyCoverage',
+        label: 'Homeowners / renters coverage',
+        type: 'select',
+        options: [
+          { value: 'solid', label: 'Solid coverage' },
+          { value: 'basic', label: 'Basic coverage' },
+          { value: 'minimal', label: 'Minimal / unsure' },
+          { value: 'none', label: 'No coverage' },
+        ],
+      },
+    ],
+    life: [
+      {
+        key: 'lifeInsurance',
+        label: 'Life insurance adequacy',
+        type: 'select',
+        options: [
+          { value: 'enough', label: 'Enough for the people who depend on me' },
+          { value: 'some', label: 'Some, but probably not enough' },
+          { value: 'none', label: 'No life insurance' },
+          { value: 'not_needed', label: 'No one depends on my income' },
+        ],
+      },
+    ],
+    disability: [
+      {
+        key: 'disabilityCoverage',
+        label: 'Disability / income protection',
+        type: 'select',
+        options: [
+          { value: 'strong', label: 'Strong disability coverage' },
+          { value: 'employer_basic', label: 'Basic employer coverage' },
+          { value: 'not_sure', label: 'Not sure what I have' },
+          { value: 'none', label: 'No disability coverage' },
+        ],
+      },
+    ],
+    umbrella: [
+      {
+        key: 'umbrellaCoverage',
+        label: 'Umbrella policy status',
+        type: 'select',
+        options: [
+          { value: 'yes', label: 'Yes' },
+          { value: 'no', label: 'No' },
+          { value: 'not_sure', label: 'Not sure' },
+        ],
+      },
+    ],
+  },
+  investmentAccounts: {
+    '401k': [
+      { key: 'k401Balance', label: 'Current balance', placeholder: 'e.g. 85000' },
+      { key: 'k401Contribution', label: 'Monthly contribution', placeholder: 'e.g. 500' },
+      {
+        key: 'k401Match',
+        label: 'Employer match',
+        type: 'select',
+        options: [
+          { value: 'maximizing_match', label: 'Getting the full match' },
+          { value: 'have_match_not_maxing', label: 'Not getting the full match' },
+          { value: 'no_match_or_no_access', label: 'No match or unsure' },
+        ],
+      },
+    ],
+    roth_ira: [
+      { key: 'rothBalance', label: 'Current balance', placeholder: 'e.g. 25000' },
+      { key: 'rothContribution', label: 'Monthly contribution', placeholder: 'e.g. 250' },
+    ],
+    traditional_ira: [
+      { key: 'iraBalance', label: 'Current balance', placeholder: 'e.g. 30000' },
+      { key: 'iraContribution', label: 'Monthly contribution', placeholder: 'e.g. 250' },
+    ],
+    brokerage: [
+      { key: 'brokerageBalance', label: 'Current balance', placeholder: 'e.g. 50000' },
+      { key: 'brokerageContribution', label: 'Monthly contribution', placeholder: 'e.g. 300' },
+    ],
+    hsa: [
+      { key: 'hsaBalance', label: 'Invested HSA balance', placeholder: 'e.g. 8000' },
+      { key: 'hsaContribution', label: 'Monthly contribution', placeholder: 'e.g. 150' },
+    ],
+    other: [
+      { key: 'otherInvestmentAssets', label: 'Current balance', placeholder: 'e.g. 10000' },
+      { key: 'otherInvestmentContribution', label: 'Monthly contribution', placeholder: 'e.g. 100' },
+    ],
+  },
 };
 
 const OBJECT_INLINE_ROOT_KEYS = new Set(Object.keys(OBJECT_FIELD_GROUPS));
@@ -243,13 +417,14 @@ function getRequiredObjectFieldKeys(question: Question | undefined, responses: R
   return selected
     .filter((value) => value !== 'none')
     .flatMap((value) => OBJECT_FIELD_GROUPS[question.key]?.[value] ?? [])
+    .filter((field) => field.required !== false)
     .map((field) => field.key);
 }
 
 function objectFieldsAnswered(question: Question | undefined, responses: Record<string, any>) {
   return getRequiredObjectFieldKeys(question, responses).every((key) => {
     const value = responses[key];
-    return value !== '' && value !== undefined && value !== null && !Number.isNaN(Number(value));
+    return value !== '' && value !== undefined && value !== null;
   });
 }
 
@@ -397,6 +572,7 @@ function getContinueModeQuestions(responses: Record<string, any>) {
 
   return detailed.filter((question) => {
     const answered = isAnswered(question, responses[question.key]);
+    if (question.key === 'protectionCoverage') return true;
     return !(snapshotKeys.has(question.key) && answered);
   });
 }
@@ -825,20 +1001,39 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
                         <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                           {field.label}
                         </span>
-                        <input
-                          type="number"
-                          inputMode="decimal"
-                          value={responses[field.key] ?? ''}
-                          onPointerDownCapture={(event) => event.stopPropagation()}
-                          onClick={(event) => event.stopPropagation()}
-                          onMouseDown={(event) => event.stopPropagation()}
-                          onChange={(event) => {
-                            const raw = event.target.value;
-                            onFieldChange?.(field.key, raw === '' ? '' : raw);
-                          }}
-                          placeholder={field.placeholder || 'e.g. 0'}
-                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
-                        />
+                        {field.type === 'select' ? (
+                          <select
+                            value={responses[field.key] ?? ''}
+                            onPointerDownCapture={(event) => event.stopPropagation()}
+                            onClick={(event) => event.stopPropagation()}
+                            onMouseDown={(event) => event.stopPropagation()}
+                            onChange={(event) => onFieldChange?.(field.key, event.target.value)}
+                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
+                          >
+                            <option value="">Choose one</option>
+                            {(field.options ?? []).map((choice) => (
+                              <option key={choice.value} value={choice.value}>
+                                {choice.label}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            value={responses[field.key] ?? ''}
+                            onPointerDownCapture={(event) => event.stopPropagation()}
+                            onClick={(event) => event.stopPropagation()}
+                            onMouseDown={(event) => event.stopPropagation()}
+                            onWheel={(event) => event.currentTarget.blur()}
+                            onChange={(event) => {
+                              const raw = event.target.value;
+                              onFieldChange?.(field.key, raw === '' ? '' : raw);
+                            }}
+                            placeholder={field.placeholder || 'e.g. 0'}
+                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
+                          />
+                        )}
                       </label>
                     ))}
                   </div>
@@ -886,20 +1081,39 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
                     <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                       {field.label}
                     </span>
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      value={responses[field.key] ?? ''}
-                      onPointerDownCapture={(event) => event.stopPropagation()}
-                      onClick={(event) => event.stopPropagation()}
-                      onMouseDown={(event) => event.stopPropagation()}
-                      onChange={(event) => {
-                        const raw = event.target.value;
-                        onFieldChange?.(field.key, raw === '' ? '' : raw);
-                      }}
-                      placeholder={field.placeholder || 'e.g. 0'}
-                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
-                    />
+                    {field.type === 'select' ? (
+                      <select
+                        value={responses[field.key] ?? ''}
+                        onPointerDownCapture={(event) => event.stopPropagation()}
+                        onClick={(event) => event.stopPropagation()}
+                        onMouseDown={(event) => event.stopPropagation()}
+                        onChange={(event) => onFieldChange?.(field.key, event.target.value)}
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
+                      >
+                        <option value="">Choose one</option>
+                        {(field.options ?? []).map((choice) => (
+                          <option key={choice.value} value={choice.value}>
+                            {choice.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={responses[field.key] ?? ''}
+                        onPointerDownCapture={(event) => event.stopPropagation()}
+                        onClick={(event) => event.stopPropagation()}
+                        onMouseDown={(event) => event.stopPropagation()}
+                        onWheel={(event) => event.currentTarget.blur()}
+                        onChange={(event) => {
+                          const raw = event.target.value;
+                          onFieldChange?.(field.key, raw === '' ? '' : raw);
+                        }}
+                        placeholder={field.placeholder || 'e.g. 0'}
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
+                      />
+                    )}
                   </label>
                 ))}
               </div>
@@ -925,7 +1139,7 @@ function NumberInput({ question, value, onChange, onEnter }: NumberInputProps) {
         Best guess is fine
       </label>
       <input
-        type="number"
+        type="text"
         inputMode="decimal"
         value={value ?? ''}
         onChange={(e) => {

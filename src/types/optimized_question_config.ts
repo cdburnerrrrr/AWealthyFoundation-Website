@@ -56,18 +56,29 @@ export const QUESTION_STRATEGY = {
     'creditCardBehavior',
     'incomeProtectionRealityCheck',
     'incomeInterruptionCoverage',
+    'healthCoverage',
     'lifeInsurance',
     'propertyCoverage',
     'autoCoverage',
+    'disabilityCoverage',
+    'umbrellaCoverage',
     'investmentAccounts',
     'investmentConfidence',
-    'totalInvestments',
-    'monthlyInvestmentContribution',
-    'cashSavings',
-    'retirementAccounts',
+    'investmentMix',
+    'k401Balance',
+    'k401Contribution',
+    'k401Match',
+    'iraBalance',
+    'iraContribution',
     'rothBalance',
-    'brokerageAccounts',
-    'otherInvestments',
+    'rothContribution',
+    'brokerageBalance',
+    'brokerageContribution',
+    'hsaBalance',
+    'hsaContribution',
+    'otherInvestmentAssets',
+    'otherInvestmentContribution',
+    'cashSavings',
     'otherAssets',
     'investmentMix',
     'savingsAutomation',
@@ -1240,6 +1251,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       { value: 'traditional_ira', label: 'Traditional IRA' },
       { value: 'brokerage', label: 'Taxable brokerage account' },
       { value: 'hsa', label: 'HSA invested for the future' },
+      { value: 'other', label: 'Other investment account' },
       { value: 'none', label: 'None yet' },
     ],
     tags: {
@@ -1278,13 +1290,11 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       placeholder: 'e.g. 125000',
       helperText:
         'Include 401(k), IRA, brokerage accounts, and other investment accounts. A best estimate is fine.',
-      conditions: [
-        { key: 'investingStatus', operator: 'in', value: ['yes_consistently', 'yes_irregularly'] },
-      ],
+      conditions: [{ operator: 'custom', fn: () => false }],
       tags: {
         modes: ['detailed'],
         priority: 'conditional',
-        askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
+        askIf: () => false,
       },
     },
 
@@ -1297,13 +1307,11 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       placeholder: 'e.g. 500',
       helperText:
         'Include 401(k), IRA, brokerage, HSA investments, and any automatic retirement contributions. A good estimate is fine.',
-      conditions: [
-        { key: 'investingStatus', operator: 'in', value: ['yes_consistently', 'yes_irregularly'] },
-      ],
+      conditions: [{ operator: 'custom', fn: () => false }],
       tags: {
         modes: ['detailed'],
         priority: 'conditional',
-        askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
+        askIf: () => false,
       },
     },
     {
@@ -1324,15 +1332,8 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       section: 'investing',
       required: false,
       placeholder: 'e.g. 150000',
-      conditions: [
-      { key: 'investingStatus', operator: 'in', value: ['yes_consistently', 'yes_irregularly'] },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
-    },
-    },
+      conditions: [{ operator: 'custom', fn: () => false }],
+    tags: { modes: ['detailed'], priority: 'conditional', askIf: () => false },},
     {
       key: 'rothBalance',
       question: 'Roth IRA / Roth 401k balance',
@@ -1341,15 +1342,8 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       required: false,
       placeholder: 'e.g. 25000',
       helperText: 'Leave blank if this does not apply.',
-      conditions: [
-      { key: 'investingStatus', operator: 'in', value: ['yes_consistently', 'yes_irregularly'] },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
-    },
-    },
+      conditions: [{ operator: 'custom', fn: () => false }],
+    tags: { modes: ['detailed'], priority: 'conditional', askIf: () => false },},
     {
       key: 'brokerageAccounts',
       question: 'Taxable brokerage account balance',
@@ -1357,15 +1351,8 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       section: 'investing',
       required: false,
       placeholder: 'e.g. 50000',
-      conditions: [
-      { key: 'investingStatus', operator: 'in', value: ['yes_consistently', 'yes_irregularly'] },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
-    },
-    },
+      conditions: [{ operator: 'custom', fn: () => false }],
+    tags: { modes: ['detailed'], priority: 'conditional', askIf: () => false },},
     {
       key: 'otherInvestments',
       question: 'Other investments',
@@ -1373,15 +1360,8 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       section: 'investing',
       required: false,
       placeholder: 'e.g. 10000',
-      conditions: [
-      { key: 'investingStatus', operator: 'in', value: ['yes_consistently', 'yes_irregularly'] },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
-    },
-    },
+      conditions: [{ operator: 'custom', fn: () => false }],
+    tags: { modes: ['detailed'], priority: 'conditional', askIf: () => false },},
     {
       key: 'otherAssets',
       question: 'Other assets (optional)',
@@ -1429,7 +1409,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     askIf: (a) =>
       Boolean(a.totalLiquidSavings) &&
       (
-        Boolean(a.totalInvestments) ||
+        Boolean(a.totalInvestments) || Boolean(a.k401Balance) || Boolean(a.iraBalance) || Boolean(a.rothBalance) || Boolean(a.brokerageBalance) || Boolean(a.hsaBalance) || Boolean(a.otherInvestmentAssets) ||
         Boolean(a.carLoanBalance) ||
         Boolean(a.creditCardDebt) ||
         Boolean(a.studentLoans) ||

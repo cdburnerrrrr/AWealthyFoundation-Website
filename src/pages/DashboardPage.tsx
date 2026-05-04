@@ -1962,7 +1962,7 @@ function DashboardMomentumPanel({
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <div className="inline-flex items-center gap-2 rounded-full bg-cyan-300/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200">
             <TrendingUp className="h-3.5 w-3.5" />
-            Progress
+            Action Momentum
           </div>
           {lastActivityLabel && (
             <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-semibold text-slate-300">
@@ -1972,17 +1972,19 @@ function DashboardMomentumPanel({
         </div>
 
         <h3 className="text-xl font-bold text-white">{headline}</h3>
-        <p className="mt-2 text-sm leading-6 text-slate-300">{encouragement}</p>
+        <p className="mt-2 text-sm leading-6 text-slate-300">
+          This tracks small actions you complete from Today’s Move and your report plan. It is not another score — it is your weekly follow-through signal. {encouragement}
+        </p>
 
         <div className="mt-5 grid grid-cols-2 gap-3">
           <div className="rounded-2xl bg-white/[0.06] p-4">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-              This Week
+              Moves This Week
             </div>
             <div className="mt-2 text-2xl font-bold text-white">
               {weeklyCompleted}/{weeklyTotal}
             </div>
-            <div className="text-xs text-slate-400">actions</div>
+            <div className="text-xs text-slate-400">completed</div>
           </div>
 
           <div className="rounded-2xl bg-white/[0.06] p-4">
@@ -1997,7 +1999,7 @@ function DashboardMomentumPanel({
 
         <div className="mt-4 rounded-2xl bg-white/[0.06] p-4">
           <div className="mb-2 flex items-center justify-between text-xs text-slate-400">
-            <span>Weekly progress</span>
+            <span>Weekly action progress</span>
             <span>{weeklyPercent}%</span>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-white/15">
@@ -2010,7 +2012,7 @@ function DashboardMomentumPanel({
       </div>
 
       <div className="mt-5 rounded-2xl border border-cyan-300/15 bg-cyan-300/6 p-4 text-sm leading-6 text-slate-300">
-        Next milestone: complete 3 small moves this week. The action lives above; this card tracks momentum.
+        Complete small moves from Today’s Move or the report plan. This card simply shows whether those actions are turning into momentum.
       </div>
     </DashboardPanel>
   );
