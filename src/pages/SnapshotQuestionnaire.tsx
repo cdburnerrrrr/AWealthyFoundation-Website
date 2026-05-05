@@ -856,10 +856,9 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
                                 if (result !== null) onFieldChange?.(field.key, String(result));
                               }}
                               tabIndex={-1}
-                              className="ml-auto inline-flex items-center gap-1 rounded-full border border-copper-200 bg-white px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-copper-700 shadow-sm transition hover:bg-copper-50"
+                              className="ml-auto rounded-lg border border-slate-200 bg-white px-2 py-1 text-slate-400 transition hover:border-copper-200 hover:bg-copper-50 hover:text-copper-700"
                             >
                               <Calculator className="h-3.5 w-3.5" />
-                              Calc
                             </button>
                           ) : null}
                         </div>
@@ -949,6 +948,24 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
                       ) : (
                         <span>{field.label}</span>
                       )}
+                      {field.type !== 'select' ? (
+                        <button
+                          type="button"
+                          aria-label={`Open calculator for ${field.label}`}
+                          onPointerDownCapture={(event) => event.stopPropagation()}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            const result = runFieldCalculator(responses[field.key]);
+                            if (result !== null) onFieldChange?.(field.key, String(result));
+                          }}
+                          tabIndex={-1}
+                          className="ml-auto inline-flex items-center gap-1 rounded-full border border-copper-200 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-copper-700 shadow-sm transition hover:bg-copper-50"
+                        >
+                          <Calculator className="h-3.5 w-3.5" />
+                          Calc
+                        </button>
+                      ) : null}
                     </div>
                     {field.type === 'select' ? (
                       <select
