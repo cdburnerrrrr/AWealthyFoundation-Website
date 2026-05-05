@@ -1344,9 +1344,7 @@ export const DETAILED_ASSESSMENT_QUESTIONS: Question[] = [
   },
   {
     key: 'savingConsistency',
-  'monthlySavingsPercent',
-  'monthlySavingsContribution',
-    question: 'Are you currently saving money each month?',
+        question: 'Are you currently saving money each month?',
     type: 'single',
     section: 'saving',
     required: true,
