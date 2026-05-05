@@ -757,6 +757,141 @@ type OptionGridProps = {
   onFieldChange?: (key: string, value: ResponseValue) => void;
 };
 
+
+function groupInlineFields(fields: InlineField[]) {
+  const groups: InlineField[][] = [];
+
+  for (let index = 0; index < fields.length; index += 1) {
+    const field = fields[index];
+    const nextField = fields[index + 1];
+
+    if (nextField?.label?.toLowerCase().startsWith('or ')) {
+      groups.push([field, nextField]);
+      index += 1;
+    } else {
+      groups.push([field]);
+    }
+  }
+
+  return groups;
+}
+
+type InlineObjectFieldProps = {
+  field: InlineField;
+  responses: Record<string, any>;
+  onFieldChange?: (key: string, value: ResponseValue) => void;
+  hideLeadingOr?: boolean;
+};
+
+function InlineObjectField({
+  field,
+  responses,
+  onFieldChange,
+  hideLeadingOr = false,
+}: InlineObjectFieldProps) {
+  const hasLeadingOr = field.label.toLowerCase().startsWith('or ');
+  const cleanLabel = hasLeadingOr ? field.label.replace(/^OR\s+/i, '') : field.label;
+
+  return (
+    <label
+      className="block min-w-0 cursor-text"
+      onClick={(event) => event.stopPropagation()}
+      onPointerDownCapture={(event) => event.stopPropagation()}
+    >
+      <div className="mb-1 flex min-h-[1.75rem] items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {hasLeadingOr && !hideLeadingOr ? (
+          <span className="rounded-full bg-copper-100 px-2 py-0.5 text-[11px] font-black tracking-[0.18em] text-copper-700">OR</span>
+        ) : null}
+        <span>{cleanLabel}</span>
+        {field.type !== 'select' ? (
+          <button
+            type="button"
+            aria-label={`Open calculator for ${cleanLabel}`}
+            onPointerDownCapture={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              const result = runFieldCalculator(responses[field.key]);
+              if (result !== null) onFieldChange?.(field.key, String(result));
+            }}
+            tabIndex={-1}
+            className="ml-auto inline-flex items-center gap-1 rounded-full border border-copper-200 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-copper-700 shadow-sm transition hover:bg-copper-50"
+          >
+            <Calculator className="h-3.5 w-3.5" />
+            Calc
+          </button>
+        ) : null}
+      </div>
+
+      {field.type === 'select' ? (
+        <select
+          value={responses[field.key] ?? ''}
+          onPointerDownCapture={(event) => event.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
+          onMouseDown={(event) => event.stopPropagation()}
+          onChange={(event) => onFieldChange?.(field.key, event.target.value)}
+          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
+        >
+          <option value="">Choose one</option>
+          {(field.options ?? []).map((choice) => (
+            <option key={choice.value} value={choice.value}>
+              {choice.label}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <input
+          type="text"
+          inputMode="decimal"
+          value={responses[field.key] ?? ''}
+          onPointerDownCapture={(event) => event.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
+          onMouseDown={(event) => event.stopPropagation()}
+          onWheel={(event) => event.currentTarget.blur()}
+          onChange={(event) => {
+            const raw = event.target.value;
+            onFieldChange?.(field.key, raw === '' ? '' : raw);
+          }}
+          placeholder={field.placeholder || 'e.g. 0'}
+          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
+        />
+      )}
+    </label>
+  );
+}
+
+type InlineFieldGroupProps = {
+  fields: InlineField[];
+  responses: Record<string, any>;
+  onFieldChange?: (key: string, value: ResponseValue) => void;
+};
+
+function InlineFieldGroup({ fields, responses, onFieldChange }: InlineFieldGroupProps) {
+  if (fields.length === 2) {
+    const [amountField, percentField] = fields;
+
+    return (
+      <div className="md:col-span-2 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-end">
+        <InlineObjectField field={amountField} responses={responses} onFieldChange={onFieldChange} />
+        <div className="hidden pb-3 md:flex md:items-center md:justify-center">
+          <span className="rounded-full bg-copper-100 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-copper-700">
+            OR
+          </span>
+        </div>
+        <InlineObjectField
+          field={percentField}
+          responses={responses}
+          onFieldChange={onFieldChange}
+          hideLeadingOr
+        />
+      </div>
+    );
+  }
+
+  const [field] = fields;
+  return <InlineObjectField field={field} responses={responses} onFieldChange={onFieldChange} />;
+}
+
 function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }: OptionGridProps) {
   if (!question.options?.length) return null;
 
@@ -828,74 +963,13 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
 
                 {selected && fields.length ? (
                   <div className="mt-4 grid gap-3 md:grid-cols-2">
-                    {fields.map((field) => (
-                      <label
-                        key={field.key}
-                        className="block cursor-text"
-                        onClick={(event) => event.stopPropagation()}
-                        onPointerDownCapture={(event) => event.stopPropagation()}
-                      >
-                        <div className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          {field.label.toLowerCase().startsWith('or ') ? (
-                            <>
-                              <span className="rounded-full bg-copper-100 px-2 py-0.5 text-[11px] font-black tracking-[0.18em] text-copper-700">OR</span>
-                              <span>{field.label.replace(/^OR\s+/i, '')}</span>
-                            </>
-                          ) : (
-                            <span>{field.label}</span>
-                          )}
-                          {field.type !== 'select' ? (
-                            <button
-                              type="button"
-                              aria-label={`Open calculator for ${field.label}`}
-                              onPointerDownCapture={(event) => event.stopPropagation()}
-                              onClick={(event) => {
-                                event.preventDefault();
-                                event.stopPropagation();
-                                const result = runFieldCalculator(responses[field.key]);
-                                if (result !== null) onFieldChange?.(field.key, String(result));
-                              }}
-                              tabIndex={-1}
-                              className="ml-auto rounded-lg border border-slate-200 bg-white px-2 py-1 text-slate-400 transition hover:border-copper-200 hover:bg-copper-50 hover:text-copper-700"
-                            >
-                              <Calculator className="h-3.5 w-3.5" />
-                            </button>
-                          ) : null}
-                        </div>
-                        {field.type === 'select' ? (
-                          <select
-                            value={responses[field.key] ?? ''}
-                            onPointerDownCapture={(event) => event.stopPropagation()}
-                            onClick={(event) => event.stopPropagation()}
-                            onMouseDown={(event) => event.stopPropagation()}
-                            onChange={(event) => onFieldChange?.(field.key, event.target.value)}
-                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
-                          >
-                            <option value="">Choose one</option>
-                            {(field.options ?? []).map((choice) => (
-                              <option key={choice.value} value={choice.value}>
-                                {choice.label}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            value={responses[field.key] ?? ''}
-                            onPointerDownCapture={(event) => event.stopPropagation()}
-                            onClick={(event) => event.stopPropagation()}
-                            onMouseDown={(event) => event.stopPropagation()}
-                            onWheel={(event) => event.currentTarget.blur()}
-                            onChange={(event) => {
-                              const raw = event.target.value;
-                              onFieldChange?.(field.key, raw === '' ? '' : raw);
-                            }}
-                            placeholder={field.placeholder || 'e.g. 0'}
-                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
-                          />
-                        )}
-                      </label>
+                    {groupInlineFields(fields).map((fieldGroup) => (
+                      <InlineFieldGroup
+                        key={fieldGroup.map((field) => field.key).join('-')}
+                        fields={fieldGroup}
+                        responses={responses}
+                        onFieldChange={onFieldChange}
+                      />
                     ))}
                   </div>
                 ) : null}
@@ -937,71 +1011,14 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
 
             {selected && fields.length ? (
               <div className="mt-4 grid gap-3 md:grid-cols-2">
-                {fields.map((field) => (
-                  <label key={field.key} className="block">
-                    <div className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      {field.label.toLowerCase().startsWith('or ') ? (
-                        <>
-                          <span className="rounded-full bg-copper-100 px-2 py-0.5 text-[11px] font-black tracking-[0.18em] text-copper-700">OR</span>
-                          <span>{field.label.replace(/^OR\s+/i, '')}</span>
-                        </>
-                      ) : (
-                        <span>{field.label}</span>
-                      )}
-                      {field.type !== 'select' ? (
-                        <button
-                          type="button"
-                          aria-label={`Open calculator for ${field.label}`}
-                          onPointerDownCapture={(event) => event.stopPropagation()}
-                          onClick={(event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            const result = runFieldCalculator(responses[field.key]);
-                            if (result !== null) onFieldChange?.(field.key, String(result));
-                          }}
-                          tabIndex={-1}
-                          className="ml-auto inline-flex items-center gap-1 rounded-full border border-copper-200 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-copper-700 shadow-sm transition hover:bg-copper-50"
-                        >
-                          <Calculator className="h-3.5 w-3.5" />
-                          Calc
-                        </button>
-                      ) : null}
-                    </div>
-                    {field.type === 'select' ? (
-                      <select
-                        value={responses[field.key] ?? ''}
-                        onPointerDownCapture={(event) => event.stopPropagation()}
-                        onClick={(event) => event.stopPropagation()}
-                        onMouseDown={(event) => event.stopPropagation()}
-                        onChange={(event) => onFieldChange?.(field.key, event.target.value)}
-                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
-                      >
-                        <option value="">Choose one</option>
-                        {(field.options ?? []).map((choice) => (
-                          <option key={choice.value} value={choice.value}>
-                            {choice.label}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={responses[field.key] ?? ''}
-                        onPointerDownCapture={(event) => event.stopPropagation()}
-                        onClick={(event) => event.stopPropagation()}
-                        onMouseDown={(event) => event.stopPropagation()}
-                        onWheel={(event) => event.currentTarget.blur()}
-                        onChange={(event) => {
-                          const raw = event.target.value;
-                          onFieldChange?.(field.key, raw === '' ? '' : raw);
-                        }}
-                        placeholder={field.placeholder || 'e.g. 0'}
-                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
+                {groupInlineFields(fields).map((fieldGroup) => (
+                      <InlineFieldGroup
+                        key={fieldGroup.map((field) => field.key).join('-')}
+                        fields={fieldGroup}
+                        responses={responses}
+                        onFieldChange={onFieldChange}
                       />
-                    )}
-                  </label>
-                ))}
+                    ))}
               </div>
             ) : null}
           </div>
