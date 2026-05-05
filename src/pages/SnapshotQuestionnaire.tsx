@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type MouseEvent, type ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
@@ -464,14 +464,21 @@ function calculateSimpleExpression(expression: string): number | null {
   }
 }
 
-function runFieldCalculator(currentValue: unknown) {
+function runFieldCalculator() {
   const expression = window.prompt(
     'Quick calculator — enter a simple calculation like 117000 + 21300',
-    String(currentValue ?? '')
+    ''
   );
 
-  if (expression === null) return null;
-  return calculateSimpleExpression(expression);
+  if (expression === null) return;
+
+  const result = calculateSimpleExpression(expression);
+  if (result === null) {
+    window.alert('That calculation could not be evaluated. Please use numbers and basic operators like +, -, *, and /.');
+    return;
+  }
+
+  window.alert(`Calculator total: ${result}`);
 }
 
 function isAnswered(question: Question | undefined, value: ResponseValue | undefined) {
@@ -758,71 +765,44 @@ type OptionGridProps = {
 };
 
 
-function groupInlineFields(fields: InlineField[]) {
-  const groups: InlineField[][] = [];
-
-  for (let index = 0; index < fields.length; index += 1) {
-    const field = fields[index];
-    const nextField = fields[index + 1];
-
-    if (nextField?.label?.toLowerCase().startsWith('or ')) {
-      groups.push([field, nextField]);
-      index += 1;
-    } else {
-      groups.push([field]);
-    }
-  }
-
-  return groups;
+function CalculatorCardButton({ onClick }: { onClick: (event: MouseEvent<HTMLButtonElement>) => void }) {
+  return (
+    <button
+      type="button"
+      aria-label="Open quick calculator"
+      onPointerDownCapture={(event) => event.stopPropagation()}
+      onClick={onClick}
+      tabIndex={-1}
+      className="ml-auto inline-flex items-center gap-1 rounded-full border border-copper-200 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-copper-700 shadow-sm transition hover:bg-copper-50"
+    >
+      <Calculator className="h-3.5 w-3.5" />
+      Calc
+    </button>
+  );
 }
-
-type InlineObjectFieldProps = {
-  field: InlineField;
-  responses: Record<string, any>;
-  onFieldChange?: (key: string, value: ResponseValue) => void;
-  hideLeadingOr?: boolean;
-};
 
 function InlineObjectField({
   field,
   responses,
   onFieldChange,
-  hideLeadingOr = false,
-}: InlineObjectFieldProps) {
-  const hasLeadingOr = field.label.toLowerCase().startsWith('or ');
-  const cleanLabel = hasLeadingOr ? field.label.replace(/^OR\s+/i, '') : field.label;
+  stripOrLabel = false,
+}: {
+  field: InlineField;
+  responses: Record<string, any>;
+  onFieldChange?: (key: string, value: ResponseValue) => void;
+  stripOrLabel?: boolean;
+}) {
+  const cleanLabel = stripOrLabel ? field.label.replace(/^OR\s+/i, '') : field.label;
 
   return (
     <label
-      className="block min-w-0 cursor-text"
+      className="block cursor-text"
       onClick={(event) => event.stopPropagation()}
       onPointerDownCapture={(event) => event.stopPropagation()}
     >
-      <div className="mb-1 flex min-h-[1.75rem] items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {hasLeadingOr && !hideLeadingOr ? (
-          <span className="rounded-full bg-copper-100 px-2 py-0.5 text-[11px] font-black tracking-[0.18em] text-copper-700">OR</span>
-        ) : null}
-        <span>{cleanLabel}</span>
-        {field.type !== 'select' ? (
-          <button
-            type="button"
-            aria-label={`Open calculator for ${cleanLabel}`}
-            onPointerDownCapture={(event) => event.stopPropagation()}
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              const result = runFieldCalculator(responses[field.key]);
-              if (result !== null) onFieldChange?.(field.key, String(result));
-            }}
-            tabIndex={-1}
-            className="ml-auto inline-flex items-center gap-1 rounded-full border border-copper-200 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-copper-700 shadow-sm transition hover:bg-copper-50"
-          >
-            <Calculator className="h-3.5 w-3.5" />
-            Calc
-          </button>
-        ) : null}
+      <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {cleanLabel}
       </div>
-
       {field.type === 'select' ? (
         <select
           value={responses[field.key] ?? ''}
@@ -860,36 +840,49 @@ function InlineObjectField({
   );
 }
 
-type InlineFieldGroupProps = {
+function InlineObjectFields({
+  fields,
+  responses,
+  onFieldChange,
+}: {
   fields: InlineField[];
   responses: Record<string, any>;
   onFieldChange?: (key: string, value: ResponseValue) => void;
-};
+}) {
+  const rows: ReactElement[] = [];
 
-function InlineFieldGroup({ fields, responses, onFieldChange }: InlineFieldGroupProps) {
-  if (fields.length === 2) {
-    const [amountField, percentField] = fields;
+  for (let index = 0; index < fields.length; index += 1) {
+    const field = fields[index];
+    const next = fields[index + 1];
+    const nextIsOr = !!next && next.label.toLowerCase().startsWith('or ') && field.type !== 'select' && next.type !== 'select';
 
-    return (
-      <div className="md:col-span-2 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-end">
-        <InlineObjectField field={amountField} responses={responses} onFieldChange={onFieldChange} />
-        <div className="hidden pb-3 md:flex md:items-center md:justify-center">
-          <span className="rounded-full bg-copper-100 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-copper-700">
-            OR
-          </span>
+    if (nextIsOr) {
+      rows.push(
+        <div key={`${field.key}-${next.key}`} className="md:col-span-2 grid gap-2 md:grid-cols-[1fr_auto_1fr] md:items-end">
+          <InlineObjectField field={field} responses={responses} onFieldChange={onFieldChange} />
+          <div className="flex items-center justify-center pb-2 md:pb-3">
+            <span className="rounded-full bg-copper-100 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-copper-700 shadow-sm">
+              OR
+            </span>
+          </div>
+          <InlineObjectField field={next} responses={responses} onFieldChange={onFieldChange} stripOrLabel />
         </div>
-        <InlineObjectField
-          field={percentField}
-          responses={responses}
-          onFieldChange={onFieldChange}
-          hideLeadingOr
-        />
-      </div>
+      );
+      index += 1;
+      continue;
+    }
+
+    rows.push(
+      <InlineObjectField
+        key={field.key}
+        field={field}
+        responses={responses}
+        onFieldChange={onFieldChange}
+      />
     );
   }
 
-  const [field] = fields;
-  return <InlineObjectField field={field} responses={responses} onFieldChange={onFieldChange} />;
+  return <div className="mt-4 grid gap-3 md:grid-cols-2">{rows}</div>;
 }
 
 function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }: OptionGridProps) {
@@ -959,19 +952,24 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
                   <span className="text-sm font-semibold text-slate-900">
                     {option.label}
                   </span>
+
+                  {selected && fields.some((field) => field.type !== 'select') ? (
+                    <CalculatorCardButton
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        runFieldCalculator();
+                      }}
+                    />
+                  ) : null}
                 </div>
 
                 {selected && fields.length ? (
-                  <div className="mt-4 grid gap-3 md:grid-cols-2">
-                    {groupInlineFields(fields).map((fieldGroup) => (
-                      <InlineFieldGroup
-                        key={fieldGroup.map((field) => field.key).join('-')}
-                        fields={fieldGroup}
-                        responses={responses}
-                        onFieldChange={onFieldChange}
-                      />
-                    ))}
-                  </div>
+                  <InlineObjectFields
+                    fields={fields}
+                    responses={responses}
+                    onFieldChange={onFieldChange}
+                  />
                 ) : null}
               </div>
             );
@@ -1005,21 +1003,26 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
                 : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
             }`}
           >
-            <div className="w-full text-left">
+            <div className="flex w-full items-center gap-3 text-left">
               <div className="text-sm font-semibold text-slate-900">{option.label}</div>
+
+              {selected && fields.some((field) => field.type !== 'select') ? (
+                <CalculatorCardButton
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    runFieldCalculator();
+                  }}
+                />
+              ) : null}
             </div>
 
             {selected && fields.length ? (
-              <div className="mt-4 grid gap-3 md:grid-cols-2">
-                {groupInlineFields(fields).map((fieldGroup) => (
-                      <InlineFieldGroup
-                        key={fieldGroup.map((field) => field.key).join('-')}
-                        fields={fieldGroup}
-                        responses={responses}
-                        onFieldChange={onFieldChange}
-                      />
-                    ))}
-              </div>
+              <InlineObjectFields
+                fields={fields}
+                responses={responses}
+                onFieldChange={onFieldChange}
+              />
             ) : null}
           </div>
         );
