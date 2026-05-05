@@ -16,6 +16,7 @@ export const QUESTION_STRATEGY = {
   snapshotCore: [
     'ageRange',
     'relationshipStatus',
+    'monthlyChildcareCost',
     'housingStatus',
     'monthlyTakeHomeIncome',
     'incomeConsistency',
@@ -434,6 +435,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     section: 'spending',
     required: true,
     placeholder: 'e.g. 600',
+    helperText: 'This counts as a must-pay monthly cost and is included in fixed cost load and monthly margin.',
     conditions: [
       {
         key: 'relationshipStatus',
@@ -442,7 +444,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       },
     ],
     tags: {
-      modes: ['detailed'],
+      modes: ['snapshot', 'detailed'],
       priority: 'conditional',
       askIf: (a) =>
         ['single_with_dependents', 'partnered_with_dependents'].includes(a.relationshipStatus),
@@ -834,6 +836,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     section: 'debt',
     required: true,
     placeholder: 'e.g. 600',
+    helperText: 'This counts as a must-pay monthly cost and is included in fixed cost load and monthly margin.',
     conditions: [{ key: 'otherDebt', operator: 'includes', value: 'bnpl' }],
     tags: {
       modes: ['snapshot', 'detailed'],

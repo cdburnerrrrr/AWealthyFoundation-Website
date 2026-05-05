@@ -1187,7 +1187,9 @@ function buildStructuralWarnings(metrics: V2FinancialMetrics, signals: V2Signals
       type: 'income_constraint',
       severity: 'high',
       message:
-        'Income is too thin for the current household structure. Reducing expenses may help, but this household likely needs more income or a major structural change to create real breathing room.',
+        metrics.monthlyChildcareCost > 0
+          ? `Income is too thin for the current household structure. Childcare/daycare is included in the must-pay cost picture at about ${formatCurrency(metrics.monthlyChildcareCost)}/month, so reducing expenses may help, but this household likely needs more income or a major structural change to create real breathing room.`
+          : 'Income is too thin for the current household structure. Reducing expenses may help, but this household likely needs more income or a major structural change to create real breathing room.',
     });
   }
 

@@ -136,7 +136,7 @@ const SECTION_META: Record<
 };
 
 const INLINE_GROUPS: Record<string, string[]> = {
-  relationshipStatus: ['monthlyChildcareCost', 'childcarePressure', 'lifeInsurance'],
+  relationshipStatus: ['monthlyChildcareCost'],
   housingStatus: ['monthlyHousingCost', 'primaryHomeValue', 'primaryMortgage'],
   additionalPropertyOwnership: ['rentalPropertyValue', 'rentalMortgage', 'rentalPropertyPayment', 'otherPropertyValue', 'otherPropertyDebt', 'otherPropertyPayment'],
   vehicleDebt: ['carLoanBalance', 'monthlyVehiclePayment', 'vehicleValue'],
@@ -188,6 +188,22 @@ type InlineField = {
 };
 
 const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
+  relationshipStatus: {
+    single_with_dependents: [
+      {
+        key: 'monthlyChildcareCost',
+        label: 'Monthly childcare / daycare cost',
+        placeholder: 'e.g. 600',
+      },
+    ],
+    partnered_with_dependents: [
+      {
+        key: 'monthlyChildcareCost',
+        label: 'Monthly childcare / daycare cost',
+        placeholder: 'e.g. 600',
+      },
+    ],
+  },
   housingStatus: {
     living_with_family: [
       { key: 'monthlyHousingCost', label: 'Monthly contribution, if any', placeholder: 'e.g. 0' },
