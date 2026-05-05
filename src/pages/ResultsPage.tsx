@@ -1465,6 +1465,43 @@ function normalizePercentMetric(value?: number) {
   return numeric > 1 ? numeric : numeric * 100;
 }
 
+
+function toReportNumber(value: unknown): number {
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  if (typeof value === "string") {
+    const parsed = Number(value.replace(/[^\d.-]/g, ""));
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+}
+
+function getAnsweredMonthlySavings(answers?: Record<string, any>) {
+  if (!answers) return 0;
+  return (
+    toReportNumber(answers.monthlySavingsContribution) ||
+    toReportNumber(answers.monthlySavings) ||
+    toReportNumber(answers.monthlyCashSavings) ||
+    toReportNumber(answers.monthlyEmergencyFundContribution)
+  );
+}
+
+function getAnsweredMonthlyInvesting(answers?: Record<string, any>) {
+  if (!answers) return 0;
+  return (
+    toReportNumber(answers.k401Contribution) +
+    toReportNumber(answers.iraContribution) +
+    toReportNumber(answers.rothContribution) +
+    toReportNumber(answers.brokerageContribution) +
+    toReportNumber(answers.hsaContribution) +
+    toReportNumber(answers.otherInvestmentContribution)
+  ) ||
+    toReportNumber(answers.monthlyInvestmentContribution) ||
+    toReportNumber(answers.monthly401kContribution) ||
+    toReportNumber(answers.monthlyRetirementContribution) ||
+    toReportNumber(answers.monthlyInvestingAmount) ||
+    toReportNumber(answers.monthlyInvestmentAmount);
+}
+
 function getBenchmarkProfileLabel(answers?: Record<string, any>) {
   const ageRange =
     answers?.ageRange ||
@@ -1527,10 +1564,15 @@ function getHouseholdComparisonMetrics(
   const fixedCostRatio = normalizePercentMetric(
     metrics?.fixedCostPressureRatio,
   );
-  const savingsRate = normalizePercentMetric(metrics?.savingsRate);
-  const investingRate = normalizePercentMetric(
-    metrics?.investmentContributionRate,
-  );
+  const answeredMonthlySavings = getAnsweredMonthlySavings(answers);
+  const answeredMonthlyInvesting = getAnsweredMonthlyInvesting(answers);
+  const monthlyIncome = Number(metrics?.monthlyIncome ?? toReportNumber(answers?.monthlyTakeHomeIncome) ?? 0);
+  const savingsRate = normalizePercentMetric(metrics?.savingsRate) ||
+    (monthlyIncome > 0 && answeredMonthlySavings > 0 ? (answeredMonthlySavings / monthlyIncome) * 100 : 0);
+  const investingRate = normalizePercentMetric(metrics?.investmentContributionRate) ||
+    (monthlyIncome > 0 && answeredMonthlyInvesting > 0 ? (answeredMonthlyInvesting / monthlyIncome) * 100 : 0);
+  const hasSavingsRateData = savingsRate > 0 || answeredMonthlySavings > 0;
+  const hasInvestingRateData = investingRate > 0 || answeredMonthlyInvesting > 0;
   const netWorthBenchmark = getAgeBasedNetWorthBenchmark(answers);
 
   const debtBenchmark = 6500;
@@ -1538,7 +1580,7 @@ function getHouseholdComparisonMetrics(
   const investingBenchmark = 10;
   const fixedCostBenchmark = 50;
 
-  return [
+  const comparisonMetrics: ComparisonMetric[] = [
     {
       label: "Net Worth",
       status:
@@ -1651,6 +1693,12 @@ function getHouseholdComparisonMetrics(
       unit: "percent",
     },
   ];
+
+  return comparisonMetrics.filter((metric) => {
+    if (metric.label === "Savings Rate") return hasSavingsRateData;
+    if (metric.label === "Investing Rate") return hasInvestingRateData;
+    return true;
+  });
 }
 
 function getComparisonTone(status: ComparisonMetric["status"]) {

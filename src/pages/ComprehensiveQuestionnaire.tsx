@@ -605,7 +605,90 @@ function getTotalConsumerDebtFromResponses(responses: Record<string, any>) {
   return itemized > 0 ? itemized : legacyTotal;
 }
 
+
+function getTotalInvestmentsFromResponses(responses: Record<string, any>) {
+  const itemized =
+    toNumber(responses.k401Balance) +
+    toNumber(responses.retirement401kIraBalance) +
+    toNumber(responses.retirementAccounts) +
+    toNumber(responses.iraBalance) +
+    toNumber(responses.rothBalance) +
+    toNumber(responses.rothAccounts) +
+    toNumber(responses.brokerageBalance) +
+    toNumber(responses.brokerageAccounts) +
+    toNumber(responses.hsaBalance) +
+    toNumber(responses.pensionBalance) +
+    toNumber(responses.otherInvestmentAssets) +
+    toNumber(responses.otherInvestments);
+
+  const legacy =
+    toNumber(responses.totalInvestments) ||
+    toNumber(responses.investmentBalance);
+
+  return itemized > 0 ? itemized : legacy;
+}
+
+function buildNetWorthPayload(payload: Record<string, any>) {
+  const totalLiquidSavings = toNumber(payload.totalLiquidSavings);
+  const totalInvestments = toNumber(payload.totalInvestments);
+  const homeValue = toNumber(payload.homeValue);
+  const mortgageBalance = toNumber(payload.mortgageBalance);
+  const rentalPropertyValue = toNumber(payload.rentalPropertyValue);
+  const rentalMortgage = toNumber(payload.rentalMortgage);
+  const otherPropertyValue = toNumber(payload.otherPropertyValue);
+  const otherPropertyDebt = toNumber(payload.otherPropertyDebt);
+  const otherAssets = toNumber(payload.otherAssets);
+  const totalDebtBalance = toNumber(payload.totalDebtBalance);
+
+  const totalAssets =
+    totalLiquidSavings +
+    totalInvestments +
+    homeValue +
+    rentalPropertyValue +
+    otherPropertyValue +
+    otherAssets;
+
+  const totalLiabilities =
+    mortgageBalance +
+    rentalMortgage +
+    otherPropertyDebt +
+    totalDebtBalance;
+
+  return {
+    totalLiquidSavings,
+    totalSavings: totalLiquidSavings,
+    cashSavings: totalLiquidSavings,
+    totalInvestments,
+    primaryHomeValue: homeValue,
+    homeValue,
+    primaryMortgage: mortgageBalance,
+    primaryMortgageBalance: mortgageBalance,
+    mortgageBalance,
+    rentalPropertyValue,
+    rentalMortgage,
+    rentalMortgageBalance: rentalMortgage,
+    otherPropertyValue,
+    otherPropertyDebt,
+    otherPropertyMortgageBalance: otherPropertyDebt,
+    otherAssets,
+    totalDebtBalance,
+    consumerDebtBalance: totalDebtBalance,
+    totalAssets,
+    totalLiabilities,
+    netWorth: totalAssets - totalLiabilities,
+  };
+}
+
 const PERSISTED_ACTIVITY_RESULT_KEYS = new Set([
+  'totalInvestments',
+  'totalLiquidSavings',
+  'totalSavings',
+  'cashSavings',
+  'primaryHomeValue',
+  'primaryMortgage',
+  'primaryMortgageBalance',
+  'rentalMortgageBalance',
+  'otherPropertyMortgageBalance',
   'netWorth',
   'assets',
   'liabilities',
@@ -1693,7 +1776,7 @@ export default function ComprehensiveQuestionnaire() {
       const visibleKeys = new Set(getDetailedQuestions(rawMergedAnswers).map((question) => question.key));
       const mergedAnswers = Object.fromEntries(
         Object.entries(rawMergedAnswers).filter(
-          ([key]) => visibleKeys.has(key) || PERSISTED_ACTIVITY_RESULT_KEYS.has(key)
+          ([key]) => visibleKeys.has(key) || CHILD_KEYS.has(key) || PERSISTED_ACTIVITY_RESULT_KEYS.has(key)
         )
       );
 

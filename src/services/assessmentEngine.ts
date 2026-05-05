@@ -246,7 +246,8 @@ function getInvestmentTotal(answers: Record<string, any>) {
 
   const legacy = firstNumber(answers, ['totalInvestments', 'investmentBalance']);
 
-  if (answers.netWorthEntry === 'completed' && legacy >= 0) return legacy;
+  // Net Worth Builder values are considered final user-confirmed values.
+  if (answers.netWorthEntry === 'completed') return legacy;
   return Math.max(itemized, legacy);
 }
 
