@@ -50,6 +50,8 @@ type MetricsShape = {
   debtToIncomeRatio?: number;
   fixedCostPressureRatio?: number;
   savingsRate?: number;
+  monthlySavingsContribution?: number;
+  hasSavingsRateData?: boolean;
   netWorth?: number;
   homeEquity?: number;
   totalSavings?: number;
@@ -60,6 +62,7 @@ type MetricsShape = {
   cashExcessMonths?: number;
   monthlyInvestmentContribution?: number;
   investmentContributionRate?: number;
+  hasInvestmentRateData?: boolean;
   liquidAssets?: number;
   illiquidAssets?: number;
   liquidAssetRatio?: number;
@@ -808,6 +811,7 @@ function getStructuralSnapshot(metrics?: MetricsShape | null) {
     monthlyMargin,
     debtToIncomeRatio: Number(metrics.debtToIncomeRatio ?? 0),
     savingsRate: Number(metrics.savingsRate ?? 0),
+    hasSavingsRateData: Boolean(metrics.hasSavingsRateData) || Number(metrics.savingsRate ?? 0) > 0 || Number(metrics.monthlySavingsContribution ?? 0) > 0,
     totalSavings,
     totalInvestments,
     totalDebtBalance: consumerDebt,
@@ -841,6 +845,7 @@ function getStructuralSnapshot(metrics?: MetricsShape | null) {
     cushionScore: Number(metrics.cushionScore ?? 0),
     excessCashEstimate: Number(metrics.excessCashEstimate ?? 0),
     investmentContributionRate: Number(metrics.investmentContributionRate ?? 0),
+    hasInvestmentRateData: Boolean(metrics.hasInvestmentRateData) || Number(metrics.investmentContributionRate ?? 0) > 0 || Number(metrics.monthlyInvestmentContribution ?? 0) > 0,
     vehicleLoanBalance: Number(metrics.vehicleLoanBalance ?? 0),
     vehicleValue: Number(metrics.vehicleValue ?? 0),
     vehicleEquity: Number(metrics.vehicleEquity ?? 0),
@@ -3357,7 +3362,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                     <div className="rounded-2xl bg-white/[0.04] p-3">
                       <div className="text-xs text-slate-500">Savings Rate</div>
                       <div className="mt-1 text-xl font-bold text-emerald-300">
-                        {formatPercent(snapshot?.savingsRate ?? 0)}
+                        {snapshot?.hasSavingsRateData ? formatPercent(snapshot?.savingsRate ?? 0) : 'Not captured'}
                       </div>
                     </div>
                     <div className="rounded-2xl bg-white/[0.04] p-3">

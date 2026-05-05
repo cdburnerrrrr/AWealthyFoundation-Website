@@ -229,6 +229,8 @@ export interface FinancialMetrics {
   debtToIncomeRatio?: number;
   fixedCostPressureRatio?: number;
   savingsRate?: number;
+  monthlySavingsContribution?: number;
+  hasSavingsRateData?: boolean;
   netWorth?: number;
   homeEquity?: number;
   totalSavings?: number;
@@ -368,6 +370,8 @@ const SNAPSHOT_QUESTION_KEYS = new Set([
   'totalLiquidSavings',
   'emergencyAccess',
   'savingConsistency',
+  'monthlySavingsPercent',
+  'monthlySavingsContribution',
   'vehicleDebt',
   'progressPriority',
   'otherDebt',
@@ -1340,6 +1344,8 @@ export const DETAILED_ASSESSMENT_QUESTIONS: Question[] = [
   },
   {
     key: 'savingConsistency',
+  'monthlySavingsPercent',
+  'monthlySavingsContribution',
     question: 'Are you currently saving money each month?',
     type: 'single',
     section: 'saving',

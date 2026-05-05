@@ -152,21 +152,27 @@ const INLINE_GROUPS: Record<string, string[]> = {
   investmentAccounts: [
     'k401Balance',
     'k401Contribution',
+    'k401ContributionPercent',
     'k401Match',
     'iraBalance',
     'iraContribution',
+    'iraContributionPercent',
     'rothBalance',
     'rothContribution',
+    'rothContributionPercent',
     'brokerageBalance',
     'brokerageContribution',
+    'brokerageContributionPercent',
     'hsaBalance',
     'hsaContribution',
+    'hsaContributionPercent',
     'otherInvestmentAssets',
     'otherInvestmentContribution',
+    'otherInvestmentContributionPercent',
     'investmentConfidence',
     'investmentMix',
   ],
-  savingConsistency: ['savingsAutomation'],
+  savingConsistency: ['monthlySavingsContribution', 'monthlySavingsPercent', 'totalLiquidSavings', 'savingsAutomation'],
 };
 
 const CHILD_KEYS = new Set(Object.values(INLINE_GROUPS).flat());
@@ -196,6 +202,43 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
     own_outright: [
       { key: 'monthlyHousingCost', label: 'Monthly housing costs, if any', placeholder: 'e.g. 0' },
       { key: 'primaryHomeValue', label: 'Estimated home value', placeholder: 'e.g. 350000' },
+    ],
+  },
+  savingConsistency: {
+    yes_consistently: [
+      { key: 'monthlySavingsContribution', label: 'Monthly savings amount', placeholder: 'e.g. 500', required: false },
+      { key: 'monthlySavingsPercent', label: 'OR savings percent of take-home pay', placeholder: 'e.g. 10', required: false },
+      { key: 'totalLiquidSavings', label: 'Current cash savings balance', placeholder: 'e.g. 8000' },
+      {
+        key: 'savingsAutomation',
+        label: 'Saving setup',
+        type: 'select',
+        required: false,
+        options: [
+          { value: 'fully_automated', label: 'Fully automated' },
+          { value: 'partially_automated', label: 'Partially automated' },
+          { value: 'manual', label: 'Manual transfers' },
+        ],
+      },
+    ],
+    yes_irregularly: [
+      { key: 'monthlySavingsContribution', label: 'Typical monthly savings amount', placeholder: 'e.g. 250', required: false },
+      { key: 'monthlySavingsPercent', label: 'OR typical savings percent of take-home pay', placeholder: 'e.g. 5', required: false },
+      { key: 'totalLiquidSavings', label: 'Current cash savings balance', placeholder: 'e.g. 3000' },
+      {
+        key: 'savingsAutomation',
+        label: 'Saving setup',
+        type: 'select',
+        required: false,
+        options: [
+          { value: 'fully_automated', label: 'Fully automated' },
+          { value: 'partially_automated', label: 'Partially automated' },
+          { value: 'manual', label: 'Manual transfers' },
+        ],
+      },
+    ],
+    not_currently: [
+      { key: 'totalLiquidSavings', label: 'Current cash savings balance', placeholder: 'e.g. 500' },
     ],
   },
   vehicleDebt: {
@@ -328,7 +371,8 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
   investmentAccounts: {
     '401k': [
       { key: 'k401Balance', label: 'Current balance', placeholder: 'e.g. 85000' },
-      { key: 'k401Contribution', label: 'Monthly contribution', placeholder: 'e.g. 500' },
+      { key: 'k401Contribution', label: 'Monthly contribution ($)', placeholder: 'e.g. 500', required: false },
+      { key: 'k401ContributionPercent', label: 'OR contribution percent of pay', placeholder: 'e.g. 6', required: false },
       {
         key: 'k401Match',
         label: 'Employer match',
@@ -342,23 +386,28 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
     ],
     roth_ira: [
       { key: 'rothBalance', label: 'Current balance', placeholder: 'e.g. 25000' },
-      { key: 'rothContribution', label: 'Monthly contribution', placeholder: 'e.g. 250' },
+      { key: 'rothContribution', label: 'Monthly contribution ($)', placeholder: 'e.g. 250', required: false },
+      { key: 'rothContributionPercent', label: 'OR contribution percent of pay', placeholder: 'e.g. 5', required: false },
     ],
     traditional_ira: [
       { key: 'iraBalance', label: 'Current balance', placeholder: 'e.g. 30000' },
-      { key: 'iraContribution', label: 'Monthly contribution', placeholder: 'e.g. 250' },
+      { key: 'iraContribution', label: 'Monthly contribution ($)', placeholder: 'e.g. 250', required: false },
+      { key: 'iraContributionPercent', label: 'OR contribution percent of pay', placeholder: 'e.g. 5', required: false },
     ],
     brokerage: [
       { key: 'brokerageBalance', label: 'Current balance', placeholder: 'e.g. 50000' },
-      { key: 'brokerageContribution', label: 'Monthly contribution', placeholder: 'e.g. 300' },
+      { key: 'brokerageContribution', label: 'Monthly contribution ($)', placeholder: 'e.g. 300', required: false },
+      { key: 'brokerageContributionPercent', label: 'OR contribution percent of pay', placeholder: 'e.g. 5', required: false },
     ],
     hsa: [
       { key: 'hsaBalance', label: 'Invested HSA balance', placeholder: 'e.g. 8000' },
-      { key: 'hsaContribution', label: 'Monthly contribution', placeholder: 'e.g. 150' },
+      { key: 'hsaContribution', label: 'Monthly contribution ($)', placeholder: 'e.g. 150', required: false },
+      { key: 'hsaContributionPercent', label: 'OR contribution percent of pay', placeholder: 'e.g. 3', required: false },
     ],
     other: [
       { key: 'otherInvestmentAssets', label: 'Current balance', placeholder: 'e.g. 10000' },
-      { key: 'otherInvestmentContribution', label: 'Monthly contribution', placeholder: 'e.g. 100' },
+      { key: 'otherInvestmentContribution', label: 'Monthly contribution ($)', placeholder: 'e.g. 100', required: false },
+      { key: 'otherInvestmentContributionPercent', label: 'OR contribution percent of pay', placeholder: 'e.g. 2', required: false },
     ],
   },
 };

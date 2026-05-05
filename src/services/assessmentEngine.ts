@@ -29,6 +29,8 @@ export type V2FinancialMetrics = {
   debtToIncomeRatio: number;
   fixedCostPressureRatio: number;
   savingsRate: number;
+  monthlySavingsContribution: number;
+  hasSavingsRateData: boolean;
   netWorth: number;
   homeEquity: number;
   totalSavings: number;
@@ -42,6 +44,7 @@ export type V2FinancialMetrics = {
   monthlyFixedCosts: number;
   monthlyInvestmentContribution: number;
   investmentContributionRate: number;
+  hasInvestmentRateData: boolean;
   liquidAssets: number;
   illiquidAssets: number;
   liquidAssetRatio: number;
@@ -361,6 +364,30 @@ function hasCoverage(answers: Record<string, any>, key: string, legacyKey?: stri
     (legacyKey ? yes(answers[legacyKey]) : false);
 }
 
+
+function getMonthlyAmountFromAmountOrPercent(
+  answers: Record<string, any>,
+  amountKeys: string[],
+  percentKeys: string[],
+  monthlyIncome: number
+) {
+  const amount = firstNumber(answers, amountKeys);
+  if (amount > 0) return amount;
+
+  const percent = firstNumber(answers, percentKeys);
+  if (percent > 0 && monthlyIncome > 0) return (percent / 100) * monthlyIncome;
+
+  return 0;
+}
+
+function hasAmountOrPercentAnswer(
+  answers: Record<string, any>,
+  amountKeys: string[],
+  percentKeys: string[]
+) {
+  return firstNumber(answers, amountKeys) > 0 || firstNumber(answers, percentKeys) > 0;
+}
+
 export function buildV2FinancialMetrics(
   answers: Record<string, any>
 ): V2FinancialMetrics {
@@ -374,13 +401,50 @@ export function buildV2FinancialMetrics(
   const monthlyUtilities = firstNumber(answers, ['monthlyUtilities']);
   const monthlyChildcareCost = firstNumber(answers, ['monthlyChildcareCost']);
   const monthlyDebtPayments = getConsumerDebtPayments(answers);
+  const k401MonthlyContribution = getMonthlyAmountFromAmountOrPercent(
+    answers,
+    ['k401Contribution'],
+    ['k401ContributionPercent'],
+    monthlyIncome
+  );
+  const iraMonthlyContribution = getMonthlyAmountFromAmountOrPercent(
+    answers,
+    ['iraContribution'],
+    ['iraContributionPercent'],
+    monthlyIncome
+  );
+  const rothMonthlyContribution = getMonthlyAmountFromAmountOrPercent(
+    answers,
+    ['rothContribution'],
+    ['rothContributionPercent'],
+    monthlyIncome
+  );
+  const brokerageMonthlyContribution = getMonthlyAmountFromAmountOrPercent(
+    answers,
+    ['brokerageContribution'],
+    ['brokerageContributionPercent'],
+    monthlyIncome
+  );
+  const hsaMonthlyContribution = getMonthlyAmountFromAmountOrPercent(
+    answers,
+    ['hsaContribution'],
+    ['hsaContributionPercent'],
+    monthlyIncome
+  );
+  const otherMonthlyInvestmentContribution = getMonthlyAmountFromAmountOrPercent(
+    answers,
+    ['otherInvestmentContribution'],
+    ['otherInvestmentContributionPercent'],
+    monthlyIncome
+  );
+
   const itemizedInvestmentContribution =
-    toNumber(answers.k401Contribution) +
-    toNumber(answers.iraContribution) +
-    toNumber(answers.rothContribution) +
-    toNumber(answers.brokerageContribution) +
-    toNumber(answers.hsaContribution) +
-    toNumber(answers.otherInvestmentContribution);
+    k401MonthlyContribution +
+    iraMonthlyContribution +
+    rothMonthlyContribution +
+    brokerageMonthlyContribution +
+    hsaMonthlyContribution +
+    otherMonthlyInvestmentContribution;
 
   const legacyInvestmentContribution = firstNumber(answers, [
     'monthlyInvestmentContribution',
@@ -465,18 +529,50 @@ export function buildV2FinancialMetrics(
   const housingRatio = monthlyIncome > 0 ? (monthlyHousingCost / monthlyIncome) * 100 : 0;
   const mortgageDebtToAssetRatio =
     realEstateAssets > 0 ? (mortgageDebt / realEstateAssets) * 100 : 0;
-  const investmentContributionRate =
-    monthlyIncome > 0 ? (monthlyInvestmentContribution / monthlyIncome) * 100 : 0;
+  const hasInvestmentRateData =
+    itemizedInvestmentContribution > 0 ||
+    hasAmountOrPercentAnswer(
+      answers,
+      [
+        'monthlyInvestmentContribution',
+        'monthly401kContribution',
+        'monthlyRetirementContribution',
+        'monthlyInvestingAmount',
+        'monthlyInvestmentAmount',
+      ],
+      ['investmentContributionPercent', 'retirementContributionPercent']
+    );
 
-  const monthlySavingsContribution = firstNumber(answers, [
-    'monthlySavingsContribution',
-    'monthlySavings',
-    'monthlyCashSavings',
-    'monthlyEmergencyFundContribution',
-  ]);
+  const investmentContributionRate =
+    hasInvestmentRateData && monthlyIncome > 0
+      ? (monthlyInvestmentContribution / monthlyIncome) * 100
+      : 0;
+
+  const monthlySavingsContribution = getMonthlyAmountFromAmountOrPercent(
+    answers,
+    [
+      'monthlySavingsContribution',
+      'monthlySavings',
+      'monthlyCashSavings',
+      'monthlyEmergencyFundContribution',
+    ],
+    ['monthlySavingsPercent', 'savingsPercent', 'cashSavingsPercent'],
+    monthlyIncome
+  );
+
+  const hasSavingsRateData = hasAmountOrPercentAnswer(
+    answers,
+    [
+      'monthlySavingsContribution',
+      'monthlySavings',
+      'monthlyCashSavings',
+      'monthlyEmergencyFundContribution',
+    ],
+    ['monthlySavingsPercent', 'savingsPercent', 'cashSavingsPercent']
+  );
 
   const savingsRate =
-    monthlyIncome > 0
+    hasSavingsRateData && monthlyIncome > 0
       ? (monthlySavingsContribution / monthlyIncome) * 100
       : 0;
 
@@ -496,6 +592,8 @@ export function buildV2FinancialMetrics(
     debtToIncomeRatio,
     fixedCostPressureRatio,
     savingsRate,
+    monthlySavingsContribution,
+    hasSavingsRateData,
     netWorth,
     homeEquity,
     totalSavings: cashSavings,
@@ -509,6 +607,7 @@ export function buildV2FinancialMetrics(
     monthlyFixedCosts,
     monthlyInvestmentContribution,
     investmentContributionRate,
+    hasInvestmentRateData,
     liquidAssets,
     illiquidAssets,
     liquidAssetRatio,

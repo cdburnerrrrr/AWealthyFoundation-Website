@@ -67,6 +67,8 @@ type ResultShape = {
     fixedCostPressureRatio?: number;
     debtToIncomeRatio?: number;
     savingsRate?: number;
+    monthlySavingsContribution?: number;
+    hasSavingsRateData?: boolean;
     totalSavings?: number;
     totalInvestments?: number;
     totalDebtBalance?: number;
@@ -92,6 +94,7 @@ type ResultShape = {
     cashExcessMonths?: number;
     monthlyInvestmentContribution?: number;
     investmentContributionRate?: number;
+    hasInvestmentRateData?: boolean;
     liquidAssets?: number;
     illiquidAssets?: number;
     liquidAssetRatio?: number;
@@ -1475,31 +1478,60 @@ function toReportNumber(value: unknown): number {
   return 0;
 }
 
-function getAnsweredMonthlySavings(answers?: Record<string, any>) {
+function amountFromAmountOrPercent(
+  answers: Record<string, any> | undefined,
+  amountKeys: string[],
+  percentKeys: string[],
+  monthlyIncome: number,
+) {
   if (!answers) return 0;
-  return (
-    toReportNumber(answers.monthlySavingsContribution) ||
-    toReportNumber(answers.monthlySavings) ||
-    toReportNumber(answers.monthlyCashSavings) ||
-    toReportNumber(answers.monthlyEmergencyFundContribution)
+  for (const key of amountKeys) {
+    const value = toReportNumber(answers[key]);
+    if (value > 0) return value;
+  }
+  for (const key of percentKeys) {
+    const value = toReportNumber(answers[key]);
+    if (value > 0 && monthlyIncome > 0) return (value / 100) * monthlyIncome;
+  }
+  return 0;
+}
+
+function getAnsweredMonthlySavings(answers?: Record<string, any>, monthlyIncome = 0) {
+  return amountFromAmountOrPercent(
+    answers,
+    [
+      "monthlySavingsContribution",
+      "monthlySavings",
+      "monthlyCashSavings",
+      "monthlyEmergencyFundContribution",
+    ],
+    ["monthlySavingsPercent", "savingsPercent", "cashSavingsPercent"],
+    monthlyIncome,
   );
 }
 
-function getAnsweredMonthlyInvesting(answers?: Record<string, any>) {
+function getAnsweredMonthlyInvesting(answers?: Record<string, any>, monthlyIncome = 0) {
   if (!answers) return 0;
-  return (
-    toReportNumber(answers.k401Contribution) +
-    toReportNumber(answers.iraContribution) +
-    toReportNumber(answers.rothContribution) +
-    toReportNumber(answers.brokerageContribution) +
-    toReportNumber(answers.hsaContribution) +
-    toReportNumber(answers.otherInvestmentContribution)
-  ) ||
-    toReportNumber(answers.monthlyInvestmentContribution) ||
-    toReportNumber(answers.monthly401kContribution) ||
-    toReportNumber(answers.monthlyRetirementContribution) ||
-    toReportNumber(answers.monthlyInvestingAmount) ||
-    toReportNumber(answers.monthlyInvestmentAmount);
+  const itemized =
+    amountFromAmountOrPercent(answers, ["k401Contribution"], ["k401ContributionPercent"], monthlyIncome) +
+    amountFromAmountOrPercent(answers, ["iraContribution"], ["iraContributionPercent"], monthlyIncome) +
+    amountFromAmountOrPercent(answers, ["rothContribution"], ["rothContributionPercent"], monthlyIncome) +
+    amountFromAmountOrPercent(answers, ["brokerageContribution"], ["brokerageContributionPercent"], monthlyIncome) +
+    amountFromAmountOrPercent(answers, ["hsaContribution"], ["hsaContributionPercent"], monthlyIncome) +
+    amountFromAmountOrPercent(answers, ["otherInvestmentContribution"], ["otherInvestmentContributionPercent"], monthlyIncome);
+
+  return itemized || amountFromAmountOrPercent(
+    answers,
+    [
+      "monthlyInvestmentContribution",
+      "monthly401kContribution",
+      "monthlyRetirementContribution",
+      "monthlyInvestingAmount",
+      "monthlyInvestmentAmount",
+    ],
+    ["investmentContributionPercent", "retirementContributionPercent"],
+    monthlyIncome,
+  );
 }
 
 function getBenchmarkProfileLabel(answers?: Record<string, any>) {
@@ -1564,15 +1596,19 @@ function getHouseholdComparisonMetrics(
   const fixedCostRatio = normalizePercentMetric(
     metrics?.fixedCostPressureRatio,
   );
-  const answeredMonthlySavings = getAnsweredMonthlySavings(answers);
-  const answeredMonthlyInvesting = getAnsweredMonthlyInvesting(answers);
   const monthlyIncome = Number(metrics?.monthlyIncome ?? toReportNumber(answers?.monthlyTakeHomeIncome) ?? 0);
-  const savingsRate = normalizePercentMetric(metrics?.savingsRate) ||
-    (monthlyIncome > 0 && answeredMonthlySavings > 0 ? (answeredMonthlySavings / monthlyIncome) * 100 : 0);
-  const investingRate = normalizePercentMetric(metrics?.investmentContributionRate) ||
-    (monthlyIncome > 0 && answeredMonthlyInvesting > 0 ? (answeredMonthlyInvesting / monthlyIncome) * 100 : 0);
-  const hasSavingsRateData = savingsRate > 0 || answeredMonthlySavings > 0;
-  const hasInvestingRateData = investingRate > 0 || answeredMonthlyInvesting > 0;
+  const answeredMonthlySavings = getAnsweredMonthlySavings(answers, monthlyIncome);
+  const answeredMonthlyInvesting = getAnsweredMonthlyInvesting(answers, monthlyIncome);
+  const hasSavingsRateData = Boolean(metrics?.hasSavingsRateData) || answeredMonthlySavings > 0;
+  const hasInvestingRateData = Boolean(metrics?.hasInvestmentRateData) || answeredMonthlyInvesting > 0;
+  const savingsRate = hasSavingsRateData
+    ? normalizePercentMetric(metrics?.savingsRate) ||
+      (monthlyIncome > 0 && answeredMonthlySavings > 0 ? (answeredMonthlySavings / monthlyIncome) * 100 : 0)
+    : 0;
+  const investingRate = hasInvestingRateData
+    ? normalizePercentMetric(metrics?.investmentContributionRate) ||
+      (monthlyIncome > 0 && answeredMonthlyInvesting > 0 ? (answeredMonthlyInvesting / monthlyIncome) * 100 : 0)
+    : 0;
   const netWorthBenchmark = getAgeBasedNetWorthBenchmark(answers);
 
   const debtBenchmark = 6500;
