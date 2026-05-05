@@ -44,8 +44,6 @@ export const QUESTION_STRATEGY = {
   ],
   detailedOnly: [
     'additionalPropertyOwnership',
-    'monthlyChildcareCost',
-    'childcarePressure',
     'carLoanBalance',
     'monthlyVehiclePayment',
     'vehicleValue',
@@ -445,33 +443,6 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     ],
     tags: {
       modes: ['snapshot', 'detailed'],
-      priority: 'conditional',
-      askIf: (a) =>
-        ['single_with_dependents', 'partnered_with_dependents'].includes(a.relationshipStatus),
-    },
-  },
-  {
-    key: 'childcarePressure',
-    question: 'How much pressure does childcare cost put on your monthly budget?',
-    type: 'single',
-    section: 'spending',
-    required: true,
-    conditions: [
-      {
-        key: 'relationshipStatus',
-        operator: 'in',
-        value: ['single_with_dependents', 'partnered_with_dependents'],
-      },
-    ],
-    options: [
-      { value: 'none', label: 'Very little' },
-      { value: 'some', label: 'Some' },
-      { value: 'meaningful', label: 'Meaningful' },
-      { value: 'heavy', label: 'Heavy' },
-      { value: 'very_heavy', label: 'Very heavy' },
-    ],
-    tags: {
-      modes: ['detailed'],
       priority: 'conditional',
       askIf: (a) =>
         ['single_with_dependents', 'partnered_with_dependents'].includes(a.relationshipStatus),

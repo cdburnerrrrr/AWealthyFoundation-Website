@@ -634,11 +634,24 @@ function getContinueModeQuestions(responses: Record<string, any>) {
   return detailed.filter((question) => {
     const answered = isAnswered(question, responses[question.key]);
     if (question.key === 'protectionCoverage') return true;
-    if (
-      question.key === 'relationshipStatus' &&
-      ['single_with_dependents', 'partnered_with_dependents'].includes(responses.relationshipStatus)
-    ) {
-      return true;
+    if (question.key === 'relationshipStatus') {
+      const hasDependents = ['single_with_dependents', 'partnered_with_dependents'].includes(
+        responses.relationshipStatus
+      );
+      const hasChildcareCost =
+        responses.monthlyChildcareCost !== undefined &&
+        responses.monthlyChildcareCost !== null &&
+        responses.monthlyChildcareCost !== '';
+
+      // Childcare/daycare is captured once inside the household card.
+      // In continue mode, only show that parent card again for older snapshots that
+      // indicate dependents but did not capture the childcare amount.
+      return hasDependents && !hasChildcareCost;
+    }
+
+    // Never show childcare as a separate standalone follow-up in the full assessment.
+    if (question.key === 'monthlyChildcareCost' || question.key === 'childcarePressure') {
+      return false;
     }
     return !(snapshotKeys.has(question.key) && answered);
   });
