@@ -1217,13 +1217,22 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
 
   {
     key: 'monthlySavingsContribution',
-    'monthlySavingsPercent',
     question: 'About how much do you intentionally save each month?',
     type: 'number',
     section: 'saving',
     required: false,
     placeholder: 'e.g. 500',
     helperText: 'Do not include investment contributions here. Use the amount that goes into savings or cash reserves each month.',
+    tags: { modes: ['detailed'], priority: 'conditional' },
+  },
+  {
+    key: 'monthlySavingsPercent',
+    question: 'What percentage of your take-home pay do you save each month?',
+    type: 'number',
+    section: 'saving',
+    required: false,
+    placeholder: 'e.g. 10',
+    helperText: 'Use this if you know your savings as a percent instead of a dollar amount. Leave blank if you already entered a monthly savings amount.',
     tags: { modes: ['detailed'], priority: 'conditional' },
   },
 
