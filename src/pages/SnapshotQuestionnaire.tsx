@@ -862,7 +862,7 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
                             ))}
                           </select>
                         ) : (
-                          <div className="relative">
+                          <div className="flex items-center gap-2">
                             <input
                               type="text"
                               inputMode="decimal"
@@ -876,7 +876,7 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
                                 onFieldChange?.(field.key, raw === '' ? '' : raw);
                               }}
                               placeholder={field.placeholder || 'e.g. 0'}
-                              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 pr-10 text-sm text-slate-900 outline-none focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
+                              className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
                             />
                             <button
                               type="button"
@@ -888,7 +888,8 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
                                 const result = runFieldCalculator(responses[field.key]);
                                 if (result !== null) onFieldChange?.(field.key, String(result));
                               }}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-400 transition hover:bg-copper-50 hover:text-copper-700"
+                              tabIndex={-1}
+                              className="shrink-0 rounded-xl border border-slate-200 bg-white p-2 text-slate-400 transition hover:border-copper-200 hover:bg-copper-50 hover:text-copper-700"
                             >
                               <Calculator className="h-4 w-4" />
                             </button>
@@ -965,7 +966,7 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
                         ))}
                       </select>
                     ) : (
-                      <div className="relative">
+                      <div className="flex items-center gap-2">
                         <input
                           type="text"
                           inputMode="decimal"
@@ -979,7 +980,7 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
                             onFieldChange?.(field.key, raw === '' ? '' : raw);
                           }}
                           placeholder={field.placeholder || 'e.g. 0'}
-                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 pr-10 text-sm text-slate-900 outline-none focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
+                          className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
                         />
                         <button
                           type="button"
@@ -991,7 +992,8 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
                             const result = runFieldCalculator(responses[field.key]);
                             if (result !== null) onFieldChange?.(field.key, String(result));
                           }}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-400 transition hover:bg-copper-50 hover:text-copper-700"
+                          tabIndex={-1}
+                              className="shrink-0 rounded-xl border border-slate-200 bg-white p-2 text-slate-400 transition hover:border-copper-200 hover:bg-copper-50 hover:text-copper-700"
                         >
                           <Calculator className="h-4 w-4" />
                         </button>
