@@ -559,22 +559,6 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     'Checking, savings, and emergency funds combined. A quick estimate is fine.',
   tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
 },
-  {
-    key: 'emergencyAccess',
-    question:
-      'If something unexpected happened, how much of your cash is truly available for emergencies?',
-    type: 'single',
-    section: 'saving',
-    required: true,
-    options: [
-      { value: 'all', label: 'All of it' },
-      { value: 'most', label: 'Most of it' },
-      { value: 'some', label: 'Some of it' },
-      { value: 'very_little', label: 'Very little of it' },
-    ],
-    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
-  },
-
 {
   key: 'fixedCostPressureReview',
   question: 'See your fixed cost pressure',
@@ -614,6 +598,25 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       { value: 'not_currently', label: 'Not currently' },
     ],
     tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+  {
+    key: 'emergencyAccess',
+    question:
+      'If something unexpected happened, how much of your cash is truly available for emergencies?',
+    type: 'single',
+    section: 'saving',
+    required: true,
+    options: [
+      { value: 'all', label: 'All of it' },
+      { value: 'most', label: 'Most of it' },
+      { value: 'some', label: 'Some of it' },
+      { value: 'very_little', label: 'Very little of it' },
+    ],
+    tags: {
+      modes: ['snapshot', 'detailed'],
+      priority: 'core',
+      askIf: (answers) => Number(String(answers.totalLiquidSavings ?? '').replace(/[^\d.-]/g, '')) > 0,
+    },
   },
   {
     key: 'savingsAutomation',
