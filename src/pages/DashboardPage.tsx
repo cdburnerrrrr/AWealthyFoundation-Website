@@ -2064,6 +2064,10 @@ function AssetDonut({
 }
 
 export default function DashboardPage({ onLogout }: DashboardPageProps) {
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, []);
+
   const navigate = useNavigate();
   const printRef = useRef<HTMLDivElement>(null);
   const [searchParams] = useSearchParams();

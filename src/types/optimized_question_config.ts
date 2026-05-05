@@ -60,7 +60,7 @@ export const QUESTION_STRATEGY = {
     'propertyCoverage',
     'autoCoverage',
     'disabilityCoverage',
-    'umbrellaCoverage',
+    'umbrellaCoverageAmount',
     'investmentAccounts',
     'investmentConfidence',
     'investmentMix',
@@ -1093,6 +1093,17 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       { value: 'none', label: 'None of these / not sure' },
     ],
     tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+
+  {
+    key: 'umbrellaCoverageAmount',
+    question: 'How much umbrella liability coverage do you have?',
+    type: 'number',
+    section: 'protection',
+    required: false,
+    placeholder: 'e.g. 1000000',
+    helperText: 'Use the policy limit if you know it. A best estimate is fine.',
+    tags: { modes: ['detailed'], priority: 'conditional' },
   },
 
   {

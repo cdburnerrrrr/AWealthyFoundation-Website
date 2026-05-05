@@ -5,6 +5,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Calculator,
   CreditCard,
   DollarSign,
   Eye,
@@ -146,7 +147,7 @@ const INLINE_GROUPS: Record<string, string[]> = {
     'autoCoverage',
     'disabilityCoverage',
     'healthCoverage',
-    'umbrellaCoverage',
+    'umbrellaCoverageAmount',
   ],
   investingStatus: [],
   investmentAccounts: [
@@ -356,16 +357,7 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
       },
     ],
     umbrella: [
-      {
-        key: 'umbrellaCoverage',
-        label: 'Umbrella policy status',
-        type: 'select',
-        options: [
-          { value: 'yes', label: 'Yes' },
-          { value: 'no', label: 'No' },
-          { value: 'not_sure', label: 'Not sure' },
-        ],
-      },
+      { key: 'umbrellaCoverageAmount', label: 'Umbrella policy amount', placeholder: 'e.g. 1000000', required: false },
     ],
   },
   investmentAccounts: {
@@ -455,6 +447,31 @@ function toNumber(value: unknown): number {
     return Number.isFinite(parsed) ? parsed : 0;
   }
   return 0;
+}
+
+
+function calculateSimpleExpression(expression: string): number | null {
+  const cleaned = expression.trim();
+  if (!cleaned || !/^[0-9+\-*/().\s]+$/.test(cleaned)) return null;
+
+  try {
+    // Calculator helper only accepts digits and basic arithmetic operators.
+    const result = Function(`"use strict"; return (${cleaned});`)();
+    const numeric = Number(result);
+    return Number.isFinite(numeric) ? Math.round(numeric * 100) / 100 : null;
+  } catch {
+    return null;
+  }
+}
+
+function runFieldCalculator(currentValue: unknown) {
+  const expression = window.prompt(
+    'Quick calculator — enter a simple calculation like 117000 + 21300',
+    String(currentValue ?? '')
+  );
+
+  if (expression === null) return null;
+  return calculateSimpleExpression(expression);
 }
 
 function isAnswered(question: Question | undefined, value: ResponseValue | undefined) {
@@ -818,9 +835,16 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
                         onClick={(event) => event.stopPropagation()}
                         onPointerDownCapture={(event) => event.stopPropagation()}
                       >
-                        <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          {field.label}
-                        </span>
+                        <div className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          {field.label.toLowerCase().startsWith('or ') ? (
+                            <>
+                              <span className="rounded-full bg-copper-100 px-2 py-0.5 text-[11px] font-black tracking-[0.18em] text-copper-700">OR</span>
+                              <span>{field.label.replace(/^OR\s+/i, '')}</span>
+                            </>
+                          ) : (
+                            <span>{field.label}</span>
+                          )}
+                        </div>
                         {field.type === 'select' ? (
                           <select
                             value={responses[field.key] ?? ''}
@@ -838,21 +862,37 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
                             ))}
                           </select>
                         ) : (
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            value={responses[field.key] ?? ''}
-                            onPointerDownCapture={(event) => event.stopPropagation()}
-                            onClick={(event) => event.stopPropagation()}
-                            onMouseDown={(event) => event.stopPropagation()}
-                            onWheel={(event) => event.currentTarget.blur()}
-                            onChange={(event) => {
-                              const raw = event.target.value;
-                              onFieldChange?.(field.key, raw === '' ? '' : raw);
-                            }}
-                            placeholder={field.placeholder || 'e.g. 0'}
-                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
-                          />
+                          <div className="relative">
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              value={responses[field.key] ?? ''}
+                              onPointerDownCapture={(event) => event.stopPropagation()}
+                              onClick={(event) => event.stopPropagation()}
+                              onMouseDown={(event) => event.stopPropagation()}
+                              onWheel={(event) => event.currentTarget.blur()}
+                              onChange={(event) => {
+                                const raw = event.target.value;
+                                onFieldChange?.(field.key, raw === '' ? '' : raw);
+                              }}
+                              placeholder={field.placeholder || 'e.g. 0'}
+                              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 pr-10 text-sm text-slate-900 outline-none focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
+                            />
+                            <button
+                              type="button"
+                              aria-label="Open quick calculator"
+                              onPointerDownCapture={(event) => event.stopPropagation()}
+                              onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                const result = runFieldCalculator(responses[field.key]);
+                                if (result !== null) onFieldChange?.(field.key, String(result));
+                              }}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-400 transition hover:bg-copper-50 hover:text-copper-700"
+                            >
+                              <Calculator className="h-4 w-4" />
+                            </button>
+                          </div>
                         )}
                       </label>
                     ))}
@@ -898,9 +938,16 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
               <div className="mt-4 grid gap-3 md:grid-cols-2">
                 {fields.map((field) => (
                   <label key={field.key} className="block">
-                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      {field.label}
-                    </span>
+                    <div className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      {field.label.toLowerCase().startsWith('or ') ? (
+                        <>
+                          <span className="rounded-full bg-copper-100 px-2 py-0.5 text-[11px] font-black tracking-[0.18em] text-copper-700">OR</span>
+                          <span>{field.label.replace(/^OR\s+/i, '')}</span>
+                        </>
+                      ) : (
+                        <span>{field.label}</span>
+                      )}
+                    </div>
                     {field.type === 'select' ? (
                       <select
                         value={responses[field.key] ?? ''}
@@ -918,21 +965,37 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
                         ))}
                       </select>
                     ) : (
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={responses[field.key] ?? ''}
-                        onPointerDownCapture={(event) => event.stopPropagation()}
-                        onClick={(event) => event.stopPropagation()}
-                        onMouseDown={(event) => event.stopPropagation()}
-                        onWheel={(event) => event.currentTarget.blur()}
-                        onChange={(event) => {
-                          const raw = event.target.value;
-                          onFieldChange?.(field.key, raw === '' ? '' : raw);
-                        }}
-                        placeholder={field.placeholder || 'e.g. 0'}
-                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
-                      />
+                      <div className="relative">
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={responses[field.key] ?? ''}
+                          onPointerDownCapture={(event) => event.stopPropagation()}
+                          onClick={(event) => event.stopPropagation()}
+                          onMouseDown={(event) => event.stopPropagation()}
+                          onWheel={(event) => event.currentTarget.blur()}
+                          onChange={(event) => {
+                            const raw = event.target.value;
+                            onFieldChange?.(field.key, raw === '' ? '' : raw);
+                          }}
+                          placeholder={field.placeholder || 'e.g. 0'}
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 pr-10 text-sm text-slate-900 outline-none focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
+                        />
+                        <button
+                          type="button"
+                          aria-label="Open quick calculator"
+                          onPointerDownCapture={(event) => event.stopPropagation()}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            const result = runFieldCalculator(responses[field.key]);
+                            if (result !== null) onFieldChange?.(field.key, String(result));
+                          }}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-400 transition hover:bg-copper-50 hover:text-copper-700"
+                        >
+                          <Calculator className="h-4 w-4" />
+                        </button>
+                      </div>
                     )}
                   </label>
                 ))}
