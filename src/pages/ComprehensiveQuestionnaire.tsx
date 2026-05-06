@@ -1139,37 +1139,39 @@ function InlineObjectField({
           ))}
         </select>
       ) : (
-        <input
-          type="text"
-          inputMode="decimal"
-          value={responses[field.key] ?? ''}
-          onPointerDownCapture={(event) => event.stopPropagation()}
-          onClick={(event) => event.stopPropagation()}
-          onMouseDown={(event) => event.stopPropagation()}
-          onWheel={(event) => event.currentTarget.blur()}
-          onChange={(event) => {
-            const raw = event.target.value;
-            onFieldChange?.(field.key, raw === '' ? '' : raw);
-          }}
-          placeholder={field.placeholder || 'e.g. 0'}
-          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
-        />
-      )}
-
-{field.key === 'vehicleValue' || field.label?.toLowerCase().includes('vehicle value') ? (
-        <div className="mt-2">
-          <a
-            href="https://www.edmunds.com/appraisal/"
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(event) => event.stopPropagation()}
+        <>
+          <input
+            type="text"
+            inputMode="decimal"
+            value={responses[field.key] ?? ''}
             onPointerDownCapture={(event) => event.stopPropagation()}
-            className="text-xs font-medium text-copper-700 underline underline-offset-2 transition hover:text-copper-800"
-          >
-            Need a quick estimate? Check Edmunds →
-          </a>
-        </div>
-      ) : null}
+            onClick={(event) => event.stopPropagation()}
+            onMouseDown={(event) => event.stopPropagation()}
+            onWheel={(event) => event.currentTarget.blur()}
+            onChange={(event) => {
+              const raw = event.target.value;
+              onFieldChange?.(field.key, raw === '' ? '' : raw);
+            }}
+            placeholder={field.placeholder || 'e.g. 0'}
+            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
+          />
+
+          {(field.key === 'vehicleValue' || cleanLabel.toLowerCase().includes('vehicle value')) ? (
+            <div className="mt-2">
+              <a
+                href="https://www.edmunds.com/appraisal/"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(event) => event.stopPropagation()}
+                onPointerDownCapture={(event) => event.stopPropagation()}
+                className="text-xs font-semibold text-copper-700 underline underline-offset-2 transition hover:text-copper-800"
+              >
+                Need a quick estimate? Check Edmunds →
+              </a>
+            </div>
+          ) : null}
+        </>
+      )}
     </label>
   );
 }
