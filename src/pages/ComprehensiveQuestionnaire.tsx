@@ -200,10 +200,6 @@ type InlineField = {
   type?: 'number' | 'select';
   options?: { value: string; label: string }[];
   required?: boolean;
-  helperLink?: {
-    href: string;
-    label: string;
-  };
 };
 
 const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
@@ -281,15 +277,7 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
     car_loan: [
       { key: 'carLoanBalance', label: 'Loan balance', placeholder: 'e.g. 18000' },
       { key: 'monthlyVehiclePayment', label: 'Monthly payment', placeholder: 'e.g. 540' },
-      {
-        key: 'vehicleValue',
-        label: 'Estimated vehicle value',
-        placeholder: 'e.g. 15000',
-        helperLink: {
-          href: 'https://www.edmunds.com/appraisal/',
-          label: 'Need a quick estimate? Check Edmunds →',
-        },
-      },
+      { key: 'vehicleValue', label: 'Estimated vehicle value', placeholder: 'e.g. 15000' },
     ],
     car_lease: [
       { key: 'monthlyVehiclePayment', label: 'Monthly lease payment', placeholder: 'e.g. 420' },
@@ -1168,17 +1156,17 @@ function InlineObjectField({
             className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
           />
 
-          {field.helperLink ? (
+          {(field.key === 'vehicleValue' || cleanLabel.toLowerCase().includes('vehicle value')) ? (
             <div className="mt-2">
               <a
-                href={field.helperLink.href}
+                href="https://www.edmunds.com/appraisal/"
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(event) => event.stopPropagation()}
                 onPointerDownCapture={(event) => event.stopPropagation()}
                 className="text-xs font-semibold text-copper-700 underline underline-offset-2 transition hover:text-copper-800"
               >
-                {field.helperLink.label}
+                Need a quick estimate? Check Edmunds →
               </a>
             </div>
           ) : null}
@@ -1371,6 +1359,23 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
                 responses={responses}
                 onFieldChange={onFieldChange}
               />
+            ) : null}
+
+            {selected && question.key === 'vehicleDebt' && option.value === 'car_loan' ? (
+              <div
+                className="mt-3 rounded-2xl border border-copper-100 bg-white/75 px-3 py-2"
+                onClick={(event) => event.stopPropagation()}
+                onPointerDownCapture={(event) => event.stopPropagation()}
+              >
+                <a
+                  href="https://www.edmunds.com/appraisal/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-semibold text-copper-700 underline underline-offset-2 transition hover:text-copper-800"
+                >
+                  Need a quick estimate? Check Edmunds →
+                </a>
+              </div>
             ) : null}
           </div>
         );
