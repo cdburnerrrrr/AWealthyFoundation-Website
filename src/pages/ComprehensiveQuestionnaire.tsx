@@ -1156,7 +1156,7 @@ function InlineObjectField({
         />
       )}
 
-      {field.key === 'vehicleValue' ? (
+{field.key === 'vehicleValue' || field.label?.toLowerCase().includes('vehicle value') ? (
         <div className="mt-2">
           <a
             href="https://www.edmunds.com/appraisal/"
