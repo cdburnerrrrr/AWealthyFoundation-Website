@@ -718,14 +718,24 @@ function getContinueModeQuestions(responses: Record<string, any>) {
 
   return detailed.filter((question) => {
     const answered = isAnswered(question, responses[question.key]);
+    const investingStatus = String(responses.investingStatus ?? '').trim().toLowerCase();
     const invests = [
       'yes_consistently',
+      'yes consistently',
+      'yes, consistently',
       'yes_irregularly',
+      'yes irregularly',
+      'yes, irregularly',
+      'yes_regularly',
+      'yes regularly',
       'yes',
+      'true',
       'investing',
       'currently_investing',
+      'currently investing',
       'started',
-    ].includes(String(responses.investingStatus ?? ''));
+      'occasionally',
+    ].includes(investingStatus);
     const investingDetailKeys = new Set([
       'investmentAccounts',
       'investmentConfidence',

@@ -85,14 +85,41 @@ function shouldAskUmbrella(answers: Record<string, any>) {
 
 
 function isInvesting(answers: Record<string, any>) {
+  const raw = String(answers.investingStatus ?? '').trim().toLowerCase();
+
+  if (!raw) return false;
+
+  if (
+    [
+      'not_yet',
+      'not yet',
+      'no',
+      'none',
+      'false',
+      'not_currently',
+      'not currently',
+    ].includes(raw)
+  ) {
+    return false;
+  }
+
   return [
     'yes_consistently',
+    'yes consistently',
+    'yes, consistently',
     'yes_irregularly',
+    'yes irregularly',
+    'yes, irregularly',
+    'yes_regularly',
+    'yes regularly',
     'yes',
+    'true',
     'investing',
     'currently_investing',
+    'currently investing',
     'started',
-  ].includes(String(answers.investingStatus ?? ''));
+    'occasionally',
+  ].includes(raw);
 }
 
 export const QUESTION_STRATEGY = {
