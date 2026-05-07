@@ -306,76 +306,7 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
       { key: 'medicalDebtPayment', label: 'Monthly payment', placeholder: 'e.g. 50' },
     ],
   },
-  protectionCoverage: {
-    health: [
-      {
-        key: 'healthCoverage',
-        label: 'Health coverage quality',
-        type: 'select',
-        options: [
-          { value: 'good_coverage', label: 'Solid coverage' },
-          { value: 'basic_coverage', label: 'Basic coverage' },
-          { value: 'limited_coverage', label: 'Limited or high deductible' },
-          { value: 'not_sure', label: 'Not sure' },
-        ],
-      },
-    ],
-    auto: [
-      {
-        key: 'autoCoverage',
-        label: 'Auto coverage level',
-        type: 'select',
-        options: [
-          { value: 'full', label: 'Full coverage' },
-          { value: 'basic', label: 'Basic but reasonable' },
-          { value: 'minimal', label: 'Minimal' },
-          { value: 'minimum', label: 'State minimum only' },
-        ],
-      },
-    ],
-    home_or_renters: [
-      {
-        key: 'propertyCoverage',
-        label: 'Homeowners / renters coverage',
-        type: 'select',
-        options: [
-          { value: 'solid', label: 'Solid coverage' },
-          { value: 'basic', label: 'Basic coverage' },
-          { value: 'minimal', label: 'Minimal / unsure' },
-          { value: 'none', label: 'No coverage' },
-        ],
-      },
-    ],
-    life: [
-      {
-        key: 'lifeInsurance',
-        label: 'Life insurance adequacy',
-        type: 'select',
-        options: [
-          { value: 'enough', label: 'Enough for the people who depend on me' },
-          { value: 'some', label: 'Some, but probably not enough' },
-          { value: 'none', label: 'No life insurance' },
-          { value: 'not_needed', label: 'No one depends on my income' },
-        ],
-      },
-    ],
-    disability: [
-      {
-        key: 'disabilityCoverage',
-        label: 'Disability / income protection',
-        type: 'select',
-        options: [
-          { value: 'strong', label: 'Strong disability coverage' },
-          { value: 'employer_basic', label: 'Basic employer coverage' },
-          { value: 'not_sure', label: 'Not sure what I have' },
-          { value: 'none', label: 'No disability coverage' },
-        ],
-      },
-    ],
-    umbrella: [
-      { key: 'umbrellaCoverageAmount', label: 'Umbrella policy amount', placeholder: 'e.g. 1000000', required: false },
-    ],
-  },
+  protectionCoverage: {},
   investmentAccounts: {
     '401k': [
       { key: 'k401Balance', label: 'Current balance', placeholder: 'e.g. 85000' },
@@ -649,13 +580,64 @@ function ProgressHeader({
 
 type TransitionCardProps = {
   sectionKey: string;
+  responses: Record<string, any>;
   onContinue: () => void;
   onBack: () => void;
   isFirst: boolean;
 };
 
-function TransitionCard({ sectionKey, onContinue, onBack, isFirst }: TransitionCardProps) {
+function getTransitionNote(sectionKey: string, responses: Record<string, any>) {
+  const income = Number(responses.monthlyTakeHomeIncome || 0);
+  const fixedCosts =
+    Number(responses.monthlyHousingCost || 0) +
+    Number(responses.monthlyUtilities || 0) +
+    Number(responses.monthlyChildcareCost || 0) +
+    Number(responses.monthlyVehiclePayment || 0) +
+    Number(responses.creditCardPayment || 0) +
+    Number(responses.studentLoanPayment || 0) +
+    Number(responses.personalLoanPayment || 0) +
+    Number(responses.bnplPayment || 0) +
+    Number(responses.paydayPayment || 0) +
+    Number(responses.medicalDebtPayment || 0);
+  const fixedCostLoad = income > 0 ? (fixedCosts / income) * 100 : 0;
+  const savings = Number(responses.totalLiquidSavings || 0);
+  const coverage = Array.isArray(responses.protectionCoverage) ? responses.protectionCoverage : [];
+
+  if (sectionKey === 'saving') {
+    if (fixedCostLoad >= 65) {
+      return 'Your monthly must-pay costs may already be taking a large share of income. Savings gives us a quick read on how much cushion is protecting the household.';
+    }
+    return 'Now that we know the income and fixed-cost picture, savings tells us how much room the foundation has to absorb surprises.';
+  }
+
+  if (sectionKey === 'debt') {
+    if (savings > 0) {
+      return 'Savings gives the foundation some defense. Debt tells us whether payments are quietly pulling against that progress.';
+    }
+    return 'Debt matters because even manageable payments can reduce flexibility if they crowd out saving or investing.';
+  }
+
+  if (sectionKey === 'investing') {
+    return 'Now we are moving from stability to growth: whether today’s income is starting to build future flexibility.';
+  }
+
+  if (sectionKey === 'protection') {
+    return 'This is a quick insurance check only. We are not doing a full policy review in the Snapshot.';
+  }
+
+  if (sectionKey === 'vision') {
+    if (!coverage.includes('disability')) {
+      return 'One protection gap to keep in mind later is income interruption. If your income stopped because of illness or injury, the rest of the plan can come under pressure quickly.';
+    }
+    return 'The Snapshot has covered the main structure. The last step is connecting the numbers to what you actually want this money to support.';
+  }
+
+  return '';
+}
+
+function TransitionCard({ sectionKey, responses, onContinue, onBack, isFirst }: TransitionCardProps) {
   const meta = SECTION_META[sectionKey] ?? SECTION_META.foundation;
+  const transitionNote = getTransitionNote(sectionKey, responses);
 
   return (
     <div className={`rounded-3xl p-8 text-white shadow-sm ${meta.colorClass}`}>
@@ -672,6 +654,12 @@ function TransitionCard({ sectionKey, onContinue, onBack, isFirst }: TransitionC
       <p className="mt-3 max-w-2xl text-sm md:text-base leading-6 text-white/90">
         {meta.transitionBody}
       </p>
+
+      {transitionNote ? (
+        <div className="mt-5 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm leading-6 text-white/90">
+          {transitionNote}
+        </div>
+      ) : null}
 
       <div className="mt-8 flex items-center justify-between">
         {!isFirst && (
@@ -1505,6 +1493,7 @@ export default function SnapshotQuestionnaire() {
           ) : mode === 'transition' ? (
             <TransitionCard
               sectionKey={currentSectionKey}
+              responses={responses}
               onContinue={() => setMode('question')}
               onBack={goBack}
               isFirst={currentStep === 0}

@@ -162,8 +162,8 @@ const INLINE_GROUPS: Record<string, string[]> = {
     'autoCoverage',
     'disabilityCoverage',
     'healthCoverage',
-    'umbrellaCoverageAmount',
   ],
+  advancedProtection: ['umbrellaCoverageAmount'],
   investingStatus: [],
   investmentAccounts: [
     'k401Balance',
@@ -387,6 +387,8 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
         ],
       },
     ],
+  },
+  advancedProtection: {
     umbrella: [
       { key: 'umbrellaCoverageAmount', label: 'Umbrella policy amount', placeholder: 'e.g. 1000000', required: false },
     ],
@@ -437,6 +439,21 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
 
 const OBJECT_INLINE_ROOT_KEYS = new Set(Object.keys(OBJECT_FIELD_GROUPS));
 
+function getProtectionReviewFields(questionKey: string, optionValue: string, responses: Record<string, any>) {
+  const fields = OBJECT_FIELD_GROUPS[questionKey]?.[optionValue] ?? [];
+
+  // In continue mode, the Snapshot already captured which insurance types exist.
+  // The full assessment should review only those selected protections instead of
+  // making the user answer the same checklist again.
+  if (questionKey !== 'protectionCoverage') return fields;
+
+  const selectedCoverage = Array.isArray(responses.protectionCoverage) ? responses.protectionCoverage : [];
+  const hasSelectedCoverage = selectedCoverage.length > 0 && !selectedCoverage.includes('none');
+
+  if (!hasSelectedCoverage) return fields;
+  return selectedCoverage.includes(optionValue) ? fields : [];
+}
+
 function getRequiredObjectFieldKeys(question: Question | undefined, responses: Record<string, any>) {
   if (!question || !OBJECT_INLINE_ROOT_KEYS.has(question.key)) return [];
 
@@ -445,7 +462,7 @@ function getRequiredObjectFieldKeys(question: Question | undefined, responses: R
 
   return selected
     .filter((value) => value !== 'none')
-    .flatMap((value) => OBJECT_FIELD_GROUPS[question.key]?.[value] ?? [])
+    .flatMap((value) => getProtectionReviewFields(question.key, value, responses))
     .filter((field) => field.required !== false)
     .map((field) => field.key);
 }
@@ -484,6 +501,10 @@ function getSectionLabel(section?: Question['section'], key?: string) {
 function getQuestionDisplayText(question: Question | undefined, responses: Record<string, any>) {
   if (!question) return '';
 
+  if (question.key === 'protectionCoverage' && Array.isArray(responses.protectionCoverage) && responses.protectionCoverage.length > 0) {
+    return 'Let’s review the insurance coverage you already told us you have.';
+  }
+
   if (question.key === 'additionalPropertyOwnership') {
     if (responses.housingStatus === 'rent') {
       return 'We know you are currently renting, but do you own any rental property, land, or other real estate?';
@@ -501,6 +522,10 @@ function getQuestionDisplayText(question: Question | undefined, responses: Recor
 
 function getQuestionDisplayHelper(question: Question | undefined, responses: Record<string, any>) {
   if (!question) return undefined;
+
+  if (question.key === 'protectionCoverage' && Array.isArray(responses.protectionCoverage) && responses.protectionCoverage.length > 0) {
+    return 'You do not need to re-select your insurance. We will only ask for a quick quality check on the coverage types you already selected in the Snapshot.';
+  }
 
   if (question.key === 'additionalPropertyOwnership') {
     if (responses.housingStatus === 'rent' || responses.housingStatus === 'living_with_family') {
@@ -633,7 +658,10 @@ function getContinueModeQuestions(responses: Record<string, any>) {
 
   return detailed.filter((question) => {
     const answered = isAnswered(question, responses[question.key]);
-    if (question.key === 'protectionCoverage') return true;
+    if (question.key === 'protectionCoverage') {
+      const coverage = Array.isArray(responses.protectionCoverage) ? responses.protectionCoverage : [];
+      return coverage.length > 0 && !coverage.includes('none');
+    }
     if (question.key === 'relationshipStatus') {
       const hasDependents = ['single_with_dependents', 'partnered_with_dependents'].includes(
         responses.relationshipStatus
@@ -953,13 +981,80 @@ function ProgressHeader({
 
 type TransitionCardProps = {
   sectionKey: string;
+  responses: Record<string, any>;
+  isContinueMode?: boolean;
   onContinue: () => void;
   onBack: () => void;
   isFirst: boolean;
 };
 
-function TransitionCard({ sectionKey, onContinue, onBack, isFirst }: TransitionCardProps) {
+function getTransitionNote(sectionKey: string, responses: Record<string, any>, isContinueMode = false) {
+  const coverage = Array.isArray(responses.protectionCoverage) ? responses.protectionCoverage : [];
+  const hasCoverage = (value: string) => coverage.includes(value);
+  const hasDependents = ['single_with_dependents', 'partnered_with_dependents'].includes(responses.relationshipStatus);
+  const ownsHome = ['own_with_mortgage', 'own_outright'].includes(responses.housingStatus);
+  const fixedCosts =
+    Number(responses.monthlyHousingCost || 0) +
+    Number(responses.monthlyUtilities || 0) +
+    Number(responses.monthlyChildcareCost || 0) +
+    Number(responses.monthlyVehiclePayment || 0) +
+    Number(responses.creditCardPayment || 0) +
+    Number(responses.studentLoanPayment || 0) +
+    Number(responses.personalLoanPayment || 0) +
+    Number(responses.bnplPayment || 0) +
+    Number(responses.paydayPayment || 0) +
+    Number(responses.medicalDebtPayment || 0);
+  const income = Number(responses.monthlyTakeHomeIncome || 0);
+  const fixedCostLoad = income > 0 ? (fixedCosts / income) * 100 : 0;
+
+  if (isContinueMode && sectionKey === 'foundation') {
+    return 'We will not make you re-answer the Snapshot. This full review fills in only the details needed to make the report more useful.';
+  }
+
+  if (sectionKey === 'saving') {
+    if (fixedCostLoad >= 65) {
+      return 'Your earlier answers suggest a lot of income may already be committed each month. That makes the savings section less about willpower and more about creating breathing room.';
+    }
+    return 'Now that we have the monthly structure, savings helps show how much cushion is protecting the rest of the foundation.';
+  }
+
+  if (sectionKey === 'debt') {
+    if (Number(responses.totalLiquidSavings || responses.cashSavings || 0) > 0) {
+      return 'Savings gives you some defense. Debt tells us whether part of that defense is being pulled backward by payments or high-interest balances.';
+    }
+    return 'Debt pressure matters because payments can quietly crowd out saving, investing, and flexibility.';
+  }
+
+  if (sectionKey === 'investing') {
+    if (responses.debtManageability === 'hard_to_manage' || responses.debtManageability === 'overwhelming') {
+      return 'Before chasing higher returns, it helps to know whether debt is creating friction that makes investing harder to sustain.';
+    }
+    return 'Investing shows whether today’s income is starting to turn into future flexibility.';
+  }
+
+  if (sectionKey === 'protection') {
+    return 'You have shown what you are building. Protection checks whether that progress is defended if life gets expensive or income gets interrupted.';
+  }
+
+  if (sectionKey === 'vision') {
+    if (!hasCoverage('disability')) {
+      return 'One commonly overlooked risk is interrupted income due to illness or injury. Disability coverage can matter because your income supports the rest of the plan.';
+    }
+    if (ownsHome) {
+      return 'Homeowners should usually review coverage annually. Rising home values and construction costs can leave a policy behind even when nothing major changes.';
+    }
+    if (hasDependents && !hasCoverage('life')) {
+      return 'When others depend on your income, life insurance becomes less optional. It is one of the safeguards that helps protect the people attached to the plan.';
+    }
+    return 'You have reviewed the defense around your foundation. The final step is connecting the numbers to what you actually want this money to support.';
+  }
+
+  return '';
+}
+
+function TransitionCard({ sectionKey, responses, isContinueMode = false, onContinue, onBack, isFirst }: TransitionCardProps) {
   const meta = SECTION_META[sectionKey] ?? SECTION_META.foundation;
+  const transitionNote = getTransitionNote(sectionKey, responses, isContinueMode);
 
   return (
     <div className={`rounded-3xl p-8 text-white shadow-sm ${meta.colorClass}`}>
@@ -976,6 +1071,12 @@ function TransitionCard({ sectionKey, onContinue, onBack, isFirst }: TransitionC
       <p className="mt-3 max-w-2xl text-sm md:text-base leading-6 text-white/90">
         {meta.transitionBody}
       </p>
+
+      {transitionNote ? (
+        <div className="mt-5 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm leading-6 text-white/90">
+          {transitionNote}
+        </div>
+      ) : null}
 
       <div className="mt-8 flex items-center justify-between border-t border-white/15 pt-6">
         <button
@@ -1226,6 +1327,10 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
 
   if (question.type === 'multiple') {
     const selectedValues = Array.isArray(value) ? value : [];
+    const protectionReviewOnly =
+      question.key === 'protectionCoverage' &&
+      selectedValues.length > 0 &&
+      !selectedValues.includes('none');
 
     const toggleOption = (optionValue: string) => {
       const selected = selectedValues.includes(optionValue);
@@ -1246,24 +1351,26 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
     return (
       <div>
         <div className="mb-3 inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
-          Select all that apply
+          {protectionReviewOnly ? 'Review selected coverage' : 'Select all that apply'}
         </div>
 
         <div className="grid gap-3">
           {question.options.map((option) => {
             const selected = selectedValues.includes(option.value);
-            const fields = OBJECT_FIELD_GROUPS[question.key]?.[option.value] ?? [];
+            const fields = getProtectionReviewFields(question.key, option.value, responses);
+
+            if (protectionReviewOnly && (!selected || option.value === 'none')) return null;
 
             return (
               <div
                 key={option.value}
                 role="button"
                 tabIndex={0}
-                onClick={() => toggleOption(option.value)}
+                onClick={() => { if (!protectionReviewOnly) toggleOption(option.value); }}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault();
-                    toggleOption(option.value);
+                    if (!protectionReviewOnly) toggleOption(option.value);
                   }
                 }}
                 className={`cursor-pointer rounded-2xl border p-4 text-left transition ${
@@ -1319,7 +1426,7 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
     <div className="grid gap-3">
       {question.options.map((option) => {
         const selected = value === option.value;
-        const fields = OBJECT_FIELD_GROUPS[question.key]?.[option.value] ?? [];
+        const fields = getProtectionReviewFields(question.key, option.value, responses);
 
         return (
           <div
@@ -2137,6 +2244,8 @@ export default function ComprehensiveQuestionnaire() {
           ) : mode === 'transition' ? (
             <TransitionCard
               sectionKey={currentSectionKey}
+              responses={responses}
+              isContinueMode={isContinueMode}
               isFirst={currentStep === 0}
               onBack={goBack}
               onContinue={() => {

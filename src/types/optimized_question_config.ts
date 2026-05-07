@@ -35,7 +35,6 @@ export const QUESTION_STRATEGY = {
     'debtManageability',
     'progressPriority',
     'debtPaydownStrategy',
-    'incomeProtectionLevel',
     'protectionCoverage',
     'investingStatus',
     'financialDirection',
@@ -60,6 +59,7 @@ export const QUESTION_STRATEGY = {
     'autoCoverage',
     'disabilityCoverage',
     'umbrellaCoverageAmount',
+    'advancedProtection',
     'investmentAccounts',
     'investmentConfidence',
     'investmentMix',
@@ -117,7 +117,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     key: 'ageRange',
     question: 'What is your age range?',
     type: 'single',
-    section: 'vision',
+    section: 'context',
     required: true,
     options: [
       { value: 'under_25', label: 'Under 25' },
@@ -132,7 +132,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     key: 'relationshipStatus',
     question: 'What best describes your household?',
     type: 'single',
-    section: 'vision',
+    section: 'context',
     required: true,
     options: [
       { value: 'single', label: 'Single' },
@@ -1049,7 +1049,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       { value: 'somewhat_protected', label: 'Somewhat protected' },
       { value: 'not_protected', label: 'Not protected' },
     ],
-    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+    tags: { modes: ['detailed'], priority: 'core' },
   },
 
   {
@@ -1066,7 +1066,6 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       { value: 'home_or_renters', label: 'Homeowners / renters insurance' },
       { value: 'life', label: 'Life insurance' },
       { value: 'disability', label: 'Disability / income protection' },
-      { value: 'umbrella', label: 'Umbrella policy' },
       { value: 'none', label: 'None of these / not sure' },
     ],
     tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
@@ -1080,7 +1079,50 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     required: false,
     placeholder: 'e.g. 1000000',
     helperText: 'Use the policy limit if you know it. A best estimate is fine.',
-    tags: { modes: ['detailed'], priority: 'conditional' },
+    conditions: [{ key: 'advancedProtection', operator: 'includes', value: 'umbrella' }],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => Array.isArray(a.advancedProtection) && a.advancedProtection.includes('umbrella'),
+    },
+  },
+
+  {
+    key: 'advancedProtection',
+    question: 'Do you have any advanced protection or estate planning items in place?',
+    type: 'multiple',
+    section: 'protection',
+    required: true,
+    helperText:
+      'These are more important when others depend on you, you own property, or you have meaningful assets to protect. Select what you already have in place.',
+    options: [
+      { value: 'umbrella', label: 'Umbrella liability policy' },
+      { value: 'will_estate', label: 'Will or estate documents' },
+      { value: 'trust', label: 'Trust' },
+      { value: 'beneficiaries_updated', label: 'Beneficiaries reviewed or updated' },
+      { value: 'none', label: 'None of these / not sure' },
+    ],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => {
+        const hasDependents = ['single_with_dependents', 'partnered_with_dependents'].includes(a.relationshipStatus);
+        const partnered = ['partnered', 'partnered_with_dependents'].includes(a.relationshipStatus);
+        const ownsHome = ['own_with_mortgage', 'own_outright'].includes(a.housingStatus);
+        const ownsOtherProperty = Array.isArray(a.additionalPropertyOwnership) && a.additionalPropertyOwnership.some((item) => item !== 'none');
+        const hasMeaningfulInvestments =
+          Number(a.k401Balance || 0) +
+            Number(a.iraBalance || 0) +
+            Number(a.rothBalance || 0) +
+            Number(a.brokerageBalance || 0) +
+            Number(a.hsaBalance || 0) +
+            Number(a.otherInvestmentAssets || 0) +
+            Number(a.totalInvestments || 0) >=
+          50000;
+
+        return hasDependents || partnered || ownsHome || ownsOtherProperty || hasMeaningfulInvestments;
+      },
+    },
   },
 
   {

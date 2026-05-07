@@ -341,12 +341,16 @@ function hasDependents(answers: Record<string, any>) {
 }
 
 function hasCoverage(answers: Record<string, any>, key: string, legacyKey?: string) {
-  const coverage =
+  const baseCoverage =
     answers.protectionCoverage ??
     answers.insuranceCoverage ??
     answers.protectionCoverages ??
     answers.insuranceCoverages ??
     [];
+  const advancedCoverage = Array.isArray(answers.advancedProtection) ? answers.advancedProtection : [];
+  const coverage = Array.isArray(baseCoverage)
+    ? [...baseCoverage, ...advancedCoverage]
+    : baseCoverage;
 
   const aliases: Record<string, string[]> = {
     hasHealthInsurance: ['health', 'health_insurance', 'healthCoverage', 'good_coverage', 'basic_coverage'],
@@ -354,7 +358,7 @@ function hasCoverage(answers: Record<string, any>, key: string, legacyKey?: stri
     hasHomeInsurance: ['home_or_renters', 'home', 'renters', 'property', 'propertyCoverage', 'solid', 'basic'],
     hasLifeInsurance: ['life', 'life_insurance', 'lifeInsurance', 'enough', 'some'],
     hasDisabilityInsurance: ['disability', 'income_interruption', 'disabilityCoverage', 'strong', 'employer_basic', 'very_prepared', 'somewhat_prepared'],
-    hasUmbrellaPolicy: ['umbrella', 'umbrella_policy', 'umbrellaCoverage'],
+    hasUmbrellaPolicy: ['umbrella', 'umbrella_policy', 'umbrellaCoverage', 'umbrellaCoverageAmount'],
   };
 
   const accepted = [key, legacyKey, ...(aliases[key] ?? []), ...(legacyKey ? aliases[legacyKey] ?? [] : [])]
