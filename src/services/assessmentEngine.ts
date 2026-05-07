@@ -107,6 +107,13 @@ export type V2Signals = {
   eliteCashCushion: boolean;
   hasDependents: boolean;
   hasLifeInsurance: boolean;
+  hasDisabilityInsurance: boolean;
+  hasUmbrellaPolicy: boolean;
+  hasEstateDocuments: boolean;
+  hasUpdatedBeneficiaries: boolean;
+  needsLifeInsuranceReview: boolean;
+  needsEstatePlanning: boolean;
+  needsUmbrellaReview: boolean;
   dependentsWithoutLifeInsurance: boolean;
   protectionCoverageCount: number;
   incompleteNetWorthData: boolean;
@@ -338,6 +345,48 @@ function hasDependents(answers: Record<string, any>) {
     yes(answers.hasDependents) ||
     toNumber(answers.numberOfDependents) > 0
   );
+}
+
+function hasPartner(answers: Record<string, any>) {
+  return ['partnered', 'partnered_with_dependents'].includes(answers.relationshipStatus);
+}
+
+function ownsPrimaryHome(answers: Record<string, any>) {
+  return ['own_with_mortgage', 'own_outright'].includes(answers.housingStatus);
+}
+
+function ownsAdditionalProperty(answers: Record<string, any>) {
+  return (
+    Array.isArray(answers.additionalPropertyOwnership) &&
+    (answers.additionalPropertyOwnership.includes('rental_property') ||
+      answers.additionalPropertyOwnership.includes('other_property'))
+  );
+}
+
+function hasMeaningfulAssets(metrics: V2FinancialMetrics) {
+  return metrics.totalAssets >= 100000 || metrics.totalInvestments >= 50000 || metrics.realEstateAssets >= 100000;
+}
+
+function hasEstateDocuments(answers: Record<string, any>) {
+  const estate = answers.estateDocuments;
+  return estate === 'complete' || estate === 'partial' || includesValue(answers.protectionCoverage, 'estate');
+}
+
+function hasUpdatedBeneficiaries(answers: Record<string, any>) {
+  const beneficiaries = answers.beneficiariesUpdated;
+  return beneficiaries === 'yes' || beneficiaries === 'mostly' || includesValue(answers.protectionCoverage, 'beneficiaries');
+}
+
+function needsLifeInsuranceReview(answers: Record<string, any>) {
+  return hasDependents(answers) || hasPartner(answers) || answers.housingStatus === 'own_with_mortgage';
+}
+
+function needsEstatePlanning(answers: Record<string, any>, metrics: V2FinancialMetrics) {
+  return hasDependents(answers) || hasPartner(answers) || ownsPrimaryHome(answers) || ownsAdditionalProperty(answers) || hasMeaningfulAssets(metrics);
+}
+
+function needsUmbrellaReview(answers: Record<string, any>, metrics: V2FinancialMetrics) {
+  return ownsPrimaryHome(answers) || ownsAdditionalProperty(answers) || hasDependents(answers) || hasMeaningfulAssets(metrics);
 }
 
 function hasCoverage(answers: Record<string, any>, key: string, legacyKey?: string) {
@@ -670,8 +719,13 @@ export function deriveV2Signals(
     'incomeInterruptionCoverage'
   );
   const umbrella = hasCoverage(answers, 'hasUmbrellaPolicy', 'umbrellaPolicy');
+  const estate = hasEstateDocuments(answers);
+  const beneficiaries = hasUpdatedBeneficiaries(answers);
+  const lifeReviewNeeded = needsLifeInsuranceReview(answers);
+  const estatePlanningNeeded = needsEstatePlanning(answers, metrics);
+  const umbrellaReviewNeeded = needsUmbrellaReview(answers, metrics);
 
-  const protectionCoverageCount = [health, auto, home, life, disability, umbrella].filter(
+  const protectionCoverageCount = [health, auto, home, life, disability, umbrella, estate, beneficiaries].filter(
     Boolean
   ).length;
 
@@ -696,6 +750,13 @@ export function deriveV2Signals(
     eliteCashCushion: metrics.emergencyFundMonths >= 24,
     hasDependents: dependents,
     hasLifeInsurance: life,
+    hasDisabilityInsurance: disability,
+    hasUmbrellaPolicy: umbrella,
+    hasEstateDocuments: estate,
+    hasUpdatedBeneficiaries: beneficiaries,
+    needsLifeInsuranceReview: lifeReviewNeeded,
+    needsEstatePlanning: estatePlanningNeeded,
+    needsUmbrellaReview: umbrellaReviewNeeded,
     dependentsWithoutLifeInsurance: dependents && !life,
     protectionCoverageCount,
     hasVehicleLoan: metrics.vehicleLoanBalance > 0,
@@ -834,19 +895,54 @@ function scoreDebt(metrics: V2FinancialMetrics) {
 }
 
 function scoreProtection(answers: Record<string, any>, signals: V2Signals) {
-  let score = 0;
+  let score = 25;
 
-  if (hasCoverage(answers, 'hasHealthInsurance', 'healthInsurance')) score += 20;
-  if (hasCoverage(answers, 'hasAutoInsurance', 'autoCoverage')) score += 10;
-  if (hasCoverage(answers, 'hasHomeInsurance', 'propertyCoverage')) score += 15;
-  if (hasCoverage(answers, 'hasLifeInsurance', 'lifeInsurance')) score += 20;
-  if (hasCoverage(answers, 'hasDisabilityInsurance', 'incomeInterruptionCoverage')) score += 20;
-  if (hasCoverage(answers, 'hasUmbrellaPolicy', 'umbrellaPolicy')) score += 15;
+  const health = hasCoverage(answers, 'hasHealthInsurance', 'healthInsurance');
+  const auto = hasCoverage(answers, 'hasAutoInsurance', 'autoCoverage');
+  const property = hasCoverage(answers, 'hasHomeInsurance', 'propertyCoverage');
+  const life = hasCoverage(answers, 'hasLifeInsurance', 'lifeInsurance');
+  const disability = hasCoverage(answers, 'hasDisabilityInsurance', 'incomeInterruptionCoverage');
+  const umbrella = hasCoverage(answers, 'hasUmbrellaPolicy', 'umbrellaPolicy');
+  const estate = hasEstateDocuments(answers);
+  const beneficiaries = hasUpdatedBeneficiaries(answers);
+
+  if (health) score += 15;
+  if (auto) score += 8;
+  if (property) score += 10;
+  if (disability) score += 15;
+
+  // Life insurance matters most when someone else depends on the income or the household has a mortgage/partner risk.
+  if (signals.needsLifeInsuranceReview) {
+    if (life) score += 15;
+    else score -= signals.hasDependents ? 18 : 8;
+  } else if (life) {
+    score += 5;
+  }
+
+  // Estate planning should become more important as household and asset complexity increase.
+  if (signals.needsEstatePlanning) {
+    if (estate) score += 10;
+    else score -= signals.hasDependents ? 12 : 7;
+
+    if (beneficiaries) score += 7;
+    else score -= 5;
+  }
+
+  if (signals.needsUmbrellaReview) {
+    if (umbrella) score += 8;
+    else if (signals.hasMeaningfulInvestments || signals.hasDependents) score -= 5;
+  } else if (umbrella) {
+    score += 4;
+  }
+
+  if (answers.healthCoverage === 'limited' || answers.healthCoverage === 'none') score -= 8;
+  if (answers.disabilityCoverage === 'none' || answers.disabilityCoverage === 'unsure') score -= 8;
+  if (answers.propertyCoverage === 'minimal' || answers.propertyCoverage === 'none') score -= 7;
+  if (answers.autoCoverage === 'minimal' || answers.autoCoverage === 'minimum') score -= 5;
+  if (answers.estateDocuments === 'none' || answers.estateDocuments === 'old_or_unsure') score -= 6;
 
   // Legacy broad “insured” answers get some credit, but not perfect credit.
-  if (score === 0 && yes(answers.healthInsurance)) score += 20;
-
-  if (signals.dependentsWithoutLifeInsurance) score -= 20;
+  if (score === 25 && yes(answers.healthInsurance)) score += 15;
 
   return clamp(round(score));
 }
@@ -1066,6 +1162,18 @@ export function buildV2Insights(
     );
   }
 
+  if (signals.needsEstatePlanning && !signals.hasEstateDocuments) {
+    insights.push(
+      'Your household or asset picture makes estate documents worth reviewing, especially wills, guardianship direction, powers of attorney, and beneficiary designations.'
+    );
+  }
+
+  if (signals.needsUmbrellaReview && !signals.hasUmbrellaPolicy && signals.hasMeaningfulInvestments) {
+    insights.push(
+      'As assets grow, umbrella liability coverage can become a useful protection layer to review alongside home, auto, and estate planning.'
+    );
+  }
+
   if (!insights.length) {
     insights.push(
       'Your next best move is to strengthen the weakest part of the foundation without adding unnecessary complexity.'
@@ -1164,6 +1272,14 @@ function buildNextStep(biggestOpportunity: BuildingBlockKey, metrics: V2Financia
       return 'Protection matters because people depend on this income. Start with the essentials: affordable life insurance, reliable health coverage, and a starter emergency buffer. If cash flow is tight, create breathing room first so the right coverage can stay in place.';
     }
 
+    if (signals.needsEstatePlanning && !signals.hasEstateDocuments) {
+      return 'Protection is now about defending what you are building. Start by reviewing estate documents, beneficiaries, and the coverage gap most likely to affect your household.';
+    }
+
+    if (signals.needsUmbrellaReview && !signals.hasUmbrellaPolicy) {
+      return 'Review your property, auto, and umbrella liability coverage so growing assets are not left exposed to a major claim.';
+    }
+
     return 'Review the protection checklist and close the single coverage gap that could create the biggest setback.';
   }
 
@@ -1246,6 +1362,24 @@ function buildStructuralWarnings(metrics: V2FinancialMetrics, signals: V2Signals
       severity: 'high',
       message:
         'You indicated dependents but no life insurance. For a household with kids, this is one of the most important protection gaps to close once cash flow allows it.',
+    });
+  }
+
+  if (signals.needsEstatePlanning && !signals.hasEstateDocuments) {
+    warnings.push({
+      type: 'protection_gap',
+      severity: signals.hasDependents ? 'high' : 'medium',
+      message:
+        'Your household or asset picture suggests estate documents and beneficiary designations should be reviewed so the financial foundation is protected if something happens.',
+    });
+  }
+
+  if (signals.needsUmbrellaReview && !signals.hasUmbrellaPolicy && signals.hasMeaningfulInvestments) {
+    warnings.push({
+      type: 'protection_gap',
+      severity: 'medium',
+      message:
+        'You appear to have meaningful assets but no umbrella liability coverage selected. This may be worth reviewing as part of your protection layer.',
     });
   }
 

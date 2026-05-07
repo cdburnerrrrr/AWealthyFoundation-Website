@@ -157,12 +157,15 @@ const INLINE_GROUPS: Record<string, string[]> = {
   vehicleDebt: ['carLoanBalance', 'monthlyVehiclePayment', 'vehicleValue'],
   otherDebt: ['creditCardDebt', 'creditCardPayment', 'studentLoans', 'studentLoanPayment', 'personalLoans', 'personalLoanPayment', 'bnplDebt', 'bnplPayment', 'paydayDebt', 'paydayPayment', 'medicalDebt', 'medicalDebtPayment', 'additionalDebt', 'debtManageability', 'debtPaydownStrategy', 'creditCardBehavior'],
   protectionCoverage: [
+    'healthCoverage',
+    'disabilityCoverage',
     'lifeInsurance',
     'propertyCoverage',
     'autoCoverage',
-    'disabilityCoverage',
-    'healthCoverage',
     'umbrellaCoverageAmount',
+    'estateDocuments',
+    'beneficiariesUpdated',
+    'trustInPlace',
   ],
   investingStatus: [],
   investmentAccounts: [
@@ -1221,8 +1224,91 @@ function InlineObjectFields({
   return <div className="mt-4 grid gap-3 md:grid-cols-2">{rows}</div>;
 }
 
+
+function toNumericValue(value: unknown) {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+  if (typeof value === 'string') {
+    const parsed = Number(value.replace(/[^\d.-]/g, ''));
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+}
+
+function hasProtectionDependents(responses: Record<string, any>) {
+  return ['single_with_dependents', 'partnered_with_dependents'].includes(responses.relationshipStatus);
+}
+
+function hasProtectionPartner(responses: Record<string, any>) {
+  return ['partnered', 'partnered_with_dependents'].includes(responses.relationshipStatus);
+}
+
+function ownsProtectionHome(responses: Record<string, any>) {
+  return ['own_with_mortgage', 'own_outright'].includes(responses.housingStatus);
+}
+
+function ownsProtectionAdditionalProperty(responses: Record<string, any>) {
+  return (
+    Array.isArray(responses.additionalPropertyOwnership) &&
+    (responses.additionalPropertyOwnership.includes('rental_property') ||
+      responses.additionalPropertyOwnership.includes('other_property'))
+  );
+}
+
+function hasProtectionAssets(responses: Record<string, any>) {
+  return [
+    'totalInvestments',
+    'k401Balance',
+    'iraBalance',
+    'rothBalance',
+    'brokerageBalance',
+    'hsaBalance',
+    'otherInvestmentAssets',
+    'primaryHomeValue',
+    'rentalPropertyValue',
+    'otherPropertyValue',
+    'otherAssets',
+  ].some((key) => toNumericValue(responses[key]) >= 50000);
+}
+
+function shouldShowProtectionOption(optionValue: string, responses: Record<string, any>) {
+  if (optionValue === 'life') {
+    return hasProtectionDependents(responses) || hasProtectionPartner(responses) || responses.housingStatus === 'own_with_mortgage';
+  }
+
+  if (optionValue === 'home_or_renters') {
+    return responses.housingStatus !== 'living_with_family';
+  }
+
+  if (optionValue === 'auto') {
+    return responses.vehicleDebt !== 'no_vehicle';
+  }
+
+  if (optionValue === 'umbrella') {
+    return ownsProtectionHome(responses) || ownsProtectionAdditionalProperty(responses) || hasProtectionAssets(responses) || hasProtectionDependents(responses);
+  }
+
+  if (optionValue === 'estate' || optionValue === 'beneficiaries') {
+    return (
+      hasProtectionDependents(responses) ||
+      hasProtectionPartner(responses) ||
+      ownsProtectionHome(responses) ||
+      ownsProtectionAdditionalProperty(responses) ||
+      hasProtectionAssets(responses)
+    );
+  }
+
+  return true;
+}
+
+function getContextualOptions(question: Question, responses: Record<string, any>) {
+  const options = question.options ?? [];
+  if (question.key !== 'protectionCoverage') return options;
+  return options.filter((option) => shouldShowProtectionOption(option.value, responses));
+}
+
 function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }: OptionGridProps) {
-  if (!question.options?.length) return null;
+  const contextualOptions = getContextualOptions(question, responses);
+  if (!contextualOptions.length) return null;
 
   if (question.type === 'multiple') {
     const selectedValues = Array.isArray(value) ? value : [];
@@ -1250,7 +1336,7 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
         </div>
 
         <div className="grid gap-3">
-          {question.options.map((option) => {
+          {contextualOptions.map((option) => {
             const selected = selectedValues.includes(option.value);
             const fields = OBJECT_FIELD_GROUPS[question.key]?.[option.value] ?? [];
 
@@ -1317,7 +1403,7 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
 
   return (
     <div className="grid gap-3">
-      {question.options.map((option) => {
+      {contextualOptions.map((option) => {
         const selected = value === option.value;
         const fields = OBJECT_FIELD_GROUPS[question.key]?.[option.value] ?? [];
 
