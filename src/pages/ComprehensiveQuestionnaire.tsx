@@ -723,7 +723,13 @@ function getContinueModeQuestions(responses: Record<string, any>) {
       'investmentAccounts',
       'investmentConfidence',
       'investmentMix',
+      'additionalAssetTypes',
       'otherAssets',
+      'cryptoAssetValue',
+      'cryptoAssetContribution',
+      'individualStockValue',
+      'individualStockContribution',
+      'otherAssetContribution',
       'netWorthEntry',
     ]);
 

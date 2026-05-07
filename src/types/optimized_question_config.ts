@@ -1624,7 +1624,11 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
         { value: 'other_assets', label: 'Other assets' },
         { value: 'none', label: 'None of these' },
       ],
-      tags: { modes: ['detailed'], priority: 'conditional', askIf: () => true },
+      tags: {
+        modes: ['detailed'],
+        priority: 'conditional',
+        askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
+      },
     },
 
 {
