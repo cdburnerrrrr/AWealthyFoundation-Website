@@ -85,13 +85,20 @@ type InputCardProps = {
   label: string;
   value: string | number;
   onChange: (value: string) => void;
+  tone?: 'asset' | 'liability';
 };
 
-function InputCard({ icon: Icon, label, value, onChange }: InputCardProps) {
+function InputCard({ icon: Icon, label, value, onChange, tone = 'asset' }: InputCardProps) {
+  const toneClass =
+    tone === 'liability'
+      ? 'border-red-200 bg-red-50/40 focus-within:border-red-300 focus-within:ring-red-100'
+      : 'border-emerald-200 bg-emerald-50/40 focus-within:border-emerald-300 focus-within:ring-emerald-100';
+  const iconClass = tone === 'liability' ? 'text-red-600' : 'text-emerald-600';
+
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+    <div className={`rounded-2xl border p-4 transition focus-within:ring-4 ${toneClass}`}>
       <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
-        <Icon className="h-4 w-4 text-copper-600" />
+        <Icon className={`h-4 w-4 ${iconClass}`} />
         {label}
       </div>
       <input
@@ -100,7 +107,7 @@ function InputCard({ icon: Icon, label, value, onChange }: InputCardProps) {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Enter an estimate"
-        className="w-full rounded-xl border border-slate-200 px-3 py-3 text-base text-slate-900 outline-none focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
+        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-base text-slate-900 outline-none focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
       />
     </div>
   );
@@ -173,6 +180,7 @@ export default function NetWorthActivity({
   ]);
 
   const message = getNetWorthMessage(totals.netWorth);
+  const netWorthPositive = totals.netWorth >= 0;
 
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-7">
@@ -190,53 +198,53 @@ export default function NetWorthActivity({
       </p>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <div>
-          <div className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Assets</div>
+        <div className="rounded-3xl border border-emerald-200 bg-emerald-50/25 p-4">
+          <div className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-emerald-700">Assets</div>
           <div className="space-y-3">
-            <InputCard icon={PiggyBank} label="Savings" value={totalLiquidSavings} onChange={setTotalLiquidSavings} />
-            <InputCard icon={TrendingUp} label="Investments" value={totalInvestments} onChange={setTotalInvestments} />
+            <InputCard tone="asset" icon={PiggyBank} label="Savings" value={totalLiquidSavings} onChange={setTotalLiquidSavings} />
+            <InputCard tone="asset" icon={TrendingUp} label="Investments" value={totalInvestments} onChange={setTotalInvestments} />
             {ownsPrimaryHome && (
-              <InputCard icon={Home} label="Primary Home Value" value={homeValue} onChange={setHomeValue} />
+              <InputCard tone="asset" icon={Home} label="Primary Home Value" value={homeValue} onChange={setHomeValue} />
             )}
             {ownsRentalProperty && (
-              <InputCard icon={Landmark} label="Rental Property Value" value={rentalPropertyValue} onChange={setRentalPropertyValue} />
+              <InputCard tone="asset" icon={Landmark} label="Rental Property Value" value={rentalPropertyValue} onChange={setRentalPropertyValue} />
             )}
             {ownsOtherProperty && (
-              <InputCard icon={Landmark} label="Other Property Value" value={otherPropertyValue} onChange={setOtherPropertyValue} />
+              <InputCard tone="asset" icon={Landmark} label="Other Property Value" value={otherPropertyValue} onChange={setOtherPropertyValue} />
             )}
-            <InputCard icon={PiggyBank} label="Other Assets" value={otherAssets} onChange={setOtherAssets} />
+            <InputCard tone="asset" icon={PiggyBank} label="Other Assets" value={otherAssets} onChange={setOtherAssets} />
           </div>
         </div>
 
-        <div>
-          <div className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Liabilities</div>
+        <div className="rounded-3xl border border-red-200 bg-red-50/25 p-4">
+          <div className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-red-700">Liabilities</div>
           <div className="space-y-3">
             {ownsPrimaryHome && (
-              <InputCard icon={Home} label="Primary Mortgage Balance" value={mortgageBalance} onChange={setMortgageBalance} />
+              <InputCard tone="liability" icon={Home} label="Primary Mortgage Balance" value={mortgageBalance} onChange={setMortgageBalance} />
             )}
             {ownsRentalProperty && (
-              <InputCard icon={Landmark} label="Rental Mortgage Balance" value={rentalMortgage} onChange={setRentalMortgage} />
+              <InputCard tone="liability" icon={Landmark} label="Rental Mortgage Balance" value={rentalMortgage} onChange={setRentalMortgage} />
             )}
             {ownsOtherProperty && (
-              <InputCard icon={Landmark} label="Other Property Mortgage or Debt" value={otherPropertyDebt} onChange={setOtherPropertyDebt} />
+              <InputCard tone="liability" icon={Landmark} label="Other Property Mortgage or Debt" value={otherPropertyDebt} onChange={setOtherPropertyDebt} />
             )}
-            <InputCard icon={CreditCard} label="Total Consumer Debt (cards, loans, medical)" value={totalDebtBalance} onChange={setTotalDebtBalance} />
+            <InputCard tone="liability" icon={CreditCard} label="Total Consumer Debt (cards, loans, medical)" value={totalDebtBalance} onChange={setTotalDebtBalance} />
           </div>
         </div>
       </div>
 
       <div className="mt-6 grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <div className="text-sm text-slate-500">Total Assets</div>
-          <div className="mt-2 text-2xl font-bold text-navy-900">{formatCurrency(totals.assets)}</div>
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+          <div className="text-sm text-emerald-700">Total Assets</div>
+          <div className="mt-2 text-2xl font-bold text-emerald-800">{formatCurrency(totals.assets)}</div>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <div className="text-sm text-slate-500">Total Liabilities</div>
-          <div className="mt-2 text-2xl font-bold text-navy-900">{formatCurrency(totals.liabilities)}</div>
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
+          <div className="text-sm text-red-700">Total Liabilities</div>
+          <div className="mt-2 text-2xl font-bold text-red-800">{formatCurrency(totals.liabilities)}</div>
         </div>
-        <div className="rounded-2xl border border-copper-200 bg-copper-50 p-4">
-          <div className="text-sm text-slate-500">Estimated Net Worth</div>
-          <div className="mt-2 text-2xl font-bold text-navy-900">{formatCurrency(totals.netWorth)}</div>
+        <div className={`rounded-2xl border p-4 ${netWorthPositive ? 'border-emerald-200 bg-emerald-50' : 'border-red-200 bg-red-50'}`}>
+          <div className={`text-sm ${netWorthPositive ? 'text-emerald-700' : 'text-red-700'}`}>Estimated Net Worth</div>
+          <div className={`mt-2 text-2xl font-bold ${netWorthPositive ? 'text-emerald-800' : 'text-red-800'}`}>{formatCurrency(totals.netWorth)}</div>
         </div>
       </div>
 

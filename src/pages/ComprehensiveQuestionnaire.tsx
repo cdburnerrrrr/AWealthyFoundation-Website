@@ -191,7 +191,7 @@ const INLINE_GROUPS: Record<string, string[]> = {
     'investmentConfidence',
     'investmentMix',
   ],
-  savingConsistency: ['monthlySavingsContribution', 'monthlySavingsPercent', 'totalLiquidSavings', 'hysaBalance', 'savingsAutomation'],
+  savingConsistency: ['monthlySavingsContribution', 'monthlySavingsPercent', 'totalLiquidSavings', 'savingsAutomation'],
 };
 
 const CHILD_KEYS = new Set(Object.values(INLINE_GROUPS).flat());
@@ -203,6 +203,7 @@ type InlineField = {
   type?: 'number' | 'select';
   options?: { value: string; label: string }[];
   required?: boolean;
+  helperText?: string;
 };
 
 const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
@@ -244,7 +245,6 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
       { key: 'monthlySavingsContribution', label: 'Monthly savings amount', placeholder: 'e.g. 500', required: false },
       { key: 'monthlySavingsPercent', label: 'OR savings percent of take-home pay', placeholder: 'e.g. 10', required: false },
       { key: 'totalLiquidSavings', label: 'Current cash savings balance', placeholder: 'e.g. 8000' },
-      { key: 'hysaBalance', label: 'Of that, how much is in high-yield savings? (optional)', placeholder: 'e.g. 12000', required: false },
       {
         key: 'savingsAutomation',
         label: 'Saving setup',
@@ -261,7 +261,6 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
       { key: 'monthlySavingsContribution', label: 'Typical monthly savings amount', placeholder: 'e.g. 250', required: false },
       { key: 'monthlySavingsPercent', label: 'OR typical savings percent of take-home pay', placeholder: 'e.g. 5', required: false },
       { key: 'totalLiquidSavings', label: 'Current cash savings balance', placeholder: 'e.g. 3000' },
-      { key: 'hysaBalance', label: 'Of that, how much is in high-yield savings? (optional)', placeholder: 'e.g. 12000', required: false },
       {
         key: 'savingsAutomation',
         label: 'Saving setup',
@@ -276,7 +275,6 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
     ],
     not_currently: [
       { key: 'totalLiquidSavings', label: 'Current cash savings balance', placeholder: 'e.g. 500' },
-      { key: 'hysaBalance', label: 'Of that, how much is in high-yield savings? (optional)', placeholder: 'e.g. 12000', required: false },
     ],
   },
   vehicleDebt: {
@@ -299,6 +297,8 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
         label: 'Monthly rental income (optional)',
         placeholder: 'e.g. 1800',
         required: false,
+        helperText:
+          'If you include rental income here, do not include it in your overall monthly income above or the projections may be overstated.',
       },
     ],
     other_property: [
@@ -403,52 +403,6 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
       { key: 'umbrellaCoverageAmount', label: 'Umbrella policy amount', placeholder: 'e.g. 1000000', required: false },
     ],
   },
-
-  advancedProtection: {
-    umbrella: [
-      { key: 'umbrellaCoverageAmount', label: 'Umbrella policy amount', placeholder: 'e.g. 1000000', required: false },
-    ],
-    estate: [
-      {
-        key: 'estateDocuments',
-        label: 'Estate documents',
-        type: 'select',
-        options: [
-          { value: 'complete', label: 'Complete and current' },
-          { value: 'partial', label: 'Some pieces are in place' },
-          { value: 'old_or_unsure', label: 'Old, outdated, or unsure' },
-          { value: 'none', label: 'No estate documents yet' },
-        ],
-      },
-    ],
-    trust: [
-      {
-        key: 'trustInPlace',
-        label: 'Trust status',
-        type: 'select',
-        required: false,
-        options: [
-          { value: 'yes', label: 'Yes, I have one' },
-          { value: 'considered', label: 'I have considered it' },
-          { value: 'not_needed', label: 'Probably not needed right now' },
-          { value: 'not_sure', label: 'Not sure' },
-        ],
-      },
-    ],
-    beneficiaries: [
-      {
-        key: 'beneficiariesUpdated',
-        label: 'Beneficiaries',
-        type: 'select',
-        options: [
-          { value: 'yes', label: 'Reviewed recently' },
-          { value: 'mostly', label: 'Mostly, but worth checking' },
-          { value: 'no', label: 'No / probably outdated' },
-          { value: 'not_sure', label: 'Not sure' },
-        ],
-      },
-    ],
-  },
   investmentAccounts: {
     '401k': [
       { key: 'k401Balance', label: 'Current balance', placeholder: 'e.g. 85000' },
@@ -461,6 +415,7 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
         options: [
           { value: 'maximizing_match', label: 'Getting the full match' },
           { value: 'have_match_not_maxing', label: 'Not getting the full match' },
+          { value: 'have_match_not_contributing', label: 'Have a match but not contributing right now' },
           { value: 'no_match_or_no_access', label: 'No match or unsure' },
         ],
       },
@@ -691,6 +646,19 @@ function getContinueModeQuestions(responses: Record<string, any>) {
 
   return detailed.filter((question) => {
     const answered = isAnswered(question, responses[question.key]);
+    const invests = ['yes_consistently', 'yes_irregularly'].includes(String(responses.investingStatus ?? ''));
+    const investingDetailKeys = new Set([
+      'investmentAccounts',
+      'investmentConfidence',
+      'investmentMix',
+      'otherAssets',
+      'netWorthEntry',
+    ]);
+
+    // Snapshot only establishes whether the user invests. The full assessment must still
+    // collect the account-level breakdown, balances, contributions, and 401(k) match details.
+    if (invests && investingDetailKeys.has(question.key)) return true;
+    if (question.key === 'protectionCoverage') return true;
     if (question.key === 'relationshipStatus') {
       const hasDependents = ['single_with_dependents', 'partnered_with_dependents'].includes(
         responses.relationshipStatus
@@ -1179,6 +1147,9 @@ function InlineObjectField({
       <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
         {cleanLabel}
       </div>
+      {field.helperText ? (
+        <p className="mb-2 text-xs leading-5 text-slate-500">{field.helperText}</p>
+      ) : null}
       {field.type === 'select' ? (
         <select
           value={responses[field.key] ?? ''}

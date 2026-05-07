@@ -138,9 +138,20 @@ const SECTION_META: Record<
 const INLINE_GROUPS: Record<string, string[]> = {
   relationshipStatus: ['monthlyChildcareCost'],
   housingStatus: ['monthlyHousingCost', 'primaryHomeValue', 'primaryMortgage'],
-  additionalPropertyOwnership: ['rentalPropertyValue', 'rentalMortgage', 'rentalPropertyPayment', 'rentalPropertyIncome', 'otherPropertyValue', 'otherPropertyDebt', 'otherPropertyPayment'],
+  additionalPropertyOwnership: ['rentalPropertyValue', 'rentalMortgage', 'rentalPropertyPayment', 'otherPropertyValue', 'otherPropertyDebt', 'otherPropertyPayment'],
   vehicleDebt: ['carLoanBalance', 'monthlyVehiclePayment', 'vehicleValue'],
   otherDebt: ['creditCardDebt', 'creditCardPayment', 'studentLoans', 'studentLoanPayment', 'personalLoans', 'personalLoanPayment', 'bnplDebt', 'bnplPayment', 'paydayDebt', 'paydayPayment', 'medicalDebt', 'medicalDebtPayment', 'additionalDebt', 'debtManageability', 'debtPaydownStrategy', 'creditCardBehavior'],
+  protectionCoverage: [
+    'healthCoverage',
+    'disabilityCoverage',
+    'lifeInsurance',
+    'propertyCoverage',
+    'autoCoverage',
+    'umbrellaCoverageAmount',
+    'estateDocuments',
+    'beneficiariesUpdated',
+    'trustInPlace',
+  ],
   investingStatus: [],
   investmentAccounts: [
     'k401Balance',
@@ -165,7 +176,7 @@ const INLINE_GROUPS: Record<string, string[]> = {
     'investmentConfidence',
     'investmentMix',
   ],
-  savingConsistency: ['monthlySavingsContribution', 'monthlySavingsPercent', 'totalLiquidSavings', 'hysaBalance', 'savingsAutomation'],
+  savingConsistency: ['monthlySavingsContribution', 'monthlySavingsPercent', 'totalLiquidSavings', 'savingsAutomation'],
 };
 
 const CHILD_KEYS = new Set(Object.values(INLINE_GROUPS).flat());
@@ -177,6 +188,7 @@ type InlineField = {
   type?: 'number' | 'select';
   options?: { value: string; label: string }[];
   required?: boolean;
+  helperText?: string;
 };
 
 const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
@@ -218,7 +230,6 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
       { key: 'monthlySavingsContribution', label: 'Monthly savings amount', placeholder: 'e.g. 500', required: false },
       { key: 'monthlySavingsPercent', label: 'OR savings percent of take-home pay', placeholder: 'e.g. 10', required: false },
       { key: 'totalLiquidSavings', label: 'Current cash savings balance', placeholder: 'e.g. 8000' },
-      { key: 'hysaBalance', label: 'Of that, how much is in high-yield savings? (optional)', placeholder: 'e.g. 12000', required: false },
       {
         key: 'savingsAutomation',
         label: 'Saving setup',
@@ -235,7 +246,6 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
       { key: 'monthlySavingsContribution', label: 'Typical monthly savings amount', placeholder: 'e.g. 250', required: false },
       { key: 'monthlySavingsPercent', label: 'OR typical savings percent of take-home pay', placeholder: 'e.g. 5', required: false },
       { key: 'totalLiquidSavings', label: 'Current cash savings balance', placeholder: 'e.g. 3000' },
-      { key: 'hysaBalance', label: 'Of that, how much is in high-yield savings? (optional)', placeholder: 'e.g. 12000', required: false },
       {
         key: 'savingsAutomation',
         label: 'Saving setup',
@@ -250,7 +260,6 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
     ],
     not_currently: [
       { key: 'totalLiquidSavings', label: 'Current cash savings balance', placeholder: 'e.g. 500' },
-      { key: 'hysaBalance', label: 'Of that, how much is in high-yield savings? (optional)', placeholder: 'e.g. 12000', required: false },
     ],
   },
   vehicleDebt: {
@@ -268,12 +277,6 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
       { key: 'rentalPropertyValue', label: 'Estimated value', placeholder: 'e.g. 250000' },
       { key: 'rentalMortgage', label: 'Mortgage balance', placeholder: 'e.g. 175000' },
       { key: 'rentalPropertyPayment', label: 'Monthly payment', placeholder: 'e.g. 1200' },
-      {
-        key: 'rentalPropertyIncome',
-        label: 'Monthly rental income (optional)',
-        placeholder: 'e.g. 1800',
-        required: false,
-      },
     ],
     other_property: [
       { key: 'otherPropertyValue', label: 'Estimated value', placeholder: 'e.g. 225000' },
@@ -305,6 +308,76 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
     medical: [
       { key: 'medicalDebt', label: 'Balance', placeholder: 'e.g. 1500' },
       { key: 'medicalDebtPayment', label: 'Monthly payment', placeholder: 'e.g. 50' },
+    ],
+  },
+  protectionCoverage: {
+    health: [
+      {
+        key: 'healthCoverage',
+        label: 'Health coverage quality',
+        type: 'select',
+        options: [
+          { value: 'good_coverage', label: 'Solid coverage' },
+          { value: 'basic_coverage', label: 'Basic coverage' },
+          { value: 'limited_coverage', label: 'Limited or high deductible' },
+          { value: 'not_sure', label: 'Not sure' },
+        ],
+      },
+    ],
+    auto: [
+      {
+        key: 'autoCoverage',
+        label: 'Auto coverage level',
+        type: 'select',
+        options: [
+          { value: 'full', label: 'Full coverage' },
+          { value: 'basic', label: 'Basic but reasonable' },
+          { value: 'minimal', label: 'Minimal' },
+          { value: 'minimum', label: 'State minimum only' },
+        ],
+      },
+    ],
+    home_or_renters: [
+      {
+        key: 'propertyCoverage',
+        label: 'Homeowners / renters coverage',
+        type: 'select',
+        options: [
+          { value: 'solid', label: 'Solid coverage' },
+          { value: 'basic', label: 'Basic coverage' },
+          { value: 'minimal', label: 'Minimal / unsure' },
+          { value: 'none', label: 'No coverage' },
+        ],
+      },
+    ],
+    life: [
+      {
+        key: 'lifeInsurance',
+        label: 'Life insurance adequacy',
+        type: 'select',
+        options: [
+          { value: 'enough', label: 'Enough for the people who depend on me' },
+          { value: 'some', label: 'Some, but probably not enough' },
+          { value: 'none', label: 'No life insurance' },
+          { value: 'not_needed', label: 'No one depends on my income' },
+        ],
+      },
+    ],
+    disability: [
+      {
+        key: 'disabilityCoverage',
+        label: 'Disability / income protection',
+        type: 'select',
+        options: [
+          { value: 'strong', label: 'Strong disability coverage' },
+          { value: 'employer_basic', label: 'Basic employer coverage' },
+          { value: 'not_sure', label: 'Not sure what I have' },
+          { value: 'none', label: 'No disability coverage' },
+        ],
+      },
+    ],
+    umbrella: [
+      { key: 'umbrellaCoverageAmount', label: 'Umbrella policy amount', placeholder: 'e.g. 1000000', required: false },
     ],
   },
   investmentAccounts: {
@@ -750,6 +823,9 @@ function InlineObjectField({
       <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
         {cleanLabel}
       </div>
+      {field.helperText ? (
+        <p className="mb-2 text-xs leading-5 text-slate-500">{field.helperText}</p>
+      ) : null}
       {field.type === 'select' ? (
         <select
           value={responses[field.key] ?? ''}

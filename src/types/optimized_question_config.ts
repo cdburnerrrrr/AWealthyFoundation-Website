@@ -118,11 +118,12 @@ export const QUESTION_STRATEGY = {
     'vehicleValue',
     'rentalPropertyValue',
     'rentalMortgage',
+    'rentalPropertyPayment',
+    'rentalPropertyIncome',
     'otherPropertyValue',
     'otherPropertyDebt',
     'creditCardBehavior',
     'incomeProtectionRealityCheck',
-    'advancedProtection',
     'incomeInterruptionCoverage',
     'healthCoverage',
     'lifeInsurance',
@@ -175,6 +176,7 @@ export const QUESTION_STRATEGY = {
   remove: ['dependents', 'incomeProtection', 'housingDebt', 'leasePayment'],
   defer: [
     'incomeGrowth',
+    'incomeSources',
     'spendingAwareness',
     'spendingTracking',
     'lifestyleInflation',
@@ -189,7 +191,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     key: 'ageRange',
     question: 'What is your age range?',
     type: 'single',
-    section: 'context',
+    section: 'vision',
     required: true,
     options: [
       { value: 'under_25', label: 'Under 25' },
@@ -204,7 +206,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     key: 'relationshipStatus',
     question: 'What best describes your household?',
     type: 'single',
-    section: 'context',
+    section: 'vision',
     required: true,
     options: [
       { value: 'single', label: 'Single' },
@@ -356,7 +358,6 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       askIf: (a) => Array.isArray(a.additionalPropertyOwnership) && a.additionalPropertyOwnership.includes('rental_property'),
     },
   },
-
   {
     key: 'rentalPropertyIncome',
     question: 'What is the monthly rental income from this property?',
@@ -373,7 +374,6 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       askIf: (a) => Array.isArray(a.additionalPropertyOwnership) && a.additionalPropertyOwnership.includes('rental_property'),
     },
   },
-
   {
     key: 'otherPropertyValue',
     question: 'What is your other property worth?',
@@ -512,7 +512,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       { value: 'two', label: 'Two' },
       { value: 'three_or_more', label: 'Three or more' },
     ],
-    tags: { modes: ['detailed'], priority: 'defer', askIf: () => false },
+    tags: { modes: ['detailed'], priority: 'defer' },
   },
 
   // SPENDING / FIXED COSTS
@@ -692,7 +692,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       { value: 'manual', label: 'Manual transfers' },
       { value: 'not_saving', label: 'Not saving right now' },
     ],
-    tags: { modes: ['detailed'], priority: 'conditional', askIf: () => false },
+    tags: { modes: ['detailed'], priority: 'conditional' },
   },
 
   // DEBT
@@ -1155,11 +1155,13 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       { value: 'home_or_renters', label: 'Homeowners / renters insurance' },
       { value: 'life', label: 'Life insurance' },
       { value: 'disability', label: 'Disability / income protection' },
+      { value: 'umbrella', label: 'Umbrella liability policy' },
+      { value: 'estate', label: 'Will / trust / estate documents' },
+      { value: 'beneficiaries', label: 'Beneficiaries reviewed on accounts' },
       { value: 'none', label: 'None of these / not sure' },
     ],
     tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
   },
-
 
   {
     key: 'umbrellaCoverageAmount',
@@ -1169,7 +1171,14 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     required: false,
     placeholder: 'e.g. 1000000',
     helperText: 'Use the policy limit if you know it. A best estimate is fine.',
-    tags: { modes: ['detailed'], priority: 'conditional', askIf: () => false },
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) =>
+        Array.isArray(a.protectionCoverage) &&
+        a.protectionCoverage.includes('umbrella') &&
+        shouldAskUmbrella(a),
+    },
   },
 
   {
@@ -1185,28 +1194,6 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       modes: ['detailed'],
       priority: 'conditional',
       askIf: () => true,
-    },
-  },
-
-  {
-    key: 'advancedProtection',
-    question: 'Do you have any advanced protection or estate planning pieces in place?',
-    helperText:
-      'This is only meant to capture protection layers that become more important when you own property, have dependents, have meaningful assets, or have accounts that need clear beneficiaries.',
-    type: 'multiple',
-    section: 'protection',
-    required: false,
-    options: [
-      { value: 'umbrella', label: 'Umbrella liability policy' },
-      { value: 'estate', label: 'Will / estate documents' },
-      { value: 'trust', label: 'Trust' },
-      { value: 'beneficiaries', label: 'Beneficiaries reviewed on accounts' },
-      { value: 'none', label: 'None of these / not sure' },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) => shouldAskEstatePlanning(a) || shouldAskUmbrella(a),
     },
   },
 
@@ -1364,7 +1351,11 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       { value: 'old_or_unsure', label: 'Old, outdated, or unsure' },
       { value: 'none', label: 'No estate documents yet' },
     ],
-    tags: { modes: ['detailed'], priority: 'conditional', askIf: () => false },
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => shouldAskEstatePlanning(a),
+    },
   },
   {
     key: 'beneficiariesUpdated',
@@ -1378,7 +1369,11 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       { value: 'no', label: 'No / probably outdated' },
       { value: 'not_sure', label: 'Not sure' },
     ],
-    tags: { modes: ['detailed'], priority: 'conditional', askIf: () => false },
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => shouldAskEstatePlanning(a),
+    },
   },
   {
     key: 'trustInPlace',
@@ -1392,7 +1387,11 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       { value: 'not_needed', label: 'Probably not needed right now' },
       { value: 'not_sure', label: 'Not sure' },
     ],
-    tags: { modes: ['detailed'], priority: 'conditional', askIf: () => false },
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => ownsAdditionalProperty(a) || hasMeaningfulAssets(a) || (hasDependents(a) && ownsPrimaryHome(a)),
+    },
   },
 
   {
@@ -1403,7 +1402,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     required: false,
     placeholder: 'e.g. 500',
     helperText: 'Do not include investment contributions here. Use the amount that goes into savings or cash reserves each month.',
-    tags: { modes: ['detailed'], priority: 'conditional', askIf: () => false },
+    tags: { modes: ['detailed'], priority: 'conditional' },
   },
   {
     key: 'monthlySavingsPercent',
@@ -1413,7 +1412,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     required: false,
     placeholder: 'e.g. 10',
     helperText: 'Use this if you know your savings as a percent instead of a dollar amount. Leave blank if you already entered a monthly savings amount.',
-    tags: { modes: ['detailed'], priority: 'conditional', askIf: () => false },
+    tags: { modes: ['detailed'], priority: 'conditional' },
   },
 
   // INVESTING
@@ -1579,8 +1578,9 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       section: 'investing',
       required: false,
       placeholder: 'e.g. 5000',
-      helperText: 'Only include meaningful assets we have not already covered like business value, collectibles, equipment, cash value policies, or other assets.',
-      tags: { modes: ['detailed'], priority: 'conditional' },
+      helperText:
+        'Only include meaningful assets we have not already covered, like business value, collectibles, equipment, or other assets.',
+      tags: { modes: ['detailed'], priority: 'conditional', askIf: () => true },
     },
 
 {

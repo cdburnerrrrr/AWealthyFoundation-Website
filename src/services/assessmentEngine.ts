@@ -63,8 +63,8 @@ export type V2FinancialMetrics = {
   primaryHomeValue: number;
   primaryMortgageBalance: number;
   rentalPropertyValue: number;
-  rentalMortgageBalance: number;
   rentalPropertyIncome: number;
+  rentalMortgageBalance: number;
   otherPropertyValue: number;
   otherPropertyMortgageBalance: number;
 
@@ -677,8 +677,8 @@ export function buildV2FinancialMetrics(
     primaryHomeValue,
     primaryMortgageBalance,
     rentalPropertyValue,
-    rentalMortgageBalance,
     rentalPropertyIncome,
+    rentalMortgageBalance,
     otherPropertyValue,
     otherPropertyMortgageBalance,
 
