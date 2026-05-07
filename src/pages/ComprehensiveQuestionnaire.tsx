@@ -718,7 +718,14 @@ function getContinueModeQuestions(responses: Record<string, any>) {
 
   return detailed.filter((question) => {
     const answered = isAnswered(question, responses[question.key]);
-    const invests = ['yes_consistently', 'yes_irregularly'].includes(String(responses.investingStatus ?? ''));
+    const invests = [
+      'yes_consistently',
+      'yes_irregularly',
+      'yes',
+      'investing',
+      'currently_investing',
+      'started',
+    ].includes(String(responses.investingStatus ?? ''));
     const investingDetailKeys = new Set([
       'investmentAccounts',
       'investmentConfidence',
@@ -732,6 +739,10 @@ function getContinueModeQuestions(responses: Record<string, any>) {
       'otherAssetContribution',
       'netWorthEntry',
     ]);
+
+    // Always show the additional-assets catch-all before net worth so users can add crypto,
+    // individual stocks held outside accounts above, or other assets without double counting.
+    if (question.key === 'additionalAssetTypes') return invests;
 
     // Snapshot only establishes whether the user invests. The full assessment must still
     // collect the account-level breakdown, balances, contributions, and 401(k) match details.

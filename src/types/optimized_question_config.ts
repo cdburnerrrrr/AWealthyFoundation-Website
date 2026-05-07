@@ -83,6 +83,18 @@ function shouldAskUmbrella(answers: Record<string, any>) {
   return ownsPrimaryHome(answers) || ownsAdditionalProperty(answers) || hasMeaningfulAssets(answers) || hasDependents(answers);
 }
 
+
+function isInvesting(answers: Record<string, any>) {
+  return [
+    'yes_consistently',
+    'yes_irregularly',
+    'yes',
+    'investing',
+    'currently_investing',
+    'started',
+  ].includes(String(answers.investingStatus ?? ''));
+}
+
 export const QUESTION_STRATEGY = {
   snapshotCore: [
     'ageRange',
@@ -1490,9 +1502,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     type: 'multiple',
     section: 'investing',
     required: true,
-    conditions: [
-      { key: 'investingStatus', operator: 'in', value: ['yes_consistently', 'yes_irregularly'] },
-    ],
+    conditions: [{ operator: 'custom', fn: (r) => isInvesting(r) }],
     options: [
       { value: '401k', label: '401(k) / workplace plan' },
       { value: 'roth_ira', label: 'Roth IRA' },
@@ -1505,7 +1515,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     tags: {
       modes: ['detailed'],
       priority: 'conditional',
-      askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
+      askIf: (a) => isInvesting(a),
     },
   },
   {
@@ -1514,9 +1524,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     type: 'single',
     section: 'investing',
     required: true,
-    conditions: [
-      { key: 'investingStatus', operator: 'in', value: ['yes_consistently', 'yes_irregularly'] },
-    ],
+    conditions: [{ operator: 'custom', fn: (r) => isInvesting(r) }],
     options: [
       { value: 'very_confident', label: 'Very confident' },
       { value: 'somewhat_confident', label: 'Somewhat confident' },
@@ -1525,7 +1533,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     tags: {
       modes: ['detailed'],
       priority: 'conditional',
-      askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
+      askIf: (a) => isInvesting(a),
     },
   },
   {
@@ -1618,6 +1626,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       required: false,
       helperText:
         'Use this only for assets not already counted above. Do not include anything already counted in your retirement or brokerage accounts above.',
+      conditions: [{ operator: 'custom', fn: (r) => isInvesting(r) }],
       options: [
         { value: 'crypto', label: 'Crypto' },
         { value: 'individual_stocks', label: 'Individual stocks held outside accounts above' },
@@ -1627,7 +1636,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       tags: {
         modes: ['detailed'],
         priority: 'conditional',
-        askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
+        askIf: (a) => isInvesting(a),
       },
     },
 
@@ -1637,9 +1646,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
   type: 'single',
   section: 'investing',
   required: true,
-  conditions: [
-    { key: 'investingStatus', operator: 'in', value: ['yes_consistently', 'yes_irregularly'] },
-  ],
+  conditions: [{ operator: 'custom', fn: (r) => isInvesting(r) }],
   options: [
     { value: 'diversified', label: 'Mostly retirement accounts / index funds' },
     { value: 'mixed', label: 'Mix of funds and individual stocks' },
@@ -1649,7 +1656,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
   tags: {
     modes: ['detailed'],
     priority: 'conditional',
-    askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
+    askIf: (a) => isInvesting(a),
   },
 },
 
