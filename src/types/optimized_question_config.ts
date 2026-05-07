@@ -191,7 +191,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     key: 'ageRange',
     question: 'What is your age range?',
     type: 'single',
-    section: 'vision',
+    section: 'context',
     required: true,
     options: [
       { value: 'under_25', label: 'Under 25' },
@@ -206,7 +206,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     key: 'relationshipStatus',
     question: 'What best describes your household?',
     type: 'single',
-    section: 'vision',
+    section: 'context',
     required: true,
     options: [
       { value: 'single', label: 'Single' },
