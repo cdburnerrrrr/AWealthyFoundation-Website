@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type MouseEvent, type ReactElement } from 'react';
+import { useEffect, useMemo, useRef, useState, type MouseEvent, type ReactElement } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowRight,
@@ -192,6 +192,14 @@ const INLINE_GROUPS: Record<string, string[]> = {
     'otherInvestmentContributionPercent',
     'investmentConfidence',
     'investmentMix',
+  ],
+  additionalAssetTypes: [
+    'cryptoAssetValue',
+    'cryptoAssetContribution',
+    'individualStockValue',
+    'individualStockContribution',
+    'otherAssets',
+    'otherAssetContribution',
   ],
   savingConsistency: ['monthlySavingsContribution', 'monthlySavingsPercent', 'totalLiquidSavings', 'savingsAutomation'],
 };
@@ -402,6 +410,51 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
       },
     ],
   },
+  advancedProtection: {
+    umbrella: [
+      { key: 'umbrellaCoverageAmount', label: 'Umbrella policy amount', placeholder: 'e.g. 1000000', required: false },
+    ],
+    estate_documents: [
+      {
+        key: 'estateDocuments',
+        label: 'Will / estate documents',
+        type: 'select',
+        options: [
+          { value: 'complete', label: 'Complete and current' },
+          { value: 'partial', label: 'Some pieces are in place' },
+          { value: 'old_or_unsure', label: 'Old, outdated, or unsure' },
+          { value: 'none', label: 'None yet' },
+        ],
+      },
+    ],
+    trust: [
+      {
+        key: 'trustInPlace',
+        label: 'Trust',
+        type: 'select',
+        required: false,
+        options: [
+          { value: 'yes', label: 'Yes, I have one' },
+          { value: 'considered', label: 'I have considered it' },
+          { value: 'not_needed', label: 'Probably not needed right now' },
+          { value: 'not_sure', label: 'Not sure' },
+        ],
+      },
+    ],
+    beneficiaries: [
+      {
+        key: 'beneficiariesUpdated',
+        label: 'Beneficiaries on accounts',
+        type: 'select',
+        options: [
+          { value: 'yes', label: 'Reviewed recently' },
+          { value: 'mostly', label: 'Mostly, but worth checking' },
+          { value: 'no', label: 'No / probably outdated' },
+          { value: 'not_sure', label: 'Not sure' },
+        ],
+      },
+    ],
+  },
   investmentAccounts: {
     '401k': [
       { key: 'k401Balance', label: 'Current balance', placeholder: 'e.g. 85000' },
@@ -443,6 +496,26 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
       { key: 'otherInvestmentAssets', label: 'Current balance', placeholder: 'e.g. 10000' },
       { key: 'otherInvestmentContribution', label: 'Monthly contribution ($)', placeholder: 'e.g. 100', required: false },
       { key: 'otherInvestmentContributionPercent', label: 'OR contribution percent of pay', placeholder: 'e.g. 2', required: false },
+    ],
+  },
+
+  additionalAssetTypes: {
+    crypto: [
+      { key: 'cryptoAssetValue', label: 'Current value', placeholder: 'e.g. 5000' },
+      { key: 'cryptoAssetContribution', label: 'Monthly contribution (optional)', placeholder: 'e.g. 100', required: false },
+    ],
+    individual_stocks: [
+      { key: 'individualStockValue', label: 'Current value', placeholder: 'e.g. 10000' },
+      { key: 'individualStockContribution', label: 'Monthly contribution (optional)', placeholder: 'e.g. 100', required: false },
+    ],
+    other_assets: [
+      {
+        key: 'otherAssets',
+        label: 'Current value',
+        placeholder: 'e.g. 5000',
+        helperText: 'Business ownership, collectibles, equipment, cash value policies, or other meaningful assets not already listed above.',
+      },
+      { key: 'otherAssetContribution', label: 'Monthly contribution (optional)', placeholder: 'e.g. 100', required: false },
     ],
   },
 };
@@ -650,7 +723,13 @@ function getContinueModeQuestions(responses: Record<string, any>) {
       'investmentAccounts',
       'investmentConfidence',
       'investmentMix',
+      'additionalAssetTypes',
       'otherAssets',
+      'cryptoAssetValue',
+      'cryptoAssetContribution',
+      'individualStockValue',
+      'individualStockContribution',
+      'otherAssetContribution',
       'netWorthEntry',
     ]);
 
@@ -678,6 +757,13 @@ function getContinueModeQuestions(responses: Record<string, any>) {
     if (question.key === 'monthlyChildcareCost' || question.key === 'childcarePressure') {
       return false;
     }
+
+    // These savings details are collected together inside the savings card.
+    // Do not repeat them as standalone comprehensive questions.
+    if (['savingsAutomation', 'monthlySavingsContribution', 'monthlySavingsPercent'].includes(question.key)) {
+      return false;
+    }
+
     return !(snapshotKeys.has(question.key) && answered);
   });
 }
@@ -1288,6 +1374,8 @@ function hasProtectionAssets(responses: Record<string, any>) {
     'brokerageBalance',
     'hsaBalance',
     'otherInvestmentAssets',
+    'cryptoAssetValue',
+    'individualStockValue',
     'primaryHomeValue',
     'rentalPropertyValue',
     'otherPropertyValue',
@@ -1359,6 +1447,12 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
         <div className="mb-3 inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
           Select all that apply
         </div>
+
+        {question.key === 'additionalAssetTypes' ? (
+          <p className="mb-4 rounded-2xl border border-copper-200 bg-copper-50 px-4 py-3 text-sm leading-6 text-slate-700">
+            <strong className="font-bold text-navy-900">Do not include anything already counted in your retirement or brokerage accounts above.</strong>
+          </p>
+        ) : null}
 
         <div className="grid gap-3">
           {contextualOptions.map((option) => {
@@ -1886,22 +1980,18 @@ export default function ComprehensiveQuestionnaire() {
   const baseContinueAnswers = useMemo(() => {
     if (!isContinueMode) return null;
 
-    const currentFreeAnswers =
-      currentAssessment?.assessmentType === 'free' ? currentAssessment?.answers ?? {} : {};
-    const currentFreeReportAnswers =
-      currentAssessment?.assessmentType === 'free'
-        ? ((currentAssessment as any)?.report?.answers ?? {})
-        : {};
+    if (snapshotAnswers && Object.keys(snapshotAnswers).length > 0) return snapshotAnswers;
+    if (latestFreeAssessment?.answers && Object.keys(latestFreeAssessment.answers).length > 0) {
+      return latestFreeAssessment.answers;
+    }
+    if (latestFreeAssessment?.report?.answers && Object.keys(latestFreeAssessment.report.answers).length > 0) {
+      return latestFreeAssessment.report.answers;
+    }
+    if (currentAssessment?.assessmentType === 'free' && currentAssessment?.answers) {
+      return currentAssessment.answers;
+    }
 
-    const merged = {
-      ...currentFreeAnswers,
-      ...currentFreeReportAnswers,
-      ...(latestFreeAssessment?.report?.answers ?? {}),
-      ...(latestFreeAssessment?.answers ?? {}),
-      ...(snapshotAnswers ?? {}),
-    };
-
-    return Object.keys(merged).length > 0 ? merged : null;
+    return null;
   }, [isContinueMode, snapshotAnswers, latestFreeAssessment, currentAssessment]);
 
   const initialResponses = useMemo(
@@ -1943,6 +2033,21 @@ export default function ComprehensiveQuestionnaire() {
   const currentSectionLabel =
     getSectionLabel(currentQuestion?.section, currentQuestion?.key) ||
     currentSectionMeta.shortLabel;
+
+  const previousSectionRef = useRef(currentSectionKey);
+
+  useEffect(() => {
+    if (!currentQuestion || mode !== 'question') {
+      previousSectionRef.current = currentSectionKey;
+      return;
+    }
+
+    const previousSection = previousSectionRef.current;
+    if (previousSection && previousSection !== currentSectionKey) {
+      setMode('transition');
+    }
+    previousSectionRef.current = currentSectionKey;
+  }, [currentQuestion, currentSectionKey, mode]);
 
   useEffect(() => {
     const nextResponses = isContinueMode && baseContinueAnswers ? baseContinueAnswers : {};
