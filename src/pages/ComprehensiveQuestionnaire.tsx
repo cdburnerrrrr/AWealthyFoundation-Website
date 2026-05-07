@@ -158,14 +158,16 @@ const INLINE_GROUPS: Record<string, string[]> = {
   otherDebt: ['creditCardDebt', 'creditCardPayment', 'studentLoans', 'studentLoanPayment', 'personalLoans', 'personalLoanPayment', 'bnplDebt', 'bnplPayment', 'paydayDebt', 'paydayPayment', 'medicalDebt', 'medicalDebtPayment', 'additionalDebt', 'debtManageability', 'debtPaydownStrategy', 'creditCardBehavior'],
   protectionCoverage: [
     'healthCoverage',
-    'disabilityCoverage',
-    'lifeInsurance',
-    'propertyCoverage',
     'autoCoverage',
+    'propertyCoverage',
+    'lifeInsurance',
+    'disabilityCoverage',
+  ],
+  advancedProtection: [
     'umbrellaCoverageAmount',
     'estateDocuments',
-    'beneficiariesUpdated',
     'trustInPlace',
+    'beneficiariesUpdated',
   ],
   investingStatus: [],
   investmentAccounts: [
@@ -398,9 +400,6 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
           { value: 'none', label: 'No disability coverage' },
         ],
       },
-    ],
-    umbrella: [
-      { key: 'umbrellaCoverageAmount', label: 'Umbrella policy amount', placeholder: 'e.g. 1000000', required: false },
     ],
   },
   investmentAccounts: {
@@ -658,7 +657,8 @@ function getContinueModeQuestions(responses: Record<string, any>) {
     // Snapshot only establishes whether the user invests. The full assessment must still
     // collect the account-level breakdown, balances, contributions, and 401(k) match details.
     if (invests && investingDetailKeys.has(question.key)) return true;
-    if (question.key === 'protectionCoverage') return true;
+    // Do not re-ask the Snapshot insurance checklist in continue mode.
+    // The full assessment should deepen selected coverages with follow-up questions instead.
     if (question.key === 'relationshipStatus') {
       const hasDependents = ['single_with_dependents', 'partnered_with_dependents'].includes(
         responses.relationshipStatus

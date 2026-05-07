@@ -141,17 +141,7 @@ const INLINE_GROUPS: Record<string, string[]> = {
   additionalPropertyOwnership: ['rentalPropertyValue', 'rentalMortgage', 'rentalPropertyPayment', 'otherPropertyValue', 'otherPropertyDebt', 'otherPropertyPayment'],
   vehicleDebt: ['carLoanBalance', 'monthlyVehiclePayment', 'vehicleValue'],
   otherDebt: ['creditCardDebt', 'creditCardPayment', 'studentLoans', 'studentLoanPayment', 'personalLoans', 'personalLoanPayment', 'bnplDebt', 'bnplPayment', 'paydayDebt', 'paydayPayment', 'medicalDebt', 'medicalDebtPayment', 'additionalDebt', 'debtManageability', 'debtPaydownStrategy', 'creditCardBehavior'],
-  protectionCoverage: [
-    'healthCoverage',
-    'disabilityCoverage',
-    'lifeInsurance',
-    'propertyCoverage',
-    'autoCoverage',
-    'umbrellaCoverageAmount',
-    'estateDocuments',
-    'beneficiariesUpdated',
-    'trustInPlace',
-  ],
+  protectionCoverage: [],
   investingStatus: [],
   investmentAccounts: [
     'k401Balance',
@@ -310,76 +300,7 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
       { key: 'medicalDebtPayment', label: 'Monthly payment', placeholder: 'e.g. 50' },
     ],
   },
-  protectionCoverage: {
-    health: [
-      {
-        key: 'healthCoverage',
-        label: 'Health coverage quality',
-        type: 'select',
-        options: [
-          { value: 'good_coverage', label: 'Solid coverage' },
-          { value: 'basic_coverage', label: 'Basic coverage' },
-          { value: 'limited_coverage', label: 'Limited or high deductible' },
-          { value: 'not_sure', label: 'Not sure' },
-        ],
-      },
-    ],
-    auto: [
-      {
-        key: 'autoCoverage',
-        label: 'Auto coverage level',
-        type: 'select',
-        options: [
-          { value: 'full', label: 'Full coverage' },
-          { value: 'basic', label: 'Basic but reasonable' },
-          { value: 'minimal', label: 'Minimal' },
-          { value: 'minimum', label: 'State minimum only' },
-        ],
-      },
-    ],
-    home_or_renters: [
-      {
-        key: 'propertyCoverage',
-        label: 'Homeowners / renters coverage',
-        type: 'select',
-        options: [
-          { value: 'solid', label: 'Solid coverage' },
-          { value: 'basic', label: 'Basic coverage' },
-          { value: 'minimal', label: 'Minimal / unsure' },
-          { value: 'none', label: 'No coverage' },
-        ],
-      },
-    ],
-    life: [
-      {
-        key: 'lifeInsurance',
-        label: 'Life insurance adequacy',
-        type: 'select',
-        options: [
-          { value: 'enough', label: 'Enough for the people who depend on me' },
-          { value: 'some', label: 'Some, but probably not enough' },
-          { value: 'none', label: 'No life insurance' },
-          { value: 'not_needed', label: 'No one depends on my income' },
-        ],
-      },
-    ],
-    disability: [
-      {
-        key: 'disabilityCoverage',
-        label: 'Disability / income protection',
-        type: 'select',
-        options: [
-          { value: 'strong', label: 'Strong disability coverage' },
-          { value: 'employer_basic', label: 'Basic employer coverage' },
-          { value: 'not_sure', label: 'Not sure what I have' },
-          { value: 'none', label: 'No disability coverage' },
-        ],
-      },
-    ],
-    umbrella: [
-      { key: 'umbrellaCoverageAmount', label: 'Umbrella policy amount', placeholder: 'e.g. 1000000', required: false },
-    ],
-  },
+  protectionCoverage: {},
   investmentAccounts: {
     '401k': [
       { key: 'k401Balance', label: 'Current balance', placeholder: 'e.g. 85000' },
