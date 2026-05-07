@@ -54,6 +54,8 @@ function hasMeaningfulAssets(answers: Record<string, any>) {
     'brokerageBalance',
     'hsaBalance',
     'otherInvestmentAssets',
+    'cryptoAssetValue',
+    'individualStockValue',
     'primaryHomeValue',
     'rentalPropertyValue',
     'otherPropertyValue',
@@ -158,7 +160,13 @@ export const QUESTION_STRATEGY = {
     'otherInvestmentContribution',
     'otherInvestmentContributionPercent',
     'cashSavings',
+    'additionalAssetTypes',
+    'cryptoAssetValue',
+    'cryptoAssetContribution',
+    'individualStockValue',
+    'individualStockContribution',
     'otherAssets',
+    'otherAssetContribution',
     'investmentMix',
     'creditCardDebt',
     'studentLoans',
@@ -1603,14 +1611,19 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       conditions: [{ operator: 'custom', fn: () => false }],
     tags: { modes: ['detailed'], priority: 'conditional', askIf: () => false },},
     {
-      key: 'otherAssets',
-      question: 'Crypto, single stocks, or other assets we have not already covered (optional)',
-      type: 'number',
+      key: 'additionalAssetTypes',
+      question: 'Do you have crypto, individual stocks, or other assets we have not already covered?',
+      type: 'multiple',
       section: 'investing',
       required: false,
-      placeholder: 'e.g. 5000',
       helperText:
-        'Use this as a catch-all for crypto, individual stocks held outside the accounts above, business value, collectibles, equipment, or other meaningful assets. If you already entered something in a brokerage or investment account above, do not include it again here.',
+        'Use this only for assets not already counted above. Do not include anything already counted in your retirement or brokerage accounts above.',
+      options: [
+        { value: 'crypto', label: 'Crypto' },
+        { value: 'individual_stocks', label: 'Individual stocks held outside accounts above' },
+        { value: 'other_assets', label: 'Other assets' },
+        { value: 'none', label: 'None of these' },
+      ],
       tags: { modes: ['detailed'], priority: 'conditional', askIf: () => true },
     },
 
@@ -1665,6 +1678,8 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
         Boolean(a.rentalMortgage) ||
         Boolean(a.otherPropertyValue) ||
         Boolean(a.otherPropertyDebt) ||
+        Boolean(a.cryptoAssetValue) ||
+        Boolean(a.individualStockValue) ||
         Boolean(a.otherAssets)
       ),
   },

@@ -328,7 +328,12 @@ function getMortgageDebt(answers: Record<string, any>) {
 }
 
 function getOtherAssets(answers: Record<string, any>) {
-  return toNumber(answers.otherAssets) + toNumber(answers.otherAssetsNotListed);
+  return (
+    toNumber(answers.cryptoAssetValue) +
+    toNumber(answers.individualStockValue) +
+    toNumber(answers.otherAssets) +
+    toNumber(answers.otherAssetsNotListed)
+  );
 }
 
 function getOtherLiabilities(answers: Record<string, any>) {
@@ -365,7 +370,7 @@ function ownsAdditionalProperty(answers: Record<string, any>) {
 }
 
 function hasMeaningfulAssets(metrics: V2FinancialMetrics) {
-  return metrics.totalAssets >= 100000 || metrics.totalInvestments >= 50000 || metrics.realEstateAssets >= 100000;
+  return metrics.totalAssets >= 100000 || metrics.totalInvestments >= 50000 || metrics.realEstateAssets >= 100000 || metrics.otherAssets >= 50000;
 }
 
 function hasEstateDocuments(answers: Record<string, any>) {
@@ -485,7 +490,7 @@ export function buildV2FinancialMetrics(
   );
   const otherMonthlyInvestmentContribution = getMonthlyAmountFromAmountOrPercent(
     answers,
-    ['otherInvestmentContribution'],
+    ['otherInvestmentContribution', 'cryptoAssetContribution', 'individualStockContribution', 'otherAssetContribution'],
     ['otherInvestmentContributionPercent'],
     monthlyIncome
   );

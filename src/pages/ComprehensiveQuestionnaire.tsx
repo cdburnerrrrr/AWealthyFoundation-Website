@@ -193,6 +193,14 @@ const INLINE_GROUPS: Record<string, string[]> = {
     'investmentConfidence',
     'investmentMix',
   ],
+  additionalAssetTypes: [
+    'cryptoAssetValue',
+    'cryptoAssetContribution',
+    'individualStockValue',
+    'individualStockContribution',
+    'otherAssets',
+    'otherAssetContribution',
+  ],
   savingConsistency: ['monthlySavingsContribution', 'monthlySavingsPercent', 'totalLiquidSavings', 'savingsAutomation'],
 };
 
@@ -488,6 +496,26 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
       { key: 'otherInvestmentAssets', label: 'Current balance', placeholder: 'e.g. 10000' },
       { key: 'otherInvestmentContribution', label: 'Monthly contribution ($)', placeholder: 'e.g. 100', required: false },
       { key: 'otherInvestmentContributionPercent', label: 'OR contribution percent of pay', placeholder: 'e.g. 2', required: false },
+    ],
+  },
+
+  additionalAssetTypes: {
+    crypto: [
+      { key: 'cryptoAssetValue', label: 'Current value', placeholder: 'e.g. 5000' },
+      { key: 'cryptoAssetContribution', label: 'Monthly contribution (optional)', placeholder: 'e.g. 100', required: false },
+    ],
+    individual_stocks: [
+      { key: 'individualStockValue', label: 'Current value', placeholder: 'e.g. 10000' },
+      { key: 'individualStockContribution', label: 'Monthly contribution (optional)', placeholder: 'e.g. 100', required: false },
+    ],
+    other_assets: [
+      {
+        key: 'otherAssets',
+        label: 'Current value',
+        placeholder: 'e.g. 5000',
+        helperText: 'Business ownership, collectibles, equipment, cash value policies, or other meaningful assets not already listed above.',
+      },
+      { key: 'otherAssetContribution', label: 'Monthly contribution (optional)', placeholder: 'e.g. 100', required: false },
     ],
   },
 };
@@ -1340,6 +1368,8 @@ function hasProtectionAssets(responses: Record<string, any>) {
     'brokerageBalance',
     'hsaBalance',
     'otherInvestmentAssets',
+    'cryptoAssetValue',
+    'individualStockValue',
     'primaryHomeValue',
     'rentalPropertyValue',
     'otherPropertyValue',
@@ -1411,6 +1441,12 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
         <div className="mb-3 inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
           Select all that apply
         </div>
+
+        {question.key === 'additionalAssetTypes' ? (
+          <p className="mb-4 rounded-2xl border border-copper-200 bg-copper-50 px-4 py-3 text-sm leading-6 text-slate-700">
+            <strong className="font-bold text-navy-900">Do not include anything already counted in your retirement or brokerage accounts above.</strong>
+          </p>
+        ) : null}
 
         <div className="grid gap-3">
           {contextualOptions.map((option) => {
