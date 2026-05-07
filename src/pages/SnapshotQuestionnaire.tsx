@@ -138,17 +138,9 @@ const SECTION_META: Record<
 const INLINE_GROUPS: Record<string, string[]> = {
   relationshipStatus: ['monthlyChildcareCost'],
   housingStatus: ['monthlyHousingCost', 'primaryHomeValue', 'primaryMortgage'],
-  additionalPropertyOwnership: ['rentalPropertyValue', 'rentalMortgage', 'rentalPropertyPayment', 'otherPropertyValue', 'otherPropertyDebt', 'otherPropertyPayment'],
+  additionalPropertyOwnership: ['rentalPropertyValue', 'rentalMortgage', 'rentalPropertyPayment', 'rentalPropertyIncome', 'otherPropertyValue', 'otherPropertyDebt', 'otherPropertyPayment'],
   vehicleDebt: ['carLoanBalance', 'monthlyVehiclePayment', 'vehicleValue'],
   otherDebt: ['creditCardDebt', 'creditCardPayment', 'studentLoans', 'studentLoanPayment', 'personalLoans', 'personalLoanPayment', 'bnplDebt', 'bnplPayment', 'paydayDebt', 'paydayPayment', 'medicalDebt', 'medicalDebtPayment', 'additionalDebt', 'debtManageability', 'debtPaydownStrategy', 'creditCardBehavior'],
-  protectionCoverage: [
-    'lifeInsurance',
-    'propertyCoverage',
-    'autoCoverage',
-    'disabilityCoverage',
-    'healthCoverage',
-    'umbrellaCoverageAmount',
-  ],
   investingStatus: [],
   investmentAccounts: [
     'k401Balance',
@@ -173,7 +165,7 @@ const INLINE_GROUPS: Record<string, string[]> = {
     'investmentConfidence',
     'investmentMix',
   ],
-  savingConsistency: ['monthlySavingsContribution', 'monthlySavingsPercent', 'totalLiquidSavings', 'savingsAutomation'],
+  savingConsistency: ['monthlySavingsContribution', 'monthlySavingsPercent', 'totalLiquidSavings', 'hysaBalance', 'savingsAutomation'],
 };
 
 const CHILD_KEYS = new Set(Object.values(INLINE_GROUPS).flat());
@@ -226,6 +218,7 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
       { key: 'monthlySavingsContribution', label: 'Monthly savings amount', placeholder: 'e.g. 500', required: false },
       { key: 'monthlySavingsPercent', label: 'OR savings percent of take-home pay', placeholder: 'e.g. 10', required: false },
       { key: 'totalLiquidSavings', label: 'Current cash savings balance', placeholder: 'e.g. 8000' },
+      { key: 'hysaBalance', label: 'Of that, how much is in high-yield savings? (optional)', placeholder: 'e.g. 12000', required: false },
       {
         key: 'savingsAutomation',
         label: 'Saving setup',
@@ -242,6 +235,7 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
       { key: 'monthlySavingsContribution', label: 'Typical monthly savings amount', placeholder: 'e.g. 250', required: false },
       { key: 'monthlySavingsPercent', label: 'OR typical savings percent of take-home pay', placeholder: 'e.g. 5', required: false },
       { key: 'totalLiquidSavings', label: 'Current cash savings balance', placeholder: 'e.g. 3000' },
+      { key: 'hysaBalance', label: 'Of that, how much is in high-yield savings? (optional)', placeholder: 'e.g. 12000', required: false },
       {
         key: 'savingsAutomation',
         label: 'Saving setup',
@@ -256,6 +250,7 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
     ],
     not_currently: [
       { key: 'totalLiquidSavings', label: 'Current cash savings balance', placeholder: 'e.g. 500' },
+      { key: 'hysaBalance', label: 'Of that, how much is in high-yield savings? (optional)', placeholder: 'e.g. 12000', required: false },
     ],
   },
   vehicleDebt: {
@@ -273,6 +268,12 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
       { key: 'rentalPropertyValue', label: 'Estimated value', placeholder: 'e.g. 250000' },
       { key: 'rentalMortgage', label: 'Mortgage balance', placeholder: 'e.g. 175000' },
       { key: 'rentalPropertyPayment', label: 'Monthly payment', placeholder: 'e.g. 1200' },
+      {
+        key: 'rentalPropertyIncome',
+        label: 'Monthly rental income (optional)',
+        placeholder: 'e.g. 1800',
+        required: false,
+      },
     ],
     other_property: [
       { key: 'otherPropertyValue', label: 'Estimated value', placeholder: 'e.g. 225000' },
@@ -306,7 +307,6 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
       { key: 'medicalDebtPayment', label: 'Monthly payment', placeholder: 'e.g. 50' },
     ],
   },
-  protectionCoverage: {},
   investmentAccounts: {
     '401k': [
       { key: 'k401Balance', label: 'Current balance', placeholder: 'e.g. 85000' },
@@ -580,64 +580,13 @@ function ProgressHeader({
 
 type TransitionCardProps = {
   sectionKey: string;
-  responses: Record<string, any>;
   onContinue: () => void;
   onBack: () => void;
   isFirst: boolean;
 };
 
-function getTransitionNote(sectionKey: string, responses: Record<string, any>) {
-  const income = Number(responses.monthlyTakeHomeIncome || 0);
-  const fixedCosts =
-    Number(responses.monthlyHousingCost || 0) +
-    Number(responses.monthlyUtilities || 0) +
-    Number(responses.monthlyChildcareCost || 0) +
-    Number(responses.monthlyVehiclePayment || 0) +
-    Number(responses.creditCardPayment || 0) +
-    Number(responses.studentLoanPayment || 0) +
-    Number(responses.personalLoanPayment || 0) +
-    Number(responses.bnplPayment || 0) +
-    Number(responses.paydayPayment || 0) +
-    Number(responses.medicalDebtPayment || 0);
-  const fixedCostLoad = income > 0 ? (fixedCosts / income) * 100 : 0;
-  const savings = Number(responses.totalLiquidSavings || 0);
-  const coverage = Array.isArray(responses.protectionCoverage) ? responses.protectionCoverage : [];
-
-  if (sectionKey === 'saving') {
-    if (fixedCostLoad >= 65) {
-      return 'Your monthly must-pay costs may already be taking a large share of income. Savings gives us a quick read on how much cushion is protecting the household.';
-    }
-    return 'Now that we know the income and fixed-cost picture, savings tells us how much room the foundation has to absorb surprises.';
-  }
-
-  if (sectionKey === 'debt') {
-    if (savings > 0) {
-      return 'Savings gives the foundation some defense. Debt tells us whether payments are quietly pulling against that progress.';
-    }
-    return 'Debt matters because even manageable payments can reduce flexibility if they crowd out saving or investing.';
-  }
-
-  if (sectionKey === 'investing') {
-    return 'Now we are moving from stability to growth: whether today’s income is starting to build future flexibility.';
-  }
-
-  if (sectionKey === 'protection') {
-    return 'This is a quick insurance check only. We are not doing a full policy review in the Snapshot.';
-  }
-
-  if (sectionKey === 'vision') {
-    if (!coverage.includes('disability')) {
-      return 'One protection gap to keep in mind later is income interruption. If your income stopped because of illness or injury, the rest of the plan can come under pressure quickly.';
-    }
-    return 'The Snapshot has covered the main structure. The last step is connecting the numbers to what you actually want this money to support.';
-  }
-
-  return '';
-}
-
-function TransitionCard({ sectionKey, responses, onContinue, onBack, isFirst }: TransitionCardProps) {
+function TransitionCard({ sectionKey, onContinue, onBack, isFirst }: TransitionCardProps) {
   const meta = SECTION_META[sectionKey] ?? SECTION_META.foundation;
-  const transitionNote = getTransitionNote(sectionKey, responses);
 
   return (
     <div className={`rounded-3xl p-8 text-white shadow-sm ${meta.colorClass}`}>
@@ -654,12 +603,6 @@ function TransitionCard({ sectionKey, responses, onContinue, onBack, isFirst }: 
       <p className="mt-3 max-w-2xl text-sm md:text-base leading-6 text-white/90">
         {meta.transitionBody}
       </p>
-
-      {transitionNote ? (
-        <div className="mt-5 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm leading-6 text-white/90">
-          {transitionNote}
-        </div>
-      ) : null}
 
       <div className="mt-8 flex items-center justify-between">
         {!isFirst && (
@@ -906,8 +849,91 @@ function InlineObjectFields({
   return <div className="mt-4 grid gap-3 md:grid-cols-2">{rows}</div>;
 }
 
+
+function toNumericValue(value: unknown) {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+  if (typeof value === 'string') {
+    const parsed = Number(value.replace(/[^\d.-]/g, ''));
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+}
+
+function hasProtectionDependents(responses: Record<string, any>) {
+  return ['single_with_dependents', 'partnered_with_dependents'].includes(responses.relationshipStatus);
+}
+
+function hasProtectionPartner(responses: Record<string, any>) {
+  return ['partnered', 'partnered_with_dependents'].includes(responses.relationshipStatus);
+}
+
+function ownsProtectionHome(responses: Record<string, any>) {
+  return ['own_with_mortgage', 'own_outright'].includes(responses.housingStatus);
+}
+
+function ownsProtectionAdditionalProperty(responses: Record<string, any>) {
+  return (
+    Array.isArray(responses.additionalPropertyOwnership) &&
+    (responses.additionalPropertyOwnership.includes('rental_property') ||
+      responses.additionalPropertyOwnership.includes('other_property'))
+  );
+}
+
+function hasProtectionAssets(responses: Record<string, any>) {
+  return [
+    'totalInvestments',
+    'k401Balance',
+    'iraBalance',
+    'rothBalance',
+    'brokerageBalance',
+    'hsaBalance',
+    'otherInvestmentAssets',
+    'primaryHomeValue',
+    'rentalPropertyValue',
+    'otherPropertyValue',
+    'otherAssets',
+  ].some((key) => toNumericValue(responses[key]) >= 50000);
+}
+
+function shouldShowProtectionOption(optionValue: string, responses: Record<string, any>) {
+  if (optionValue === 'life') {
+    return hasProtectionDependents(responses) || hasProtectionPartner(responses) || responses.housingStatus === 'own_with_mortgage';
+  }
+
+  if (optionValue === 'home_or_renters') {
+    return responses.housingStatus !== 'living_with_family';
+  }
+
+  if (optionValue === 'auto') {
+    return responses.vehicleDebt !== 'no_vehicle';
+  }
+
+  if (optionValue === 'umbrella') {
+    return ownsProtectionHome(responses) || ownsProtectionAdditionalProperty(responses) || hasProtectionAssets(responses) || hasProtectionDependents(responses);
+  }
+
+  if (optionValue === 'estate' || optionValue === 'beneficiaries') {
+    return (
+      hasProtectionDependents(responses) ||
+      hasProtectionPartner(responses) ||
+      ownsProtectionHome(responses) ||
+      ownsProtectionAdditionalProperty(responses) ||
+      hasProtectionAssets(responses)
+    );
+  }
+
+  return true;
+}
+
+function getContextualOptions(question: Question, responses: Record<string, any>) {
+  const options = question.options ?? [];
+  if (question.key !== 'protectionCoverage') return options;
+  return options.filter((option) => shouldShowProtectionOption(option.value, responses));
+}
+
 function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }: OptionGridProps) {
-  if (!question.options?.length) return null;
+  const contextualOptions = getContextualOptions(question, responses);
+  if (!contextualOptions.length) return null;
 
   if (question.type === 'multiple') {
     const selectedValues = Array.isArray(value) ? value : [];
@@ -935,7 +961,7 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
         </div>
 
         <div className="grid gap-3">
-          {question.options.map((option) => {
+          {contextualOptions.map((option) => {
             const selected = selectedValues.includes(option.value);
             const fields = OBJECT_FIELD_GROUPS[question.key]?.[option.value] ?? [];
 
@@ -1002,7 +1028,7 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
 
   return (
     <div className="grid gap-3">
-      {question.options.map((option) => {
+      {contextualOptions.map((option) => {
         const selected = value === option.value;
         const fields = OBJECT_FIELD_GROUPS[question.key]?.[option.value] ?? [];
 
@@ -1493,7 +1519,6 @@ export default function SnapshotQuestionnaire() {
           ) : mode === 'transition' ? (
             <TransitionCard
               sectionKey={currentSectionKey}
-              responses={responses}
               onContinue={() => setMode('question')}
               onBack={goBack}
               isFirst={currentStep === 0}
