@@ -84,24 +84,27 @@ function shouldAskUmbrella(answers: Record<string, any>) {
 }
 
 
+function getInvestingStatusValue(answers: Record<string, any>) {
+  return String(answers.investingStatus ?? '').trim().toLowerCase();
+}
+
+function isExplicitlyNotInvesting(answers: Record<string, any>) {
+  const raw = getInvestingStatusValue(answers);
+  return [
+    'not_yet',
+    'not yet',
+    'no',
+    'none',
+    'false',
+    'not_currently',
+    'not currently',
+  ].includes(raw);
+}
+
 function isInvesting(answers: Record<string, any>) {
-  const raw = String(answers.investingStatus ?? '').trim().toLowerCase();
+  const raw = getInvestingStatusValue(answers);
 
-  if (!raw) return false;
-
-  if (
-    [
-      'not_yet',
-      'not yet',
-      'no',
-      'none',
-      'false',
-      'not_currently',
-      'not currently',
-    ].includes(raw)
-  ) {
-    return false;
-  }
+  if (!raw || isExplicitlyNotInvesting(answers)) return false;
 
   return [
     'yes_consistently',
@@ -120,6 +123,14 @@ function isInvesting(answers: Record<string, any>) {
     'started',
     'occasionally',
   ].includes(raw);
+}
+
+function shouldShowInvestingDetail(answers: Record<string, any>) {
+  // The full assessment should collect the investment account breakdown unless
+  // the user explicitly said they are not investing. This keeps continuation mode
+  // from accidentally hiding the 401(k), Roth, brokerage, HSA, and catch-all card
+  // when the Snapshot investing value is missing or stored in an older format.
+  return !isExplicitlyNotInvesting(answers);
 }
 
 export const QUESTION_STRATEGY = {
@@ -1529,7 +1540,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     type: 'multiple',
     section: 'investing',
     required: true,
-    conditions: [{ operator: 'custom', fn: (r) => isInvesting(r) }],
+    conditions: [{ operator: 'custom', fn: (r) => shouldShowInvestingDetail(r) }],
     options: [
       { value: '401k', label: '401(k) / workplace plan' },
       { value: 'roth_ira', label: 'Roth IRA' },
@@ -1542,7 +1553,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     tags: {
       modes: ['detailed'],
       priority: 'conditional',
-      askIf: (a) => isInvesting(a),
+      askIf: (a) => shouldShowInvestingDetail(a),
     },
   },
   {
@@ -1551,7 +1562,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     type: 'single',
     section: 'investing',
     required: true,
-    conditions: [{ operator: 'custom', fn: (r) => isInvesting(r) }],
+    conditions: [{ operator: 'custom', fn: (r) => shouldShowInvestingDetail(r) }],
     options: [
       { value: 'very_confident', label: 'Very confident' },
       { value: 'somewhat_confident', label: 'Somewhat confident' },
@@ -1560,7 +1571,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     tags: {
       modes: ['detailed'],
       priority: 'conditional',
-      askIf: (a) => isInvesting(a),
+      askIf: (a) => shouldShowInvestingDetail(a),
     },
   },
   {
@@ -1653,7 +1664,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       required: false,
       helperText:
         'Use this only for assets not already counted above. Do not include anything already counted in your retirement or brokerage accounts above.',
-      conditions: [{ operator: 'custom', fn: (r) => isInvesting(r) }],
+      conditions: [{ operator: 'custom', fn: (r) => shouldShowInvestingDetail(r) }],
       options: [
         { value: 'crypto', label: 'Crypto' },
         { value: 'individual_stocks', label: 'Individual stocks held outside accounts above' },
@@ -1663,7 +1674,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       tags: {
         modes: ['detailed'],
         priority: 'conditional',
-        askIf: (a) => isInvesting(a),
+        askIf: (a) => shouldShowInvestingDetail(a),
       },
     },
 
@@ -1673,7 +1684,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
   type: 'single',
   section: 'investing',
   required: true,
-  conditions: [{ operator: 'custom', fn: (r) => isInvesting(r) }],
+  conditions: [{ operator: 'custom', fn: (r) => shouldShowInvestingDetail(r) }],
   options: [
     { value: 'diversified', label: 'Mostly retirement accounts / index funds' },
     { value: 'mixed', label: 'Mix of funds and individual stocks' },
@@ -1683,7 +1694,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
   tags: {
     modes: ['detailed'],
     priority: 'conditional',
-    askIf: (a) => isInvesting(a),
+    askIf: (a) => shouldShowInvestingDetail(a),
   },
 },
 

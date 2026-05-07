@@ -719,23 +719,16 @@ function getContinueModeQuestions(responses: Record<string, any>) {
   return detailed.filter((question) => {
     const answered = isAnswered(question, responses[question.key]);
     const investingStatus = String(responses.investingStatus ?? '').trim().toLowerCase();
-    const invests = [
-      'yes_consistently',
-      'yes consistently',
-      'yes, consistently',
-      'yes_irregularly',
-      'yes irregularly',
-      'yes, irregularly',
-      'yes_regularly',
-      'yes regularly',
-      'yes',
-      'true',
-      'investing',
-      'currently_investing',
-      'currently investing',
-      'started',
-      'occasionally',
+    const explicitlyNotInvesting = [
+      'not_yet',
+      'not yet',
+      'no',
+      'none',
+      'false',
+      'not_currently',
+      'not currently',
     ].includes(investingStatus);
+    const shouldShowInvestingDetails = !explicitlyNotInvesting;
     const investingDetailKeys = new Set([
       'investmentAccounts',
       'investmentConfidence',
@@ -752,11 +745,11 @@ function getContinueModeQuestions(responses: Record<string, any>) {
 
     // Always show the additional-assets catch-all before net worth so users can add crypto,
     // individual stocks held outside accounts above, or other assets without double counting.
-    if (question.key === 'additionalAssetTypes') return invests;
+    if (question.key === 'additionalAssetTypes') return shouldShowInvestingDetails;
 
     // Snapshot only establishes whether the user invests. The full assessment must still
     // collect the account-level breakdown, balances, contributions, and 401(k) match details.
-    if (invests && investingDetailKeys.has(question.key)) return true;
+    if (shouldShowInvestingDetails && investingDetailKeys.has(question.key)) return true;
     // Do not re-ask the Snapshot insurance checklist in continue mode.
     // The full assessment should deepen selected coverages with follow-up questions instead.
     if (question.key === 'relationshipStatus') {
