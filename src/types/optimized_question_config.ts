@@ -12,127 +12,6 @@ export type QuestionTag = {
 // Add this to your existing Question interface:
 // tags?: QuestionTag;
 
-
-const SECTION_SORT_ORDER: Record<string, number> = {
-  foundation: 0,
-  context: 0,
-  income: 1,
-  spending: 2,
-  saving: 3,
-  debt: 4,
-  investing: 5,
-  protection: 6,
-  vision: 7,
-};
-
-function hasDependents(answers: Record<string, any>) {
-  return ['single_with_dependents', 'partnered_with_dependents'].includes(answers.relationshipStatus);
-}
-
-function hasPartner(answers: Record<string, any>) {
-  return ['partnered', 'partnered_with_dependents'].includes(answers.relationshipStatus);
-}
-
-function ownsPrimaryHome(answers: Record<string, any>) {
-  return ['own_with_mortgage', 'own_outright'].includes(answers.housingStatus);
-}
-
-function ownsAdditionalProperty(answers: Record<string, any>) {
-  return (
-    Array.isArray(answers.additionalPropertyOwnership) &&
-    (answers.additionalPropertyOwnership.includes('rental_property') ||
-      answers.additionalPropertyOwnership.includes('other_property'))
-  );
-}
-
-function hasMeaningfulAssets(answers: Record<string, any>) {
-  const numericKeys = [
-    'totalInvestments',
-    'k401Balance',
-    'iraBalance',
-    'rothBalance',
-    'brokerageBalance',
-    'hsaBalance',
-    'otherInvestmentAssets',
-    'cryptoAssetValue',
-    'individualStockValue',
-    'primaryHomeValue',
-    'rentalPropertyValue',
-    'otherPropertyValue',
-    'otherAssets',
-  ];
-
-  return numericKeys.some((key) => Number(String(answers[key] ?? '').replace(/[^\d.-]/g, '')) >= 50000);
-}
-
-function shouldAskLifeInsuranceDepth(answers: Record<string, any>) {
-  return hasDependents(answers) || hasPartner(answers) || answers.housingStatus === 'own_with_mortgage';
-}
-
-function shouldAskEstatePlanning(answers: Record<string, any>) {
-  return (
-    hasDependents(answers) ||
-    hasPartner(answers) ||
-    ownsPrimaryHome(answers) ||
-    ownsAdditionalProperty(answers) ||
-    hasMeaningfulAssets(answers)
-  );
-}
-
-function shouldAskUmbrella(answers: Record<string, any>) {
-  return ownsPrimaryHome(answers) || ownsAdditionalProperty(answers) || hasMeaningfulAssets(answers) || hasDependents(answers);
-}
-
-
-function getInvestingStatusValue(answers: Record<string, any>) {
-  return String(answers.investingStatus ?? '').trim().toLowerCase();
-}
-
-function isExplicitlyNotInvesting(answers: Record<string, any>) {
-  const raw = getInvestingStatusValue(answers);
-  return [
-    'not_yet',
-    'not yet',
-    'no',
-    'none',
-    'false',
-    'not_currently',
-    'not currently',
-  ].includes(raw);
-}
-
-function isInvesting(answers: Record<string, any>) {
-  const raw = getInvestingStatusValue(answers);
-
-  if (!raw || isExplicitlyNotInvesting(answers)) return false;
-
-  return [
-    'yes_consistently',
-    'yes consistently',
-    'yes, consistently',
-    'yes_irregularly',
-    'yes irregularly',
-    'yes, irregularly',
-    'yes_regularly',
-    'yes regularly',
-    'yes',
-    'true',
-    'investing',
-    'currently_investing',
-    'currently investing',
-    'started',
-    'occasionally',
-  ].includes(raw);
-}
-
-function shouldShowInvestingDetail(answers: Record<string, any>) {
-  // The full assessment should collect the investment account breakdown unless
-  // the user explicitly said they are not investing. This keeps continuation mode
-  // from accidentally hiding the 401(k), Roth, brokerage, HSA, and catch-all card
-  // when the Snapshot investing value is missing or stored in an older format.
-  return !isExplicitlyNotInvesting(answers);
-}
-
 export const QUESTION_STRATEGY = {
   snapshotCore: [
     'ageRange',
@@ -156,7 +35,6 @@ export const QUESTION_STRATEGY = {
     'debtManageability',
     'progressPriority',
     'debtPaydownStrategy',
-    'incomeProtectionLevel',
     'protectionCoverage',
     'investingStatus',
     'financialDirection',
@@ -170,13 +48,10 @@ export const QUESTION_STRATEGY = {
     'vehicleValue',
     'rentalPropertyValue',
     'rentalMortgage',
-    'rentalPropertyPayment',
-    'rentalPropertyIncome',
     'otherPropertyValue',
     'otherPropertyDebt',
     'creditCardBehavior',
     'incomeProtectionRealityCheck',
-    'advancedProtection',
     'incomeInterruptionCoverage',
     'healthCoverage',
     'lifeInsurance',
@@ -184,9 +59,7 @@ export const QUESTION_STRATEGY = {
     'autoCoverage',
     'disabilityCoverage',
     'umbrellaCoverageAmount',
-    'estateDocuments',
-    'beneficiariesUpdated',
-    'trustInPlace',
+    'advancedProtection',
     'investmentAccounts',
     'investmentConfidence',
     'investmentMix',
@@ -210,14 +83,11 @@ export const QUESTION_STRATEGY = {
     'otherInvestmentContribution',
     'otherInvestmentContributionPercent',
     'cashSavings',
-    'additionalAssetTypes',
-    'cryptoAssetValue',
-    'cryptoAssetContribution',
-    'individualStockValue',
-    'individualStockContribution',
     'otherAssets',
-    'otherAssetContribution',
     'investmentMix',
+    'savingsAutomation',
+    'monthlySavingsContribution',
+    'monthlySavingsPercent',
     'creditCardDebt',
     'studentLoans',
     'personalLoans',
@@ -415,22 +285,6 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     },
   },
   {
-    key: 'rentalPropertyIncome',
-    question: 'What is the monthly rental income from this property?',
-    type: 'number',
-    section: 'spending',
-    required: false,
-    placeholder: 'e.g. 1800',
-    helperText:
-      'If you include rental income here, do not include it in your overall monthly income above or the projections may be overstated.',
-    conditions: [{ key: 'additionalPropertyOwnership', operator: 'includes', value: 'rental_property' }],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) => Array.isArray(a.additionalPropertyOwnership) && a.additionalPropertyOwnership.includes('rental_property'),
-    },
-  },
-  {
     key: 'otherPropertyValue',
     question: 'What is your other property worth?',
     type: 'number',
@@ -582,8 +436,9 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     helperText: 'This counts as a must-pay monthly cost and is included in fixed cost load and monthly margin.',
     conditions: [
       {
-        operator: 'custom',
-        fn: (r) => shouldAskLifeInsuranceDepth(r),
+        key: 'relationshipStatus',
+        operator: 'in',
+        value: ['single_with_dependents', 'partnered_with_dependents'],
       },
     ],
     tags: {
@@ -741,15 +596,14 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     question: 'How is your saving set up?',
     type: 'single',
     section: 'saving',
-    required: false,
+    required: true,
     options: [
       { value: 'fully_automated', label: 'Fully automated' },
       { value: 'partially_automated', label: 'Partially automated' },
       { value: 'manual', label: 'Manual transfers' },
       { value: 'not_saving', label: 'Not saving right now' },
     ],
-    conditions: [{ operator: 'custom', fn: () => false }],
-    tags: { modes: ['detailed'], priority: 'conditional', askIf: () => false },
+    tags: { modes: ['detailed'], priority: 'conditional' },
   },
 
   // DEBT
@@ -1195,14 +1049,14 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       { value: 'somewhat_protected', label: 'Somewhat protected' },
       { value: 'not_protected', label: 'Not protected' },
     ],
-    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+    tags: { modes: ['detailed'], priority: 'core' },
   },
 
   {
     key: 'protectionCoverage',
-    question: 'Which core insurance protections do you currently have in place?',
+    question: 'Which insurance protections do you currently have in place?',
     helperText:
-      'Check what applies; leave anything unchecked if you do not have it or are unsure. In the full assessment, we’ll only review the coverages you already told us you have.',
+      'Check everything that applies. This is a quick snapshot, not a full policy review. Leave anything unchecked if you do not have it or are unsure.',
     type: 'multiple',
     section: 'protection',
     required: true,
@@ -1217,112 +1071,57 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
   },
 
+  {
+    key: 'umbrellaCoverageAmount',
+    question: 'How much umbrella liability coverage do you have?',
+    type: 'number',
+    section: 'protection',
+    required: false,
+    placeholder: 'e.g. 1000000',
+    helperText: 'Use the policy limit if you know it. A best estimate is fine.',
+    conditions: [{ key: 'advancedProtection', operator: 'includes', value: 'umbrella' }],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => Array.isArray(a.advancedProtection) && a.advancedProtection.includes('umbrella'),
+    },
+  },
 
   {
-    key: 'healthCoverage',
-    question: 'How solid does your health insurance feel?',
-    type: 'single',
+    key: 'advancedProtection',
+    question: 'Do you have any advanced protection or estate planning items in place?',
+    type: 'multiple',
     section: 'protection',
     required: true,
+    helperText:
+      'These are more important when others depend on you, you own property, or you have meaningful assets to protect. Select what you already have in place.',
     options: [
-      { value: 'solid', label: 'Solid coverage for normal needs' },
-      { value: 'basic', label: 'Basic coverage, but higher costs could hurt' },
-      { value: 'limited', label: 'Limited or uncertain coverage' },
-      { value: 'none', label: 'No health coverage' },
+      { value: 'umbrella', label: 'Umbrella liability policy' },
+      { value: 'will_estate', label: 'Will or estate documents' },
+      { value: 'trust', label: 'Trust' },
+      { value: 'beneficiaries_updated', label: 'Beneficiaries reviewed or updated' },
+      { value: 'none', label: 'None of these / not sure' },
     ],
     tags: {
       modes: ['detailed'],
       priority: 'conditional',
-      askIf: (a) => Array.isArray(a.protectionCoverage) && a.protectionCoverage.includes('health'),
-    },
-  },
-  {
-    key: 'autoCoverage',
-    question: 'How would you describe your auto insurance coverage?',
-    type: 'single',
-    section: 'protection',
-    required: true,
-    conditions: [{ key: 'vehicleDebt', operator: 'not_equals', value: 'no_vehicle' }],
-    options: [
-      { value: 'full', label: 'Full coverage' },
-      { value: 'basic', label: 'Basic but reasonable' },
-      { value: 'minimal', label: 'Minimal' },
-      { value: 'minimum', label: 'State minimum only' },
-      { value: 'do_not_drive', label: 'Do not drive / not applicable' },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) =>
-        Array.isArray(a.protectionCoverage) &&
-        a.protectionCoverage.includes('auto') &&
-        a.vehicleDebt !== 'no_vehicle',
-    },
-  },
-  {
-    key: 'propertyCoverage',
-    question: 'How would you describe your homeowners or renters coverage?',
-    type: 'single',
-    section: 'protection',
-    required: true,
-    conditions: [{ key: 'housingStatus', operator: 'not_equals', value: 'living_with_family' }],
-    options: [
-      { value: 'solid', label: 'Solid coverage' },
-      { value: 'basic', label: 'Basic coverage' },
-      { value: 'minimal', label: 'Minimal / unsure' },
-      { value: 'none', label: 'No coverage' },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) =>
-        Array.isArray(a.protectionCoverage) &&
-        a.protectionCoverage.includes('home_or_renters') &&
-        a.housingStatus !== 'living_with_family',
-    },
-  },
-  {
-    key: 'lifeInsurance',
-    question: 'Do you have enough life insurance for the people who depend on you?',
-    type: 'single',
-    section: 'protection',
-    required: true,
-    conditions: [
-      {
-        operator: 'custom',
-        fn: (r) => shouldAskLifeInsuranceDepth(r),
+      askIf: (a) => {
+        const hasDependents = ['single_with_dependents', 'partnered_with_dependents'].includes(a.relationshipStatus);
+        const partnered = ['partnered', 'partnered_with_dependents'].includes(a.relationshipStatus);
+        const ownsHome = ['own_with_mortgage', 'own_outright'].includes(a.housingStatus);
+        const ownsOtherProperty = Array.isArray(a.additionalPropertyOwnership) && a.additionalPropertyOwnership.some((item) => item !== 'none');
+        const hasMeaningfulInvestments =
+          Number(a.k401Balance || 0) +
+            Number(a.iraBalance || 0) +
+            Number(a.rothBalance || 0) +
+            Number(a.brokerageBalance || 0) +
+            Number(a.hsaBalance || 0) +
+            Number(a.otherInvestmentAssets || 0) +
+            Number(a.totalInvestments || 0) >=
+          50000;
+
+        return hasDependents || partnered || ownsHome || ownsOtherProperty || hasMeaningfulInvestments;
       },
-    ],
-    options: [
-      { value: 'enough', label: 'Yes, enough coverage' },
-      { value: 'some', label: 'Some, but probably not enough' },
-      { value: 'none', label: 'No life insurance' },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) =>
-        Array.isArray(a.protectionCoverage) &&
-        a.protectionCoverage.includes('life') &&
-        shouldAskLifeInsuranceDepth(a),
-    },
-  },
-  {
-    key: 'disabilityCoverage',
-    question: 'How protected is your income if you could not work for a while?',
-    type: 'single',
-    section: 'protection',
-    required: true,
-    options: [
-      { value: 'strong', label: 'Strong disability or income protection' },
-      { value: 'employer_basic', label: 'Some coverage through work' },
-      { value: 'unsure', label: 'Not sure what I have' },
-      { value: 'none', label: 'No disability coverage' },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) => Array.isArray(a.protectionCoverage) && a.protectionCoverage.includes('disability'),
     },
   },
 
@@ -1339,46 +1138,6 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       modes: ['detailed'],
       priority: 'conditional',
       askIf: () => true,
-    },
-  },
-
-  {
-    key: 'advancedProtection',
-    question: 'Do you have any advanced protection or estate planning pieces in place?',
-    type: 'multiple',
-    section: 'protection',
-    required: false,
-    helperText:
-      'These items usually matter more when you own property, have dependents, have meaningful assets, or others depend on your income. Check what applies; leave blank if none apply or you are unsure.',
-    options: [
-      { value: 'umbrella', label: 'Umbrella liability policy' },
-      { value: 'estate_documents', label: 'Will / estate documents' },
-      { value: 'trust', label: 'Trust' },
-      { value: 'beneficiaries', label: 'Beneficiaries reviewed on accounts' },
-      { value: 'none', label: 'None of these / not sure' },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) => shouldAskEstatePlanning(a) || shouldAskUmbrella(a),
-    },
-  },
-
-  {
-    key: 'umbrellaCoverageAmount',
-    question: 'How much umbrella liability coverage do you have?',
-    type: 'number',
-    section: 'protection',
-    required: false,
-    placeholder: 'e.g. 1000000',
-    helperText: 'Use the policy limit if you know it. A best estimate is fine.',
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) =>
-        Array.isArray(a.advancedProtection) &&
-        a.advancedProtection.includes('umbrella') &&
-        shouldAskUmbrella(a),
     },
   },
 
@@ -1412,74 +1171,79 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     conditions: [{ operator: 'custom', fn: () => false }],
     tags: { modes: ['snapshot', 'detailed'], priority: 'core', askIf: () => false },
   },
-
-
-
   {
-    key: 'estateDocuments',
-    question: 'Do you have basic estate documents in place?',
+    key: 'lifeInsurance',
+    question: 'Do you have enough life insurance for the people who depend on you?',
     type: 'single',
     section: 'protection',
     required: true,
-    helperText:
-      'This usually means a will, powers of attorney, guardianship direction if you have children, or a trust if your situation is more complex.',
+    conditions: [
+      {
+        key: 'relationshipStatus',
+        operator: 'in',
+        value: ['single_with_dependents', 'partnered_with_dependents'],
+      },
+    ],
     options: [
-      { value: 'complete', label: 'Yes, complete and current' },
-      { value: 'partial', label: 'Some pieces are in place' },
-      { value: 'old_or_unsure', label: 'Old, outdated, or unsure' },
-      { value: 'none', label: 'No estate documents yet' },
+      { value: 'enough', label: 'Yes, enough coverage' },
+      { value: 'some', label: 'Some, but probably not enough' },
+      { value: 'none', label: 'No life insurance' },
     ],
     tags: {
       modes: ['detailed'],
       priority: 'conditional',
       askIf: (a) =>
-        Array.isArray(a.advancedProtection) &&
-        a.advancedProtection.includes('estate_documents') &&
-        shouldAskEstatePlanning(a),
+        Array.isArray(a.protectionCoverage) &&
+        a.protectionCoverage.includes('life') &&
+        ['single_with_dependents', 'partnered_with_dependents'].includes(a.relationshipStatus),
     },
   },
   {
-    key: 'beneficiariesUpdated',
-    question: 'Are your beneficiaries up to date on retirement, investment, and insurance accounts?',
+    key: 'propertyCoverage',
+    question: 'How would you describe your homeowners or renters coverage?',
     type: 'single',
     section: 'protection',
     required: true,
+    conditions: [{ key: 'housingStatus', operator: 'not_equals', value: 'living_with_family' }],
     options: [
-      { value: 'yes', label: 'Yes, reviewed recently' },
-      { value: 'mostly', label: 'Mostly, but worth checking' },
-      { value: 'no', label: 'No / probably outdated' },
-      { value: 'not_sure', label: 'Not sure' },
+      { value: 'solid', label: 'Solid coverage' },
+      { value: 'basic', label: 'Basic coverage' },
+      { value: 'minimal', label: 'Minimal / unsure' },
+      { value: 'none', label: 'No coverage' },
     ],
     tags: {
       modes: ['detailed'],
       priority: 'conditional',
       askIf: (a) =>
-        Array.isArray(a.advancedProtection) &&
-        a.advancedProtection.includes('beneficiaries') &&
-        shouldAskEstatePlanning(a),
+        Array.isArray(a.protectionCoverage) &&
+        a.protectionCoverage.includes('home_or_renters') &&
+        a.housingStatus !== 'living_with_family',
     },
   },
   {
-    key: 'trustInPlace',
-    question: 'Do you have, or have you considered, a trust for more complex assets or family needs?',
+    key: 'autoCoverage',
+    question: 'How would you describe your auto insurance coverage?',
     type: 'single',
     section: 'protection',
-    required: false,
+    required: true,
+    conditions: [{ key: 'vehicleDebt', operator: 'not_equals', value: 'no_vehicle' }],
     options: [
-      { value: 'yes', label: 'Yes, I have one' },
-      { value: 'considered', label: 'I have considered it' },
-      { value: 'not_needed', label: 'Probably not needed right now' },
-      { value: 'not_sure', label: 'Not sure' },
+      { value: 'full', label: 'Full coverage' },
+      { value: 'basic', label: 'Basic but reasonable' },
+      { value: 'minimal', label: 'Minimal' },
+      { value: 'minimum', label: 'State minimum only' },
+      { value: 'do_not_drive', label: 'Do not drive / not applicable' },
     ],
     tags: {
       modes: ['detailed'],
       priority: 'conditional',
       askIf: (a) =>
-        Array.isArray(a.advancedProtection) &&
-        a.advancedProtection.includes('trust') &&
-        (ownsAdditionalProperty(a) || hasMeaningfulAssets(a) || (hasDependents(a) && ownsPrimaryHome(a))),
+        Array.isArray(a.protectionCoverage) &&
+        a.protectionCoverage.includes('auto') &&
+        a.vehicleDebt !== 'no_vehicle',
     },
   },
+
 
   {
     key: 'monthlySavingsContribution',
@@ -1489,8 +1253,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     required: false,
     placeholder: 'e.g. 500',
     helperText: 'Do not include investment contributions here. Use the amount that goes into savings or cash reserves each month.',
-    conditions: [{ operator: 'custom', fn: () => false }],
-    tags: { modes: ['detailed'], priority: 'conditional', askIf: () => false },
+    tags: { modes: ['detailed'], priority: 'conditional' },
   },
   {
     key: 'monthlySavingsPercent',
@@ -1500,8 +1263,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     required: false,
     placeholder: 'e.g. 10',
     helperText: 'Use this if you know your savings as a percent instead of a dollar amount. Leave blank if you already entered a monthly savings amount.',
-    conditions: [{ operator: 'custom', fn: () => false }],
-    tags: { modes: ['detailed'], priority: 'conditional', askIf: () => false },
+    tags: { modes: ['detailed'], priority: 'conditional' },
   },
 
   // INVESTING
@@ -1540,7 +1302,9 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     type: 'multiple',
     section: 'investing',
     required: true,
-    conditions: [{ operator: 'custom', fn: (r) => shouldShowInvestingDetail(r) }],
+    conditions: [
+      { key: 'investingStatus', operator: 'in', value: ['yes_consistently', 'yes_irregularly'] },
+    ],
     options: [
       { value: '401k', label: '401(k) / workplace plan' },
       { value: 'roth_ira', label: 'Roth IRA' },
@@ -1553,7 +1317,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     tags: {
       modes: ['detailed'],
       priority: 'conditional',
-      askIf: (a) => shouldShowInvestingDetail(a),
+      askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
     },
   },
   {
@@ -1562,7 +1326,9 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     type: 'single',
     section: 'investing',
     required: true,
-    conditions: [{ operator: 'custom', fn: (r) => shouldShowInvestingDetail(r) }],
+    conditions: [
+      { key: 'investingStatus', operator: 'in', value: ['yes_consistently', 'yes_irregularly'] },
+    ],
     options: [
       { value: 'very_confident', label: 'Very confident' },
       { value: 'somewhat_confident', label: 'Somewhat confident' },
@@ -1571,7 +1337,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     tags: {
       modes: ['detailed'],
       priority: 'conditional',
-      askIf: (a) => shouldShowInvestingDetail(a),
+      askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
     },
   },
   {
@@ -1657,25 +1423,14 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       conditions: [{ operator: 'custom', fn: () => false }],
     tags: { modes: ['detailed'], priority: 'conditional', askIf: () => false },},
     {
-      key: 'additionalAssetTypes',
-      question: 'Do you have crypto, individual stocks, or other assets we have not already covered?',
-      type: 'multiple',
+      key: 'otherAssets',
+      question: 'Other assets (optional)',
+      type: 'number',
       section: 'investing',
       required: false,
-      helperText:
-        'Use this only for assets not already counted above. Do not include anything already counted in your retirement or brokerage accounts above.',
-      conditions: [{ operator: 'custom', fn: (r) => shouldShowInvestingDetail(r) }],
-      options: [
-        { value: 'crypto', label: 'Crypto' },
-        { value: 'individual_stocks', label: 'Individual stocks held outside accounts above' },
-        { value: 'other_assets', label: 'Other assets' },
-        { value: 'none', label: 'None of these' },
-      ],
-      tags: {
-        modes: ['detailed'],
-        priority: 'conditional',
-        askIf: (a) => shouldShowInvestingDetail(a),
-      },
+      placeholder: 'e.g. 5000',
+      helperText: 'Anything valuable we have not included elsewhere.',
+      tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
     },
 
 {
@@ -1684,7 +1439,9 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
   type: 'single',
   section: 'investing',
   required: true,
-  conditions: [{ operator: 'custom', fn: (r) => shouldShowInvestingDetail(r) }],
+  conditions: [
+    { key: 'investingStatus', operator: 'in', value: ['yes_consistently', 'yes_irregularly'] },
+  ],
   options: [
     { value: 'diversified', label: 'Mostly retirement accounts / index funds' },
     { value: 'mixed', label: 'Mix of funds and individual stocks' },
@@ -1694,7 +1451,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
   tags: {
     modes: ['detailed'],
     priority: 'conditional',
-    askIf: (a) => shouldShowInvestingDetail(a),
+    askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
   },
 },
 
@@ -1727,8 +1484,6 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
         Boolean(a.rentalMortgage) ||
         Boolean(a.otherPropertyValue) ||
         Boolean(a.otherPropertyDebt) ||
-        Boolean(a.cryptoAssetValue) ||
-        Boolean(a.individualStockValue) ||
         Boolean(a.otherAssets)
       ),
   },
@@ -1815,28 +1570,18 @@ export function getVisibleQuestionsByMode(
   responses: Record<string, any>,
   mode: AssessmentMode = 'detailed'
 ): Question[] {
-  return questions
-    .map((question, index) => ({ question, index }))
-    .filter(({ question: q }) => {
-      const passesConditions = evaluateAllConditions(q.conditions || [], responses);
-      const passesMode = !q.tags?.modes || q.tags.modes.includes(mode);
-      const passesAskIf = !q.tags?.askIf || q.tags.askIf(responses);
+  return questions.filter((q) => {
+    const passesConditions = evaluateAllConditions(q.conditions || [], responses);
+    const passesMode = !q.tags?.modes || q.tags.modes.includes(mode);
+    const passesAskIf = !q.tags?.askIf || q.tags.askIf(responses);
 
-      const passesPriority =
-        mode === 'snapshot'
-          ? q.tags?.priority === 'core' || q.tags?.priority === 'conditional'
-          : true;
+    const passesPriority =
+      mode === 'snapshot'
+        ? q.tags?.priority === 'core' || q.tags?.priority === 'conditional'
+        : true;
 
-      return passesConditions && passesMode && passesAskIf && passesPriority;
-    })
-    .sort((a, b) => {
-      const aSection = a.question.section ?? 'context';
-      const bSection = b.question.section ?? 'context';
-      const aOrder = SECTION_SORT_ORDER[aSection] ?? 99;
-      const bOrder = SECTION_SORT_ORDER[bSection] ?? 99;
-      return aOrder === bOrder ? a.index - b.index : aOrder - bOrder;
-    })
-    .map(({ question }) => question);
+    return passesConditions && passesMode && passesAskIf && passesPriority;
+  });
 }
 
 export function getSnapshotQuestions(responses: Record<string, any> = {}) {
