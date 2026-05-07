@@ -160,9 +160,6 @@ export const QUESTION_STRATEGY = {
     'cashSavings',
     'otherAssets',
     'investmentMix',
-    'savingsAutomation',
-    'monthlySavingsContribution',
-    'monthlySavingsPercent',
     'creditCardDebt',
     'studentLoans',
     'personalLoans',
@@ -686,14 +683,15 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     question: 'How is your saving set up?',
     type: 'single',
     section: 'saving',
-    required: true,
+    required: false,
     options: [
       { value: 'fully_automated', label: 'Fully automated' },
       { value: 'partially_automated', label: 'Partially automated' },
       { value: 'manual', label: 'Manual transfers' },
       { value: 'not_saving', label: 'Not saving right now' },
     ],
-    tags: { modes: ['detailed'], priority: 'conditional' },
+    conditions: [{ operator: 'custom', fn: () => false }],
+    tags: { modes: ['detailed'], priority: 'conditional', askIf: () => false },
   },
 
   // DEBT
@@ -1433,7 +1431,8 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     required: false,
     placeholder: 'e.g. 500',
     helperText: 'Do not include investment contributions here. Use the amount that goes into savings or cash reserves each month.',
-    tags: { modes: ['detailed'], priority: 'conditional' },
+    conditions: [{ operator: 'custom', fn: () => false }],
+    tags: { modes: ['detailed'], priority: 'conditional', askIf: () => false },
   },
   {
     key: 'monthlySavingsPercent',
@@ -1443,7 +1442,8 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     required: false,
     placeholder: 'e.g. 10',
     helperText: 'Use this if you know your savings as a percent instead of a dollar amount. Leave blank if you already entered a monthly savings amount.',
-    tags: { modes: ['detailed'], priority: 'conditional' },
+    conditions: [{ operator: 'custom', fn: () => false }],
+    tags: { modes: ['detailed'], priority: 'conditional', askIf: () => false },
   },
 
   // INVESTING
@@ -1604,13 +1604,13 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     tags: { modes: ['detailed'], priority: 'conditional', askIf: () => false },},
     {
       key: 'otherAssets',
-      question: 'Other assets (optional)',
+      question: 'Crypto, single stocks, or other assets we have not already covered (optional)',
       type: 'number',
       section: 'investing',
       required: false,
       placeholder: 'e.g. 5000',
       helperText:
-        'Only include meaningful assets we have not already covered, like business value, collectibles, equipment, or other assets.',
+        'Use this as a catch-all for crypto, individual stocks held outside the accounts above, business value, collectibles, equipment, or other meaningful assets. If you already entered something in a brokerage or investment account above, do not include it again here.',
       tags: { modes: ['detailed'], priority: 'conditional', askIf: () => true },
     },
 

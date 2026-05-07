@@ -212,7 +212,7 @@ export default function NetWorthActivity({
             {ownsOtherProperty && (
               <InputCard tone="asset" icon={Landmark} label="Other Property Value" value={otherPropertyValue} onChange={setOtherPropertyValue} />
             )}
-            <InputCard tone="asset" icon={PiggyBank} label="Other Assets" value={otherAssets} onChange={setOtherAssets} />
+            <InputCard tone="asset" icon={PiggyBank} label="Crypto, Single Stocks & Other Assets" value={otherAssets} onChange={setOtherAssets} />
           </div>
         </div>
 
@@ -255,7 +255,7 @@ export default function NetWorthActivity({
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <p className="max-w-xl text-sm leading-6 text-slate-500">
-          Net worth shows whether your financial life is moving forward or backward. Even small improvements here can create momentum over time.
+          Net worth shows whether your financial life is moving forward or backward. Only include crypto, single stocks, or other assets here if they were not already included in your investment accounts above.
         </p>
 
         <button

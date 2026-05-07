@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type MouseEvent, type ReactElement } from 'react';
+import { useEffect, useMemo, useRef, useState, type MouseEvent, type ReactElement } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowRight,
@@ -402,6 +402,51 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
       },
     ],
   },
+  advancedProtection: {
+    umbrella: [
+      { key: 'umbrellaCoverageAmount', label: 'Umbrella policy amount', placeholder: 'e.g. 1000000', required: false },
+    ],
+    estate_documents: [
+      {
+        key: 'estateDocuments',
+        label: 'Will / estate documents',
+        type: 'select',
+        options: [
+          { value: 'complete', label: 'Complete and current' },
+          { value: 'partial', label: 'Some pieces are in place' },
+          { value: 'old_or_unsure', label: 'Old, outdated, or unsure' },
+          { value: 'none', label: 'None yet' },
+        ],
+      },
+    ],
+    trust: [
+      {
+        key: 'trustInPlace',
+        label: 'Trust',
+        type: 'select',
+        required: false,
+        options: [
+          { value: 'yes', label: 'Yes, I have one' },
+          { value: 'considered', label: 'I have considered it' },
+          { value: 'not_needed', label: 'Probably not needed right now' },
+          { value: 'not_sure', label: 'Not sure' },
+        ],
+      },
+    ],
+    beneficiaries: [
+      {
+        key: 'beneficiariesUpdated',
+        label: 'Beneficiaries on accounts',
+        type: 'select',
+        options: [
+          { value: 'yes', label: 'Reviewed recently' },
+          { value: 'mostly', label: 'Mostly, but worth checking' },
+          { value: 'no', label: 'No / probably outdated' },
+          { value: 'not_sure', label: 'Not sure' },
+        ],
+      },
+    ],
+  },
   investmentAccounts: {
     '401k': [
       { key: 'k401Balance', label: 'Current balance', placeholder: 'e.g. 85000' },
@@ -678,6 +723,13 @@ function getContinueModeQuestions(responses: Record<string, any>) {
     if (question.key === 'monthlyChildcareCost' || question.key === 'childcarePressure') {
       return false;
     }
+
+    // These savings details are collected together inside the savings card.
+    // Do not repeat them as standalone comprehensive questions.
+    if (['savingsAutomation', 'monthlySavingsContribution', 'monthlySavingsPercent'].includes(question.key)) {
+      return false;
+    }
+
     return !(snapshotKeys.has(question.key) && answered);
   });
 }
@@ -1939,6 +1991,21 @@ export default function ComprehensiveQuestionnaire() {
   const currentSectionLabel =
     getSectionLabel(currentQuestion?.section, currentQuestion?.key) ||
     currentSectionMeta.shortLabel;
+
+  const previousSectionRef = useRef(currentSectionKey);
+
+  useEffect(() => {
+    if (!currentQuestion || mode !== 'question') {
+      previousSectionRef.current = currentSectionKey;
+      return;
+    }
+
+    const previousSection = previousSectionRef.current;
+    if (previousSection && previousSection !== currentSectionKey) {
+      setMode('transition');
+    }
+    previousSectionRef.current = currentSectionKey;
+  }, [currentQuestion, currentSectionKey, mode]);
 
   useEffect(() => {
     const nextResponses = isContinueMode && baseContinueAnswers ? baseContinueAnswers : {};

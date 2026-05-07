@@ -55,6 +55,18 @@ function getProtectionLabel(value?: string) {
 }
 
 function getCoverageTier(months: number, hasDisability: boolean, singleIncomeRisk: boolean) {
+  if (months >= 12) {
+    return {
+      badge: 'Very strong runway',
+      tone: 'border-emerald-200 bg-emerald-50 text-emerald-950',
+      icon: <ShieldCheck className="h-5 w-5" />,
+      headline: 'Your emergency runway looks very strong',
+      body: hasDisability
+        ? 'Your savings runway and disability coverage give your household meaningful protection if income is interrupted.'
+        : 'Your savings runway is extremely strong. The main thing to review is whether disability coverage would protect your income without relying entirely on cash reserves.',
+    };
+  }
+
   if (months >= 6 && (hasDisability || !singleIncomeRisk)) {
     return {
       badge: 'Strong backup',
@@ -70,7 +82,7 @@ function getCoverageTier(months: number, hasDisability: boolean, singleIncomeRis
       badge: 'Decent backup',
       tone: 'border-amber-200 bg-amber-50 text-amber-950',
       icon: <ShieldCheck className="h-5 w-5" />,
-      headline: 'You have some protection, but there is room to strengthen it',
+      headline: 'You have some backup, but it is worth checking the protection layer',
       body: 'Your numbers show some backup. The next step is making sure savings, disability coverage, and household income risk are working together.',
     };
   }
