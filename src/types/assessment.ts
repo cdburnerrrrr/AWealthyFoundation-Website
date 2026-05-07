@@ -2510,77 +2510,40 @@ function calculateObligationPressure(a: Record<string, any>) {
 }
 
 
-function protectionCoverageIncludes(a: Record<string, any>, value: string) {
-  return Array.isArray(a.protectionCoverage) && a.protectionCoverage.includes(value);
-}
-
-function hasProtectionLayer(a: Record<string, any>, value: string, legacyKey?: string) {
-  if (protectionCoverageIncludes(a, value)) return true;
-  if (!legacyKey) return false;
-  const legacyValue = a[legacyKey];
-  if (legacyValue === true) return true;
-  if (typeof legacyValue !== 'string') return false;
-  return !['none', 'no_coverage', 'limited_coverage', 'minimal', 'minimum', 'not_sure', 'unsure'].includes(legacyValue);
-}
-
 function scoreProtection(a: Record<string, any>, mode: ScoringMode = 'detailed') {
-  const hasHealth = hasProtectionLayer(a, 'health', 'healthInsurance') || hasProtectionLayer(a, 'health', 'healthCoverage');
-  const hasAuto = hasProtectionLayer(a, 'auto', 'autoCoverage');
-  const hasProperty = hasProtectionLayer(a, 'home_or_renters', 'propertyCoverage');
-  const hasLife = hasProtectionLayer(a, 'life', 'lifeInsurance');
-  const hasDisability = hasProtectionLayer(a, 'disability', 'disabilityCoverage') || hasProtectionLayer(a, 'disability', 'incomeInterruptionCoverage');
-  const hasUmbrella = hasProtectionLayer(a, 'umbrella', 'umbrellaCoverageAmount');
-  const hasEstate = protectionCoverageIncludes(a, 'estate') || ['complete', 'partial'].includes(a.estateDocuments);
-  const beneficiariesUpdated = protectionCoverageIncludes(a, 'beneficiaries') || ['yes', 'mostly'].includes(a.beneficiariesUpdated);
-  const needsLife = hasDependents(a) || ['partnered', 'partnered_with_dependents'].includes(a.relationshipStatus) || a.housingStatus === 'own_with_mortgage';
-  const ownsProperty = ['own_with_mortgage', 'own_outright'].includes(a.housingStatus) ||
-    (Array.isArray(a.additionalPropertyOwnership) && !a.additionalPropertyOwnership.includes('none'));
-  const hasAssets = ['totalInvestments', 'k401Balance', 'iraBalance', 'rothBalance', 'brokerageBalance', 'hsaBalance', 'primaryHomeValue', 'rentalPropertyValue', 'otherPropertyValue']
-    .some((key) => toNumber(a[key]) >= 50000);
-  const needsEstate = hasDependents(a) || ['partnered', 'partnered_with_dependents'].includes(a.relationshipStatus) || ownsProperty || hasAssets;
-  const needsUmbrella = ownsProperty || hasDependents(a) || hasAssets;
-
   if (mode === 'snapshot') {
-    let s = 45;
+    let s = 50;
 
-    if (hasHealth) s += 12;
-    if (hasAuto || a.vehicleDebt === 'no_vehicle') s += 6;
-    if (hasProperty || a.housingStatus === 'living_with_family') s += 8;
-    if (hasDisability) s += 10;
-
-    if (needsLife) {
-      if (hasLife) s += 10;
-      else s -= hasDependents(a) ? 14 : 6;
-    }
-
-    if (needsEstate) {
-      if (hasEstate) s += 6;
-      if (beneficiariesUpdated) s += 4;
-    }
-
-    if (needsUmbrella && hasUmbrella) s += 4;
-
-    switch (a.incomeProtectionLevel) {
-      case 'well_protected':
-        s += 8;
+    switch (a.healthInsurance) {
+      case 'good_coverage':
+      case 'excellent':
+      case 'employer':
+      case 'private':
+      case 'government':
+      case 'through_spouse':
+        s += 20;
         break;
-      case 'somewhat_protected':
-        s += 2;
+      case 'basic_coverage':
+        s += 10;
         break;
-      case 'not_protected':
+      case 'limited_coverage':
         s -= 8;
+        break;
+      case 'none':
+      case 'no_coverage':
+        s -= 22;
         break;
     }
 
     switch (a.emergencyAccess) {
       case 'all':
-        s += 10;
+        s += 15;
         break;
       case 'most':
-        s += 7;
+        s += 10;
         break;
       case 'some':
-        s += 2;
+        s += 4;
         break;
       case 'very_little':
         s -= 8;
@@ -2589,47 +2552,117 @@ function scoreProtection(a: Record<string, any>, mode: ScoringMode = 'detailed')
 
     if (hasAnswer(a, 'totalLiquidSavings')) {
       const months = getEmergencyFundMonthsEstimate(a);
-      if (months >= 6) s += 10;
-      else if (months >= 3) s += 6;
-      else if (months >= 1) s += 1;
-      else s -= 8;
+      if (months >= 6) s += 12;
+      else if (months >= 3) s += 8;
+      else if (months >= 1) s += 2;
+      else s -= 10;
     }
 
     return clamp(Math.round(s));
   }
 
-  let s = 25;
+  let s = 0;
 
-  if (hasHealth) s += 15;
-  if (hasAuto || a.vehicleDebt === 'no_vehicle') s += 8;
-  if (hasProperty || a.housingStatus === 'living_with_family') s += 10;
-  if (hasDisability) s += 15;
-
-  if (needsLife) {
-    if (hasLife) s += 15;
-    else s -= hasDependents(a) ? 18 : 8;
-  } else if (hasLife) {
-    s += 5;
+  // Income interruption / resilience
+  switch (a.incomeInterruptionCoverage) {
+    case 'very_prepared':
+      s += 25;
+      break;
+    case 'somewhat_prepared':
+      s += 15;
+      break;
+    case 'not_prepared':
+      s += 2;
+      break;
+    default:
+      break;
   }
 
-  if (needsEstate) {
-    if (hasEstate) s += 10;
-    else s -= hasDependents(a) ? 12 : 7;
-
-    if (beneficiariesUpdated) s += 7;
-    else s -= 5;
+  // Health insurance
+  switch (a.healthInsurance) {
+    case 'good_coverage':
+      s += 20;
+      break;
+    case 'basic_coverage':
+      s += 12;
+      break;
+    case 'limited_coverage':
+      s += 5;
+      break;
+    case 'none':
+      s += 0;
+      break;
+    default:
+      break;
   }
 
-  if (needsUmbrella) {
-    if (hasUmbrella) s += 8;
-    else if (hasAssets || hasDependents(a)) s -= 5;
+  // Property / renter coverage
+  // If living with family, this question is not asked, so don't penalize.
+  if (a.housingStatus === 'living_with_family') {
+    s += 10;
+  } else {
+    switch (a.propertyCoverage) {
+      case 'solid':
+        s += 15;
+        break;
+      case 'basic':
+        s += 10;
+        break;
+      case 'minimal':
+        s += 4;
+        break;
+      case 'none':
+        s += 0;
+        break;
+      default:
+        break;
+    }
   }
 
-  if (['limited', 'none', 'limited_coverage', 'no_coverage'].includes(a.healthCoverage || a.healthInsurance)) s -= 8;
-  if (['none', 'unsure'].includes(a.disabilityCoverage)) s -= 8;
-  if (['minimal', 'none', 'no_coverage', 'underinsured'].includes(a.propertyCoverage)) s -= 7;
-  if (['minimal', 'minimum'].includes(a.autoCoverage)) s -= 5;
-  if (['none', 'old_or_unsure'].includes(a.estateDocuments)) s -= 6;
+  // Auto coverage
+  // If no vehicle, don't penalize.
+  if (a.vehicleDebt === 'no_vehicle') {
+    s += 10;
+  } else {
+    switch (a.autoCoverage) {
+      case 'full':
+        s += 15;
+        break;
+      case 'basic':
+        s += 10;
+        break;
+      case 'minimal':
+        s += 4;
+        break;
+      case 'minimum':
+        s += 1;
+        break;
+      case 'do_not_drive':
+        s += 10;
+        break;
+      default:
+        break;
+    }
+  }
+
+  // Life insurance only matters if others depend on the user's income
+  if (hasDependents(a)) {
+    switch (a.lifeInsurance) {
+      case 'enough':
+        s += 15;
+        break;
+      case 'some':
+        s += 7;
+        break;
+      case 'none':
+        s += 0;
+        break;
+      default:
+        break;
+    }
+  } else {
+    s += 15;
+  }
 
   return clamp(Math.round(s));
 }

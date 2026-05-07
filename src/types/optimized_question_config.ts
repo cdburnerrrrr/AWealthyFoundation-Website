@@ -12,75 +12,6 @@ export type QuestionTag = {
 // Add this to your existing Question interface:
 // tags?: QuestionTag;
 
-
-const SECTION_SORT_ORDER: Record<string, number> = {
-  foundation: 0,
-  context: 0,
-  income: 1,
-  spending: 2,
-  saving: 3,
-  debt: 4,
-  investing: 5,
-  protection: 6,
-  vision: 7,
-};
-
-function hasDependents(answers: Record<string, any>) {
-  return ['single_with_dependents', 'partnered_with_dependents'].includes(answers.relationshipStatus);
-}
-
-function hasPartner(answers: Record<string, any>) {
-  return ['partnered', 'partnered_with_dependents'].includes(answers.relationshipStatus);
-}
-
-function ownsPrimaryHome(answers: Record<string, any>) {
-  return ['own_with_mortgage', 'own_outright'].includes(answers.housingStatus);
-}
-
-function ownsAdditionalProperty(answers: Record<string, any>) {
-  return (
-    Array.isArray(answers.additionalPropertyOwnership) &&
-    (answers.additionalPropertyOwnership.includes('rental_property') ||
-      answers.additionalPropertyOwnership.includes('other_property'))
-  );
-}
-
-function hasMeaningfulAssets(answers: Record<string, any>) {
-  const numericKeys = [
-    'totalInvestments',
-    'k401Balance',
-    'iraBalance',
-    'rothBalance',
-    'brokerageBalance',
-    'hsaBalance',
-    'otherInvestmentAssets',
-    'primaryHomeValue',
-    'rentalPropertyValue',
-    'otherPropertyValue',
-    'otherAssets',
-  ];
-
-  return numericKeys.some((key) => Number(String(answers[key] ?? '').replace(/[^\d.-]/g, '')) >= 50000);
-}
-
-function shouldAskLifeInsuranceDepth(answers: Record<string, any>) {
-  return hasDependents(answers) || hasPartner(answers) || answers.housingStatus === 'own_with_mortgage';
-}
-
-function shouldAskEstatePlanning(answers: Record<string, any>) {
-  return (
-    hasDependents(answers) ||
-    hasPartner(answers) ||
-    ownsPrimaryHome(answers) ||
-    ownsAdditionalProperty(answers) ||
-    hasMeaningfulAssets(answers)
-  );
-}
-
-function shouldAskUmbrella(answers: Record<string, any>) {
-  return ownsPrimaryHome(answers) || ownsAdditionalProperty(answers) || hasMeaningfulAssets(answers) || hasDependents(answers);
-}
-
 export const QUESTION_STRATEGY = {
   snapshotCore: [
     'ageRange',
@@ -129,9 +60,6 @@ export const QUESTION_STRATEGY = {
     'autoCoverage',
     'disabilityCoverage',
     'umbrellaCoverageAmount',
-    'estateDocuments',
-    'beneficiariesUpdated',
-    'trustInPlace',
     'investmentAccounts',
     'investmentConfidence',
     'investmentMix',
@@ -508,8 +436,9 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     helperText: 'This counts as a must-pay monthly cost and is included in fixed cost load and monthly margin.',
     conditions: [
       {
-        operator: 'custom',
-        fn: (r) => shouldAskLifeInsuranceDepth(r),
+        key: 'relationshipStatus',
+        operator: 'in',
+        value: ['single_with_dependents', 'partnered_with_dependents'],
       },
     ],
     tags: {
@@ -1125,9 +1054,9 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
 
   {
     key: 'protectionCoverage',
-    question: 'Based on your situation, which protection layers do you already have?',
+    question: 'Which insurance protections do you currently have in place?',
     helperText:
-      'We’ll narrow this around what you’ve already told us: household, property, savings, debt, and investments. Check what applies; leave anything unchecked if you do not have it or are unsure.',
+      'Check everything that applies. This is a quick snapshot, not a full policy review. Leave anything unchecked if you do not have it or are unsure.',
     type: 'multiple',
     section: 'protection',
     required: true,
@@ -1137,9 +1066,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       { value: 'home_or_renters', label: 'Homeowners / renters insurance' },
       { value: 'life', label: 'Life insurance' },
       { value: 'disability', label: 'Disability / income protection' },
-      { value: 'umbrella', label: 'Umbrella liability policy' },
-      { value: 'estate', label: 'Will / trust / estate documents' },
-      { value: 'beneficiaries', label: 'Beneficiaries reviewed on accounts' },
+      { value: 'umbrella', label: 'Umbrella policy' },
       { value: 'none', label: 'None of these / not sure' },
     ],
     tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
@@ -1153,14 +1080,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     required: false,
     placeholder: 'e.g. 1000000',
     helperText: 'Use the policy limit if you know it. A best estimate is fine.',
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) =>
-        Array.isArray(a.protectionCoverage) &&
-        a.protectionCoverage.includes('umbrella') &&
-        shouldAskUmbrella(a),
-    },
+    tags: { modes: ['detailed'], priority: 'conditional' },
   },
 
   {
@@ -1210,42 +1130,6 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     tags: { modes: ['snapshot', 'detailed'], priority: 'core', askIf: () => false },
   },
   {
-    key: 'healthCoverage',
-    question: 'How solid does your health insurance feel?',
-    type: 'single',
-    section: 'protection',
-    required: true,
-    options: [
-      { value: 'solid', label: 'Solid coverage for normal needs' },
-      { value: 'basic', label: 'Basic coverage, but higher costs could hurt' },
-      { value: 'limited', label: 'Limited or uncertain coverage' },
-      { value: 'none', label: 'No health coverage' },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) => Array.isArray(a.protectionCoverage) && a.protectionCoverage.includes('health'),
-    },
-  },
-  {
-    key: 'disabilityCoverage',
-    question: 'How protected is your income if you could not work for a while?',
-    type: 'single',
-    section: 'protection',
-    required: true,
-    options: [
-      { value: 'strong', label: 'Strong disability or income protection' },
-      { value: 'employer_basic', label: 'Some coverage through work' },
-      { value: 'unsure', label: 'Not sure what I have' },
-      { value: 'none', label: 'No disability coverage' },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) => Array.isArray(a.protectionCoverage) && a.protectionCoverage.includes('disability'),
-    },
-  },
-  {
     key: 'lifeInsurance',
     question: 'Do you have enough life insurance for the people who depend on you?',
     type: 'single',
@@ -1253,8 +1137,9 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     required: true,
     conditions: [
       {
-        operator: 'custom',
-        fn: (r) => shouldAskLifeInsuranceDepth(r),
+        key: 'relationshipStatus',
+        operator: 'in',
+        value: ['single_with_dependents', 'partnered_with_dependents'],
       },
     ],
     options: [
@@ -1268,7 +1153,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       askIf: (a) =>
         Array.isArray(a.protectionCoverage) &&
         a.protectionCoverage.includes('life') &&
-        shouldAskLifeInsuranceDepth(a),
+        ['single_with_dependents', 'partnered_with_dependents'].includes(a.relationshipStatus),
     },
   },
   {
@@ -1317,64 +1202,6 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     },
   },
 
-
-
-  {
-    key: 'estateDocuments',
-    question: 'Do you have basic estate documents in place?',
-    type: 'single',
-    section: 'protection',
-    required: true,
-    helperText:
-      'This usually means a will, powers of attorney, guardianship direction if you have children, or a trust if your situation is more complex.',
-    options: [
-      { value: 'complete', label: 'Yes, complete and current' },
-      { value: 'partial', label: 'Some pieces are in place' },
-      { value: 'old_or_unsure', label: 'Old, outdated, or unsure' },
-      { value: 'none', label: 'No estate documents yet' },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) => shouldAskEstatePlanning(a),
-    },
-  },
-  {
-    key: 'beneficiariesUpdated',
-    question: 'Are your beneficiaries up to date on retirement, investment, and insurance accounts?',
-    type: 'single',
-    section: 'protection',
-    required: true,
-    options: [
-      { value: 'yes', label: 'Yes, reviewed recently' },
-      { value: 'mostly', label: 'Mostly, but worth checking' },
-      { value: 'no', label: 'No / probably outdated' },
-      { value: 'not_sure', label: 'Not sure' },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) => shouldAskEstatePlanning(a),
-    },
-  },
-  {
-    key: 'trustInPlace',
-    question: 'Do you have, or have you considered, a trust for more complex assets or family needs?',
-    type: 'single',
-    section: 'protection',
-    required: false,
-    options: [
-      { value: 'yes', label: 'Yes, I have one' },
-      { value: 'considered', label: 'I have considered it' },
-      { value: 'not_needed', label: 'Probably not needed right now' },
-      { value: 'not_sure', label: 'Not sure' },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) => ownsAdditionalProperty(a) || hasMeaningfulAssets(a) || (hasDependents(a) && ownsPrimaryHome(a)),
-    },
-  },
 
   {
     key: 'monthlySavingsContribution',
@@ -1701,28 +1528,18 @@ export function getVisibleQuestionsByMode(
   responses: Record<string, any>,
   mode: AssessmentMode = 'detailed'
 ): Question[] {
-  return questions
-    .map((question, index) => ({ question, index }))
-    .filter(({ question: q }) => {
-      const passesConditions = evaluateAllConditions(q.conditions || [], responses);
-      const passesMode = !q.tags?.modes || q.tags.modes.includes(mode);
-      const passesAskIf = !q.tags?.askIf || q.tags.askIf(responses);
+  return questions.filter((q) => {
+    const passesConditions = evaluateAllConditions(q.conditions || [], responses);
+    const passesMode = !q.tags?.modes || q.tags.modes.includes(mode);
+    const passesAskIf = !q.tags?.askIf || q.tags.askIf(responses);
 
-      const passesPriority =
-        mode === 'snapshot'
-          ? q.tags?.priority === 'core' || q.tags?.priority === 'conditional'
-          : true;
+    const passesPriority =
+      mode === 'snapshot'
+        ? q.tags?.priority === 'core' || q.tags?.priority === 'conditional'
+        : true;
 
-      return passesConditions && passesMode && passesAskIf && passesPriority;
-    })
-    .sort((a, b) => {
-      const aSection = a.question.section ?? 'context';
-      const bSection = b.question.section ?? 'context';
-      const aOrder = SECTION_SORT_ORDER[aSection] ?? 99;
-      const bOrder = SECTION_SORT_ORDER[bSection] ?? 99;
-      return aOrder === bOrder ? a.index - b.index : aOrder - bOrder;
-    })
-    .map(({ question }) => question);
+    return passesConditions && passesMode && passesAskIf && passesPriority;
+  });
 }
 
 export function getSnapshotQuestions(responses: Record<string, any> = {}) {
