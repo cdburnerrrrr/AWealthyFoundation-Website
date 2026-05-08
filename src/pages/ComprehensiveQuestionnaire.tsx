@@ -718,7 +718,14 @@ function getContinueModeQuestions(responses: Record<string, any>) {
 
   return detailed.filter((question) => {
     const answered = isAnswered(question, responses[question.key]);
-    const invests = ['yes_consistently', 'yes_irregularly'].includes(String(responses.investingStatus ?? ''));
+    const invests = [
+      'yes_consistently',
+      'yes_irregularly',
+      'yes',
+      'investing',
+      'currently_investing',
+      'started',
+    ].includes(String(responses.investingStatus ?? ''));
     const investingDetailKeys = new Set([
       'investmentAccounts',
       'investmentConfidence',
@@ -732,6 +739,10 @@ function getContinueModeQuestions(responses: Record<string, any>) {
       'otherAssetContribution',
       'netWorthEntry',
     ]);
+
+    // Always show the additional-assets catch-all before net worth so users can add crypto,
+    // individual stocks held outside accounts above, or other assets without double counting.
+    if (question.key === 'additionalAssetTypes') return invests;
 
     // Snapshot only establishes whether the user invests. The full assessment must still
     // collect the account-level breakdown, balances, contributions, and 401(k) match details.
@@ -1854,10 +1865,9 @@ type ActivityStepProps = {
   activityKey: ActivityKey;
   responses: Record<string, any>;
   onComplete: (updates?: Record<string, any>) => void;
-  onBack: () => void;
 };
 
-function ActivityStep({ activityKey, responses, onComplete, onBack }: ActivityStepProps) {
+function ActivityStep({ activityKey, responses, onComplete }: ActivityStepProps) {
   const activityMap: Record<ActivityKey, React.ReactNode> = {
     fixedCostPressureReview: (
       <FixedCostPressureActivity
@@ -1926,20 +1936,7 @@ function ActivityStep({ activityKey, responses, onComplete, onBack }: ActivitySt
     ),
   };
 
-  return (
-    <div className="space-y-4">
-      <button
-        type="button"
-        onClick={onBack}
-        className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-gray-50"
-      >
-        <ChevronLeft className="h-4 w-4" />
-        Back
-      </button>
-
-      {activityMap[activityKey]}
-    </div>
-  );
+  return <>{activityMap[activityKey]}</>;
 }
 
 export default function ComprehensiveQuestionnaire() {
@@ -2383,7 +2380,6 @@ export default function ComprehensiveQuestionnaire() {
               activityKey={currentQuestion.key as ActivityKey}
               responses={responses}
               onComplete={completeActivity}
-              onBack={goBack}
             />
           ) : (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-8">
