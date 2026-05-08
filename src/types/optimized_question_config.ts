@@ -1303,7 +1303,10 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     section: 'investing',
     required: true,
     conditions: [
-      { key: 'investingStatus', operator: 'in', value: ['yes_consistently', 'yes_irregularly'] },
+      {
+        operator: 'custom',
+        fn: (r) => r.investingStatus !== 'not_yet',
+      },
     ],
     options: [
       { value: '401k', label: '401(k) / workplace plan' },
@@ -1317,7 +1320,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     tags: {
       modes: ['detailed'],
       priority: 'conditional',
-      askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
+      askIf: (a) => a.investingStatus !== 'not_yet',
     },
   },
   {
