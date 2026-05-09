@@ -366,7 +366,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     section: 'income',
     required: true,
     placeholder: 'e.g. 5000',
-    helperText: 'Use take-home pay, not gross income. Do not include and Rental Income',
+    helperText: 'Use take-home pay, not gross income. Do not include any Rental Income here.',
     tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
   },
   {
