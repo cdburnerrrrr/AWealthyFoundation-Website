@@ -12,75 +12,6 @@ export type QuestionTag = {
 // Add this to your existing Question interface:
 // tags?: QuestionTag;
 
-
-const SECTION_SORT_ORDER: Record<string, number> = {
-  foundation: 0,
-  context: 0,
-  income: 1,
-  spending: 2,
-  saving: 3,
-  debt: 4,
-  investing: 5,
-  protection: 6,
-  vision: 7,
-};
-
-function hasDependents(answers: Record<string, any>) {
-  return ['single_with_dependents', 'partnered_with_dependents'].includes(answers.relationshipStatus);
-}
-
-function hasPartner(answers: Record<string, any>) {
-  return ['partnered', 'partnered_with_dependents'].includes(answers.relationshipStatus);
-}
-
-function ownsPrimaryHome(answers: Record<string, any>) {
-  return ['own_with_mortgage', 'own_outright'].includes(answers.housingStatus);
-}
-
-function ownsAdditionalProperty(answers: Record<string, any>) {
-  return (
-    Array.isArray(answers.additionalPropertyOwnership) &&
-    (answers.additionalPropertyOwnership.includes('rental_property') ||
-      answers.additionalPropertyOwnership.includes('other_property'))
-  );
-}
-
-function hasMeaningfulAssets(answers: Record<string, any>) {
-  const numericKeys = [
-    'totalInvestments',
-    'k401Balance',
-    'iraBalance',
-    'rothBalance',
-    'brokerageBalance',
-    'hsaBalance',
-    'otherInvestmentAssets',
-    'primaryHomeValue',
-    'rentalPropertyValue',
-    'otherPropertyValue',
-    'otherAssets',
-  ];
-
-  return numericKeys.some((key) => Number(String(answers[key] ?? '').replace(/[^\d.-]/g, '')) >= 50000);
-}
-
-function shouldAskLifeInsuranceDepth(answers: Record<string, any>) {
-  return hasDependents(answers) || hasPartner(answers) || answers.housingStatus === 'own_with_mortgage';
-}
-
-function shouldAskEstatePlanning(answers: Record<string, any>) {
-  return (
-    hasDependents(answers) ||
-    hasPartner(answers) ||
-    ownsPrimaryHome(answers) ||
-    ownsAdditionalProperty(answers) ||
-    hasMeaningfulAssets(answers)
-  );
-}
-
-function shouldAskUmbrella(answers: Record<string, any>) {
-  return ownsPrimaryHome(answers) || ownsAdditionalProperty(answers) || hasMeaningfulAssets(answers) || hasDependents(answers);
-}
-
 export const QUESTION_STRATEGY = {
   snapshotCore: [
     'ageRange',
@@ -104,7 +35,6 @@ export const QUESTION_STRATEGY = {
     'debtManageability',
     'progressPriority',
     'debtPaydownStrategy',
-    'incomeProtectionLevel',
     'protectionCoverage',
     'investingStatus',
     'financialDirection',
@@ -129,9 +59,7 @@ export const QUESTION_STRATEGY = {
     'autoCoverage',
     'disabilityCoverage',
     'umbrellaCoverageAmount',
-    'estateDocuments',
-    'beneficiariesUpdated',
-    'trustInPlace',
+    'advancedProtection',
     'investmentAccounts',
     'investmentConfidence',
     'investmentMix',
@@ -189,7 +117,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     key: 'ageRange',
     question: 'What is your age range?',
     type: 'single',
-    section: 'vision',
+    section: 'context',
     required: true,
     options: [
       { value: 'under_25', label: 'Under 25' },
@@ -204,7 +132,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     key: 'relationshipStatus',
     question: 'What best describes your household?',
     type: 'single',
-    section: 'vision',
+    section: 'context',
     required: true,
     options: [
       { value: 'single', label: 'Single' },
@@ -509,7 +437,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     conditions: [
       {
         operator: 'custom',
-        fn: (r) => shouldAskLifeInsuranceDepth(r),
+        fn: (r) => Array.isArray(r.protectionCoverage) && r.protectionCoverage.includes('life'),
       },
     ],
     tags: {
@@ -613,20 +541,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
   tags: {
     modes: ['detailed'],
     priority: 'conditional',
-    askIf: (a) =>
-      Number(String(a.monthlyTakeHomeIncome ?? '').replace(/[^\d.-]/g, '')) > 0 &&
-      (
-        Number(String(a.monthlyHousingCost ?? '').replace(/[^\d.-]/g, '')) > 0 ||
-        Number(String(a.monthlyUtilities ?? '').replace(/[^\d.-]/g, '')) > 0 ||
-        Number(String(a.monthlyChildcareCost ?? '').replace(/[^\d.-]/g, '')) > 0 ||
-        Number(String(a.monthlyVehiclePayment ?? '').replace(/[^\d.-]/g, '')) > 0 ||
-        Number(String(a.creditCardPayment ?? '').replace(/[^\d.-]/g, '')) > 0 ||
-        Number(String(a.studentLoanPayment ?? '').replace(/[^\d.-]/g, '')) > 0 ||
-        Number(String(a.personalLoanPayment ?? '').replace(/[^\d.-]/g, '')) > 0 ||
-        Number(String(a.bnplPayment ?? '').replace(/[^\d.-]/g, '')) > 0 ||
-        Number(String(a.paydayPayment ?? '').replace(/[^\d.-]/g, '')) > 0 ||
-        Number(String(a.medicalDebtPayment ?? '').replace(/[^\d.-]/g, '')) > 0
-      ),
+    askIf: () => false,
   },
 },
 {
@@ -1034,21 +949,6 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     },
   },
   {
-    key: 'unexpectedExpenseHandling',
-    question: 'If a $1,000 expense hit this month, what would you most likely do?',
-    type: 'single',
-    section: 'protection',
-    required: true,
-    options: [
-      { value: 'savings', label: 'Use savings' },
-      { value: 'credit', label: 'Use credit' },
-      { value: 'adjust', label: 'Cut other spending and work around it' },
-      { value: 'family', label: 'Rely on family or someone else' },
-      { value: 'uncertain', label: 'I’m not really sure' },
-    ],
-    tags: { modes: ['detailed'], priority: 'core' },
-  },
-  {
     key: 'debtManageability',
     question: 'How manageable does your debt feel right now?',
     type: 'single',
@@ -1118,298 +1018,6 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
   // Replaced by V2 real estate fields above.
 
 
-  // PROTECTION
-
-  {
-    key: 'incomeProtectionLevel',
-    question: 'If your income stopped tomorrow, how protected would you feel?',
-    type: 'single',
-    section: 'protection',
-    required: true,
-    helperText:
-      'Your income is the engine that drives most households. If it stops, everything else is affected. In the full assessment, we will compare this feeling to your real savings and must-pay monthly bills.',
-    options: [
-      { value: 'well_protected', label: 'Well protected' },
-      { value: 'somewhat_protected', label: 'Somewhat protected' },
-      { value: 'not_protected', label: 'Not protected' },
-    ],
-    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
-  },
-
-  {
-    key: 'protectionCoverage',
-    question: 'Based on your situation, which protection layers do you already have?',
-    helperText:
-      'We’ll narrow this around what you’ve already told us: household, property, savings, debt, and investments. Check what applies; leave anything unchecked if you do not have it or are unsure.',
-    type: 'multiple',
-    section: 'protection',
-    required: true,
-    options: [
-      { value: 'health', label: 'Health insurance' },
-      { value: 'auto', label: 'Auto insurance' },
-      { value: 'home_or_renters', label: 'Homeowners / renters insurance' },
-      { value: 'life', label: 'Life insurance' },
-      { value: 'disability', label: 'Disability / income protection' },
-      { value: 'umbrella', label: 'Umbrella liability policy' },
-      { value: 'estate', label: 'Will / trust / estate documents' },
-      { value: 'beneficiaries', label: 'Beneficiaries reviewed on accounts' },
-      { value: 'none', label: 'None of these / not sure' },
-    ],
-    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
-  },
-
-  {
-    key: 'umbrellaCoverageAmount',
-    question: 'How much umbrella liability coverage do you have?',
-    type: 'number',
-    section: 'protection',
-    required: false,
-    placeholder: 'e.g. 1000000',
-    helperText: 'Use the policy limit if you know it. A best estimate is fine.',
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) =>
-        Array.isArray(a.protectionCoverage) &&
-        a.protectionCoverage.includes('umbrella') &&
-        shouldAskUmbrella(a),
-    },
-  },
-
-  {
-    key: 'incomeProtectionRealityCheck',
-    question: 'See your income protection reality check',
-    type: 'single',
-    section: 'protection',
-    required: false,
-    helperText:
-      'This uses the savings and monthly obligation numbers you already entered to show how long your household could cover must-pay bills if income stopped.',
-    options: [{ value: 'review', label: 'Show me the reality check' }],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: () => true,
-    },
-  },
-
-  // Legacy compatibility fields. These are no longer shown as standalone questions.
-  {
-    key: 'incomeInterruptionCoverage',
-    question: 'If your income stopped for a while, how prepared would you be?',
-    type: 'single',
-    section: 'protection',
-    required: false,
-    options: [
-      { value: 'very_prepared', label: 'Very prepared' },
-      { value: 'somewhat_prepared', label: 'Somewhat prepared' },
-      { value: 'not_prepared', label: 'Not prepared' },
-    ],
-    conditions: [{ operator: 'custom', fn: () => false }],
-    tags: { modes: ['detailed'], priority: 'conditional', askIf: () => false },
-  },
-  {
-    key: 'healthInsurance',
-    question: 'Do you have health insurance coverage?',
-    type: 'single',
-    section: 'protection',
-    required: false,
-    options: [
-      { value: 'good_coverage', label: 'Yes, solid coverage' },
-      { value: 'basic_coverage', label: 'Yes, basic coverage' },
-      { value: 'limited_coverage', label: 'Limited coverage' },
-      { value: 'none', label: 'No coverage' },
-    ],
-    conditions: [{ operator: 'custom', fn: () => false }],
-    tags: { modes: ['snapshot', 'detailed'], priority: 'core', askIf: () => false },
-  },
-  {
-    key: 'healthCoverage',
-    question: 'How solid does your health insurance feel?',
-    type: 'single',
-    section: 'protection',
-    required: true,
-    options: [
-      { value: 'solid', label: 'Solid coverage for normal needs' },
-      { value: 'basic', label: 'Basic coverage, but higher costs could hurt' },
-      { value: 'limited', label: 'Limited or uncertain coverage' },
-      { value: 'none', label: 'No health coverage' },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) => Array.isArray(a.protectionCoverage) && a.protectionCoverage.includes('health'),
-    },
-  },
-  {
-    key: 'disabilityCoverage',
-    question: 'How protected is your income if you could not work for a while?',
-    type: 'single',
-    section: 'protection',
-    required: true,
-    options: [
-      { value: 'strong', label: 'Strong disability or income protection' },
-      { value: 'employer_basic', label: 'Some coverage through work' },
-      { value: 'unsure', label: 'Not sure what I have' },
-      { value: 'none', label: 'No disability coverage' },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) => Array.isArray(a.protectionCoverage) && a.protectionCoverage.includes('disability'),
-    },
-  },
-  {
-    key: 'lifeInsurance',
-    question: 'Do you have enough life insurance for the people who depend on you?',
-    type: 'single',
-    section: 'protection',
-    required: true,
-    conditions: [
-      {
-        operator: 'custom',
-        fn: (r) => shouldAskLifeInsuranceDepth(r),
-      },
-    ],
-    options: [
-      { value: 'enough', label: 'Yes, enough coverage' },
-      { value: 'some', label: 'Some, but probably not enough' },
-      { value: 'none', label: 'No life insurance' },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) =>
-        Array.isArray(a.protectionCoverage) &&
-        a.protectionCoverage.includes('life') &&
-        shouldAskLifeInsuranceDepth(a),
-    },
-  },
-  {
-    key: 'propertyCoverage',
-    question: 'How would you describe your homeowners or renters coverage?',
-    type: 'single',
-    section: 'protection',
-    required: true,
-    conditions: [{ key: 'housingStatus', operator: 'not_equals', value: 'living_with_family' }],
-    options: [
-      { value: 'solid', label: 'Solid coverage' },
-      { value: 'basic', label: 'Basic coverage' },
-      { value: 'minimal', label: 'Minimal / unsure' },
-      { value: 'none', label: 'No coverage' },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) =>
-        Array.isArray(a.protectionCoverage) &&
-        a.protectionCoverage.includes('home_or_renters') &&
-        a.housingStatus !== 'living_with_family',
-    },
-  },
-  {
-    key: 'autoCoverage',
-    question: 'How would you describe your auto insurance coverage?',
-    type: 'single',
-    section: 'protection',
-    required: true,
-    conditions: [{ key: 'vehicleDebt', operator: 'not_equals', value: 'no_vehicle' }],
-    options: [
-      { value: 'full', label: 'Full coverage' },
-      { value: 'basic', label: 'Basic but reasonable' },
-      { value: 'minimal', label: 'Minimal' },
-      { value: 'minimum', label: 'State minimum only' },
-      { value: 'do_not_drive', label: 'Do not drive / not applicable' },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) =>
-        Array.isArray(a.protectionCoverage) &&
-        a.protectionCoverage.includes('auto') &&
-        a.vehicleDebt !== 'no_vehicle',
-    },
-  },
-
-
-
-  {
-    key: 'estateDocuments',
-    question: 'Do you have basic estate documents in place?',
-    type: 'single',
-    section: 'protection',
-    required: true,
-    helperText:
-      'This usually means a will, powers of attorney, guardianship direction if you have children, or a trust if your situation is more complex.',
-    options: [
-      { value: 'complete', label: 'Yes, complete and current' },
-      { value: 'partial', label: 'Some pieces are in place' },
-      { value: 'old_or_unsure', label: 'Old, outdated, or unsure' },
-      { value: 'none', label: 'No estate documents yet' },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) => shouldAskEstatePlanning(a),
-    },
-  },
-  {
-    key: 'beneficiariesUpdated',
-    question: 'Are your beneficiaries up to date on retirement, investment, and insurance accounts?',
-    type: 'single',
-    section: 'protection',
-    required: true,
-    options: [
-      { value: 'yes', label: 'Yes, reviewed recently' },
-      { value: 'mostly', label: 'Mostly, but worth checking' },
-      { value: 'no', label: 'No / probably outdated' },
-      { value: 'not_sure', label: 'Not sure' },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) => shouldAskEstatePlanning(a),
-    },
-  },
-  {
-    key: 'trustInPlace',
-    question: 'Do you have, or have you considered, a trust for more complex assets or family needs?',
-    type: 'single',
-    section: 'protection',
-    required: false,
-    options: [
-      { value: 'yes', label: 'Yes, I have one' },
-      { value: 'considered', label: 'I have considered it' },
-      { value: 'not_needed', label: 'Probably not needed right now' },
-      { value: 'not_sure', label: 'Not sure' },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) => ownsAdditionalProperty(a) || hasMeaningfulAssets(a) || (hasDependents(a) && ownsPrimaryHome(a)),
-    },
-  },
-
-  {
-    key: 'monthlySavingsContribution',
-    question: 'About how much do you intentionally save each month?',
-    type: 'number',
-    section: 'saving',
-    required: false,
-    placeholder: 'e.g. 500',
-    helperText: 'Do not include investment contributions here. Use the amount that goes into savings or cash reserves each month.',
-    tags: { modes: ['detailed'], priority: 'conditional' },
-  },
-  {
-    key: 'monthlySavingsPercent',
-    question: 'What percentage of your take-home pay do you save each month?',
-    type: 'number',
-    section: 'saving',
-    required: false,
-    placeholder: 'e.g. 10',
-    helperText: 'Use this if you know your savings as a percent instead of a dollar amount. Leave blank if you already entered a monthly savings amount.',
-    tags: { modes: ['detailed'], priority: 'conditional' },
-  },
-
   // INVESTING
   {
     key: 'investingStatus',
@@ -1447,7 +1055,10 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     section: 'investing',
     required: true,
     conditions: [
-      { key: 'investingStatus', operator: 'in', value: ['yes_consistently', 'yes_irregularly'] },
+      {
+        operator: 'custom',
+        fn: (r) => r.investingStatus !== 'not_yet',
+      },
     ],
     options: [
       { value: '401k', label: '401(k) / workplace plan' },
@@ -1461,7 +1072,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     tags: {
       modes: ['detailed'],
       priority: 'conditional',
-      askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
+      askIf: (a) => a.investingStatus !== 'not_yet',
     },
   },
   {
@@ -1573,8 +1184,8 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       section: 'investing',
       required: false,
       placeholder: 'e.g. 5000',
-      helperText: 'Anything valuable we have not included elsewhere. Do not include anything already counted in your retirement or brokerage accounts above.',
-      tags: { modes: ['detailed'], priority: 'conditional', askIf: () => true },
+      helperText: 'Anything valuable we have not included elsewhere.',
+      tags: { modes: ['detailed'], priority: 'conditional' },
     },
 
 {
@@ -1598,6 +1209,289 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     askIf: (a) => ['yes_consistently', 'yes_irregularly'].includes(a.investingStatus),
   },
 },
+
+
+  // PROTECTION
+
+  {
+    key: 'unexpectedExpenseHandling',
+    question: 'If a $1,000 expense hit this month, what would you most likely do?',
+    type: 'single',
+    section: 'protection',
+    required: true,
+    options: [
+      { value: 'savings', label: 'Use savings' },
+      { value: 'credit', label: 'Use credit' },
+      { value: 'adjust', label: 'Cut other spending and work around it' },
+      { value: 'family', label: 'Rely on family or someone else' },
+      { value: 'uncertain', label: 'I’m not really sure' },
+    ],
+    tags: { modes: ['detailed'], priority: 'core' },
+  },
+  {
+    key: 'incomeProtectionLevel',
+    question: 'If your income stopped tomorrow, how protected would you feel?',
+    type: 'single',
+    section: 'protection',
+    required: true,
+    helperText:
+      'Your income is the engine that drives most households. If it stops, everything else is affected. In the full assessment, we will compare this feeling to your real savings and must-pay monthly bills.',
+    options: [
+      { value: 'well_protected', label: 'Well protected' },
+      { value: 'somewhat_protected', label: 'Somewhat protected' },
+      { value: 'not_protected', label: 'Not protected' },
+    ],
+    tags: { modes: ['detailed'], priority: 'core' },
+  },
+
+  {
+    key: 'protectionCoverage',
+    question: 'Which insurance protections do you currently have in place?',
+    helperText:
+      'Check everything that applies. This is a quick snapshot, not a full policy review. Leave anything unchecked if you do not have it or are unsure.',
+    type: 'multiple',
+    section: 'protection',
+    required: true,
+    options: [
+      { value: 'health', label: 'Health insurance' },
+      { value: 'auto', label: 'Auto insurance' },
+      { value: 'home_or_renters', label: 'Homeowners / renters insurance' },
+      { value: 'life', label: 'Life insurance' },
+      { value: 'disability', label: 'Disability / income protection' },
+      { value: 'none', label: 'None of these / not sure' },
+    ],
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core' },
+  },
+
+  {
+    key: 'umbrellaCoverageAmount',
+    question: 'How much umbrella liability coverage do you have?',
+    type: 'number',
+    section: 'protection',
+    required: false,
+    placeholder: 'e.g. 1000000',
+    helperText: 'Use the policy limit if you know it. A best estimate is fine.',
+    conditions: [{ key: 'advancedProtection', operator: 'includes', value: 'umbrella' }],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => Array.isArray(a.advancedProtection) && a.advancedProtection.includes('umbrella'),
+    },
+  },
+
+  {
+    key: 'advancedProtection',
+    question: 'Do you have any advanced protection or estate planning items in place?',
+    type: 'multiple',
+    section: 'protection',
+    required: true,
+    helperText:
+      'These are more important when others depend on you, you own property, or you have meaningful assets to protect. Select what you already have in place.',
+    options: [
+      { value: 'umbrella', label: 'Umbrella liability policy' },
+      { value: 'will_estate', label: 'Will or estate documents' },
+      { value: 'trust', label: 'Trust' },
+      { value: 'beneficiaries_updated', label: 'Beneficiaries reviewed or updated' },
+      { value: 'none', label: 'None of these / not sure' },
+    ],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => {
+        const hasDependents = ['single_with_dependents', 'partnered_with_dependents'].includes(a.relationshipStatus);
+        const partnered = ['partnered', 'partnered_with_dependents'].includes(a.relationshipStatus);
+        const ownsHome = ['own_with_mortgage', 'own_outright'].includes(a.housingStatus);
+        const ownsOtherProperty = Array.isArray(a.additionalPropertyOwnership) && a.additionalPropertyOwnership.some((item) => item !== 'none');
+        const hasMeaningfulInvestments =
+          Number(a.k401Balance || 0) +
+            Number(a.iraBalance || 0) +
+            Number(a.rothBalance || 0) +
+            Number(a.brokerageBalance || 0) +
+            Number(a.hsaBalance || 0) +
+            Number(a.otherInvestmentAssets || 0) +
+            Number(a.totalInvestments || 0) >=
+          50000;
+
+        return hasDependents || partnered || ownsHome || ownsOtherProperty || hasMeaningfulInvestments;
+      },
+    },
+  },
+
+  {
+    key: 'incomeProtectionRealityCheck',
+    question: 'See your income protection reality check',
+    type: 'single',
+    section: 'protection',
+    required: false,
+    helperText:
+      'This uses the savings and monthly obligation numbers you already entered to show how long your household could cover must-pay bills if income stopped.',
+    options: [{ value: 'review', label: 'Show me the reality check' }],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: () => true,
+    },
+  },
+
+  // Legacy compatibility fields. These are no longer shown as standalone questions.
+  {
+    key: 'incomeInterruptionCoverage',
+    question: 'If your income stopped for a while, how prepared would you be?',
+    type: 'single',
+    section: 'protection',
+    required: false,
+    options: [
+      { value: 'very_prepared', label: 'Very prepared' },
+      { value: 'somewhat_prepared', label: 'Somewhat prepared' },
+      { value: 'not_prepared', label: 'Not prepared' },
+    ],
+    conditions: [{ operator: 'custom', fn: () => false }],
+    tags: { modes: ['detailed'], priority: 'conditional', askIf: () => false },
+  },
+  {
+    key: 'healthInsurance',
+    question: 'Do you have health insurance coverage?',
+    type: 'single',
+    section: 'protection',
+    required: false,
+    options: [
+      { value: 'good_coverage', label: 'Yes, solid coverage' },
+      { value: 'basic_coverage', label: 'Yes, basic coverage' },
+      { value: 'limited_coverage', label: 'Limited coverage' },
+      { value: 'none', label: 'No coverage' },
+    ],
+    conditions: [{ operator: 'custom', fn: () => false }],
+    tags: { modes: ['snapshot', 'detailed'], priority: 'core', askIf: () => false },
+  },
+  {
+    key: 'healthCoverage',
+    question: 'How solid does your health insurance feel?',
+    type: 'single',
+    section: 'protection',
+    required: true,
+    options: [
+      { value: 'solid', label: 'Solid coverage for normal needs' },
+      { value: 'basic', label: 'Basic coverage, but higher costs could hurt' },
+      { value: 'limited', label: 'Limited or uncertain coverage' },
+      { value: 'none', label: 'No health coverage' },
+    ],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => Array.isArray(a.protectionCoverage) && a.protectionCoverage.includes('health'),
+    },
+  },
+
+  {
+    key: 'lifeInsurance',
+    question: 'Do you have enough life insurance for the people who depend on you?',
+    type: 'single',
+    section: 'protection',
+    required: true,
+    conditions: [
+      {
+        operator: 'custom',
+        fn: (r) => Array.isArray(r.protectionCoverage) && r.protectionCoverage.includes('life'),
+      },
+    ],
+    options: [
+      { value: 'enough', label: 'Yes, enough coverage' },
+      { value: 'some', label: 'Some, but probably not enough' },
+      { value: 'none', label: 'No life insurance' },
+      { value: 'not_needed', label: 'No one depends on my income' },
+    ],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => Array.isArray(a.protectionCoverage) && a.protectionCoverage.includes('life'),
+    },
+  },
+  {
+    key: 'propertyCoverage',
+    question: 'How would you describe your homeowners or renters coverage?',
+    type: 'single',
+    section: 'protection',
+    required: true,
+    conditions: [{ key: 'housingStatus', operator: 'not_equals', value: 'living_with_family' }],
+    options: [
+      { value: 'solid', label: 'Solid coverage' },
+      { value: 'basic', label: 'Basic coverage' },
+      { value: 'minimal', label: 'Minimal / unsure' },
+      { value: 'none', label: 'No coverage' },
+    ],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) =>
+        Array.isArray(a.protectionCoverage) &&
+        a.protectionCoverage.includes('home_or_renters') &&
+        a.housingStatus !== 'living_with_family',
+    },
+  },
+  {
+    key: 'autoCoverage',
+    question: 'How would you describe your auto insurance coverage?',
+    type: 'single',
+    section: 'protection',
+    required: true,
+    conditions: [{ key: 'vehicleDebt', operator: 'not_equals', value: 'no_vehicle' }],
+    options: [
+      { value: 'full', label: 'Full coverage' },
+      { value: 'basic', label: 'Basic but reasonable' },
+      { value: 'minimal', label: 'Minimal' },
+      { value: 'minimum', label: 'State minimum only' },
+      { value: 'do_not_drive', label: 'Do not drive / not applicable' },
+    ],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) =>
+        Array.isArray(a.protectionCoverage) &&
+        a.protectionCoverage.includes('auto') &&
+        a.vehicleDebt !== 'no_vehicle',
+    },
+  },
+
+
+  {
+    key: 'disabilityCoverage',
+    question: 'How protected is your income if you could not work for a while?',
+    type: 'single',
+    section: 'protection',
+    required: true,
+    options: [
+      { value: 'strong', label: 'Strong disability or income protection' },
+      { value: 'employer_basic', label: 'Some coverage through work' },
+      { value: 'unsure', label: 'Not sure what I have' },
+      { value: 'none', label: 'No disability coverage' },
+    ],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => Array.isArray(a.protectionCoverage) && a.protectionCoverage.includes('disability'),
+    },
+  },
+
+  {
+    key: 'monthlySavingsContribution',
+    question: 'About how much do you intentionally save each month?',
+    type: 'number',
+    section: 'saving',
+    required: false,
+    placeholder: 'e.g. 500',
+    helperText: 'Do not include investment contributions here. Use the amount that goes into savings or cash reserves each month.',
+    tags: { modes: ['detailed'], priority: 'conditional' },
+  },
+  {
+    key: 'monthlySavingsPercent',
+    question: 'What percentage of your take-home pay do you save each month?',
+    type: 'number',
+    section: 'saving',
+    required: false,
+    placeholder: 'e.g. 10',
+    helperText: 'Use this if you know your savings as a percent instead of a dollar amount. Leave blank if you already entered a monthly savings amount.',
+    tags: { modes: ['detailed'], priority: 'conditional' },
+  },
 
 
 {
@@ -1714,28 +1608,18 @@ export function getVisibleQuestionsByMode(
   responses: Record<string, any>,
   mode: AssessmentMode = 'detailed'
 ): Question[] {
-  return questions
-    .map((question, index) => ({ question, index }))
-    .filter(({ question: q }) => {
-      const passesConditions = evaluateAllConditions(q.conditions || [], responses);
-      const passesMode = !q.tags?.modes || q.tags.modes.includes(mode);
-      const passesAskIf = !q.tags?.askIf || q.tags.askIf(responses);
+  return questions.filter((q) => {
+    const passesConditions = evaluateAllConditions(q.conditions || [], responses);
+    const passesMode = !q.tags?.modes || q.tags.modes.includes(mode);
+    const passesAskIf = !q.tags?.askIf || q.tags.askIf(responses);
 
-      const passesPriority =
-        mode === 'snapshot'
-          ? q.tags?.priority === 'core' || q.tags?.priority === 'conditional'
-          : true;
+    const passesPriority =
+      mode === 'snapshot'
+        ? q.tags?.priority === 'core' || q.tags?.priority === 'conditional'
+        : true;
 
-      return passesConditions && passesMode && passesAskIf && passesPriority;
-    })
-    .sort((a, b) => {
-      const aSection = a.question.section ?? 'context';
-      const bSection = b.question.section ?? 'context';
-      const aOrder = SECTION_SORT_ORDER[aSection] ?? 99;
-      const bOrder = SECTION_SORT_ORDER[bSection] ?? 99;
-      return aOrder === bOrder ? a.index - b.index : aOrder - bOrder;
-    })
-    .map(({ question }) => question);
+    return passesConditions && passesMode && passesAskIf && passesPriority;
+  });
 }
 
 export function getSnapshotQuestions(responses: Record<string, any> = {}) {

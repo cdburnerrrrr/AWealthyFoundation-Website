@@ -1615,10 +1615,9 @@ function InlineChildCard({
 type FixedCostPressureActivityProps = {
   responses: Record<string, any>;
   onContinue: () => void;
-  onBack?: () => void;
 };
 
-function FixedCostPressureActivity({ responses, onContinue, onBack }: FixedCostPressureActivityProps) {
+function FixedCostPressureActivity({ responses, onContinue }: FixedCostPressureActivityProps) {
   const income = toNumber(responses.monthlyTakeHomeIncome);
   const fixedCosts = getFixedCosts(responses);
   const load = income > 0 ? (fixedCosts / income) * 100 : 0;
@@ -1667,18 +1666,7 @@ function FixedCostPressureActivity({ responses, onContinue, onBack }: FixedCostP
         </p>
       </div>
 
-      <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-6">
-        {onBack ? (
-          <button
-            type="button"
-            onClick={onBack}
-            className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-navy-700 transition hover:bg-slate-100"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Back
-          </button>
-        ) : <span />}
-
+      <div className="mt-6 flex justify-end">
         <button
           type="button"
           onClick={onContinue}
@@ -1695,10 +1683,9 @@ function FixedCostPressureActivity({ responses, onContinue, onBack }: FixedCostP
 type EmergencyFundActivityProps = {
   responses: Record<string, any>;
   onContinue: () => void;
-  onBack?: () => void;
 };
 
-function EmergencyFundActivity({ responses, onContinue, onBack }: EmergencyFundActivityProps) {
+function EmergencyFundActivity({ responses, onContinue }: EmergencyFundActivityProps) {
   const savings = toNumber(responses.totalLiquidSavings);
   const months = getEmergencyMonths(responses);
   const fixedCosts = getFixedCosts(responses);
@@ -1730,18 +1717,7 @@ function EmergencyFundActivity({ responses, onContinue, onBack }: EmergencyFundA
         </p>
       </div>
 
-      <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-6">
-        {onBack ? (
-          <button
-            type="button"
-            onClick={onBack}
-            className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-navy-700 transition hover:bg-slate-100"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Back
-          </button>
-        ) : <span />}
-
+      <div className="mt-6 flex justify-end">
         <button
           type="button"
           onClick={onContinue}
@@ -1758,23 +1734,21 @@ function EmergencyFundActivity({ responses, onContinue, onBack }: EmergencyFundA
 type ActivityStepProps = {
   activityKey: ActivityKey;
   responses: Record<string, any>;
-  onComplete: (updates?: Record<string, any>) => void;
   onBack: () => void;
+  onComplete: (updates?: Record<string, any>) => void;
 };
 
-function ActivityStep({ activityKey, responses, onComplete, onBack }: ActivityStepProps) {
+function ActivityStep({ activityKey, responses, onBack, onComplete }: ActivityStepProps) {
   const activityMap: Record<ActivityKey, React.ReactNode> = {
     fixedCostPressureReview: (
       <FixedCostPressureActivity
         responses={responses}
-        onBack={onBack}
         onContinue={() => onComplete({ fixedCostPressureReview: 'reviewed' })}
       />
     ),
     emergencyFundReview: (
       <EmergencyFundActivity
         responses={responses}
-        onBack={onBack}
         onContinue={() => onComplete({ emergencyFundReview: 'reviewed' })}
       />
     ),
@@ -1784,14 +1758,12 @@ function ActivityStep({ activityKey, responses, onComplete, onBack }: ActivitySt
         carLoanBalance={toNumber(responses.carLoanBalance)}
         vehicleValue={toNumber(responses.vehicleValue)}
         monthlyIncome={toNumber(responses.monthlyTakeHomeIncome)}
-        onBack={onBack}
         onContinue={(payload) => onComplete(payload)}
       />
     ),
     incomeProtectionRealityCheck: (
       <IncomeProtectionActivity
         responses={responses}
-        onBack={onBack}
         onContinue={(payload) => onComplete(payload)}
       />
     ),
@@ -1811,7 +1783,6 @@ function ActivityStep({ activityKey, responses, onComplete, onBack }: ActivitySt
           propertyOwnership: responses.additionalPropertyOwnership,
           housingStatus: responses.housingStatus,
         }}
-        onBack={onBack}
         onComplete={(payload) => {
           const netWorthPayload = buildNetWorthPayload(payload);
           onComplete({
@@ -1836,7 +1807,19 @@ function ActivityStep({ activityKey, responses, onComplete, onBack }: ActivitySt
     ),
   };
 
-  return <>{activityMap[activityKey]}</>;
+  return (
+    <div className="space-y-4">
+      <button
+        type="button"
+        onClick={onBack}
+        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+      >
+        <ChevronLeft className="h-4 w-4" />
+        Back
+      </button>
+      {activityMap[activityKey]}
+    </div>
+  );
 }
 
 export default function ComprehensiveQuestionnaire() {
