@@ -63,7 +63,6 @@ export type V2FinancialMetrics = {
   primaryHomeValue: number;
   primaryMortgageBalance: number;
   rentalPropertyValue: number;
-  rentalPropertyIncome: number;
   rentalMortgageBalance: number;
   otherPropertyValue: number;
   otherPropertyMortgageBalance: number;
@@ -370,7 +369,7 @@ function ownsAdditionalProperty(answers: Record<string, any>) {
 }
 
 function hasMeaningfulAssets(metrics: V2FinancialMetrics) {
-  return metrics.totalAssets >= 100000 || metrics.totalInvestments >= 50000 || metrics.realEstateAssets >= 100000 || metrics.otherAssets >= 50000;
+  return metrics.totalAssets >= 100000 || metrics.totalInvestments >= 50000 || metrics.realEstateAssets >= 100000;
 }
 
 function hasEstateDocuments(answers: Record<string, any>) {
@@ -446,9 +445,7 @@ function hasAmountOrPercentAnswer(
 export function buildV2FinancialMetrics(
   answers: Record<string, any>
 ): V2FinancialMetrics {
-  const baseMonthlyIncome = firstNumber(answers, ['monthlyTakeHomeIncome', 'monthlyIncome']);
-  const rentalPropertyIncome = firstNumber(answers, ['rentalPropertyIncome', 'monthlyRentalIncome']);
-  const monthlyIncome = baseMonthlyIncome + rentalPropertyIncome;
+  const monthlyIncome = firstNumber(answers, ['monthlyTakeHomeIncome', 'monthlyIncome']);
   const monthlyHousingCost = firstNumber(answers, [
     'monthlyHousingCost',
     'monthlyRent',
@@ -490,10 +487,14 @@ export function buildV2FinancialMetrics(
   );
   const otherMonthlyInvestmentContribution = getMonthlyAmountFromAmountOrPercent(
     answers,
-    ['otherInvestmentContribution', 'cryptoAssetContribution', 'individualStockContribution', 'otherAssetContribution'],
+    ['otherInvestmentContribution'],
     ['otherInvestmentContributionPercent'],
     monthlyIncome
   );
+  const additionalAssetMonthlyContribution =
+    toNumber(answers.cryptoAssetContribution) +
+    toNumber(answers.individualStockContribution) +
+    toNumber(answers.otherAssetContribution);
 
   const itemizedInvestmentContribution =
     k401MonthlyContribution +
@@ -501,7 +502,8 @@ export function buildV2FinancialMetrics(
     rothMonthlyContribution +
     brokerageMonthlyContribution +
     hsaMonthlyContribution +
-    otherMonthlyInvestmentContribution;
+    otherMonthlyInvestmentContribution +
+    additionalAssetMonthlyContribution;
 
   const legacyInvestmentContribution = firstNumber(answers, [
     'monthlyInvestmentContribution',
@@ -682,7 +684,6 @@ export function buildV2FinancialMetrics(
     primaryHomeValue,
     primaryMortgageBalance,
     rentalPropertyValue,
-    rentalPropertyIncome,
     rentalMortgageBalance,
     otherPropertyValue,
     otherPropertyMortgageBalance,

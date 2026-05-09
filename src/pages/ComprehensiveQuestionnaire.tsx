@@ -158,14 +158,16 @@ const INLINE_GROUPS: Record<string, string[]> = {
   otherDebt: ['creditCardDebt', 'creditCardPayment', 'studentLoans', 'studentLoanPayment', 'personalLoans', 'personalLoanPayment', 'bnplDebt', 'bnplPayment', 'paydayDebt', 'paydayPayment', 'medicalDebt', 'medicalDebtPayment', 'additionalDebt', 'debtManageability', 'debtPaydownStrategy', 'creditCardBehavior'],
   protectionCoverage: [
     'healthCoverage',
-    'disabilityCoverage',
-    'lifeInsurance',
-    'propertyCoverage',
     'autoCoverage',
+    'propertyCoverage',
+    'lifeInsurance',
+    'disabilityCoverage',
+  ],
+  advancedProtection: [
     'umbrellaCoverageAmount',
     'estateDocuments',
-    'beneficiariesUpdated',
     'trustInPlace',
+    'beneficiariesUpdated',
   ],
   investingStatus: [],
   investmentAccounts: [
@@ -191,6 +193,14 @@ const INLINE_GROUPS: Record<string, string[]> = {
     'investmentConfidence',
     'investmentMix',
   ],
+  additionalAssetTypes: [
+    'cryptoAssetValue',
+    'cryptoAssetContribution',
+    'individualStockValue',
+    'individualStockContribution',
+    'otherAssets',
+    'otherAssetContribution',
+  ],
   savingConsistency: ['monthlySavingsContribution', 'monthlySavingsPercent', 'totalLiquidSavings', 'savingsAutomation'],
 };
 
@@ -203,6 +213,7 @@ type InlineField = {
   type?: 'number' | 'select';
   options?: { value: string; label: string }[];
   required?: boolean;
+  helperText?: string;
 };
 
 const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
@@ -390,8 +401,50 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
         ],
       },
     ],
+  },
+  advancedProtection: {
     umbrella: [
       { key: 'umbrellaCoverageAmount', label: 'Umbrella policy amount', placeholder: 'e.g. 1000000', required: false },
+    ],
+    estate_documents: [
+      {
+        key: 'estateDocuments',
+        label: 'Will / estate documents',
+        type: 'select',
+        options: [
+          { value: 'complete', label: 'Complete and current' },
+          { value: 'partial', label: 'Some pieces are in place' },
+          { value: 'old_or_unsure', label: 'Old, outdated, or unsure' },
+          { value: 'none', label: 'None yet' },
+        ],
+      },
+    ],
+    trust: [
+      {
+        key: 'trustInPlace',
+        label: 'Trust',
+        type: 'select',
+        required: false,
+        options: [
+          { value: 'yes', label: 'Yes, I have one' },
+          { value: 'considered', label: 'I have considered it' },
+          { value: 'not_needed', label: 'Probably not needed right now' },
+          { value: 'not_sure', label: 'Not sure' },
+        ],
+      },
+    ],
+    beneficiaries: [
+      {
+        key: 'beneficiariesUpdated',
+        label: 'Beneficiaries on accounts',
+        type: 'select',
+        options: [
+          { value: 'yes', label: 'Reviewed recently' },
+          { value: 'mostly', label: 'Mostly, but worth checking' },
+          { value: 'no', label: 'No / probably outdated' },
+          { value: 'not_sure', label: 'Not sure' },
+        ],
+      },
     ],
   },
   investmentAccounts: {
@@ -434,6 +487,25 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
       { key: 'otherInvestmentAssets', label: 'Current balance', placeholder: 'e.g. 10000' },
       { key: 'otherInvestmentContribution', label: 'Monthly contribution ($)', placeholder: 'e.g. 100', required: false },
       { key: 'otherInvestmentContributionPercent', label: 'OR contribution percent of pay', placeholder: 'e.g. 2', required: false },
+    ],
+  },
+  additionalAssetTypes: {
+    crypto: [
+      { key: 'cryptoAssetValue', label: 'Current value', placeholder: 'e.g. 5000' },
+      { key: 'cryptoAssetContribution', label: 'Monthly contribution (optional)', placeholder: 'e.g. 100', required: false },
+    ],
+    individual_stocks: [
+      { key: 'individualStockValue', label: 'Current value', placeholder: 'e.g. 10000' },
+      { key: 'individualStockContribution', label: 'Monthly contribution (optional)', placeholder: 'e.g. 200', required: false },
+    ],
+    other_assets: [
+      {
+        key: 'otherAssets',
+        label: 'Current value',
+        placeholder: 'e.g. 5000',
+        helperText: 'Business ownership, collectibles, equipment, cash value policies, or other meaningful assets not already listed above.',
+      },
+      { key: 'otherAssetContribution', label: 'Monthly contribution (optional)', placeholder: 'e.g. 0', required: false },
     ],
   },
 };
@@ -1175,6 +1247,9 @@ function InlineObjectField({
           ) : null}
         </>
       )}
+      {field.helperText ? (
+        <p className="mt-2 text-xs leading-5 text-slate-500">{field.helperText}</p>
+      ) : null}
     </label>
   );
 }
@@ -1615,9 +1690,10 @@ function InlineChildCard({
 type FixedCostPressureActivityProps = {
   responses: Record<string, any>;
   onContinue: () => void;
+  onBack?: () => void;
 };
 
-function FixedCostPressureActivity({ responses, onContinue }: FixedCostPressureActivityProps) {
+function FixedCostPressureActivity({ responses, onContinue, onBack }: FixedCostPressureActivityProps) {
   const income = toNumber(responses.monthlyTakeHomeIncome);
   const fixedCosts = getFixedCosts(responses);
   const load = income > 0 ? (fixedCosts / income) * 100 : 0;
@@ -1666,7 +1742,18 @@ function FixedCostPressureActivity({ responses, onContinue }: FixedCostPressureA
         </p>
       </div>
 
-      <div className="mt-6 flex justify-end">
+      <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-6">
+        {onBack ? (
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-navy-700 transition hover:bg-slate-100"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Back
+          </button>
+        ) : <span />}
+
         <button
           type="button"
           onClick={onContinue}
@@ -1683,9 +1770,10 @@ function FixedCostPressureActivity({ responses, onContinue }: FixedCostPressureA
 type EmergencyFundActivityProps = {
   responses: Record<string, any>;
   onContinue: () => void;
+  onBack?: () => void;
 };
 
-function EmergencyFundActivity({ responses, onContinue }: EmergencyFundActivityProps) {
+function EmergencyFundActivity({ responses, onContinue, onBack }: EmergencyFundActivityProps) {
   const savings = toNumber(responses.totalLiquidSavings);
   const months = getEmergencyMonths(responses);
   const fixedCosts = getFixedCosts(responses);
@@ -1717,7 +1805,18 @@ function EmergencyFundActivity({ responses, onContinue }: EmergencyFundActivityP
         </p>
       </div>
 
-      <div className="mt-6 flex justify-end">
+      <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-6">
+        {onBack ? (
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-navy-700 transition hover:bg-slate-100"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Back
+          </button>
+        ) : <span />}
+
         <button
           type="button"
           onClick={onContinue}
@@ -1734,21 +1833,23 @@ function EmergencyFundActivity({ responses, onContinue }: EmergencyFundActivityP
 type ActivityStepProps = {
   activityKey: ActivityKey;
   responses: Record<string, any>;
-  onBack: () => void;
   onComplete: (updates?: Record<string, any>) => void;
+  onBack: () => void;
 };
 
-function ActivityStep({ activityKey, responses, onBack, onComplete }: ActivityStepProps) {
+function ActivityStep({ activityKey, responses, onComplete, onBack }: ActivityStepProps) {
   const activityMap: Record<ActivityKey, React.ReactNode> = {
     fixedCostPressureReview: (
       <FixedCostPressureActivity
         responses={responses}
+        onBack={onBack}
         onContinue={() => onComplete({ fixedCostPressureReview: 'reviewed' })}
       />
     ),
     emergencyFundReview: (
       <EmergencyFundActivity
         responses={responses}
+        onBack={onBack}
         onContinue={() => onComplete({ emergencyFundReview: 'reviewed' })}
       />
     ),
@@ -1758,12 +1859,14 @@ function ActivityStep({ activityKey, responses, onBack, onComplete }: ActivitySt
         carLoanBalance={toNumber(responses.carLoanBalance)}
         vehicleValue={toNumber(responses.vehicleValue)}
         monthlyIncome={toNumber(responses.monthlyTakeHomeIncome)}
+        onBack={onBack}
         onContinue={(payload) => onComplete(payload)}
       />
     ),
     incomeProtectionRealityCheck: (
       <IncomeProtectionActivity
         responses={responses}
+        onBack={onBack}
         onContinue={(payload) => onComplete(payload)}
       />
     ),
@@ -1783,6 +1886,7 @@ function ActivityStep({ activityKey, responses, onBack, onComplete }: ActivitySt
           propertyOwnership: responses.additionalPropertyOwnership,
           housingStatus: responses.housingStatus,
         }}
+        onBack={onBack}
         onComplete={(payload) => {
           const netWorthPayload = buildNetWorthPayload(payload);
           onComplete({
@@ -1807,19 +1911,7 @@ function ActivityStep({ activityKey, responses, onBack, onComplete }: ActivitySt
     ),
   };
 
-  return (
-    <div className="space-y-4">
-      <button
-        type="button"
-        onClick={onBack}
-        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
-      >
-        <ChevronLeft className="h-4 w-4" />
-        Back
-      </button>
-      {activityMap[activityKey]}
-    </div>
-  );
+  return <>{activityMap[activityKey]}</>;
 }
 
 export default function ComprehensiveQuestionnaire() {
@@ -1874,18 +1966,14 @@ export default function ComprehensiveQuestionnaire() {
   const baseContinueAnswers = useMemo(() => {
     if (!isContinueMode) return null;
 
-    if (snapshotAnswers && Object.keys(snapshotAnswers).length > 0) return snapshotAnswers;
-    if (latestFreeAssessment?.answers && Object.keys(latestFreeAssessment.answers).length > 0) {
-      return latestFreeAssessment.answers;
-    }
-    if (latestFreeAssessment?.report?.answers && Object.keys(latestFreeAssessment.report.answers).length > 0) {
-      return latestFreeAssessment.report.answers;
-    }
-    if (currentAssessment?.assessmentType === 'free' && currentAssessment?.answers) {
-      return currentAssessment.answers;
-    }
+    const merged = {
+      ...(currentAssessment?.assessmentType === 'free' ? currentAssessment?.answers ?? {} : {}),
+      ...(latestFreeAssessment?.report?.answers ?? {}),
+      ...(latestFreeAssessment?.answers ?? {}),
+      ...(snapshotAnswers ?? {}),
+    };
 
-    return null;
+    return Object.keys(merged).length > 0 ? merged : null;
   }, [isContinueMode, snapshotAnswers, latestFreeAssessment, currentAssessment]);
 
   const initialResponses = useMemo(
