@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowRight, AlertTriangle, CheckCircle2, ShieldCheck, Wallet } from 'lucide-react';
+import { ArrowRight, AlertTriangle, CheckCircle2, ChevronLeft, ShieldCheck, Wallet } from 'lucide-react';
 
 type Shift = 'aligned' | 'overestimated' | 'underestimated';
 
 type IncomeProtectionActivityProps = {
   responses: Record<string, any>;
+  onBack?: () => void;
   onContinue: (payload?: Record<string, any>) => void;
 };
 
@@ -96,7 +97,7 @@ function getCoverageTier(months: number, hasDisability: boolean, singleIncomeRis
   };
 }
 
-export default function IncomeProtectionActivity({ responses, onContinue }: IncomeProtectionActivityProps) {
+export default function IncomeProtectionActivity({ responses, onBack, onContinue }: IncomeProtectionActivityProps) {
   const [shift, setShift] = useState<Shift | null>(null);
 
   const data = useMemo(() => {
@@ -209,7 +210,18 @@ export default function IncomeProtectionActivity({ responses, onContinue }: Inco
       </div>
 
       {shift && (
-        <div className="mt-5 flex justify-end">
+        <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-6">
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-navy-700 transition hover:bg-slate-100"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Back
+            </button>
+          ) : <span />}
+
           <button type="button" onClick={() => onContinue()} className="inline-flex items-center gap-2 rounded-2xl bg-copper-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-copper-700">
             Continue
             <ArrowRight className="h-4 w-4" />

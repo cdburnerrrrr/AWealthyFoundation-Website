@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Calculator, Home, PiggyBank, TrendingUp, CreditCard, ArrowRight, Landmark } from 'lucide-react';
+import { Calculator, Home, PiggyBank, TrendingUp, CreditCard, ArrowRight, ChevronLeft, Landmark } from 'lucide-react';
 
 type NetWorthInputs = {
   totalLiquidSavings?: number;
@@ -18,6 +18,7 @@ type NetWorthInputs = {
 
 type NetWorthActivityProps = {
   initialValues?: NetWorthInputs;
+  onBack?: () => void;
   onComplete?: (payload: {
     netWorth: number;
     assets: number;
@@ -115,6 +116,7 @@ function InputCard({ icon: Icon, label, value, onChange, tone = 'asset' }: Input
 
 export default function NetWorthActivity({
   initialValues,
+  onBack,
   onComplete,
 }: NetWorthActivityProps) {
   const [totalLiquidSavings, setTotalLiquidSavings] = useState(String(initialValues?.totalLiquidSavings ?? ''));
@@ -253,12 +255,24 @@ export default function NetWorthActivity({
         <p className="mt-2 leading-7">{message.body}</p>
       </div>
 
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <p className="max-w-xl text-sm leading-6 text-slate-500">
+      <div className="mt-6 border-t border-slate-100 pt-6">
+        <p className="mb-4 max-w-xl text-sm leading-6 text-slate-500">
           Net worth shows whether your financial life is moving forward or backward. Only include crypto, single stocks, or other assets here if they were not already included in your investment accounts above.
         </p>
 
-        <button
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-navy-700 transition hover:bg-slate-100"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Back
+            </button>
+          ) : <span />}
+
+          <button
           type="button"
           onClick={() => onComplete?.({
             ...totals,
@@ -278,6 +292,7 @@ export default function NetWorthActivity({
           Use This Net Worth
           <ArrowRight className="h-4 w-4" />
         </button>
+        </div>
       </div>
     </section>
   );

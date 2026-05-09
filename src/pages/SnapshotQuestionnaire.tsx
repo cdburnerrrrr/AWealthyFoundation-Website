@@ -1183,30 +1183,18 @@ type ActivityStepProps = {
   activityKey: ActivityKey;
   responses: Record<string, any>;
   onComplete: (updates?: Record<string, any>) => void;
-  onBack: () => void;
 };
 
-function ActivityStep({ activityKey, responses, onComplete, onBack }: ActivityStepProps) {
+function ActivityStep({ activityKey, responses, onComplete }: ActivityStepProps) {
   if (activityKey === 'carPaymentOpportunityReview') {
     return (
-      <div className="space-y-4">
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-gray-50"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Back
-        </button>
-
-        <CarPaymentActivity
-          monthlyVehiclePayment={toNumber(responses.monthlyVehiclePayment)}
-          carLoanBalance={toNumber(responses.carLoanBalance)}
-          vehicleValue={toNumber(responses.vehicleValue)}
-          monthlyIncome={toNumber(responses.monthlyTakeHomeIncome)}
-          onContinue={(payload) => onComplete(payload)}
-        />
-      </div>
+      <CarPaymentActivity
+        monthlyVehiclePayment={toNumber(responses.monthlyVehiclePayment)}
+        carLoanBalance={toNumber(responses.carLoanBalance)}
+        vehicleValue={toNumber(responses.vehicleValue)}
+        monthlyIncome={toNumber(responses.monthlyTakeHomeIncome)}
+        onContinue={(payload) => onComplete(payload)}
+      />
     );
   }
 
@@ -1537,7 +1525,6 @@ export default function SnapshotQuestionnaire() {
               activityKey={currentQuestion.key as ActivityKey}
               responses={responses}
               onComplete={completeActivity}
-              onBack={goBack}
             />
           ) : currentQuestion ? (
             <div className="space-y-5">
