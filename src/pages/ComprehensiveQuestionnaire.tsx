@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type MouseEvent, type ReactElement } from 'react';
+import { useEffect, useMemo, useRef, useState, type MouseEvent, type ReactElement } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowRight,
@@ -153,19 +153,21 @@ const SECTION_META: Record<
 const INLINE_GROUPS: Record<string, string[]> = {
   relationshipStatus: ['monthlyChildcareCost'],
   housingStatus: ['monthlyHousingCost', 'primaryHomeValue', 'primaryMortgage'],
-  additionalPropertyOwnership: ['rentalPropertyValue', 'rentalMortgage', 'rentalPropertyPayment', 'otherPropertyValue', 'otherPropertyDebt', 'otherPropertyPayment'],
+  additionalPropertyOwnership: ['rentalPropertyValue', 'rentalMortgage', 'rentalPropertyPayment', 'rentalPropertyIncome', 'otherPropertyValue', 'otherPropertyDebt', 'otherPropertyPayment'],
   vehicleDebt: ['carLoanBalance', 'monthlyVehiclePayment', 'vehicleValue'],
   otherDebt: ['creditCardDebt', 'creditCardPayment', 'studentLoans', 'studentLoanPayment', 'personalLoans', 'personalLoanPayment', 'bnplDebt', 'bnplPayment', 'paydayDebt', 'paydayPayment', 'medicalDebt', 'medicalDebtPayment', 'additionalDebt', 'debtManageability', 'debtPaydownStrategy', 'creditCardBehavior'],
   protectionCoverage: [
     'healthCoverage',
-    'disabilityCoverage',
-    'lifeInsurance',
-    'propertyCoverage',
     'autoCoverage',
+    'propertyCoverage',
+    'lifeInsurance',
+    'disabilityCoverage',
+  ],
+  advancedProtection: [
     'umbrellaCoverageAmount',
     'estateDocuments',
-    'beneficiariesUpdated',
     'trustInPlace',
+    'beneficiariesUpdated',
   ],
   investingStatus: [],
   investmentAccounts: [
@@ -191,6 +193,14 @@ const INLINE_GROUPS: Record<string, string[]> = {
     'investmentConfidence',
     'investmentMix',
   ],
+  additionalAssetTypes: [
+    'cryptoAssetValue',
+    'cryptoAssetContribution',
+    'individualStockValue',
+    'individualStockContribution',
+    'otherAssets',
+    'otherAssetContribution',
+  ],
   savingConsistency: ['monthlySavingsContribution', 'monthlySavingsPercent', 'totalLiquidSavings', 'savingsAutomation'],
 };
 
@@ -203,6 +213,7 @@ type InlineField = {
   type?: 'number' | 'select';
   options?: { value: string; label: string }[];
   required?: boolean;
+  helperText?: string;
 };
 
 const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
@@ -291,6 +302,14 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
       { key: 'rentalPropertyValue', label: 'Estimated value', placeholder: 'e.g. 250000' },
       { key: 'rentalMortgage', label: 'Mortgage balance', placeholder: 'e.g. 175000' },
       { key: 'rentalPropertyPayment', label: 'Monthly payment', placeholder: 'e.g. 1200' },
+      {
+        key: 'rentalPropertyIncome',
+        label: 'Monthly rental income (optional)',
+        placeholder: 'e.g. 1800',
+        required: false,
+        helperText:
+          'If you include rental income here, do not include it in your overall monthly income above or the projections may be overstated.',
+      },
     ],
     other_property: [
       { key: 'otherPropertyValue', label: 'Estimated value', placeholder: 'e.g. 225000' },
@@ -390,8 +409,50 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
         ],
       },
     ],
+  },
+  advancedProtection: {
     umbrella: [
       { key: 'umbrellaCoverageAmount', label: 'Umbrella policy amount', placeholder: 'e.g. 1000000', required: false },
+    ],
+    estate_documents: [
+      {
+        key: 'estateDocuments',
+        label: 'Will / estate documents',
+        type: 'select',
+        options: [
+          { value: 'complete', label: 'Complete and current' },
+          { value: 'partial', label: 'Some pieces are in place' },
+          { value: 'old_or_unsure', label: 'Old, outdated, or unsure' },
+          { value: 'none', label: 'None yet' },
+        ],
+      },
+    ],
+    trust: [
+      {
+        key: 'trustInPlace',
+        label: 'Trust',
+        type: 'select',
+        required: false,
+        options: [
+          { value: 'yes', label: 'Yes, I have one' },
+          { value: 'considered', label: 'I have considered it' },
+          { value: 'not_needed', label: 'Probably not needed right now' },
+          { value: 'not_sure', label: 'Not sure' },
+        ],
+      },
+    ],
+    beneficiaries: [
+      {
+        key: 'beneficiariesUpdated',
+        label: 'Beneficiaries on accounts',
+        type: 'select',
+        options: [
+          { value: 'yes', label: 'Reviewed recently' },
+          { value: 'mostly', label: 'Mostly, but worth checking' },
+          { value: 'no', label: 'No / probably outdated' },
+          { value: 'not_sure', label: 'Not sure' },
+        ],
+      },
     ],
   },
   investmentAccounts: {
@@ -406,6 +467,7 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
         options: [
           { value: 'maximizing_match', label: 'Getting the full match' },
           { value: 'have_match_not_maxing', label: 'Not getting the full match' },
+          { value: 'have_match_not_contributing', label: 'Have a match but not contributing right now' },
           { value: 'no_match_or_no_access', label: 'No match or unsure' },
         ],
       },
@@ -434,6 +496,26 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
       { key: 'otherInvestmentAssets', label: 'Current balance', placeholder: 'e.g. 10000' },
       { key: 'otherInvestmentContribution', label: 'Monthly contribution ($)', placeholder: 'e.g. 100', required: false },
       { key: 'otherInvestmentContributionPercent', label: 'OR contribution percent of pay', placeholder: 'e.g. 2', required: false },
+    ],
+  },
+
+  additionalAssetTypes: {
+    crypto: [
+      { key: 'cryptoAssetValue', label: 'Current value', placeholder: 'e.g. 5000' },
+      { key: 'cryptoAssetContribution', label: 'Monthly contribution (optional)', placeholder: 'e.g. 100', required: false },
+    ],
+    individual_stocks: [
+      { key: 'individualStockValue', label: 'Current value', placeholder: 'e.g. 10000' },
+      { key: 'individualStockContribution', label: 'Monthly contribution (optional)', placeholder: 'e.g. 100', required: false },
+    ],
+    other_assets: [
+      {
+        key: 'otherAssets',
+        label: 'Current value',
+        placeholder: 'e.g. 5000',
+        helperText: 'Business ownership, collectibles, equipment, cash value policies, or other meaningful assets not already listed above.',
+      },
+      { key: 'otherAssetContribution', label: 'Monthly contribution (optional)', placeholder: 'e.g. 100', required: false },
     ],
   },
 };
@@ -636,7 +718,26 @@ function getContinueModeQuestions(responses: Record<string, any>) {
 
   return detailed.filter((question) => {
     const answered = isAnswered(question, responses[question.key]);
-    if (question.key === 'protectionCoverage') return true;
+    const invests = ['yes_consistently', 'yes_irregularly'].includes(String(responses.investingStatus ?? ''));
+    const investingDetailKeys = new Set([
+      'investmentAccounts',
+      'investmentConfidence',
+      'investmentMix',
+      'additionalAssetTypes',
+      'otherAssets',
+      'cryptoAssetValue',
+      'cryptoAssetContribution',
+      'individualStockValue',
+      'individualStockContribution',
+      'otherAssetContribution',
+      'netWorthEntry',
+    ]);
+
+    // Snapshot only establishes whether the user invests. The full assessment must still
+    // collect the account-level breakdown, balances, contributions, and 401(k) match details.
+    if (invests && investingDetailKeys.has(question.key)) return true;
+    // Do not re-ask the Snapshot insurance checklist in continue mode.
+    // The full assessment should deepen selected coverages with follow-up questions instead.
     if (question.key === 'relationshipStatus') {
       const hasDependents = ['single_with_dependents', 'partnered_with_dependents'].includes(
         responses.relationshipStatus
@@ -656,6 +757,13 @@ function getContinueModeQuestions(responses: Record<string, any>) {
     if (question.key === 'monthlyChildcareCost' || question.key === 'childcarePressure') {
       return false;
     }
+
+    // These savings details are collected together inside the savings card.
+    // Do not repeat them as standalone comprehensive questions.
+    if (['savingsAutomation', 'monthlySavingsContribution', 'monthlySavingsPercent'].includes(question.key)) {
+      return false;
+    }
+
     return !(snapshotKeys.has(question.key) && answered);
   });
 }
@@ -1125,6 +1233,9 @@ function InlineObjectField({
       <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
         {cleanLabel}
       </div>
+      {field.helperText ? (
+        <p className="mb-2 text-xs leading-5 text-slate-500">{field.helperText}</p>
+      ) : null}
       {field.type === 'select' ? (
         <select
           value={responses[field.key] ?? ''}
@@ -1263,6 +1374,8 @@ function hasProtectionAssets(responses: Record<string, any>) {
     'brokerageBalance',
     'hsaBalance',
     'otherInvestmentAssets',
+    'cryptoAssetValue',
+    'individualStockValue',
     'primaryHomeValue',
     'rentalPropertyValue',
     'otherPropertyValue',
@@ -1334,6 +1447,12 @@ function OptionGrid({ question, value, responses = {}, onChange, onFieldChange }
         <div className="mb-3 inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
           Select all that apply
         </div>
+
+        {question.key === 'additionalAssetTypes' ? (
+          <p className="mb-4 rounded-2xl border border-copper-200 bg-copper-50 px-4 py-3 text-sm leading-6 text-slate-700">
+            <strong className="font-bold text-navy-900">Do not include anything already counted in your retirement or brokerage accounts above.</strong>
+          </p>
+        ) : null}
 
         <div className="grid gap-3">
           {contextualOptions.map((option) => {
@@ -1734,11 +1853,11 @@ function EmergencyFundActivity({ responses, onContinue }: EmergencyFundActivityP
 type ActivityStepProps = {
   activityKey: ActivityKey;
   responses: Record<string, any>;
-  onBack: () => void;
   onComplete: (updates?: Record<string, any>) => void;
+  onBack: () => void;
 };
 
-function ActivityStep({ activityKey, responses, onBack, onComplete }: ActivityStepProps) {
+function ActivityStep({ activityKey, responses, onComplete, onBack }: ActivityStepProps) {
   const activityMap: Record<ActivityKey, React.ReactNode> = {
     fixedCostPressureReview: (
       <FixedCostPressureActivity
@@ -1812,9 +1931,9 @@ function ActivityStep({ activityKey, responses, onBack, onComplete }: ActivitySt
       <button
         type="button"
         onClick={onBack}
-        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+        className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-navy-700 transition hover:bg-white/80"
       >
-        <ChevronLeft className="h-4 w-4" />
+        <ChevronLeft className="h-5 w-5" />
         Back
       </button>
       {activityMap[activityKey]}
@@ -1927,6 +2046,21 @@ export default function ComprehensiveQuestionnaire() {
   const currentSectionLabel =
     getSectionLabel(currentQuestion?.section, currentQuestion?.key) ||
     currentSectionMeta.shortLabel;
+
+  const previousSectionRef = useRef(currentSectionKey);
+
+  useEffect(() => {
+    if (!currentQuestion || mode !== 'question') {
+      previousSectionRef.current = currentSectionKey;
+      return;
+    }
+
+    const previousSection = previousSectionRef.current;
+    if (previousSection && previousSection !== currentSectionKey) {
+      setMode('transition');
+    }
+    previousSectionRef.current = currentSectionKey;
+  }, [currentQuestion, currentSectionKey, mode]);
 
   useEffect(() => {
     const nextResponses = isContinueMode && baseContinueAnswers ? baseContinueAnswers : {};
@@ -2247,8 +2381,8 @@ export default function ComprehensiveQuestionnaire() {
             <ActivityStep
               activityKey={currentQuestion.key as ActivityKey}
               responses={responses}
-              onBack={goBack}
               onComplete={completeActivity}
+              onBack={goBack}
             />
           ) : (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-8">
