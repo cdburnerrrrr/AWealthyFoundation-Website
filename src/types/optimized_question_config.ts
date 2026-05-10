@@ -61,6 +61,11 @@ export const QUESTION_STRATEGY = {
     'umbrellaCoverageAmount',
     'advancedProtection',
     'investmentAccounts',
+    'additionalAssetTypes',
+    'cryptoAssetValue',
+    'cryptoAssetContribution',
+    'individualStockValue',
+    'individualStockContribution',
     'investmentConfidence',
     'investmentMix',
     'k401Balance',
@@ -1178,6 +1183,32 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       conditions: [{ operator: 'custom', fn: () => false }],
     tags: { modes: ['detailed'], priority: 'conditional', askIf: () => false },},
     {
+      key: 'additionalAssetTypes',
+      question: 'Do you have crypto or individual stocks outside the accounts above?',
+      type: 'multiple',
+      section: 'investing',
+      required: false,
+      helperText:
+        'Only include crypto or individual stocks held outside retirement, HSA, or brokerage accounts already counted above.',
+      conditions: [
+        {
+          operator: 'custom',
+          fn: (r) => r.investingStatus !== 'not_yet',
+        },
+      ],
+      options: [
+        { value: 'crypto', label: 'Crypto' },
+        { value: 'individual_stocks', label: 'Individual stocks held outside the accounts above' },
+        { value: 'none', label: 'None of these' },
+      ],
+      tags: {
+        modes: ['detailed'],
+        priority: 'conditional',
+        askIf: (a) => a.investingStatus !== 'not_yet',
+      },
+    },
+
+    {
       key: 'otherAssets',
       question: 'Other assets (optional)',
       type: 'number',
@@ -1185,7 +1216,17 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       required: false,
       placeholder: 'e.g. 5000',
       helperText: 'Anything valuable we have not included elsewhere.',
-      tags: { modes: ['detailed'], priority: 'conditional' },
+      conditions: [
+        {
+          operator: 'custom',
+          fn: (r) => r.investingStatus !== 'not_yet',
+        },
+      ],
+      tags: {
+        modes: ['detailed'],
+        priority: 'conditional',
+        askIf: (a) => a.investingStatus !== 'not_yet',
+      },
     },
 
 {
@@ -1522,6 +1563,8 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
         Boolean(a.rentalMortgage) ||
         Boolean(a.otherPropertyValue) ||
         Boolean(a.otherPropertyDebt) ||
+        Boolean(a.cryptoAssetValue) ||
+        Boolean(a.individualStockValue) ||
         Boolean(a.otherAssets)
       ),
   },
