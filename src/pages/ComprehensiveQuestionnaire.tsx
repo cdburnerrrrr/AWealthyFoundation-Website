@@ -153,29 +153,21 @@ const SECTION_META: Record<
 const INLINE_GROUPS: Record<string, string[]> = {
   relationshipStatus: ['monthlyChildcareCost'],
   housingStatus: ['monthlyHousingCost', 'primaryHomeValue', 'primaryMortgage'],
-  additionalPropertyOwnership: ['rentalPropertyValue', 'rentalMortgage', 'rentalPropertyPayment', 'rentalPropertyIncome', 'otherPropertyValue', 'otherPropertyDebt', 'otherPropertyPayment'],
+  additionalPropertyOwnership: ['rentalPropertyValue', 'rentalMortgage', 'rentalPropertyPayment', 'otherPropertyValue', 'otherPropertyDebt', 'otherPropertyPayment'],
   vehicleDebt: ['carLoanBalance', 'monthlyVehiclePayment', 'vehicleValue'],
   otherDebt: ['creditCardDebt', 'creditCardPayment', 'studentLoans', 'studentLoanPayment', 'personalLoans', 'personalLoanPayment', 'bnplDebt', 'bnplPayment', 'paydayDebt', 'paydayPayment', 'medicalDebt', 'medicalDebtPayment', 'additionalDebt', 'debtManageability', 'debtPaydownStrategy', 'creditCardBehavior'],
   protectionCoverage: [
     'healthCoverage',
-    'autoCoverage',
-    'propertyCoverage',
-    'lifeInsurance',
     'disabilityCoverage',
-  ],
-  advancedProtection: [
+    'lifeInsurance',
+    'propertyCoverage',
+    'autoCoverage',
     'umbrellaCoverageAmount',
     'estateDocuments',
-    'trustInPlace',
     'beneficiariesUpdated',
+    'trustInPlace',
   ],
   investingStatus: [],
-  additionalAssetTypes: [
-    'cryptoAssetValue',
-    'cryptoAssetContribution',
-    'individualStockValue',
-    'individualStockContribution',
-  ],
   investmentAccounts: [
     'k401Balance',
     'k401Contribution',
@@ -199,6 +191,7 @@ const INLINE_GROUPS: Record<string, string[]> = {
     'investmentConfidence',
     'investmentMix',
   ],
+  additionalAssetTypes: ['cryptoAssetValue', 'cryptoAssetContribution', 'individualStockValue', 'individualStockContribution'],
   savingConsistency: ['monthlySavingsContribution', 'monthlySavingsPercent', 'totalLiquidSavings', 'savingsAutomation'],
 };
 
@@ -299,7 +292,6 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
       { key: 'rentalPropertyValue', label: 'Estimated value', placeholder: 'e.g. 250000' },
       { key: 'rentalMortgage', label: 'Mortgage balance', placeholder: 'e.g. 175000' },
       { key: 'rentalPropertyPayment', label: 'Monthly payment', placeholder: 'e.g. 1200' },
-      { key: 'rentalPropertyIncome', label: 'Monthly rental income (optional)', placeholder: 'e.g. 1800', required: false },
     ],
     other_property: [
       { key: 'otherPropertyValue', label: 'Estimated value', placeholder: 'e.g. 225000' },
@@ -399,50 +391,8 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
         ],
       },
     ],
-  },
-  advancedProtection: {
     umbrella: [
       { key: 'umbrellaCoverageAmount', label: 'Umbrella policy amount', placeholder: 'e.g. 1000000', required: false },
-    ],
-    will_estate: [
-      {
-        key: 'estateDocuments',
-        label: 'Will / estate documents',
-        type: 'select',
-        options: [
-          { value: 'complete', label: 'Complete and current' },
-          { value: 'partial', label: 'Some pieces are in place' },
-          { value: 'old_or_unsure', label: 'Old, outdated, or unsure' },
-          { value: 'none', label: 'None yet' },
-        ],
-      },
-    ],
-    trust: [
-      {
-        key: 'trustInPlace',
-        label: 'Trust',
-        type: 'select',
-        required: false,
-        options: [
-          { value: 'yes', label: 'Yes, I have one' },
-          { value: 'considered', label: 'I have considered it' },
-          { value: 'not_needed', label: 'Probably not needed right now' },
-          { value: 'not_sure', label: 'Not sure' },
-        ],
-      },
-    ],
-    beneficiaries_updated: [
-      {
-        key: 'beneficiariesUpdated',
-        label: 'Beneficiaries on accounts',
-        type: 'select',
-        options: [
-          { value: 'yes', label: 'Reviewed recently' },
-          { value: 'mostly', label: 'Mostly, but worth checking' },
-          { value: 'no', label: 'No / probably outdated' },
-          { value: 'not_sure', label: 'Not sure' },
-        ],
-      },
     ],
   },
   investmentAccounts: {
@@ -491,11 +441,11 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
   additionalAssetTypes: {
     crypto: [
       { key: 'cryptoAssetValue', label: 'Current crypto value', placeholder: 'e.g. 5000' },
-      { key: 'cryptoAssetContribution', label: 'Monthly contribution ($)', placeholder: 'e.g. 100', required: false },
+      { key: 'cryptoAssetContribution', label: 'Monthly contribution (optional)', placeholder: 'e.g. 100', required: false },
     ],
     individual_stocks: [
       { key: 'individualStockValue', label: 'Current individual stock value', placeholder: 'e.g. 10000' },
-      { key: 'individualStockContribution', label: 'Monthly contribution ($)', placeholder: 'e.g. 100', required: false },
+      { key: 'individualStockContribution', label: 'Monthly contribution (optional)', placeholder: 'e.g. 100', required: false },
     ],
   },
 };
@@ -866,23 +816,6 @@ function getTotalInvestmentsFromResponses(responses: Record<string, any>) {
     toNumber(responses.investmentBalance);
 
   return itemized > 0 ? itemized : legacy;
-}
-
-
-function getAdditionalAssetsForNetWorthBuilder(responses: Record<string, any>) {
-  // Before the Net Worth Builder is completed, combine the grouped Investing
-  // catch-all fields into the single editable Net Worth Builder asset row.
-  // After completion, use the confirmed builder value to avoid double counting
-  // crypto/stocks again on refresh or revisit.
-  if (responses.netWorthEntry === 'completed') {
-    return toNumber(responses.otherAssets);
-  }
-
-  return (
-    toNumber(responses.cryptoAssetValue) +
-    toNumber(responses.individualStockValue) +
-    toNumber(responses.otherAssets)
-  );
 }
 
 function buildNetWorthPayload(payload: Record<string, any>) {
@@ -1921,7 +1854,7 @@ function ActivityStep({ activityKey, responses, onBack, onComplete }: ActivitySt
           homeValue: toNumber(responses.primaryHomeValue) || toNumber(responses.homeValue),
           mortgageBalance: toNumber(responses.primaryMortgage) || toNumber(responses.primaryMortgageBalance) || toNumber(responses.mortgageBalance),
           totalDebtBalance: getTotalConsumerDebtFromResponses(responses),
-          otherAssets: getAdditionalAssetsForNetWorthBuilder(responses),
+          otherAssets: toNumber(responses.cryptoAssetValue) + toNumber(responses.individualStockValue) + toNumber(responses.otherAssets),
           rentalPropertyValue: toNumber(responses.rentalPropertyValue),
           rentalMortgage: toNumber(responses.rentalMortgage) || toNumber(responses.rentalMortgageBalance),
           otherPropertyValue: toNumber(responses.otherPropertyValue),
@@ -2044,8 +1977,8 @@ export default function ComprehensiveQuestionnaire() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const renderableQuestions = useMemo(
-    () => getRenderableQuestions(visibleQuestions),
-    [visibleQuestions]
+    () => keepInvestingRootQuestionsVisible(getRenderableQuestions(visibleQuestions), responses),
+    [visibleQuestions, responses]
   );
 
   const currentQuestion = renderableQuestions[currentStep];

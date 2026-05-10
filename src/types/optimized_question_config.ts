@@ -48,8 +48,6 @@ export const QUESTION_STRATEGY = {
     'vehicleValue',
     'rentalPropertyValue',
     'rentalMortgage',
-    'rentalPropertyPayment',
-    'rentalPropertyIncome',
     'otherPropertyValue',
     'otherPropertyDebt',
     'creditCardBehavior',
@@ -61,9 +59,6 @@ export const QUESTION_STRATEGY = {
     'autoCoverage',
     'disabilityCoverage',
     'umbrellaCoverageAmount',
-    'estateDocuments',
-    'trustInPlace',
-    'beneficiariesUpdated',
     'advancedProtection',
     'investmentAccounts',
     'additionalAssetTypes',
@@ -286,22 +281,6 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     required: false,
     placeholder: 'e.g. 1200',
     helperText: 'Use the combined payment if you own more than one rental. Use $0 if paid off.',
-    conditions: [{ key: 'additionalPropertyOwnership', operator: 'includes', value: 'rental_property' }],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) => Array.isArray(a.additionalPropertyOwnership) && a.additionalPropertyOwnership.includes('rental_property'),
-    },
-  },
-  {
-    key: 'rentalPropertyIncome',
-    question: 'What is the monthly rental income from your rental property?',
-    type: 'number',
-    section: 'spending',
-    required: false,
-    placeholder: 'e.g. 1800',
-    helperText:
-      'If you include rental income here, do not include it in your overall monthly income above or the projections may be overstated.',
     conditions: [{ key: 'additionalPropertyOwnership', operator: 'includes', value: 'rental_property' }],
     tags: {
       modes: ['detailed'],
@@ -615,6 +594,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       askIf: (answers) => Number(String(answers.totalLiquidSavings ?? '').replace(/[^\d.-]/g, '')) > 0,
     },
   },
+
   // DEBT
   {
     key: 'vehicleDebt',
@@ -1086,6 +1066,31 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     },
   },
   {
+    key: 'additionalAssetTypes',
+    question: 'Do you have crypto or individual stocks we have not already counted?',
+    type: 'multiple',
+    section: 'investing',
+    required: false,
+    helperText:
+      'Only include crypto or individual stocks that were not already counted in your retirement, HSA, or brokerage accounts above.',
+    conditions: [
+      {
+        operator: 'custom',
+        fn: (r) => r.investingStatus !== 'not_yet',
+      },
+    ],
+    options: [
+      { value: 'crypto', label: 'Crypto' },
+      { value: 'individual_stocks', label: 'Individual stocks outside accounts above' },
+      { value: 'none', label: 'None of these' },
+    ],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => a.investingStatus !== 'not_yet',
+    },
+  },
+  {
     key: 'investmentConfidence',
     question: 'How confident do you feel about your investing decisions?',
     type: 'single',
@@ -1187,32 +1192,6 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       placeholder: 'e.g. 10000',
       conditions: [{ operator: 'custom', fn: () => false }],
     tags: { modes: ['detailed'], priority: 'conditional', askIf: () => false },},
-    {
-      key: 'additionalAssetTypes',
-      question: 'Do you have crypto or individual stocks outside the accounts above?',
-      type: 'multiple',
-      section: 'investing',
-      required: false,
-      helperText:
-        'Only include crypto or individual stocks held outside retirement, HSA, or brokerage accounts already counted above.',
-      conditions: [
-        {
-          operator: 'custom',
-          fn: (r) => r.investingStatus !== 'not_yet',
-        },
-      ],
-      options: [
-        { value: 'crypto', label: 'Crypto' },
-        { value: 'individual_stocks', label: 'Individual stocks held outside the accounts above' },
-        { value: 'none', label: 'None of these' },
-      ],
-      tags: {
-        modes: ['detailed'],
-        priority: 'conditional',
-        askIf: (a) => a.investingStatus !== 'not_yet',
-      },
-    },
-
     {
       key: 'otherAssets',
       question: 'Other assets (optional)',
@@ -1360,70 +1339,6 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
 
         return hasDependents || partnered || ownsHome || ownsOtherProperty || hasMeaningfulInvestments;
       },
-    },
-  },
-
-
-  {
-    key: 'estateDocuments',
-    question: 'Do you have basic estate documents in place?',
-    type: 'single',
-    section: 'protection',
-    required: true,
-    helperText:
-      'This usually means a will, powers of attorney, guardianship direction if you have children, or a trust if your situation is more complex.',
-    options: [
-      { value: 'complete', label: 'Yes, complete and current' },
-      { value: 'partial', label: 'Some pieces are in place' },
-      { value: 'old_or_unsure', label: 'Old, outdated, or unsure' },
-      { value: 'none', label: 'No estate documents yet' },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) =>
-        Array.isArray(a.advancedProtection) &&
-        a.advancedProtection.includes('will_estate'),
-    },
-  },
-  {
-    key: 'trustInPlace',
-    question: 'Do you have, or have you considered, a trust for more complex assets or family needs?',
-    type: 'single',
-    section: 'protection',
-    required: false,
-    options: [
-      { value: 'yes', label: 'Yes, I have one' },
-      { value: 'considered', label: 'I have considered it' },
-      { value: 'not_needed', label: 'Probably not needed right now' },
-      { value: 'not_sure', label: 'Not sure' },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) =>
-        Array.isArray(a.advancedProtection) &&
-        a.advancedProtection.includes('trust'),
-    },
-  },
-  {
-    key: 'beneficiariesUpdated',
-    question: 'Are your beneficiaries up to date on retirement, investment, and insurance accounts?',
-    type: 'single',
-    section: 'protection',
-    required: true,
-    options: [
-      { value: 'yes', label: 'Yes, reviewed recently' },
-      { value: 'mostly', label: 'Mostly, but worth checking' },
-      { value: 'no', label: 'No / probably outdated' },
-      { value: 'not_sure', label: 'Not sure' },
-    ],
-    tags: {
-      modes: ['detailed'],
-      priority: 'conditional',
-      askIf: (a) =>
-        Array.isArray(a.advancedProtection) &&
-        a.advancedProtection.includes('beneficiaries_updated'),
     },
   },
 
@@ -1618,8 +1533,6 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       Boolean(a.totalLiquidSavings) &&
       (
         Boolean(a.totalInvestments) || Boolean(a.k401Balance) || Boolean(a.iraBalance) || Boolean(a.rothBalance) || Boolean(a.brokerageBalance) || Boolean(a.hsaBalance) || Boolean(a.otherInvestmentAssets) ||
-        Boolean(a.cryptoAssetValue) ||
-        Boolean(a.individualStockValue) ||
         Boolean(a.carLoanBalance) ||
         Boolean(a.creditCardDebt) ||
         Boolean(a.studentLoans) ||
