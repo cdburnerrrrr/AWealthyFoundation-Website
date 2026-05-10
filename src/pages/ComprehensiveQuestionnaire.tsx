@@ -153,7 +153,7 @@ const SECTION_META: Record<
 const INLINE_GROUPS: Record<string, string[]> = {
   relationshipStatus: ['monthlyChildcareCost'],
   housingStatus: ['monthlyHousingCost', 'primaryHomeValue', 'primaryMortgage'],
-  additionalPropertyOwnership: ['rentalPropertyValue', 'rentalMortgage', 'rentalPropertyPayment', 'otherPropertyValue', 'otherPropertyDebt', 'otherPropertyPayment'],
+  additionalPropertyOwnership: ['rentalPropertyValue', 'rentalMortgage', 'rentalPropertyPayment', 'rentalPropertyIncome', 'otherPropertyValue', 'otherPropertyDebt', 'otherPropertyPayment'],
   vehicleDebt: ['carLoanBalance', 'monthlyVehiclePayment', 'vehicleValue'],
   otherDebt: ['creditCardDebt', 'creditCardPayment', 'studentLoans', 'studentLoanPayment', 'personalLoans', 'personalLoanPayment', 'bnplDebt', 'bnplPayment', 'paydayDebt', 'paydayPayment', 'medicalDebt', 'medicalDebtPayment', 'additionalDebt', 'debtManageability', 'debtPaydownStrategy', 'creditCardBehavior'],
   protectionCoverage: [
@@ -299,6 +299,7 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
       { key: 'rentalPropertyValue', label: 'Estimated value', placeholder: 'e.g. 250000' },
       { key: 'rentalMortgage', label: 'Mortgage balance', placeholder: 'e.g. 175000' },
       { key: 'rentalPropertyPayment', label: 'Monthly payment', placeholder: 'e.g. 1200' },
+      { key: 'rentalPropertyIncome', label: 'Monthly rental income (optional)', placeholder: 'e.g. 1800', required: false },
     ],
     other_property: [
       { key: 'otherPropertyValue', label: 'Estimated value', placeholder: 'e.g. 225000' },

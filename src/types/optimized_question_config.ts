@@ -48,6 +48,8 @@ export const QUESTION_STRATEGY = {
     'vehicleValue',
     'rentalPropertyValue',
     'rentalMortgage',
+    'rentalPropertyPayment',
+    'rentalPropertyIncome',
     'otherPropertyValue',
     'otherPropertyDebt',
     'creditCardBehavior',
@@ -285,6 +287,22 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     required: false,
     placeholder: 'e.g. 1200',
     helperText: 'Use the combined payment if you own more than one rental. Use $0 if paid off.',
+    conditions: [{ key: 'additionalPropertyOwnership', operator: 'includes', value: 'rental_property' }],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => Array.isArray(a.additionalPropertyOwnership) && a.additionalPropertyOwnership.includes('rental_property'),
+    },
+  },
+  {
+    key: 'rentalPropertyIncome',
+    question: 'What is the monthly rental income from your rental property?',
+    type: 'number',
+    section: 'spending',
+    required: false,
+    placeholder: 'e.g. 1800',
+    helperText:
+      'If you include rental income here, do not include it in your overall monthly income above or the projections may be overstated.',
     conditions: [{ key: 'additionalPropertyOwnership', operator: 'includes', value: 'rental_property' }],
     tags: {
       modes: ['detailed'],
