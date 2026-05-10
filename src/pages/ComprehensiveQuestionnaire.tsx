@@ -657,6 +657,9 @@ function getContinueModeQuestions(responses: Record<string, any>) {
 
   return keepInvestingRootQuestionsVisible(detailed.filter((question) => {
     const answered = isAnswered(question, responses[question.key]);
+    if (question.key === 'investmentAccounts' || question.key === 'additionalAssetTypes') {
+      return responses.investingStatus !== 'not_yet';
+    }
     if (question.key === 'protectionCoverage') return true;
     if (question.key === 'relationshipStatus') {
       const hasDependents = ['single_with_dependents', 'partnered_with_dependents'].includes(
@@ -736,7 +739,7 @@ function insertQuestionInOriginalOrder(questions: Question[], questionToInsert: 
 }
 
 function keepInvestingRootQuestionsVisible(questions: Question[], responses: Record<string, any>) {
-  const notInvesting = responses.investingStatus === 'not_yet';
+  const notInvesting = String(responses.investingStatus ?? '').trim() === 'not_yet';
 
   if (notInvesting) {
     return questions.filter((question) => !COMPREHENSIVE_INVESTING_ROOT_KEYS.has(question.key));

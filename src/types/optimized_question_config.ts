@@ -1062,12 +1062,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     type: 'multiple',
     section: 'investing',
     required: true,
-    conditions: [
-      {
-        operator: 'custom',
-        fn: (r) => r.investingStatus !== 'not_yet',
-      },
-    ],
+    conditions: [],
     options: [
       { value: '401k', label: '401(k) / workplace plan' },
       { value: 'roth_ira', label: 'Roth IRA' },
@@ -1080,7 +1075,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     tags: {
       modes: ['detailed'],
       priority: 'conditional',
-      askIf: (a) => a.investingStatus !== 'not_yet',
+      askIf: () => true,
     },
   },
   {
@@ -1091,12 +1086,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     required: false,
     helperText:
       'Only include crypto or individual stocks that were not already counted in your retirement, HSA, or brokerage accounts above.',
-    conditions: [
-      {
-        operator: 'custom',
-        fn: (r) => r.investingStatus !== 'not_yet',
-      },
-    ],
+    conditions: [],
     options: [
       { value: 'crypto', label: 'Crypto' },
       { value: 'individual_stocks', label: 'Individual stocks outside accounts above' },
@@ -1105,7 +1095,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     tags: {
       modes: ['detailed'],
       priority: 'conditional',
-      askIf: (a) => a.investingStatus !== 'not_yet',
+      askIf: () => true,
     },
   },
   {
