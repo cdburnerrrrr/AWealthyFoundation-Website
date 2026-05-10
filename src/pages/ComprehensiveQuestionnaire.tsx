@@ -824,6 +824,22 @@ function getTotalInvestmentsFromResponses(responses: Record<string, any>) {
   return itemized > 0 ? itemized : legacy;
 }
 
+function getAdditionalAssetsForNetWorthBuilder(responses: Record<string, any>) {
+  // Before the Net Worth Builder is completed, this combines the grouped Investing
+  // catch-all fields into the single editable Net Worth Builder asset row.
+  // After completion, use the confirmed builder value to avoid double counting
+  // crypto/stocks again on refresh or revisit.
+  if (responses.netWorthEntry === 'completed') {
+    return toNumber(responses.otherAssets);
+  }
+
+  return (
+    toNumber(responses.cryptoAssetValue) +
+    toNumber(responses.individualStockValue) +
+    toNumber(responses.otherAssets)
+  );
+}
+
 function buildNetWorthPayload(payload: Record<string, any>) {
   const totalLiquidSavings = toNumber(payload.totalLiquidSavings);
   const totalInvestments = toNumber(payload.totalInvestments);
@@ -1860,7 +1876,7 @@ function ActivityStep({ activityKey, responses, onBack, onComplete }: ActivitySt
           homeValue: toNumber(responses.primaryHomeValue) || toNumber(responses.homeValue),
           mortgageBalance: toNumber(responses.primaryMortgage) || toNumber(responses.primaryMortgageBalance) || toNumber(responses.mortgageBalance),
           totalDebtBalance: getTotalConsumerDebtFromResponses(responses),
-          otherAssets: toNumber(responses.otherAssets),
+          otherAssets: getAdditionalAssetsForNetWorthBuilder(responses),
           rentalPropertyValue: toNumber(responses.rentalPropertyValue),
           rentalMortgage: toNumber(responses.rentalMortgage) || toNumber(responses.rentalMortgageBalance),
           otherPropertyValue: toNumber(responses.otherPropertyValue),
