@@ -95,7 +95,6 @@ export const QUESTION_STRATEGY = {
     'cashSavings',
     'otherAssets',
     'investmentMix',
-    'savingsAutomation',
     'monthlySavingsContribution',
     'monthlySavingsPercent',
     'creditCardDebt',
@@ -616,21 +615,6 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       askIf: (answers) => Number(String(answers.totalLiquidSavings ?? '').replace(/[^\d.-]/g, '')) > 0,
     },
   },
-  {
-    key: 'savingsAutomation',
-    question: 'How is your saving set up?',
-    type: 'single',
-    section: 'saving',
-    required: true,
-    options: [
-      { value: 'fully_automated', label: 'Fully automated' },
-      { value: 'partially_automated', label: 'Partially automated' },
-      { value: 'manual', label: 'Manual transfers' },
-      { value: 'not_saving', label: 'Not saving right now' },
-    ],
-    tags: { modes: ['detailed'], priority: 'conditional' },
-  },
-
   // DEBT
   {
     key: 'vehicleDebt',
