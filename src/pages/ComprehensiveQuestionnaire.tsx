@@ -688,8 +688,9 @@ function getContinueModeQuestions(responses: Record<string, any>) {
 const COMPREHENSIVE_INVESTING_ROOT_KEYS = new Set([
   'investmentAccounts',
   'additionalAssetTypes',
-  'otherAssets',
 ]);
+
+const FORCED_INVESTING_QUESTION_KEYS = ['investmentAccounts', 'additionalAssetTypes'] as const;
 
 function mergeDefinedAnswerSources(...sources: Array<Record<string, any> | null | undefined>) {
   return sources.reduce((merged, source) => {
@@ -711,31 +712,43 @@ function mergeDefinedAnswerSources(...sources: Array<Record<string, any> | null 
   }, {} as Record<string, any>);
 }
 
-function insertQuestionInOriginalOrder(questions: Question[], questionToInsert: Question) {
-  if (questions.some((question) => question.key === questionToInsert.key)) return questions;
+function getForcedInvestingQuestion(key: (typeof FORCED_INVESTING_QUESTION_KEYS)[number]): Question | null {
+  const fromConfig = OPTIMIZED_ASSESSMENT_QUESTIONS.find((question) => question.key === key);
+  if (fromConfig) return fromConfig;
 
-  const originalIndex = OPTIMIZED_ASSESSMENT_QUESTIONS.findIndex(
-    (question) => question.key === questionToInsert.key
-  );
-
-  if (originalIndex < 0) return questions;
-
-  const next = [...questions];
-  const insertAt = next.findIndex((question) => {
-    const questionIndex = OPTIMIZED_ASSESSMENT_QUESTIONS.findIndex(
-      (original) => original.key === question.key
-    );
-
-    return questionIndex > originalIndex;
-  });
-
-  if (insertAt === -1) {
-    next.push(questionToInsert);
-  } else {
-    next.splice(insertAt, 0, questionToInsert);
+  if (key === 'investmentAccounts') {
+    return {
+      key: 'investmentAccounts',
+      question: 'Which investment accounts do you currently have?',
+      type: 'multiple',
+      section: 'investing',
+      required: true,
+      options: [
+        { value: '401k', label: '401(k) / workplace plan' },
+        { value: 'roth_ira', label: 'Roth IRA' },
+        { value: 'traditional_ira', label: 'Traditional IRA' },
+        { value: 'brokerage', label: 'Taxable brokerage / individual stocks' },
+        { value: 'hsa', label: 'HSA invested for the future' },
+        { value: 'other', label: 'Other investment account' },
+        { value: 'none', label: 'None yet' },
+      ],
+    } as Question;
   }
 
-  return next;
+  return {
+    key: 'additionalAssetTypes',
+    question: 'Do you have crypto or individual stocks we have not already counted?',
+    type: 'multiple',
+    section: 'investing',
+    required: false,
+    helperText:
+      'Only include crypto or individual stocks that were not already counted in your retirement, HSA, or brokerage accounts above.',
+    options: [
+      { value: 'crypto', label: 'Crypto' },
+      { value: 'individual_stocks', label: 'Individual stocks outside accounts above' },
+      { value: 'none', label: 'None of these' },
+    ],
+  } as Question;
 }
 
 function keepInvestingRootQuestionsVisible(questions: Question[], responses: Record<string, any>) {
@@ -745,16 +758,53 @@ function keepInvestingRootQuestionsVisible(questions: Question[], responses: Rec
     return questions.filter((question) => !COMPREHENSIVE_INVESTING_ROOT_KEYS.has(question.key));
   }
 
-  return Array.from(COMPREHENSIVE_INVESTING_ROOT_KEYS).reduce((nextQuestions, key) => {
-    const questionToInsert = OPTIMIZED_ASSESSMENT_QUESTIONS.find((question) => question.key === key);
-    return questionToInsert ? insertQuestionInOriginalOrder(nextQuestions, questionToInsert) : nextQuestions;
-  }, questions);
+  const forcedQuestions = FORCED_INVESTING_QUESTION_KEYS
+    .map((key) => getForcedInvestingQuestion(key))
+    .filter(Boolean) as Question[];
+
+  const withoutForcedQuestions = questions.filter(
+    (question) => !COMPREHENSIVE_INVESTING_ROOT_KEYS.has(question.key)
+  );
+
+  const investingStatusIndex = withoutForcedQuestions.findIndex(
+    (question) => question.key === 'investingStatus'
+  );
+  const firstInvestingIndex = withoutForcedQuestions.findIndex(
+    (question) => question.section === 'investing'
+  );
+  const firstAfterInvestingIndex = withoutForcedQuestions.findIndex(
+    (question) => question.section === 'protection' || question.section === 'vision'
+  );
+
+  let insertAt = withoutForcedQuestions.length;
+
+  if (investingStatusIndex >= 0) {
+    insertAt = investingStatusIndex + 1;
+  } else if (firstInvestingIndex >= 0) {
+    insertAt = firstInvestingIndex;
+  } else if (firstAfterInvestingIndex >= 0) {
+    insertAt = firstAfterInvestingIndex;
+  }
+
+  return [
+    ...withoutForcedQuestions.slice(0, insertAt),
+    ...forcedQuestions,
+    ...withoutForcedQuestions.slice(insertAt),
+  ];
+}
+
+
+function getAssessmentTimestamp(item: any) {
+  const raw = item?.createdAt ?? item?.created_at ?? item?.updatedAt ?? item?.updated_at ?? 0;
+  if (typeof raw === 'number') return Number.isFinite(raw) ? raw : 0;
+  const parsed = Date.parse(String(raw));
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function getLatestFreeAssessment(assessmentHistory: any[]) {
   return [...(assessmentHistory || [])]
     .filter((item) => item?.assessmentType === 'free')
-    .sort((a, b) => (b?.createdAt || 0) - (a?.createdAt || 0))[0] || null;
+    .sort((a, b) => getAssessmentTimestamp(b) - getAssessmentTimestamp(a))[0] || null;
 }
 
 function toNumber(value: unknown): number {
