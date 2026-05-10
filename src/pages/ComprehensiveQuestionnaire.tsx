@@ -170,6 +170,12 @@ const INLINE_GROUPS: Record<string, string[]> = {
     'beneficiariesUpdated',
   ],
   investingStatus: [],
+  additionalAssetTypes: [
+    'cryptoAssetValue',
+    'cryptoAssetContribution',
+    'individualStockValue',
+    'individualStockContribution',
+  ],
   investmentAccounts: [
     'k401Balance',
     'k401Contribution',
@@ -478,6 +484,17 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
       { key: 'otherInvestmentAssets', label: 'Current balance', placeholder: 'e.g. 10000' },
       { key: 'otherInvestmentContribution', label: 'Monthly contribution ($)', placeholder: 'e.g. 100', required: false },
       { key: 'otherInvestmentContributionPercent', label: 'OR contribution percent of pay', placeholder: 'e.g. 2', required: false },
+    ],
+  },
+
+  additionalAssetTypes: {
+    crypto: [
+      { key: 'cryptoAssetValue', label: 'Current crypto value', placeholder: 'e.g. 5000' },
+      { key: 'cryptoAssetContribution', label: 'Monthly contribution ($)', placeholder: 'e.g. 100', required: false },
+    ],
+    individual_stocks: [
+      { key: 'individualStockValue', label: 'Current individual stock value', placeholder: 'e.g. 10000' },
+      { key: 'individualStockContribution', label: 'Monthly contribution ($)', placeholder: 'e.g. 100', required: false },
     ],
   },
 };
@@ -848,6 +865,23 @@ function getTotalInvestmentsFromResponses(responses: Record<string, any>) {
     toNumber(responses.investmentBalance);
 
   return itemized > 0 ? itemized : legacy;
+}
+
+
+function getAdditionalAssetsForNetWorthBuilder(responses: Record<string, any>) {
+  // Before the Net Worth Builder is completed, combine the grouped Investing
+  // catch-all fields into the single editable Net Worth Builder asset row.
+  // After completion, use the confirmed builder value to avoid double counting
+  // crypto/stocks again on refresh or revisit.
+  if (responses.netWorthEntry === 'completed') {
+    return toNumber(responses.otherAssets);
+  }
+
+  return (
+    toNumber(responses.cryptoAssetValue) +
+    toNumber(responses.individualStockValue) +
+    toNumber(responses.otherAssets)
+  );
 }
 
 function buildNetWorthPayload(payload: Record<string, any>) {
@@ -1886,7 +1920,7 @@ function ActivityStep({ activityKey, responses, onBack, onComplete }: ActivitySt
           homeValue: toNumber(responses.primaryHomeValue) || toNumber(responses.homeValue),
           mortgageBalance: toNumber(responses.primaryMortgage) || toNumber(responses.primaryMortgageBalance) || toNumber(responses.mortgageBalance),
           totalDebtBalance: getTotalConsumerDebtFromResponses(responses),
-          otherAssets: toNumber(responses.otherAssets),
+          otherAssets: getAdditionalAssetsForNetWorthBuilder(responses),
           rentalPropertyValue: toNumber(responses.rentalPropertyValue),
           rentalMortgage: toNumber(responses.rentalMortgage) || toNumber(responses.rentalMortgageBalance),
           otherPropertyValue: toNumber(responses.otherPropertyValue),

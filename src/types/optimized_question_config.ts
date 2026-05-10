@@ -64,6 +64,11 @@ export const QUESTION_STRATEGY = {
     'beneficiariesUpdated',
     'advancedProtection',
     'investmentAccounts',
+    'additionalAssetTypes',
+    'cryptoAssetValue',
+    'cryptoAssetContribution',
+    'individualStockValue',
+    'individualStockContribution',
     'investmentConfidence',
     'investmentMix',
     'k401Balance',
@@ -1181,6 +1186,32 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       conditions: [{ operator: 'custom', fn: () => false }],
     tags: { modes: ['detailed'], priority: 'conditional', askIf: () => false },},
     {
+      key: 'additionalAssetTypes',
+      question: 'Do you have crypto or individual stocks outside the accounts above?',
+      type: 'multiple',
+      section: 'investing',
+      required: false,
+      helperText:
+        'Only include crypto or individual stocks held outside retirement, HSA, or brokerage accounts already counted above.',
+      conditions: [
+        {
+          operator: 'custom',
+          fn: (r) => r.investingStatus !== 'not_yet',
+        },
+      ],
+      options: [
+        { value: 'crypto', label: 'Crypto' },
+        { value: 'individual_stocks', label: 'Individual stocks held outside the accounts above' },
+        { value: 'none', label: 'None of these' },
+      ],
+      tags: {
+        modes: ['detailed'],
+        priority: 'conditional',
+        askIf: (a) => a.investingStatus !== 'not_yet',
+      },
+    },
+
+    {
       key: 'otherAssets',
       question: 'Other assets (optional)',
       type: 'number',
@@ -1585,6 +1616,8 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       Boolean(a.totalLiquidSavings) &&
       (
         Boolean(a.totalInvestments) || Boolean(a.k401Balance) || Boolean(a.iraBalance) || Boolean(a.rothBalance) || Boolean(a.brokerageBalance) || Boolean(a.hsaBalance) || Boolean(a.otherInvestmentAssets) ||
+        Boolean(a.cryptoAssetValue) ||
+        Boolean(a.individualStockValue) ||
         Boolean(a.carLoanBalance) ||
         Boolean(a.creditCardDebt) ||
         Boolean(a.studentLoans) ||
