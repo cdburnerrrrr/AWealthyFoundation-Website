@@ -1185,7 +1185,17 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       required: false,
       placeholder: 'e.g. 5000',
       helperText: 'Anything valuable we have not included elsewhere.',
-      tags: { modes: ['detailed'], priority: 'conditional' },
+      conditions: [
+        {
+          operator: 'custom',
+          fn: (r) => r.investingStatus !== 'not_yet',
+        },
+      ],
+      tags: {
+        modes: ['detailed'],
+        priority: 'conditional',
+        askIf: (a) => a.investingStatus !== 'not_yet',
+      },
     },
 
 {
