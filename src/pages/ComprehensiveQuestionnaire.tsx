@@ -153,7 +153,7 @@ const SECTION_META: Record<
 const INLINE_GROUPS: Record<string, string[]> = {
   relationshipStatus: ['monthlyChildcareCost'],
   housingStatus: ['monthlyHousingCost', 'primaryHomeValue', 'primaryMortgage'],
-  additionalPropertyOwnership: ['rentalPropertyValue', 'rentalMortgage', 'rentalPropertyPayment', 'rentalPropertyIncome', 'otherPropertyValue', 'otherPropertyDebt', 'otherPropertyPayment'],
+  additionalPropertyOwnership: ['rentalPropertyValue', 'rentalMortgage', 'rentalPropertyPayment', 'otherPropertyValue', 'otherPropertyDebt', 'otherPropertyPayment'],
   vehicleDebt: ['carLoanBalance', 'monthlyVehiclePayment', 'vehicleValue'],
   otherDebt: ['creditCardDebt', 'creditCardPayment', 'studentLoans', 'studentLoanPayment', 'personalLoans', 'personalLoanPayment', 'bnplDebt', 'bnplPayment', 'paydayDebt', 'paydayPayment', 'medicalDebt', 'medicalDebtPayment', 'additionalDebt', 'debtManageability', 'debtPaydownStrategy', 'creditCardBehavior'],
   protectionCoverage: [
@@ -204,7 +204,6 @@ type InlineField = {
   type?: 'number' | 'select';
   options?: { value: string; label: string }[];
   required?: boolean;
-  helperText?: string;
 };
 
 const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
@@ -293,14 +292,6 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
       { key: 'rentalPropertyValue', label: 'Estimated value', placeholder: 'e.g. 250000' },
       { key: 'rentalMortgage', label: 'Mortgage balance', placeholder: 'e.g. 175000' },
       { key: 'rentalPropertyPayment', label: 'Monthly payment', placeholder: 'e.g. 1200' },
-      {
-        key: 'rentalPropertyIncome',
-        label: 'Monthly rental income (optional)',
-        placeholder: 'e.g. 1800',
-        required: false,
-        helperText:
-          'If you include rental income here, do not include it in your overall monthly income above or the projections may be overstated.',
-      },
     ],
     other_property: [
       { key: 'otherPropertyValue', label: 'Estimated value', placeholder: 'e.g. 225000' },
@@ -657,9 +648,6 @@ function getContinueModeQuestions(responses: Record<string, any>) {
 
   return keepInvestingRootQuestionsVisible(detailed.filter((question) => {
     const answered = isAnswered(question, responses[question.key]);
-    if (question.key === 'investmentAccounts' || question.key === 'additionalAssetTypes') {
-      return responses.investingStatus !== 'not_yet';
-    }
     if (question.key === 'protectionCoverage') return true;
     if (question.key === 'relationshipStatus') {
       const hasDependents = ['single_with_dependents', 'partnered_with_dependents'].includes(
@@ -688,9 +676,8 @@ function getContinueModeQuestions(responses: Record<string, any>) {
 const COMPREHENSIVE_INVESTING_ROOT_KEYS = new Set([
   'investmentAccounts',
   'additionalAssetTypes',
+  'otherAssets',
 ]);
-
-const FORCED_INVESTING_QUESTION_KEYS = ['investmentAccounts', 'additionalAssetTypes'] as const;
 
 function mergeDefinedAnswerSources(...sources: Array<Record<string, any> | null | undefined>) {
   return sources.reduce((merged, source) => {
@@ -712,99 +699,50 @@ function mergeDefinedAnswerSources(...sources: Array<Record<string, any> | null 
   }, {} as Record<string, any>);
 }
 
-function getForcedInvestingQuestion(key: (typeof FORCED_INVESTING_QUESTION_KEYS)[number]): Question | null {
-  const fromConfig = OPTIMIZED_ASSESSMENT_QUESTIONS.find((question) => question.key === key);
-  if (fromConfig) return fromConfig;
+function insertQuestionInOriginalOrder(questions: Question[], questionToInsert: Question) {
+  if (questions.some((question) => question.key === questionToInsert.key)) return questions;
 
-  if (key === 'investmentAccounts') {
-    return {
-      key: 'investmentAccounts',
-      question: 'Which investment accounts do you currently have?',
-      type: 'multiple',
-      section: 'investing',
-      required: true,
-      options: [
-        { value: '401k', label: '401(k) / workplace plan' },
-        { value: 'roth_ira', label: 'Roth IRA' },
-        { value: 'traditional_ira', label: 'Traditional IRA' },
-        { value: 'brokerage', label: 'Taxable brokerage / individual stocks' },
-        { value: 'hsa', label: 'HSA invested for the future' },
-        { value: 'other', label: 'Other investment account' },
-        { value: 'none', label: 'None yet' },
-      ],
-    } as Question;
+  const originalIndex = OPTIMIZED_ASSESSMENT_QUESTIONS.findIndex(
+    (question) => question.key === questionToInsert.key
+  );
+
+  if (originalIndex < 0) return questions;
+
+  const next = [...questions];
+  const insertAt = next.findIndex((question) => {
+    const questionIndex = OPTIMIZED_ASSESSMENT_QUESTIONS.findIndex(
+      (original) => original.key === question.key
+    );
+
+    return questionIndex > originalIndex;
+  });
+
+  if (insertAt === -1) {
+    next.push(questionToInsert);
+  } else {
+    next.splice(insertAt, 0, questionToInsert);
   }
 
-  return {
-    key: 'additionalAssetTypes',
-    question: 'Do you have crypto or individual stocks we have not already counted?',
-    type: 'multiple',
-    section: 'investing',
-    required: false,
-    helperText:
-      'Only include crypto or individual stocks that were not already counted in your retirement, HSA, or brokerage accounts above.',
-    options: [
-      { value: 'crypto', label: 'Crypto' },
-      { value: 'individual_stocks', label: 'Individual stocks outside accounts above' },
-      { value: 'none', label: 'None of these' },
-    ],
-  } as Question;
+  return next;
 }
 
 function keepInvestingRootQuestionsVisible(questions: Question[], responses: Record<string, any>) {
-  const notInvesting = String(responses.investingStatus ?? '').trim() === 'not_yet';
+  const notInvesting = responses.investingStatus === 'not_yet';
 
   if (notInvesting) {
     return questions.filter((question) => !COMPREHENSIVE_INVESTING_ROOT_KEYS.has(question.key));
   }
 
-  const forcedQuestions = FORCED_INVESTING_QUESTION_KEYS
-    .map((key) => getForcedInvestingQuestion(key))
-    .filter(Boolean) as Question[];
-
-  const withoutForcedQuestions = questions.filter(
-    (question) => !COMPREHENSIVE_INVESTING_ROOT_KEYS.has(question.key)
-  );
-
-  const investingStatusIndex = withoutForcedQuestions.findIndex(
-    (question) => question.key === 'investingStatus'
-  );
-  const firstInvestingIndex = withoutForcedQuestions.findIndex(
-    (question) => question.section === 'investing'
-  );
-  const firstAfterInvestingIndex = withoutForcedQuestions.findIndex(
-    (question) => question.section === 'protection' || question.section === 'vision'
-  );
-
-  let insertAt = withoutForcedQuestions.length;
-
-  if (investingStatusIndex >= 0) {
-    insertAt = investingStatusIndex + 1;
-  } else if (firstInvestingIndex >= 0) {
-    insertAt = firstInvestingIndex;
-  } else if (firstAfterInvestingIndex >= 0) {
-    insertAt = firstAfterInvestingIndex;
-  }
-
-  return [
-    ...withoutForcedQuestions.slice(0, insertAt),
-    ...forcedQuestions,
-    ...withoutForcedQuestions.slice(insertAt),
-  ];
-}
-
-
-function getAssessmentTimestamp(item: any) {
-  const raw = item?.createdAt ?? item?.created_at ?? item?.updatedAt ?? item?.updated_at ?? 0;
-  if (typeof raw === 'number') return Number.isFinite(raw) ? raw : 0;
-  const parsed = Date.parse(String(raw));
-  return Number.isFinite(parsed) ? parsed : 0;
+  return Array.from(COMPREHENSIVE_INVESTING_ROOT_KEYS).reduce((nextQuestions, key) => {
+    const questionToInsert = OPTIMIZED_ASSESSMENT_QUESTIONS.find((question) => question.key === key);
+    return questionToInsert ? insertQuestionInOriginalOrder(nextQuestions, questionToInsert) : nextQuestions;
+  }, questions);
 }
 
 function getLatestFreeAssessment(assessmentHistory: any[]) {
   return [...(assessmentHistory || [])]
     .filter((item) => item?.assessmentType === 'free')
-    .sort((a, b) => getAssessmentTimestamp(b) - getAssessmentTimestamp(a))[0] || null;
+    .sort((a, b) => (b?.createdAt || 0) - (a?.createdAt || 0))[0] || null;
 }
 
 function toNumber(value: unknown): number {
@@ -1266,9 +1204,6 @@ function InlineObjectField({
       <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
         {cleanLabel}
       </div>
-      {field.helperText ? (
-        <p className="mb-2 text-xs leading-5 text-slate-500">{field.helperText}</p>
-      ) : null}
       {field.type === 'select' ? (
         <select
           value={responses[field.key] ?? ''}
