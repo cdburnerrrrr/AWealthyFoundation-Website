@@ -153,7 +153,7 @@ const SECTION_META: Record<
 const INLINE_GROUPS: Record<string, string[]> = {
   relationshipStatus: ['monthlyChildcareCost'],
   housingStatus: ['monthlyHousingCost', 'primaryHomeValue', 'primaryMortgage'],
-  additionalPropertyOwnership: ['rentalPropertyValue', 'rentalMortgage', 'rentalPropertyPayment', 'otherPropertyValue', 'otherPropertyDebt', 'otherPropertyPayment'],
+  additionalPropertyOwnership: ['rentalPropertyValue', 'rentalMortgage', 'rentalPropertyPayment', 'rentalPropertyIncome', 'otherPropertyValue', 'otherPropertyDebt', 'otherPropertyPayment'],
   vehicleDebt: ['carLoanBalance', 'monthlyVehiclePayment', 'vehicleValue'],
   otherDebt: ['creditCardDebt', 'creditCardPayment', 'studentLoans', 'studentLoanPayment', 'personalLoans', 'personalLoanPayment', 'bnplDebt', 'bnplPayment', 'paydayDebt', 'paydayPayment', 'medicalDebt', 'medicalDebtPayment', 'additionalDebt', 'debtManageability', 'debtPaydownStrategy', 'creditCardBehavior'],
   protectionCoverage: [
@@ -204,6 +204,7 @@ type InlineField = {
   type?: 'number' | 'select';
   options?: { value: string; label: string }[];
   required?: boolean;
+  helperText?: string;
 };
 
 const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
@@ -292,6 +293,14 @@ const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
       { key: 'rentalPropertyValue', label: 'Estimated value', placeholder: 'e.g. 250000' },
       { key: 'rentalMortgage', label: 'Mortgage balance', placeholder: 'e.g. 175000' },
       { key: 'rentalPropertyPayment', label: 'Monthly payment', placeholder: 'e.g. 1200' },
+      {
+        key: 'rentalPropertyIncome',
+        label: 'Monthly rental income (optional)',
+        placeholder: 'e.g. 1800',
+        required: false,
+        helperText:
+          'If you include rental income here, do not include it in your overall monthly income above or the projections may be overstated.',
+      },
     ],
     other_property: [
       { key: 'otherPropertyValue', label: 'Estimated value', placeholder: 'e.g. 225000' },
@@ -1204,6 +1213,9 @@ function InlineObjectField({
       <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
         {cleanLabel}
       </div>
+      {field.helperText ? (
+        <p className="mb-2 text-xs leading-5 text-slate-500">{field.helperText}</p>
+      ) : null}
       {field.type === 'select' ? (
         <select
           value={responses[field.key] ?? ''}
