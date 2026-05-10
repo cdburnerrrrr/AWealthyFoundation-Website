@@ -1054,12 +1054,6 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     type: 'multiple',
     section: 'investing',
     required: true,
-    conditions: [
-      {
-        operator: 'custom',
-        fn: (r) => r.investingStatus !== 'not_yet',
-      },
-    ],
     options: [
       { value: '401k', label: '401(k) / workplace plan' },
       { value: 'roth_ira', label: 'Roth IRA' },
@@ -1185,12 +1179,6 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       required: false,
       placeholder: 'e.g. 5000',
       helperText: 'Anything valuable we have not included elsewhere.',
-      conditions: [
-        {
-          operator: 'custom',
-          fn: (r) => r.investingStatus !== 'not_yet',
-        },
-      ],
       tags: {
         modes: ['detailed'],
         priority: 'conditional',

@@ -663,7 +663,6 @@ function getContinueModeQuestions(responses: Record<string, any>) {
 
 const COMPREHENSIVE_INVESTING_ROOT_KEYS = new Set([
   'investmentAccounts',
-  'additionalAssetTypes',
   'otherAssets',
 ]);
 
@@ -727,10 +726,28 @@ function keepInvestingRootQuestionsVisible(questions: Question[], responses: Rec
   }, questions);
 }
 
+function getRenderableQuestionsWithInvestingFallback(
+  visibleQuestions: Question[],
+  responses: Record<string, any>
+) {
+  const withInvestingRoots = keepInvestingRootQuestionsVisible(visibleQuestions, responses);
+  return getRenderableQuestions(withInvestingRoots);
+}
+
+function getAssessmentTimestamp(item: any) {
+  const raw = item?.createdAt ?? item?.created_at ?? item?.updatedAt ?? item?.updated_at ?? 0;
+  if (typeof raw === 'number') return Number.isFinite(raw) ? raw : 0;
+  if (typeof raw === 'string') {
+    const parsed = Date.parse(raw);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+}
+
 function getLatestFreeAssessment(assessmentHistory: any[]) {
   return [...(assessmentHistory || [])]
     .filter((item) => item?.assessmentType === 'free')
-    .sort((a, b) => (b?.createdAt || 0) - (a?.createdAt || 0))[0] || null;
+    .sort((a, b) => getAssessmentTimestamp(b) - getAssessmentTimestamp(a))[0] || null;
 }
 
 function toNumber(value: unknown): number {
@@ -1965,8 +1982,8 @@ export default function ComprehensiveQuestionnaire() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const renderableQuestions = useMemo(
-    () => getRenderableQuestions(visibleQuestions),
-    [visibleQuestions]
+    () => getRenderableQuestionsWithInvestingFallback(visibleQuestions, responses),
+    [visibleQuestions, responses]
   );
 
   const currentQuestion = renderableQuestions[currentStep];
@@ -2014,7 +2031,7 @@ export default function ComprehensiveQuestionnaire() {
     setResponses(updated);
     setVisibleQuestions(filtered);
 
-    const nextRenderable = getRenderableQuestions(filtered);
+    const nextRenderable = getRenderableQuestionsWithInvestingFallback(filtered, updated);
     if (currentStep >= nextRenderable.length) {
       setCurrentStep(Math.max(0, nextRenderable.length - 1));
     }
@@ -2072,7 +2089,7 @@ export default function ComprehensiveQuestionnaire() {
       setVisibleQuestions(filtered);
     }
 
-    const nextRenderable = getRenderableQuestions(filtered);
+    const nextRenderable = getRenderableQuestionsWithInvestingFallback(filtered, nextResponses);
     if (currentStep >= nextRenderable.length - 1) {
       return;
     }
