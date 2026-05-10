@@ -24,7 +24,7 @@ import {
   type BuildingBlockKey,
   type Question,
 } from '../types/assessment';
-import { getDetailedQuestions, getSnapshotQuestions, OPTIMIZED_ASSESSMENT_QUESTIONS } from '../types/optimized_question_config';
+import { getDetailedQuestions, getSnapshotQuestions } from '../types/optimized_question_config';
 import { useAppStore } from '../store/appStore';
 import { useUserPlan } from '../hooks/useUserPlan';
 import NetWorthActivity from '../components/activities/NetWorthActivity';
@@ -634,7 +634,7 @@ function getContinueModeQuestions(responses: Record<string, any>) {
   const detailed = getDetailedQuestions(responses);
   const snapshotKeys = new Set(getSnapshotQuestions(responses).map((q) => q.key));
 
-  return keepInvestingRootQuestionsVisible(detailed.filter((question) => {
+  return detailed.filter((question) => {
     const answered = isAnswered(question, responses[question.key]);
     if (question.key === 'protectionCoverage') return true;
     if (question.key === 'relationshipStatus') {
@@ -657,97 +657,13 @@ function getContinueModeQuestions(responses: Record<string, any>) {
       return false;
     }
     return !(snapshotKeys.has(question.key) && answered);
-  }), responses);
-}
-
-
-const COMPREHENSIVE_INVESTING_ROOT_KEYS = new Set([
-  'investmentAccounts',
-  'otherAssets',
-]);
-
-function mergeDefinedAnswerSources(...sources: Array<Record<string, any> | null | undefined>) {
-  return sources.reduce((merged, source) => {
-    if (!source) return merged;
-
-    Object.entries(source).forEach(([key, value]) => {
-      const hasValue =
-        value !== undefined &&
-        value !== null &&
-        value !== '' &&
-        !(Array.isArray(value) && value.length === 0);
-
-      if (hasValue) {
-        merged[key] = value;
-      }
-    });
-
-    return merged;
-  }, {} as Record<string, any>);
-}
-
-function insertQuestionInOriginalOrder(questions: Question[], questionToInsert: Question) {
-  if (questions.some((question) => question.key === questionToInsert.key)) return questions;
-
-  const originalIndex = OPTIMIZED_ASSESSMENT_QUESTIONS.findIndex(
-    (question) => question.key === questionToInsert.key
-  );
-
-  if (originalIndex < 0) return questions;
-
-  const next = [...questions];
-  const insertAt = next.findIndex((question) => {
-    const questionIndex = OPTIMIZED_ASSESSMENT_QUESTIONS.findIndex(
-      (original) => original.key === question.key
-    );
-
-    return questionIndex > originalIndex;
   });
-
-  if (insertAt === -1) {
-    next.push(questionToInsert);
-  } else {
-    next.splice(insertAt, 0, questionToInsert);
-  }
-
-  return next;
-}
-
-function keepInvestingRootQuestionsVisible(questions: Question[], responses: Record<string, any>) {
-  const notInvesting = responses.investingStatus === 'not_yet';
-
-  if (notInvesting) {
-    return questions.filter((question) => !COMPREHENSIVE_INVESTING_ROOT_KEYS.has(question.key));
-  }
-
-  return Array.from(COMPREHENSIVE_INVESTING_ROOT_KEYS).reduce((nextQuestions, key) => {
-    const questionToInsert = OPTIMIZED_ASSESSMENT_QUESTIONS.find((question) => question.key === key);
-    return questionToInsert ? insertQuestionInOriginalOrder(nextQuestions, questionToInsert) : nextQuestions;
-  }, questions);
-}
-
-function getRenderableQuestionsWithInvestingFallback(
-  visibleQuestions: Question[],
-  responses: Record<string, any>
-) {
-  const withInvestingRoots = keepInvestingRootQuestionsVisible(visibleQuestions, responses);
-  return getRenderableQuestions(withInvestingRoots);
-}
-
-function getAssessmentTimestamp(item: any) {
-  const raw = item?.createdAt ?? item?.created_at ?? item?.updatedAt ?? item?.updated_at ?? 0;
-  if (typeof raw === 'number') return Number.isFinite(raw) ? raw : 0;
-  if (typeof raw === 'string') {
-    const parsed = Date.parse(raw);
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-  return 0;
 }
 
 function getLatestFreeAssessment(assessmentHistory: any[]) {
   return [...(assessmentHistory || [])]
     .filter((item) => item?.assessmentType === 'free')
-    .sort((a, b) => getAssessmentTimestamp(b) - getAssessmentTimestamp(a))[0] || null;
+    .sort((a, b) => (b?.createdAt || 0) - (a?.createdAt || 0))[0] || null;
 }
 
 function toNumber(value: unknown): number {
@@ -1958,14 +1874,18 @@ export default function ComprehensiveQuestionnaire() {
   const baseContinueAnswers = useMemo(() => {
     if (!isContinueMode) return null;
 
-    const merged = mergeDefinedAnswerSources(
-      currentAssessment?.assessmentType === 'free' ? currentAssessment?.answers : null,
-      latestFreeAssessment?.report?.answers,
-      latestFreeAssessment?.answers,
-      snapshotAnswers
-    );
+    if (snapshotAnswers && Object.keys(snapshotAnswers).length > 0) return snapshotAnswers;
+    if (latestFreeAssessment?.answers && Object.keys(latestFreeAssessment.answers).length > 0) {
+      return latestFreeAssessment.answers;
+    }
+    if (latestFreeAssessment?.report?.answers && Object.keys(latestFreeAssessment.report.answers).length > 0) {
+      return latestFreeAssessment.report.answers;
+    }
+    if (currentAssessment?.assessmentType === 'free' && currentAssessment?.answers) {
+      return currentAssessment.answers;
+    }
 
-    return Object.keys(merged).length > 0 ? merged : null;
+    return null;
   }, [isContinueMode, snapshotAnswers, latestFreeAssessment, currentAssessment]);
 
   const initialResponses = useMemo(
@@ -1977,13 +1897,13 @@ export default function ComprehensiveQuestionnaire() {
   const [currentStep, setCurrentStep] = useState(0);
   const [responses, setResponses] = useState<Record<string, any>>(initialResponses);
   const [visibleQuestions, setVisibleQuestions] = useState<Question[]>(() =>
-    isContinueMode ? getContinueModeQuestions(initialResponses) : keepInvestingRootQuestionsVisible(getDetailedQuestions(initialResponses), initialResponses)
+    isContinueMode ? getContinueModeQuestions(initialResponses) : getDetailedQuestions(initialResponses)
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const renderableQuestions = useMemo(
-    () => getRenderableQuestionsWithInvestingFallback(visibleQuestions, responses),
-    [visibleQuestions, responses]
+    () => getRenderableQuestions(visibleQuestions),
+    [visibleQuestions]
   );
 
   const currentQuestion = renderableQuestions[currentStep];
@@ -2012,7 +1932,7 @@ export default function ComprehensiveQuestionnaire() {
     const nextResponses = isContinueMode && baseContinueAnswers ? baseContinueAnswers : {};
     setResponses(nextResponses);
     setVisibleQuestions(
-      isContinueMode ? getContinueModeQuestions(nextResponses) : keepInvestingRootQuestionsVisible(getDetailedQuestions(nextResponses), nextResponses)
+      isContinueMode ? getContinueModeQuestions(nextResponses) : getDetailedQuestions(nextResponses)
     );
     setCurrentStep(0);
     setMode('intro');
@@ -2026,12 +1946,12 @@ export default function ComprehensiveQuestionnaire() {
 
   const updateResponses = (key: string, value: ResponseValue) => {
     const updated = { ...responses, [key]: value };
-    const filtered = isContinueMode ? getContinueModeQuestions(updated) : keepInvestingRootQuestionsVisible(getDetailedQuestions(updated), updated);
+    const filtered = isContinueMode ? getContinueModeQuestions(updated) : getDetailedQuestions(updated);
 
     setResponses(updated);
     setVisibleQuestions(filtered);
 
-    const nextRenderable = getRenderableQuestionsWithInvestingFallback(filtered, updated);
+    const nextRenderable = getRenderableQuestions(filtered);
     if (currentStep >= nextRenderable.length) {
       setCurrentStep(Math.max(0, nextRenderable.length - 1));
     }
@@ -2084,12 +2004,12 @@ export default function ComprehensiveQuestionnaire() {
 
     if (updates) {
       nextResponses = { ...nextResponses, ...updates };
-      filtered = isContinueMode ? getContinueModeQuestions(nextResponses) : keepInvestingRootQuestionsVisible(getDetailedQuestions(nextResponses), nextResponses);
+      filtered = isContinueMode ? getContinueModeQuestions(nextResponses) : getDetailedQuestions(nextResponses);
       setResponses(nextResponses);
       setVisibleQuestions(filtered);
     }
 
-    const nextRenderable = getRenderableQuestionsWithInvestingFallback(filtered, nextResponses);
+    const nextRenderable = getRenderableQuestions(filtered);
     if (currentStep >= nextRenderable.length - 1) {
       return;
     }
@@ -2170,7 +2090,7 @@ export default function ComprehensiveQuestionnaire() {
       // Remove stale answers for questions that no longer apply after conditional routing.
       // This prevents hidden values (old investment balances, property fields, legacy totals, etc.)
       // from leaking into the report or net worth calculation.
-      const visibleKeys = new Set(keepInvestingRootQuestionsVisible(getDetailedQuestions(rawMergedAnswers), rawMergedAnswers).map((question) => question.key));
+      const visibleKeys = new Set(getDetailedQuestions(rawMergedAnswers).map((question) => question.key));
       const mergedAnswers = Object.fromEntries(
         Object.entries(rawMergedAnswers).filter(
           ([key]) => visibleKeys.has(key) || CHILD_KEYS.has(key) || PERSISTED_ACTIVITY_RESULT_KEYS.has(key)
