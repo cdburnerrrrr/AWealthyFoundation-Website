@@ -658,7 +658,7 @@ function getContinueModeQuestions(responses: Record<string, any>) {
   return keepInvestingRootQuestionsVisible(detailed.filter((question) => {
     const answered = isAnswered(question, responses[question.key]);
     if (question.key === 'investmentAccounts' || question.key === 'additionalAssetTypes') {
-      return responses.investingStatus !== 'not_yet';
+      return true;
     }
     if (question.key === 'protectionCoverage') return true;
     if (question.key === 'relationshipStatus') {
@@ -690,6 +690,10 @@ const COMPREHENSIVE_INVESTING_ROOT_KEYS = new Set([
   'additionalAssetTypes',
   'otherAssets',
 ]);
+
+const ALWAYS_SHOW_COMPREHENSIVE_INVESTING_KEYS = Array.from(COMPREHENSIVE_INVESTING_ROOT_KEYS).filter(
+  (key) => key === 'investmentAccounts' || key === 'additionalAssetTypes'
+);
 
 function mergeDefinedAnswerSources(...sources: Array<Record<string, any> | null | undefined>) {
   return sources.reduce((merged, source) => {
@@ -738,31 +742,20 @@ function insertQuestionInOriginalOrder(questions: Question[], questionToInsert: 
   return next;
 }
 
-function keepInvestingRootQuestionsVisible(questions: Question[], responses: Record<string, any>) {
-  const notInvesting = String(responses.investingStatus ?? '').trim() === 'not_yet';
-
-  if (notInvesting) {
-    return questions.filter((question) => !COMPREHENSIVE_INVESTING_ROOT_KEYS.has(question.key));
-  }
-
-  return Array.from(COMPREHENSIVE_INVESTING_ROOT_KEYS).reduce((nextQuestions, key) => {
+function keepInvestingRootQuestionsVisible(questions: Question[], _responses: Record<string, any>) {
+  // These two cards are required detailed Investing roots.
+  // Do not let continue-mode filtering, stale Snapshot answers, or section recalculation hide them.
+  // Users who are not investing can still choose the built-in "None" options on the cards.
+  return ALWAYS_SHOW_COMPREHENSIVE_INVESTING_KEYS.reduce((nextQuestions, key) => {
     const questionToInsert = OPTIMIZED_ASSESSMENT_QUESTIONS.find((question) => question.key === key);
     return questionToInsert ? insertQuestionInOriginalOrder(nextQuestions, questionToInsert) : nextQuestions;
   }, questions);
 }
 
-function getAssessmentTimestamp(item: any) {
-  const raw = item?.createdAt ?? item?.created_at ?? item?.updatedAt ?? item?.updated_at ?? 0;
-  if (typeof raw === 'number') return Number.isFinite(raw) ? raw : 0;
-
-  const parsed = Date.parse(String(raw));
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
 function getLatestFreeAssessment(assessmentHistory: any[]) {
   return [...(assessmentHistory || [])]
     .filter((item) => item?.assessmentType === 'free')
-    .sort((a, b) => getAssessmentTimestamp(b) - getAssessmentTimestamp(a))[0] || null;
+    .sort((a, b) => (b?.createdAt || 0) - (a?.createdAt || 0))[0] || null;
 }
 
 function toNumber(value: unknown): number {
@@ -1977,10 +1970,10 @@ export default function ComprehensiveQuestionnaire() {
     if (!isContinueMode) return null;
 
     const merged = mergeDefinedAnswerSources(
+      currentAssessment?.assessmentType === 'free' ? currentAssessment?.answers : null,
       latestFreeAssessment?.report?.answers,
       latestFreeAssessment?.answers,
-      snapshotAnswers,
-      currentAssessment?.assessmentType === 'free' ? currentAssessment?.answers : null
+      snapshotAnswers
     );
 
     return Object.keys(merged).length > 0 ? merged : null;
@@ -2049,7 +2042,7 @@ export default function ComprehensiveQuestionnaire() {
     setResponses(updated);
     setVisibleQuestions(filtered);
 
-    const nextRenderable = keepInvestingRootQuestionsVisible(getRenderableQuestions(filtered), updated);
+    const nextRenderable = getRenderableQuestions(filtered);
     if (currentStep >= nextRenderable.length) {
       setCurrentStep(Math.max(0, nextRenderable.length - 1));
     }
@@ -2107,7 +2100,7 @@ export default function ComprehensiveQuestionnaire() {
       setVisibleQuestions(filtered);
     }
 
-    const nextRenderable = keepInvestingRootQuestionsVisible(getRenderableQuestions(filtered), nextResponses);
+    const nextRenderable = getRenderableQuestions(filtered);
     if (currentStep >= nextRenderable.length - 1) {
       return;
     }
