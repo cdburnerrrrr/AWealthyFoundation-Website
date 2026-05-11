@@ -688,12 +688,6 @@ function getContinueModeQuestions(responses: Record<string, any>) {
 const COMPREHENSIVE_INVESTING_ROOT_KEYS = new Set([
   'investmentAccounts',
   'additionalAssetTypes',
-  'otherAssets',
-]);
-
-const REQUIRED_INVESTING_ROOT_KEYS = new Set([
-  'investmentAccounts',
-  'additionalAssetTypes',
 ]);
 
 function mergeDefinedAnswerSources(...sources: Array<Record<string, any> | null | undefined>) {
@@ -744,19 +738,13 @@ function insertQuestionInOriginalOrder(questions: Question[], questionToInsert: 
 }
 
 function keepInvestingRootQuestionsVisible(questions: Question[], responses: Record<string, any>) {
-  const notInvesting = String(responses.investingStatus ?? '').trim() === 'not_yet';
-  const questionKeysToKeep = notInvesting
-    ? Array.from(REQUIRED_INVESTING_ROOT_KEYS)
-    : Array.from(COMPREHENSIVE_INVESTING_ROOT_KEYS);
-
-  const filteredQuestions = notInvesting
-    ? questions.filter((question) => !COMPREHENSIVE_INVESTING_ROOT_KEYS.has(question.key) || REQUIRED_INVESTING_ROOT_KEYS.has(question.key))
-    : questions;
-
-  return questionKeysToKeep.reduce((nextQuestions, key) => {
+  // Hard safety rail: these two Comprehensive Investing root cards must render.
+  // They are detailed-only cards, and recent changes kept losing them through
+  // continue-mode filtering / stale Snapshot answers. Do not gate them here.
+  return Array.from(COMPREHENSIVE_INVESTING_ROOT_KEYS).reduce((nextQuestions, key) => {
     const questionToInsert = OPTIMIZED_ASSESSMENT_QUESTIONS.find((question) => question.key === key);
     return questionToInsert ? insertQuestionInOriginalOrder(nextQuestions, questionToInsert) : nextQuestions;
-  }, filteredQuestions);
+  }, questions);
 }
 
 function getLatestFreeAssessment(assessmentHistory: any[]) {
@@ -2049,7 +2037,7 @@ export default function ComprehensiveQuestionnaire() {
     setResponses(updated);
     setVisibleQuestions(filtered);
 
-    const nextRenderable = keepInvestingRootQuestionsVisible(getRenderableQuestions(filtered), updated);
+    const nextRenderable = getRenderableQuestions(filtered);
     if (currentStep >= nextRenderable.length) {
       setCurrentStep(Math.max(0, nextRenderable.length - 1));
     }
@@ -2107,7 +2095,7 @@ export default function ComprehensiveQuestionnaire() {
       setVisibleQuestions(filtered);
     }
 
-    const nextRenderable = keepInvestingRootQuestionsVisible(getRenderableQuestions(filtered), nextResponses);
+    const nextRenderable = getRenderableQuestions(filtered);
     if (currentStep >= nextRenderable.length - 1) {
       return;
     }
