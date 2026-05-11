@@ -327,6 +327,10 @@ function getMortgageDebt(answers: Record<string, any>) {
 }
 
 function getOtherAssets(answers: Record<string, any>) {
+  if (answers.netWorthEntry === 'completed') {
+    return toNumber(answers.otherAssets) + toNumber(answers.otherAssetsNotListed);
+  }
+
   return (
     toNumber(answers.cryptoAssetValue) +
     toNumber(answers.individualStockValue) +
@@ -395,12 +399,13 @@ function needsUmbrellaReview(answers: Record<string, any>, metrics: V2FinancialM
 }
 
 function hasCoverage(answers: Record<string, any>, key: string, legacyKey?: string) {
-  const coverage =
-    answers.protectionCoverage ??
-    answers.insuranceCoverage ??
-    answers.protectionCoverages ??
-    answers.insuranceCoverages ??
-    [];
+  const coverage = [
+    ...(Array.isArray(answers.protectionCoverage) ? answers.protectionCoverage : answers.protectionCoverage ? [answers.protectionCoverage] : []),
+    ...(Array.isArray(answers.advancedProtection) ? answers.advancedProtection : answers.advancedProtection ? [answers.advancedProtection] : []),
+    ...(Array.isArray(answers.insuranceCoverage) ? answers.insuranceCoverage : answers.insuranceCoverage ? [answers.insuranceCoverage] : []),
+    ...(Array.isArray(answers.protectionCoverages) ? answers.protectionCoverages : answers.protectionCoverages ? [answers.protectionCoverages] : []),
+    ...(Array.isArray(answers.insuranceCoverages) ? answers.insuranceCoverages : answers.insuranceCoverages ? [answers.insuranceCoverages] : []),
+  ];
 
   const aliases: Record<string, string[]> = {
     hasHealthInsurance: ['health', 'health_insurance', 'healthCoverage', 'good_coverage', 'basic_coverage'],

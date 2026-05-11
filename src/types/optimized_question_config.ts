@@ -32,9 +32,7 @@ export const QUESTION_STRATEGY = {
     'vehicleDebt',
     'otherDebt',
     'unexpectedExpenseHandling',
-    'debtManageability',
     'progressPriority',
-    'debtPaydownStrategy',
     'protectionCoverage',
     'investingStatus',
     'financialDirection',
@@ -52,7 +50,6 @@ export const QUESTION_STRATEGY = {
     'rentalPropertyIncome',
     'otherPropertyValue',
     'otherPropertyDebt',
-    'creditCardBehavior',
     'incomeProtectionRealityCheck',
     'incomeInterruptionCoverage',
     'healthCoverage',
@@ -68,8 +65,6 @@ export const QUESTION_STRATEGY = {
     'cryptoAssetContribution',
     'individualStockValue',
     'individualStockContribution',
-    'investmentConfidence',
-    'investmentMix',
     'k401Balance',
     'k401Contribution',
     'k401ContributionPercent',
@@ -91,7 +86,6 @@ export const QUESTION_STRATEGY = {
     'otherInvestmentContributionPercent',
     'cashSavings',
     'otherAssets',
-    'investmentMix',
     'monthlySavingsContribution',
     'monthlySavingsPercent',
     'creditCardDebt',
@@ -100,7 +94,6 @@ export const QUESTION_STRATEGY = {
     'bnplDebt',
     'paydayDebt',
     'medicalDebt',
-    'additionalDebt',
     'monthlyVehiclePayment',
     'carPaymentOpportunityReview',
     'netWorthEntry',
@@ -116,6 +109,455 @@ export const QUESTION_STRATEGY = {
     'lifeGoal',
   ],
 } as const;
+
+
+export const ASSESSMENT_ROUTING_KEYS = new Set([
+  'ageRange',
+  'relationshipStatus',
+  'housingStatus',
+]);
+
+export const ASSESSMENT_SECTION_ORDER = [
+  'foundation',
+  'income',
+  'spending',
+  'saving',
+  'debt',
+  'investing',
+  'protection',
+  'vision',
+] as const;
+
+export type AssessmentSectionKey = (typeof ASSESSMENT_SECTION_ORDER)[number] | string;
+
+export type AssessmentInlineField = {
+  key: string;
+  label: string;
+  placeholder?: string;
+  type?: 'number' | 'select';
+  options?: { value: string; label: string }[];
+  required?: boolean;
+  helperText?: string;
+};
+
+export const ASSESSMENT_INLINE_GROUPS: Record<string, string[]> = {
+  relationshipStatus: ['monthlyChildcareCost'],
+  housingStatus: ['monthlyHousingCost', 'primaryHomeValue', 'primaryMortgage'],
+  additionalPropertyOwnership: [
+    'rentalPropertyValue',
+    'rentalMortgage',
+    'rentalPropertyPayment',
+    'rentalPropertyIncome',
+    'otherPropertyValue',
+    'otherPropertyDebt',
+    'otherPropertyPayment',
+  ],
+  vehicleDebt: ['carLoanBalance', 'monthlyVehiclePayment', 'vehicleValue'],
+  otherDebt: [
+    'creditCardDebt',
+    'creditCardPayment',
+    'studentLoans',
+    'studentLoanPayment',
+    'personalLoans',
+    'personalLoanPayment',
+    'bnplDebt',
+    'bnplPayment',
+    'paydayDebt',
+    'paydayPayment',
+    'medicalDebt',
+    'medicalDebtPayment',
+  ],
+  protectionCoverage: [
+    'healthCoverage',
+    'autoCoverage',
+    'propertyCoverage',
+    'lifeInsurance',
+    'disabilityCoverage',
+  ],
+  advancedProtection: [
+    'umbrellaCoverageAmount',
+    'estateDocuments',
+    'trustInPlace',
+    'beneficiariesUpdated',
+  ],
+  investingStatus: [],
+  investmentAccounts: [
+    'k401Balance',
+    'k401Contribution',
+    'k401ContributionPercent',
+    'k401Match',
+    'iraBalance',
+    'iraContribution',
+    'iraContributionPercent',
+    'rothBalance',
+    'rothContribution',
+    'rothContributionPercent',
+    'brokerageBalance',
+    'brokerageContribution',
+    'brokerageContributionPercent',
+    'hsaBalance',
+    'hsaContribution',
+    'hsaContributionPercent',
+    'otherInvestmentAssets',
+    'otherInvestmentContribution',
+    'otherInvestmentContributionPercent',
+  ],
+  additionalAssetTypes: [
+    'cryptoAssetValue',
+    'cryptoAssetContribution',
+    'individualStockValue',
+    'individualStockContribution',
+  ],
+  savingConsistency: [
+    'monthlySavingsContribution',
+    'monthlySavingsPercent',
+    'totalLiquidSavings',
+    'savingsAutomation',
+  ],
+};
+
+export const ASSESSMENT_CHILD_KEYS = new Set(Object.values(ASSESSMENT_INLINE_GROUPS).flat());
+
+export const ASSESSMENT_CHILD_PARENT_KEY: Record<string, string> = Object.entries(
+  ASSESSMENT_INLINE_GROUPS
+).reduce((acc, [parentKey, childKeys]) => {
+  childKeys.forEach((childKey) => {
+    acc[childKey] = parentKey;
+  });
+  return acc;
+}, {} as Record<string, string>);
+
+const BASE_OBJECT_FIELD_GROUPS: Record<string, Record<string, AssessmentInlineField[]>> = {
+  relationshipStatus: {
+    single_with_dependents: [
+      {
+        key: 'monthlyChildcareCost',
+        label: 'Monthly childcare / daycare cost',
+        placeholder: 'e.g. 600',
+      },
+    ],
+    partnered_with_dependents: [
+      {
+        key: 'monthlyChildcareCost',
+        label: 'Monthly childcare / daycare cost',
+        placeholder: 'e.g. 600',
+      },
+    ],
+  },
+  housingStatus: {
+    living_with_family: [
+      { key: 'monthlyHousingCost', label: 'Monthly contribution, if any', placeholder: 'e.g. 0' },
+    ],
+    rent: [{ key: 'monthlyHousingCost', label: 'Monthly rent', placeholder: 'e.g. 1400' }],
+    own_with_mortgage: [
+      { key: 'monthlyHousingCost', label: 'Monthly house payment', placeholder: 'e.g. 1500' },
+      { key: 'primaryHomeValue', label: 'Estimated home value', placeholder: 'e.g. 350000' },
+      { key: 'primaryMortgage', label: 'Mortgage balance', placeholder: 'e.g. 185000' },
+    ],
+    own_outright: [
+      { key: 'monthlyHousingCost', label: 'Monthly housing costs, if any', placeholder: 'e.g. 0' },
+      { key: 'primaryHomeValue', label: 'Estimated home value', placeholder: 'e.g. 350000' },
+    ],
+  },
+  savingConsistency: {
+    yes_consistently: [
+      { key: 'monthlySavingsContribution', label: 'Monthly savings amount', placeholder: 'e.g. 500', required: false },
+      { key: 'monthlySavingsPercent', label: 'OR savings percent of take-home pay', placeholder: 'e.g. 10', required: false },
+      { key: 'totalLiquidSavings', label: 'Current cash savings balance', placeholder: 'e.g. 8000' },
+      {
+        key: 'savingsAutomation',
+        label: 'Saving setup',
+        type: 'select',
+        required: false,
+        options: [
+          { value: 'fully_automated', label: 'Fully automated' },
+          { value: 'partially_automated', label: 'Partially automated' },
+          { value: 'manual', label: 'Manual transfers' },
+        ],
+      },
+    ],
+    yes_irregularly: [
+      { key: 'monthlySavingsContribution', label: 'Typical monthly savings amount', placeholder: 'e.g. 250', required: false },
+      { key: 'monthlySavingsPercent', label: 'OR typical savings percent of take-home pay', placeholder: 'e.g. 5', required: false },
+      { key: 'totalLiquidSavings', label: 'Current cash savings balance', placeholder: 'e.g. 3000' },
+      {
+        key: 'savingsAutomation',
+        label: 'Saving setup',
+        type: 'select',
+        required: false,
+        options: [
+          { value: 'fully_automated', label: 'Fully automated' },
+          { value: 'partially_automated', label: 'Partially automated' },
+          { value: 'manual', label: 'Manual transfers' },
+        ],
+      },
+    ],
+    not_currently: [
+      { key: 'totalLiquidSavings', label: 'Current cash savings balance', placeholder: 'e.g. 500' },
+    ],
+  },
+  vehicleDebt: {
+    car_loan: [
+      { key: 'carLoanBalance', label: 'Loan balance', placeholder: 'e.g. 18000' },
+      { key: 'monthlyVehiclePayment', label: 'Monthly payment', placeholder: 'e.g. 540' },
+      { key: 'vehicleValue', label: 'Estimated vehicle value', placeholder: 'e.g. 15000' },
+    ],
+    car_lease: [{ key: 'monthlyVehiclePayment', label: 'Monthly lease payment', placeholder: 'e.g. 420' }],
+  },
+  additionalPropertyOwnership: {
+    rental_property: [
+      { key: 'rentalPropertyValue', label: 'Estimated value', placeholder: 'e.g. 250000' },
+      { key: 'rentalMortgage', label: 'Mortgage balance', placeholder: 'e.g. 175000' },
+      { key: 'rentalPropertyPayment', label: 'Monthly payment', placeholder: 'e.g. 1200' },
+      {
+        key: 'rentalPropertyIncome',
+        label: 'Monthly rental income (optional)',
+        placeholder: 'e.g. 1800',
+        required: false,
+        helperText:
+          'If you include rental income here, do not include it in your overall monthly income above or the projections may be overstated.',
+      },
+    ],
+    other_property: [
+      { key: 'otherPropertyValue', label: 'Estimated value', placeholder: 'e.g. 225000' },
+      { key: 'otherPropertyDebt', label: 'Mortgage or debt balance', placeholder: 'e.g. 0' },
+      { key: 'otherPropertyPayment', label: 'Monthly payment', placeholder: 'e.g. 0' },
+    ],
+  },
+  otherDebt: {
+    credit_card: [
+      { key: 'creditCardDebt', label: 'Balance', placeholder: 'e.g. 1200' },
+      { key: 'creditCardPayment', label: 'Monthly payment', placeholder: 'e.g. 75' },
+    ],
+    student_loan: [
+      { key: 'studentLoans', label: 'Balance', placeholder: 'e.g. 45000' },
+      { key: 'studentLoanPayment', label: 'Monthly payment', placeholder: 'e.g. 300' },
+    ],
+    personal_loan: [
+      { key: 'personalLoans', label: 'Balance', placeholder: 'e.g. 5000' },
+      { key: 'personalLoanPayment', label: 'Monthly payment', placeholder: 'e.g. 175' },
+    ],
+    bnpl: [
+      { key: 'bnplDebt', label: 'Balance', placeholder: 'e.g. 600' },
+      { key: 'bnplPayment', label: 'Monthly payment', placeholder: 'e.g. 60' },
+    ],
+    payday: [
+      { key: 'paydayDebt', label: 'Balance', placeholder: 'e.g. 300' },
+      { key: 'paydayPayment', label: 'Monthly payment', placeholder: 'e.g. 100' },
+    ],
+    medical: [
+      { key: 'medicalDebt', label: 'Balance', placeholder: 'e.g. 1500' },
+      { key: 'medicalDebtPayment', label: 'Monthly payment', placeholder: 'e.g. 50' },
+    ],
+  },
+  investmentAccounts: {
+    '401k': [
+      { key: 'k401Balance', label: 'Current balance', placeholder: 'e.g. 85000' },
+      { key: 'k401Contribution', label: 'Monthly contribution ($)', placeholder: 'e.g. 500', required: false },
+      { key: 'k401ContributionPercent', label: 'OR contribution percent of pay', placeholder: 'e.g. 6', required: false },
+      {
+        key: 'k401Match',
+        label: 'Employer match',
+        type: 'select',
+        options: [
+          { value: 'maximizing_match', label: 'Getting the full match' },
+          { value: 'have_match_not_maxing', label: 'Not getting the full match' },
+          { value: 'no_match_or_no_access', label: 'No match or unsure' },
+        ],
+      },
+    ],
+    roth_ira: [
+      { key: 'rothBalance', label: 'Current balance', placeholder: 'e.g. 25000' },
+      { key: 'rothContribution', label: 'Monthly contribution ($)', placeholder: 'e.g. 250', required: false },
+      { key: 'rothContributionPercent', label: 'OR contribution percent of pay', placeholder: 'e.g. 5', required: false },
+    ],
+    traditional_ira: [
+      { key: 'iraBalance', label: 'Current balance', placeholder: 'e.g. 30000' },
+      { key: 'iraContribution', label: 'Monthly contribution ($)', placeholder: 'e.g. 250', required: false },
+      { key: 'iraContributionPercent', label: 'OR contribution percent of pay', placeholder: 'e.g. 5', required: false },
+    ],
+    brokerage: [
+      { key: 'brokerageBalance', label: 'Current balance', placeholder: 'e.g. 50000' },
+      { key: 'brokerageContribution', label: 'Monthly contribution ($)', placeholder: 'e.g. 300', required: false },
+      { key: 'brokerageContributionPercent', label: 'OR contribution percent of pay', placeholder: 'e.g. 5', required: false },
+    ],
+    hsa: [
+      { key: 'hsaBalance', label: 'Invested HSA balance', placeholder: 'e.g. 8000' },
+      { key: 'hsaContribution', label: 'Monthly contribution ($)', placeholder: 'e.g. 150', required: false },
+      { key: 'hsaContributionPercent', label: 'OR contribution percent of pay', placeholder: 'e.g. 3', required: false },
+    ],
+    other: [
+      { key: 'otherInvestmentAssets', label: 'Current balance', placeholder: 'e.g. 10000' },
+      { key: 'otherInvestmentContribution', label: 'Monthly contribution ($)', placeholder: 'e.g. 100', required: false },
+      { key: 'otherInvestmentContributionPercent', label: 'OR contribution percent of pay', placeholder: 'e.g. 2', required: false },
+    ],
+  },
+  additionalAssetTypes: {
+    crypto: [
+      { key: 'cryptoAssetValue', label: 'Current crypto value', placeholder: 'e.g. 5000' },
+      { key: 'cryptoAssetContribution', label: 'Monthly contribution (optional)', placeholder: 'e.g. 100', required: false },
+    ],
+    individual_stocks: [
+      { key: 'individualStockValue', label: 'Current individual stock value', placeholder: 'e.g. 10000' },
+      { key: 'individualStockContribution', label: 'Monthly contribution (optional)', placeholder: 'e.g. 100', required: false },
+    ],
+  },
+};
+
+export const SNAPSHOT_OBJECT_FIELD_GROUPS: Record<string, Record<string, AssessmentInlineField[]>> = {
+  ...BASE_OBJECT_FIELD_GROUPS,
+  protectionCoverage: {},
+};
+
+export const DETAILED_OBJECT_FIELD_GROUPS: Record<string, Record<string, AssessmentInlineField[]>> = {
+  ...BASE_OBJECT_FIELD_GROUPS,
+  protectionCoverage: {
+    health: [
+      {
+        key: 'healthCoverage',
+        label: 'Health coverage quality',
+        type: 'select',
+        options: [
+          { value: 'solid', label: 'Solid coverage for normal needs' },
+          { value: 'basic', label: 'Basic coverage, but higher costs could hurt' },
+          { value: 'limited', label: 'Limited or uncertain coverage' },
+          { value: 'none', label: 'No health coverage' },
+        ],
+      },
+    ],
+    auto: [
+      {
+        key: 'autoCoverage',
+        label: 'Auto coverage level',
+        type: 'select',
+        options: [
+          { value: 'full', label: 'Full coverage' },
+          { value: 'basic', label: 'Basic but reasonable' },
+          { value: 'minimal', label: 'Minimal' },
+          { value: 'minimum', label: 'State minimum only' },
+          { value: 'do_not_drive', label: 'Do not drive / not applicable' },
+        ],
+      },
+    ],
+    home_or_renters: [
+      {
+        key: 'propertyCoverage',
+        label: 'Homeowners / renters coverage',
+        type: 'select',
+        options: [
+          { value: 'solid', label: 'Solid coverage' },
+          { value: 'basic', label: 'Basic coverage' },
+          { value: 'minimal', label: 'Minimal / unsure' },
+          { value: 'none', label: 'No coverage' },
+        ],
+      },
+    ],
+    life: [
+      {
+        key: 'lifeInsurance',
+        label: 'Life insurance adequacy',
+        type: 'select',
+        options: [
+          { value: 'enough', label: 'Enough for the people who depend on me' },
+          { value: 'some', label: 'Some, but probably not enough' },
+          { value: 'none', label: 'No life insurance' },
+          { value: 'not_needed', label: 'No one depends on my income' },
+        ],
+      },
+    ],
+    disability: [
+      {
+        key: 'disabilityCoverage',
+        label: 'Disability / income protection',
+        type: 'select',
+        options: [
+          { value: 'strong', label: 'Strong disability coverage' },
+          { value: 'employer_basic', label: 'Basic employer coverage' },
+          { value: 'unsure', label: 'Not sure what I have' },
+          { value: 'none', label: 'No disability coverage' },
+        ],
+      },
+    ],
+  },
+  advancedProtection: {
+    umbrella: [
+      { key: 'umbrellaCoverageAmount', label: 'Umbrella policy amount', placeholder: 'e.g. 1000000', required: false },
+    ],
+    will_estate: [
+      {
+        key: 'estateDocuments',
+        label: 'Will / estate documents status',
+        type: 'select',
+        options: [
+          { value: 'complete', label: 'Complete and current' },
+          { value: 'partial', label: 'Started or partially complete' },
+          { value: 'old_or_unsure', label: 'Old or not sure if current' },
+          { value: 'none', label: 'Not in place yet' },
+        ],
+      },
+    ],
+    trust: [
+      {
+        key: 'trustInPlace',
+        label: 'Trust status',
+        type: 'select',
+        options: [
+          { value: 'complete', label: 'Trust is in place' },
+          { value: 'in_progress', label: 'In progress' },
+          { value: 'not_sure', label: 'Not sure' },
+          { value: 'none', label: 'No trust' },
+        ],
+      },
+    ],
+    beneficiaries_updated: [
+      {
+        key: 'beneficiariesUpdated',
+        label: 'Beneficiaries status',
+        type: 'select',
+        options: [
+          { value: 'yes', label: 'Reviewed and current' },
+          { value: 'mostly', label: 'Mostly current' },
+          { value: 'not_sure', label: 'Not sure' },
+          { value: 'no', label: 'Need to review or update' },
+        ],
+      },
+    ],
+  },
+};
+
+export const SNAPSHOT_OBJECT_INLINE_ROOT_KEYS = new Set(Object.keys(SNAPSHOT_OBJECT_FIELD_GROUPS));
+export const DETAILED_OBJECT_INLINE_ROOT_KEYS = new Set(Object.keys(DETAILED_OBJECT_FIELD_GROUPS));
+
+export const COMPREHENSIVE_INVESTING_ROOT_KEYS = [
+  'investmentAccounts',
+  'additionalAssetTypes',
+  'otherAssets',
+] as const;
+
+export function getAssessmentSectionKey(question?: Question): AssessmentSectionKey {
+  if (!question) return 'foundation';
+  if (ASSESSMENT_ROUTING_KEYS.has(question.key)) return 'foundation';
+  return question.section ?? 'context';
+}
+
+function getQuestionOriginalIndex(question: Question) {
+  return OPTIMIZED_ASSESSMENT_QUESTIONS.findIndex((candidate) => candidate.key === question.key);
+}
+
+export function sortQuestionsByAssessmentOrder(questions: Question[]) {
+  const sectionRank = new Map(ASSESSMENT_SECTION_ORDER.map((section, index) => [section, index]));
+
+  return [...questions].sort((a, b) => {
+    const aSection = getAssessmentSectionKey(a);
+    const bSection = getAssessmentSectionKey(b);
+    const aRank = sectionRank.get(aSection as typeof ASSESSMENT_SECTION_ORDER[number]) ?? 999;
+    const bRank = sectionRank.get(bSection as typeof ASSESSMENT_SECTION_ORDER[number]) ?? 999;
+
+    if (aRank !== bRank) return aRank - bRank;
+
+    return getQuestionOriginalIndex(a) - getQuestionOriginalIndex(b);
+  });
+}
 
 export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
   // ROUTING / CONTEXT
@@ -1067,7 +1509,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       { value: '401k', label: '401(k) / workplace plan' },
       { value: 'roth_ira', label: 'Roth IRA' },
       { value: 'traditional_ira', label: 'Traditional IRA' },
-      { value: 'brokerage', label: 'Taxable brokerage / individual stocks' },
+      { value: 'brokerage', label: 'Taxable brokerage' },
       { value: 'hsa', label: 'HSA invested for the future' },
       { value: 'other', label: 'Other investment account' },
       { value: 'none', label: 'None yet' },
@@ -1075,7 +1517,7 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     tags: {
       modes: ['detailed'],
       priority: 'conditional',
-      askIf: () => true,
+      askIf: (a) => a.investingStatus !== 'not_yet',
     },
   },
   {
@@ -1095,9 +1537,31 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
     tags: {
       modes: ['detailed'],
       priority: 'conditional',
-      askIf: () => true,
+      askIf: (a) => a.investingStatus !== 'not_yet',
     },
   },
+  {
+    key: 'otherAssets',
+    question: 'Other assets (optional)',
+    type: 'number',
+    section: 'investing',
+    required: false,
+    placeholder: 'e.g. 5000',
+    helperText:
+      'Do not include anything already counted in your retirement or brokerage accounts above.',
+    conditions: [
+      {
+        operator: 'custom',
+        fn: (r) => r.investingStatus !== 'not_yet',
+      },
+    ],
+    tags: {
+      modes: ['detailed'],
+      priority: 'conditional',
+      askIf: (a) => a.investingStatus !== 'not_yet',
+    },
+  },
+
   {
     key: 'investmentConfidence',
     question: 'How confident do you feel about your investing decisions?',
@@ -1200,27 +1664,6 @@ export const OPTIMIZED_ASSESSMENT_QUESTIONS: Question[] = [
       placeholder: 'e.g. 10000',
       conditions: [{ operator: 'custom', fn: () => false }],
     tags: { modes: ['detailed'], priority: 'conditional', askIf: () => false },},
-    {
-      key: 'otherAssets',
-      question: 'Other assets (optional)',
-      type: 'number',
-      section: 'investing',
-      required: false,
-      placeholder: 'e.g. 5000',
-      helperText: 'Anything valuable we have not included elsewhere.',
-      conditions: [
-        {
-          operator: 'custom',
-          fn: (r) => r.investingStatus !== 'not_yet',
-        },
-      ],
-      tags: {
-        modes: ['detailed'],
-        priority: 'conditional',
-        askIf: (a) => a.investingStatus !== 'not_yet',
-      },
-    },
-
 {
   key: 'investmentMix',
   question: 'What best describes your investments?',
@@ -1641,7 +2084,7 @@ export function getVisibleQuestionsByMode(
   responses: Record<string, any>,
   mode: AssessmentMode = 'detailed'
 ): Question[] {
-  return questions.filter((q) => {
+  const visibleQuestions = questions.filter((q) => {
     const passesConditions = evaluateAllConditions(q.conditions || [], responses);
     const passesMode = !q.tags?.modes || q.tags.modes.includes(mode);
     const passesAskIf = !q.tags?.askIf || q.tags.askIf(responses);
@@ -1653,6 +2096,8 @@ export function getVisibleQuestionsByMode(
 
     return passesConditions && passesMode && passesAskIf && passesPriority;
   });
+
+  return sortQuestionsByAssessmentOrder(visibleQuestions);
 }
 
 export function getSnapshotQuestions(responses: Record<string, any> = {}) {

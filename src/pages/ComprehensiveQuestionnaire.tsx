@@ -24,7 +24,20 @@ import {
   type BuildingBlockKey,
   type Question,
 } from '../types/assessment';
-import { getDetailedQuestions, getSnapshotQuestions, OPTIMIZED_ASSESSMENT_QUESTIONS } from '../types/optimized_question_config';
+import {
+  ASSESSMENT_CHILD_KEYS,
+  ASSESSMENT_CHILD_PARENT_KEY,
+  ASSESSMENT_INLINE_GROUPS,
+  ASSESSMENT_ROUTING_KEYS,
+  COMPREHENSIVE_INVESTING_ROOT_KEYS,
+  DETAILED_OBJECT_FIELD_GROUPS,
+  DETAILED_OBJECT_INLINE_ROOT_KEYS,
+  getAssessmentSectionKey,
+  getDetailedQuestions,
+  getSnapshotQuestions,
+  OPTIMIZED_ASSESSMENT_QUESTIONS,
+  type AssessmentInlineField,
+} from '../types/optimized_question_config';
 import { useAppStore } from '../store/appStore';
 import { useUserPlan } from '../hooks/useUserPlan';
 import NetWorthActivity from '../components/activities/NetWorthActivity';
@@ -52,11 +65,7 @@ const SECTION_ICONS: Record<string, React.ElementType> = {
   foundation: Users,
 };
 
-const ROUTING_KEYS = new Set([
-  'ageRange',
-  'relationshipStatus',
-  'housingStatus',
-]);
+const ROUTING_KEYS = ASSESSMENT_ROUTING_KEYS;
 
 const ACTIVITY_KEYS = new Set<ActivityKey>([
   'fixedCostPressureReview',
@@ -65,6 +74,8 @@ const ACTIVITY_KEYS = new Set<ActivityKey>([
   'incomeProtectionRealityCheck',
   'netWorthEntry',
 ]);
+
+const DEBUG_COMPREHENSIVE_RENDER_KEYS = false;
 
 const SECTION_META: Record<
   string,
@@ -150,316 +161,11 @@ const SECTION_META: Record<
   },
 };
 
-const INLINE_GROUPS: Record<string, string[]> = {
-  relationshipStatus: ['monthlyChildcareCost'],
-  housingStatus: ['monthlyHousingCost', 'primaryHomeValue', 'primaryMortgage'],
-  additionalPropertyOwnership: ['rentalPropertyValue', 'rentalMortgage', 'rentalPropertyPayment', 'rentalPropertyIncome', 'otherPropertyValue', 'otherPropertyDebt', 'otherPropertyPayment'],
-  vehicleDebt: ['carLoanBalance', 'monthlyVehiclePayment', 'vehicleValue'],
-  otherDebt: ['creditCardDebt', 'creditCardPayment', 'studentLoans', 'studentLoanPayment', 'personalLoans', 'personalLoanPayment', 'bnplDebt', 'bnplPayment', 'paydayDebt', 'paydayPayment', 'medicalDebt', 'medicalDebtPayment', 'additionalDebt', 'debtManageability', 'debtPaydownStrategy', 'creditCardBehavior'],
-  protectionCoverage: [
-    'healthCoverage',
-    'disabilityCoverage',
-    'lifeInsurance',
-    'propertyCoverage',
-    'autoCoverage',
-    'umbrellaCoverageAmount',
-    'estateDocuments',
-    'beneficiariesUpdated',
-    'trustInPlace',
-  ],
-  investingStatus: [],
-  investmentAccounts: [
-    'k401Balance',
-    'k401Contribution',
-    'k401ContributionPercent',
-    'k401Match',
-    'iraBalance',
-    'iraContribution',
-    'iraContributionPercent',
-    'rothBalance',
-    'rothContribution',
-    'rothContributionPercent',
-    'brokerageBalance',
-    'brokerageContribution',
-    'brokerageContributionPercent',
-    'hsaBalance',
-    'hsaContribution',
-    'hsaContributionPercent',
-    'otherInvestmentAssets',
-    'otherInvestmentContribution',
-    'otherInvestmentContributionPercent',
-    'investmentConfidence',
-    'investmentMix',
-  ],
-  additionalAssetTypes: ['cryptoAssetValue', 'cryptoAssetContribution', 'individualStockValue', 'individualStockContribution'],
-  savingConsistency: ['monthlySavingsContribution', 'monthlySavingsPercent', 'totalLiquidSavings', 'savingsAutomation'],
-};
-
-const CHILD_KEYS = new Set(Object.values(INLINE_GROUPS).flat());
-
-type InlineField = {
-  key: string;
-  label: string;
-  placeholder?: string;
-  type?: 'number' | 'select';
-  options?: { value: string; label: string }[];
-  required?: boolean;
-  helperText?: string;
-};
-
-const OBJECT_FIELD_GROUPS: Record<string, Record<string, InlineField[]>> = {
-  relationshipStatus: {
-    single_with_dependents: [
-      {
-        key: 'monthlyChildcareCost',
-        label: 'Monthly childcare / daycare cost',
-        placeholder: 'e.g. 600',
-      },
-    ],
-    partnered_with_dependents: [
-      {
-        key: 'monthlyChildcareCost',
-        label: 'Monthly childcare / daycare cost',
-        placeholder: 'e.g. 600',
-      },
-    ],
-  },
-  housingStatus: {
-    living_with_family: [
-      { key: 'monthlyHousingCost', label: 'Monthly contribution, if any', placeholder: 'e.g. 0' },
-    ],
-    rent: [
-      { key: 'monthlyHousingCost', label: 'Monthly rent', placeholder: 'e.g. 1400' },
-    ],
-    own_with_mortgage: [
-      { key: 'monthlyHousingCost', label: 'Monthly house payment', placeholder: 'e.g. 1500' },
-      { key: 'primaryHomeValue', label: 'Estimated home value', placeholder: 'e.g. 350000' },
-      { key: 'primaryMortgage', label: 'Mortgage balance', placeholder: 'e.g. 185000' },
-    ],
-    own_outright: [
-      { key: 'monthlyHousingCost', label: 'Monthly housing costs, if any', placeholder: 'e.g. 0' },
-      { key: 'primaryHomeValue', label: 'Estimated home value', placeholder: 'e.g. 350000' },
-    ],
-  },
-  savingConsistency: {
-    yes_consistently: [
-      { key: 'monthlySavingsContribution', label: 'Monthly savings amount', placeholder: 'e.g. 500', required: false },
-      { key: 'monthlySavingsPercent', label: 'OR savings percent of take-home pay', placeholder: 'e.g. 10', required: false },
-      { key: 'totalLiquidSavings', label: 'Current cash savings balance', placeholder: 'e.g. 8000' },
-      {
-        key: 'savingsAutomation',
-        label: 'Saving setup',
-        type: 'select',
-        required: false,
-        options: [
-          { value: 'fully_automated', label: 'Fully automated' },
-          { value: 'partially_automated', label: 'Partially automated' },
-          { value: 'manual', label: 'Manual transfers' },
-        ],
-      },
-    ],
-    yes_irregularly: [
-      { key: 'monthlySavingsContribution', label: 'Typical monthly savings amount', placeholder: 'e.g. 250', required: false },
-      { key: 'monthlySavingsPercent', label: 'OR typical savings percent of take-home pay', placeholder: 'e.g. 5', required: false },
-      { key: 'totalLiquidSavings', label: 'Current cash savings balance', placeholder: 'e.g. 3000' },
-      {
-        key: 'savingsAutomation',
-        label: 'Saving setup',
-        type: 'select',
-        required: false,
-        options: [
-          { value: 'fully_automated', label: 'Fully automated' },
-          { value: 'partially_automated', label: 'Partially automated' },
-          { value: 'manual', label: 'Manual transfers' },
-        ],
-      },
-    ],
-    not_currently: [
-      { key: 'totalLiquidSavings', label: 'Current cash savings balance', placeholder: 'e.g. 500' },
-    ],
-  },
-  vehicleDebt: {
-    car_loan: [
-      { key: 'carLoanBalance', label: 'Loan balance', placeholder: 'e.g. 18000' },
-      { key: 'monthlyVehiclePayment', label: 'Monthly payment', placeholder: 'e.g. 540' },
-      { key: 'vehicleValue', label: 'Estimated vehicle value', placeholder: 'e.g. 15000' },
-    ],
-    car_lease: [
-      { key: 'monthlyVehiclePayment', label: 'Monthly lease payment', placeholder: 'e.g. 420' },
-    ],
-  },
-  additionalPropertyOwnership: {
-    rental_property: [
-      { key: 'rentalPropertyValue', label: 'Estimated value', placeholder: 'e.g. 250000' },
-      { key: 'rentalMortgage', label: 'Mortgage balance', placeholder: 'e.g. 175000' },
-      { key: 'rentalPropertyPayment', label: 'Monthly payment', placeholder: 'e.g. 1200' },
-      {
-        key: 'rentalPropertyIncome',
-        label: 'Monthly rental income (optional)',
-        placeholder: 'e.g. 1800',
-        required: false,
-        helperText:
-          'If you include rental income here, do not include it in your overall monthly income above or the projections may be overstated.',
-      },
-    ],
-    other_property: [
-      { key: 'otherPropertyValue', label: 'Estimated value', placeholder: 'e.g. 225000' },
-      { key: 'otherPropertyDebt', label: 'Mortgage or debt balance', placeholder: 'e.g. 0' },
-      { key: 'otherPropertyPayment', label: 'Monthly payment', placeholder: 'e.g. 0' },
-    ],
-  },
-  otherDebt: {
-    credit_card: [
-      { key: 'creditCardDebt', label: 'Balance', placeholder: 'e.g. 1200' },
-      { key: 'creditCardPayment', label: 'Monthly payment', placeholder: 'e.g. 75' },
-    ],
-    student_loan: [
-      { key: 'studentLoans', label: 'Balance', placeholder: 'e.g. 45000' },
-      { key: 'studentLoanPayment', label: 'Monthly payment', placeholder: 'e.g. 300' },
-    ],
-    personal_loan: [
-      { key: 'personalLoans', label: 'Balance', placeholder: 'e.g. 5000' },
-      { key: 'personalLoanPayment', label: 'Monthly payment', placeholder: 'e.g. 175' },
-    ],
-    bnpl: [
-      { key: 'bnplDebt', label: 'Balance', placeholder: 'e.g. 600' },
-      { key: 'bnplPayment', label: 'Monthly payment', placeholder: 'e.g. 60' },
-    ],
-    payday: [
-      { key: 'paydayDebt', label: 'Balance', placeholder: 'e.g. 300' },
-      { key: 'paydayPayment', label: 'Monthly payment', placeholder: 'e.g. 100' },
-    ],
-    medical: [
-      { key: 'medicalDebt', label: 'Balance', placeholder: 'e.g. 1500' },
-      { key: 'medicalDebtPayment', label: 'Monthly payment', placeholder: 'e.g. 50' },
-    ],
-  },
-  protectionCoverage: {
-    health: [
-      {
-        key: 'healthCoverage',
-        label: 'Health coverage quality',
-        type: 'select',
-        options: [
-          { value: 'good_coverage', label: 'Solid coverage' },
-          { value: 'basic_coverage', label: 'Basic coverage' },
-          { value: 'limited_coverage', label: 'Limited or high deductible' },
-          { value: 'not_sure', label: 'Not sure' },
-        ],
-      },
-    ],
-    auto: [
-      {
-        key: 'autoCoverage',
-        label: 'Auto coverage level',
-        type: 'select',
-        options: [
-          { value: 'full', label: 'Full coverage' },
-          { value: 'basic', label: 'Basic but reasonable' },
-          { value: 'minimal', label: 'Minimal' },
-          { value: 'minimum', label: 'State minimum only' },
-        ],
-      },
-    ],
-    home_or_renters: [
-      {
-        key: 'propertyCoverage',
-        label: 'Homeowners / renters coverage',
-        type: 'select',
-        options: [
-          { value: 'solid', label: 'Solid coverage' },
-          { value: 'basic', label: 'Basic coverage' },
-          { value: 'minimal', label: 'Minimal / unsure' },
-          { value: 'none', label: 'No coverage' },
-        ],
-      },
-    ],
-    life: [
-      {
-        key: 'lifeInsurance',
-        label: 'Life insurance adequacy',
-        type: 'select',
-        options: [
-          { value: 'enough', label: 'Enough for the people who depend on me' },
-          { value: 'some', label: 'Some, but probably not enough' },
-          { value: 'none', label: 'No life insurance' },
-          { value: 'not_needed', label: 'No one depends on my income' },
-        ],
-      },
-    ],
-    disability: [
-      {
-        key: 'disabilityCoverage',
-        label: 'Disability / income protection',
-        type: 'select',
-        options: [
-          { value: 'strong', label: 'Strong disability coverage' },
-          { value: 'employer_basic', label: 'Basic employer coverage' },
-          { value: 'not_sure', label: 'Not sure what I have' },
-          { value: 'none', label: 'No disability coverage' },
-        ],
-      },
-    ],
-    umbrella: [
-      { key: 'umbrellaCoverageAmount', label: 'Umbrella policy amount', placeholder: 'e.g. 1000000', required: false },
-    ],
-  },
-  investmentAccounts: {
-    '401k': [
-      { key: 'k401Balance', label: 'Current balance', placeholder: 'e.g. 85000' },
-      { key: 'k401Contribution', label: 'Monthly contribution ($)', placeholder: 'e.g. 500', required: false },
-      { key: 'k401ContributionPercent', label: 'OR contribution percent of pay', placeholder: 'e.g. 6', required: false },
-      {
-        key: 'k401Match',
-        label: 'Employer match',
-        type: 'select',
-        options: [
-          { value: 'maximizing_match', label: 'Getting the full match' },
-          { value: 'have_match_not_maxing', label: 'Not getting the full match' },
-          { value: 'no_match_or_no_access', label: 'No match or unsure' },
-        ],
-      },
-    ],
-    roth_ira: [
-      { key: 'rothBalance', label: 'Current balance', placeholder: 'e.g. 25000' },
-      { key: 'rothContribution', label: 'Monthly contribution ($)', placeholder: 'e.g. 250', required: false },
-      { key: 'rothContributionPercent', label: 'OR contribution percent of pay', placeholder: 'e.g. 5', required: false },
-    ],
-    traditional_ira: [
-      { key: 'iraBalance', label: 'Current balance', placeholder: 'e.g. 30000' },
-      { key: 'iraContribution', label: 'Monthly contribution ($)', placeholder: 'e.g. 250', required: false },
-      { key: 'iraContributionPercent', label: 'OR contribution percent of pay', placeholder: 'e.g. 5', required: false },
-    ],
-    brokerage: [
-      { key: 'brokerageBalance', label: 'Current balance', placeholder: 'e.g. 50000' },
-      { key: 'brokerageContribution', label: 'Monthly contribution ($)', placeholder: 'e.g. 300', required: false },
-      { key: 'brokerageContributionPercent', label: 'OR contribution percent of pay', placeholder: 'e.g. 5', required: false },
-    ],
-    hsa: [
-      { key: 'hsaBalance', label: 'Invested HSA balance', placeholder: 'e.g. 8000' },
-      { key: 'hsaContribution', label: 'Monthly contribution ($)', placeholder: 'e.g. 150', required: false },
-      { key: 'hsaContributionPercent', label: 'OR contribution percent of pay', placeholder: 'e.g. 3', required: false },
-    ],
-    other: [
-      { key: 'otherInvestmentAssets', label: 'Current balance', placeholder: 'e.g. 10000' },
-      { key: 'otherInvestmentContribution', label: 'Monthly contribution ($)', placeholder: 'e.g. 100', required: false },
-      { key: 'otherInvestmentContributionPercent', label: 'OR contribution percent of pay', placeholder: 'e.g. 2', required: false },
-    ],
-  },
-
-  additionalAssetTypes: {
-    crypto: [
-      { key: 'cryptoAssetValue', label: 'Current crypto value', placeholder: 'e.g. 5000' },
-      { key: 'cryptoAssetContribution', label: 'Monthly contribution (optional)', placeholder: 'e.g. 100', required: false },
-    ],
-    individual_stocks: [
-      { key: 'individualStockValue', label: 'Current individual stock value', placeholder: 'e.g. 10000' },
-      { key: 'individualStockContribution', label: 'Monthly contribution (optional)', placeholder: 'e.g. 100', required: false },
-    ],
-  },
-};
-
-const OBJECT_INLINE_ROOT_KEYS = new Set(Object.keys(OBJECT_FIELD_GROUPS));
+const INLINE_GROUPS = ASSESSMENT_INLINE_GROUPS;
+const CHILD_KEYS = ASSESSMENT_CHILD_KEYS;
+type InlineField = AssessmentInlineField;
+const OBJECT_FIELD_GROUPS = DETAILED_OBJECT_FIELD_GROUPS;
+const OBJECT_INLINE_ROOT_KEYS = DETAILED_OBJECT_INLINE_ROOT_KEYS;
 
 function getRequiredObjectFieldKeys(question: Question | undefined, responses: Record<string, any>) {
   if (!question || !OBJECT_INLINE_ROOT_KEYS.has(question.key)) return [];
@@ -481,20 +187,10 @@ function objectFieldsAnswered(question: Question | undefined, responses: Record<
   });
 }
 
-const CHILD_PARENT_KEY: Record<string, string> = Object.entries(INLINE_GROUPS).reduce(
-  (acc, [parentKey, childKeys]) => {
-    childKeys.forEach((childKey) => {
-      acc[childKey] = parentKey;
-    });
-    return acc;
-  },
-  {} as Record<string, string>
-);
+const CHILD_PARENT_KEY = ASSESSMENT_CHILD_PARENT_KEY;
 
 function getEffectiveSectionKey(question?: Question) {
-  if (!question) return 'foundation';
-  if (ROUTING_KEYS.has(question.key)) return 'foundation';
-  return question.section ?? 'context';
+  return getAssessmentSectionKey(question);
 }
 
 function getSectionLabel(section?: Question['section'], key?: string) {
@@ -654,41 +350,30 @@ function getSequentialVisibleChildQuestions(
 function getContinueModeQuestions(responses: Record<string, any>) {
   const detailed = getDetailedQuestions(responses);
   const snapshotKeys = new Set(getSnapshotQuestions(responses).map((q) => q.key));
+  const investingRootKeys = new Set<string>(COMPREHENSIVE_INVESTING_ROOT_KEYS as readonly string[]);
 
   return keepInvestingRootQuestionsVisible(detailed.filter((question) => {
     const answered = isAnswered(question, responses[question.key]);
-    if (question.key === 'investmentAccounts' || question.key === 'additionalAssetTypes') {
-      return true;
-    }
-    if (question.key === 'protectionCoverage') return true;
-    if (question.key === 'relationshipStatus') {
-      const hasDependents = ['single_with_dependents', 'partnered_with_dependents'].includes(
-        responses.relationshipStatus
-      );
-      const hasChildcareCost =
-        responses.monthlyChildcareCost !== undefined &&
-        responses.monthlyChildcareCost !== null &&
-        responses.monthlyChildcareCost !== '';
 
-      // Childcare/daycare is captured once inside the household card.
-      // In continue mode, only show that parent card again for older snapshots that
-      // indicate dependents but did not capture the childcare amount.
-      return hasDependents && !hasChildcareCost;
+    if (investingRootKeys.has(question.key)) {
+      return responses.investingStatus !== 'not_yet';
     }
 
-    // Never show childcare as a separate standalone follow-up in the full assessment.
-    if (question.key === 'monthlyChildcareCost' || question.key === 'childcarePressure') {
+    // Inline child values should stay inside their parent cards, even in continue mode.
+    if (CHILD_KEYS.has(question.key) || question.key === 'childcarePressure') {
       return false;
     }
+
+    // If a snapshot/root card was already answered but its grouped inline details are
+    // incomplete, show the prefilled parent card instead of scattering the children.
+    if (OBJECT_INLINE_ROOT_KEYS.has(question.key) && snapshotKeys.has(question.key) && answered) {
+      return !objectFieldsAnswered(question, responses);
+    }
+
     return !(snapshotKeys.has(question.key) && answered);
   }), responses);
 }
 
-
-const COMPREHENSIVE_INVESTING_ROOT_KEYS = new Set([
-  'investmentAccounts',
-  'additionalAssetTypes',
-]);
 
 function mergeDefinedAnswerSources(...sources: Array<Record<string, any> | null | undefined>) {
   return sources.reduce((merged, source) => {
@@ -738,10 +423,15 @@ function insertQuestionInOriginalOrder(questions: Question[], questionToInsert: 
 }
 
 function keepInvestingRootQuestionsVisible(questions: Question[], responses: Record<string, any>) {
-  // Hard safety rail: these two Comprehensive Investing root cards must render.
-  // They are detailed-only cards, and recent changes kept losing them through
-  // continue-mode filtering / stale Snapshot answers. Do not gate them here.
-  return Array.from(COMPREHENSIVE_INVESTING_ROOT_KEYS).reduce((nextQuestions, key) => {
+  const investingRootKeys = new Set<string>(COMPREHENSIVE_INVESTING_ROOT_KEYS as readonly string[]);
+
+  if (responses.investingStatus === 'not_yet') {
+    return questions.filter((question) => !investingRootKeys.has(question.key));
+  }
+
+  // Hard safety rail: these three Comprehensive Investing root cards must render
+  // together unless the user explicitly says they are not investing yet.
+  return COMPREHENSIVE_INVESTING_ROOT_KEYS.reduce((nextQuestions, key) => {
     const questionToInsert = OPTIMIZED_ASSESSMENT_QUESTIONS.find((question) => question.key === key);
     return questionToInsert ? insertQuestionInOriginalOrder(nextQuestions, questionToInsert) : nextQuestions;
   }, questions);
@@ -1865,7 +1555,10 @@ function ActivityStep({ activityKey, responses, onBack, onComplete }: ActivitySt
           homeValue: toNumber(responses.primaryHomeValue) || toNumber(responses.homeValue),
           mortgageBalance: toNumber(responses.primaryMortgage) || toNumber(responses.primaryMortgageBalance) || toNumber(responses.mortgageBalance),
           totalDebtBalance: getTotalConsumerDebtFromResponses(responses),
-          otherAssets: toNumber(responses.cryptoAssetValue) + toNumber(responses.individualStockValue) + toNumber(responses.otherAssets),
+          otherAssets:
+            responses.netWorthEntry === 'completed'
+              ? toNumber(responses.otherAssets)
+              : toNumber(responses.cryptoAssetValue) + toNumber(responses.individualStockValue) + toNumber(responses.otherAssets),
           rentalPropertyValue: toNumber(responses.rentalPropertyValue),
           rentalMortgage: toNumber(responses.rentalMortgage) || toNumber(responses.rentalMortgageBalance),
           otherPropertyValue: toNumber(responses.otherPropertyValue),
@@ -1991,6 +1684,22 @@ export default function ComprehensiveQuestionnaire() {
     () => keepInvestingRootQuestionsVisible(getRenderableQuestions(visibleQuestions), responses),
     [visibleQuestions, responses]
   );
+
+  useEffect(() => {
+    if (!DEBUG_COMPREHENSIVE_RENDER_KEYS) return;
+
+    const inlineFieldKeys = renderableQuestions.flatMap((question) =>
+      Object.values(OBJECT_FIELD_GROUPS[question.key] ?? {}).flatMap((fields) =>
+        fields.map((field) => `${question.key}.${field.key}`)
+      )
+    );
+
+    console.log('[AWF Comprehensive render keys]', {
+      visibleKeys: visibleQuestions.map((question) => question.key),
+      renderableKeys: renderableQuestions.map((question) => question.key),
+      inlineFieldKeys,
+    });
+  }, [renderableQuestions, visibleQuestions]);
 
   const currentQuestion = renderableQuestions[currentStep];
   const isActivityStep =
