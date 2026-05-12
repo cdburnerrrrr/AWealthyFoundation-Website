@@ -104,7 +104,7 @@ export default function LoginPage() {
               <img
                 src={logoImage}
                 alt="A Wealthy Foundation"
-                className="mx-auto block h-12 w-auto sm:h-14"
+                className="mx-auto block h-12 w-auto translate-x-6 sm:h-14 sm:translate-x-7"
               />
             </div>
           </div>
