@@ -1,33 +1,31 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import type { ElementType } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Clock, User, ArrowRight, Menu, X, ChevronRight, Plus,
-  TrendingUp, Shield, PiggyBank, CreditCard, Target, BookOpen,
-  TreeDeciduous, DollarSign, Wallet, Home
+import {
+  ArrowRight,
+  BarChart3,
+  BookOpen,
+  CreditCard,
+  DollarSign,
+  Eye,
+  Lightbulb,
+  PiggyBank,
+  Shield,
+  Sparkles,
+  TrendingUp,
+  Wallet,
 } from 'lucide-react';
+import {
+  ARTICLE_CATEGORIES,
+  ARTICLES,
+  BUILDING_BLOCK_META,
+  type BuildingBlockKey,
+  type FoundationArticle,
+} from '../data/foundationArticles';
 import { useAppStore } from '../store/appStore';
 
-const NAV_ITEMS = [
-  { label: 'The Building Blocks', href: '/building-blocks', isRoute: true },
-  { label: 'Financial Pillars', href: '/financial-pillars', isRoute: true },
-  { label: 'Foundation Score', href: '/foundation-score', isRoute: true },
-  { label: 'Premium', href: '/premium', isRoute: true },
-  { label: 'Articles', href: '/articles', isRoute: true },
-  { label: 'Newsletter', href: '/newsletter', isRoute: true },
-];
-
-const BUILDING_BLOCKS = [
-  { id: 'legacy', name: 'Legacy', icon: TreeDeciduous, color: 'text-teal-600', bg: 'bg-teal-100' },
-  { id: 'protection', name: 'Protection', icon: Shield, color: 'text-blue-600', bg: 'bg-blue-100' },
-  { id: 'investing', name: 'Investing', icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-100' },
-  { id: 'spending', name: 'Spending', icon: Wallet, color: 'text-amber-600', bg: 'bg-amber-100' },
-  { id: 'saving', name: 'Saving', icon: PiggyBank, color: 'text-pink-500', bg: 'bg-pink-100' },
-  { id: 'income', name: 'Income', icon: DollarSign, color: 'text-purple-600', bg: 'bg-purple-100' },
-  { id: 'debt', name: 'Debt', icon: CreditCard, color: 'text-red-500', bg: 'bg-red-100' },
-];
-
-const PILLAR_ICONS: Record<string, React.ElementType> = {
-  legacy: TreeDeciduous,
+const BLOCK_ICONS: Record<BuildingBlockKey, ElementType> = {
+  vision: Lightbulb,
   protection: Shield,
   investing: TrendingUp,
   spending: Wallet,
@@ -36,119 +34,80 @@ const PILLAR_ICONS: Record<string, React.ElementType> = {
   debt: CreditCard,
 };
 
-const CATEGORIES = ['All', ...BUILDING_BLOCKS.map(b => b.name)];
+function ArticleVisual({ article }: { article: FoundationArticle }) {
+  const meta = BUILDING_BLOCK_META[article.pillar];
+  const Icon = BLOCK_ICONS[article.pillar] || BookOpen;
 
-interface Article {
-  id: string;
-  title: string;
-  excerpt: string;
-  category: string;
-  readTime: string;
-  author: string;
-  date: string;
-  image: string;
-  pillar?: string;
+  return (
+    <div className={`relative overflow-hidden rounded-2xl border ${meta.border} bg-gradient-to-br ${meta.gradient} p-4`}>
+      <div className="pointer-events-none absolute inset-0 opacity-[0.24]">
+        <div className="h-full w-full bg-[linear-gradient(to_right,#0f3a5a1e_1px,transparent_1px),linear-gradient(to_bottom,#0f3a5a16_1px,transparent_1px)] bg-[size:18px_18px]" />
+      </div>
+      <div className="relative z-10 flex min-h-[132px] flex-col justify-between">
+        <div className="flex items-start justify-between gap-4">
+          <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${meta.bg} ${meta.text} shadow-sm ring-1 ${meta.ring}`}>
+            <Icon className="h-7 w-7" />
+          </div>
+          <div className="rounded-full bg-white/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-navy-700 shadow-sm">
+            {article.imageLabel}
+          </div>
+        </div>
+
+        <div className="mt-6 grid grid-cols-3 gap-2">
+          {article.chart.items.map((item) => (
+            <div key={item.label} className="rounded-xl bg-white/72 p-2 ring-1 ring-white/70">
+              <div className="mb-1 h-1.5 overflow-hidden rounded-full bg-slate-200/75">
+                <div className={`h-full rounded-full ${meta.chart}`} style={{ width: `${item.value}%` }} />
+              </div>
+              <p className="truncate text-[10px] font-semibold text-navy-800">{item.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
-const ARTICLES: Article[] = [
-  {
-    id: 'emergency-fund-guide',
-    title: 'The Complete Guide to Building Your Emergency Fund',
-    excerpt: 'Learn why an emergency fund is the cornerstone of financial stability.',
-    category: 'Protection',
-    readTime: '8 min read',
-    author: 'A Wealthy Foundation',
-    date: 'Feb 28, 2024',
-    image: 'emergency',
-    pillar: 'protection',
-  },
-  {
-    id: 'debt-freedom-roadmap',
-    title: 'From Debt to Freedom: Your Step-by-Step Roadmap',
-    excerpt: 'Debt can feel overwhelming, but with the right strategy, you can eliminate it.',
-    category: 'Debt',
-    readTime: '12 min read',
-    author: 'A Wealthy Foundation',
-    date: 'Feb 25, 2024',
-    image: 'debt',
-    pillar: 'debt',
-  },
-  {
-    id: 'income-streams-diversify',
-    title: 'Diversifying Your Income: Beyond the 9-to-5',
-    excerpt: 'Relying on a single income source is risky. Explore ways to build multiple streams.',
-    category: 'Income',
-    readTime: '10 min read',
-    author: 'A Wealthy Foundation',
-    date: 'Feb 22, 2024',
-    image: 'income',
-    pillar: 'income',
-  },
-  {
-    id: 'budget-that-actually-works',
-    title: 'Create a Budget That Actually Works for Your Life',
-    excerpt: 'Most budgets fail because they are too restrictive. Learn how to create a flexible system.',
-    category: 'Spending',
-    readTime: '7 min read',
-    author: 'A Wealthy Foundation',
-    date: 'Feb 20, 2024',
-    image: 'budget',
-    pillar: 'spending',
-  },
-  {
-    id: 'investing-beginners-guide',
-    title: 'Investing for Beginners: Start Growing Your Wealth Today',
-    excerpt: 'The world of investing can seem complex, but getting started is simpler than you think.',
-    category: 'Investing',
-    readTime: '15 min read',
-    author: 'A Wealthy Foundation',
-    date: 'Feb 18, 2024',
-    image: 'investing',
-    pillar: 'investing',
-  },
-  {
-    id: 'saving-strategies',
-    title: 'Smart Saving Strategies: Building Your Financial Safety Net',
-    excerpt: 'Saving isn\'t about deprivation—it\'s about creating options and freedom.',
-    category: 'Saving',
-    readTime: '9 min read',
-    author: 'A Wealthy Foundation',
-    date: 'Feb 5, 2024',
-    image: 'saving',
-    pillar: 'saving',
-  },
-  {
-    id: 'legacy-planning-guide',
-    title: 'Building Your Legacy: A Comprehensive Guide to Estate Planning',
-    excerpt: 'Your legacy is about more than wealth—it\'s about the values you pass on.',
-    category: 'Legacy',
-    readTime: '12 min read',
-    author: 'A Wealthy Foundation',
-    date: 'Feb 8, 2024',
-    image: 'legacy',
-    pillar: 'legacy',
-  },
-];
-
-function ArticleCard({ article }: { article: Article }) {
+function ArticleCard({ article, featured = false }: { article: FoundationArticle; featured?: boolean }) {
   const navigate = useNavigate();
-  const Icon = article.pillar ? PILLAR_ICONS[article.pillar] || BookOpen : BookOpen;
-  
+  const meta = BUILDING_BLOCK_META[article.pillar];
+  const Icon = BLOCK_ICONS[article.pillar] || BookOpen;
+
   return (
-    <article 
+    <article
       onClick={() => navigate(`/articles/${article.id}`)}
-      className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-copper-300 hover:shadow-lg transition-all cursor-pointer"
+      className={`group cursor-pointer overflow-hidden rounded-[28px] border bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-copper-500/10 ${
+        featured ? 'border-copper-300 lg:grid lg:grid-cols-[0.95fr_1.05fr]' : 'border-slate-200 hover:border-copper-300'
+      }`}
     >
-      <div className="aspect-[2.5/1] bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-        <Icon className="w-12 h-12 text-gray-300" />
+      <div className={featured ? 'p-4 sm:p-5' : 'p-4'}>
+        <ArticleVisual article={article} />
       </div>
-      <div className="p-4">
-        <span className="text-xs font-medium text-copper-600 bg-copper-50 px-2 py-1 rounded">{article.category}</span>
-        <h3 className="text-base font-bold text-navy-900 mt-2 line-clamp-2">{article.title}</h3>
-        <p className="text-sm text-gray-500 mt-1 line-clamp-2">{article.excerpt}</p>
-        <div className="flex items-center gap-2 mt-3 text-xs text-gray-400">
-          <Clock className="w-3 h-3" />
-          <span>{article.readTime}</span>
+
+      <div className="flex flex-col p-5 sm:p-6">
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${meta.bg} ${meta.text}`}>
+            <Icon className="h-3.5 w-3.5" />
+            {article.category}
+          </span>
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">
+            {article.readTime}
+          </span>
+        </div>
+
+        <h3 className={`${featured ? 'text-2xl sm:text-3xl' : 'text-xl'} font-bold tracking-tight text-navy-900 group-hover:text-copper-700`}>
+          {article.title}
+        </h3>
+        <p className={`${featured ? 'mt-4 text-base leading-7' : 'mt-3 text-sm leading-6'} text-slate-600`}>
+          {article.excerpt}
+        </p>
+
+        <div className="mt-5 flex items-center justify-between gap-4">
+          <p className="text-sm font-semibold text-navy-700">Strengthens {meta.strengthens}</p>
+          <span className="inline-flex items-center gap-2 text-sm font-bold text-copper-700 transition group-hover:translate-x-1">
+            Read article
+            <ArrowRight className="h-4 w-4" />
+          </span>
         </div>
       </div>
     </article>
@@ -157,88 +116,117 @@ function ArticleCard({ article }: { article: Article }) {
 
 export default function ArticlesPage() {
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAppStore();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isAuthenticated } = useAppStore();
   const [selectedCategory, setSelectedCategory] = useState('All');
-  
-  const filteredArticles = selectedCategory === 'All' 
-    ? ARTICLES 
-    : ARTICLES.filter(a => a.category === selectedCategory);
+
+  const featuredArticle = ARTICLES[0];
+  const filteredArticles = useMemo(() => {
+    const source = selectedCategory === 'All' ? ARTICLES : ARTICLES.filter((article) => article.category === selectedCategory);
+    return source.filter((article) => article.id !== featuredArticle.id);
+  }, [featuredArticle.id, selectedCategory]);
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
-            <button onClick={() => navigate('/')} className="flex items-center gap-3">
-              <Home className="w-9 h-9 text-copper-600" />
-              <div>
-                <h1 className="text-xl font-serif font-bold text-navy-900">A Wealthy Foundation</h1>
-                <p className="text-xs text-copper-600">Design the life you want.</p>
+    <main className="min-h-screen overflow-hidden bg-[#d8ecf8] text-navy-900">
+      <section className="relative overflow-hidden px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,#eef8ff_0%,#d8ecf8_48%,#c6e2f2_100%)]" />
+        <div className="pointer-events-none absolute inset-0 opacity-[0.22]">
+          <div className="h-full w-full bg-[linear-gradient(to_right,#0f3a5a2f_1px,transparent_1px),linear-gradient(to_bottom,#0f3a5a2f_1px,transparent_1px)] bg-[size:32px_32px]" />
+        </div>
+        <div className="pointer-events-none absolute -left-24 top-0 h-80 w-80 rounded-full bg-copper-400/14 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-[-140px] right-[-80px] h-96 w-96 rounded-full bg-sky-400/12 blur-3xl" />
+
+        <div className="relative mx-auto max-w-7xl">
+          <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+            <div>
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-copper-300/45 bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-copper-700 shadow-sm">
+                <Sparkles className="h-4 w-4" />
+                The Foundation Report
               </div>
-            </button>
-            <nav className="hidden md:flex items-center space-x-4">
-              {NAV_ITEMS.map((item) => (
-                <button key={item.label} onClick={() => navigate(item.href)} className="text-sm font-medium text-navy-700 hover:text-copper-600">
-                  {item.label}
+              <h1 className="max-w-3xl text-4xl font-bold tracking-tight text-navy-900 sm:text-5xl lg:text-6xl">
+                Practical articles for strengthening each part of your financial house.
+              </h1>
+              <p className="mt-5 max-w-2xl text-base leading-8 text-navy-700 sm:text-lg">
+                Explore the 7 Building Blocks through plain-English guides, visual examples, and action steps that connect back to your Foundation Score.
+              </p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => navigate(isAuthenticated ? '/assessment/snapshot' : '/login?redirect=/assessment/snapshot')}
+                  className="inline-flex items-center gap-2 rounded-xl bg-copper-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-copper-600/20 transition hover:bg-copper-700"
+                >
+                  Start Free Snapshot
+                  <ArrowRight className="h-4 w-4" />
                 </button>
-              ))}
-            </nav>
-            <button 
-              onClick={() => navigate(isAuthenticated ? '/my-foundation' : '/login')}
-              className="px-4 py-1.5 bg-navy-900 text-white text-sm font-semibold rounded"
-            >
-              <User className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </header>
+                <button
+                  type="button"
+                  onClick={() => navigate('/foundation-tools')}
+                  className="inline-flex items-center gap-2 rounded-xl border border-navy-200 bg-white/70 px-5 py-3 text-sm font-bold text-navy-800 transition hover:bg-white"
+                >
+                  Explore Foundation Tools
+                </button>
+              </div>
+            </div>
 
-      {/* Hero */}
-      <section className="py-12 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <h1 className="text-3xl font-bold text-navy-900 mb-4">Insights for Building Your Foundation</h1>
-          <p className="text-gray-600">Practical strategies to strengthen each pillar of your financial life.</p>
+            <div className="rounded-[32px] border border-white/60 bg-white/60 p-3 shadow-2xl shadow-navy-900/10 backdrop-blur-sm">
+              <ArticleCard article={featuredArticle} featured />
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Categories */}
-      <section className="py-4 border-b border-gray-100 bg-white sticky top-16 z-40">
-        <div className="max-w-7xl mx-auto px-4">
+      <section className="sticky top-[68px] z-30 border-y border-navy-200/70 bg-white/82 px-4 py-4 backdrop-blur sm:px-6 lg:top-[74px] lg:px-8">
+        <div className="mx-auto max-w-7xl">
           <div className="flex gap-2 overflow-x-auto pb-1">
-            {CATEGORIES.map((category) => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-1.5 text-sm font-medium rounded-full whitespace-nowrap ${
-                  selectedCategory === category 
-                    ? 'bg-copper-600 text-white' 
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {category}
-              </button>
-            ))}
+            {ARTICLE_CATEGORIES.map((category) => {
+              const block = Object.values(BUILDING_BLOCK_META).find((item) => item.name === category);
+              const selected = selectedCategory === category;
+              return (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => setSelectedCategory(category)}
+                  className={`whitespace-nowrap rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                    selected
+                      ? 'border-copper-500 bg-copper-600 text-white shadow-lg shadow-copper-600/15'
+                      : block
+                        ? `${block.border} ${block.bg} ${block.text} hover:bg-white`
+                        : 'border-slate-200 bg-slate-100 text-slate-600 hover:bg-white'
+                  }`}
+                >
+                  {category}
+                </button>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* Articles Grid */}
-      <section className="py-8">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <section className="px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-copper-700">Article Library</p>
+              <h2 className="mt-2 text-3xl font-bold tracking-tight text-navy-900">Read by Building Block</h2>
+            </div>
+            <p className="max-w-xl text-sm leading-6 text-navy-600">
+              No fictional authors, no dated filler. Each guide is organized around one part of the A Wealthy Foundation framework.
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {filteredArticles.map((article) => (
               <ArticleCard key={article.id} article={article} />
             ))}
           </div>
+
           {filteredArticles.length === 0 && (
-            <div className="text-center py-16">
-              <p className="text-gray-500">No articles found in this category.</p>
+            <div className="rounded-3xl border border-slate-200 bg-white/75 p-12 text-center shadow-sm">
+              <BarChart3 className="mx-auto mb-4 h-10 w-10 text-copper-600" />
+              <p className="text-slate-600">No articles found in this category yet.</p>
             </div>
           )}
         </div>
       </section>
-    </div>
+    </main>
   );
 }
