@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import heroIllustration from '../assets/foundation-tools-hero-illustration.png';
 import { useMemo, useState } from 'react';
 import {
   ArrowRight,
@@ -383,25 +384,18 @@ export default function FoundationToolsPage() {
               </p>
             </div>
 
-            <div className="relative mx-auto flex w-full max-w-md items-center justify-center">
-              <div className="relative h-[220px] w-full sm:h-[240px]">
-                <div className="absolute left-1/2 top-0 h-8 w-36 -translate-x-1/2 rounded-t-full border border-copper-500/45 bg-copper-200/45" />
-                <div className="absolute left-1/2 top-8 h-20 w-48 -translate-x-1/2 rounded-t-[28px] border border-copper-500/35 bg-copper-100/60" />
-                <div className="absolute left-1/2 top-28 h-24 w-60 -translate-x-1/2 rounded-t-xl border border-navy-300/40 bg-sky-100/55" />
-                <div className="absolute bottom-10 left-1/2 h-10 w-72 -translate-x-1/2 rounded-md bg-gradient-to-r from-copper-300/70 via-sky-200/65 to-copper-300/70" />
-                <div className="absolute bottom-0 left-1/2 h-9 w-[20rem] -translate-x-1/2 rounded-md border border-navy-200 bg-white/75" />
+            <div className="relative mx-auto flex w-full max-w-[34rem] items-center justify-center">
+              <div className="relative w-full rounded-[34px] border border-navy-200/80 bg-white/55 p-3 shadow-[0_20px_60px_rgba(15,58,90,0.10)] backdrop-blur-sm">
+                <div className="pointer-events-none absolute inset-0 rounded-[34px] bg-[linear-gradient(135deg,rgba(255,255,255,0.24),rgba(255,255,255,0.06))]" />
+                <div className="pointer-events-none absolute -bottom-6 left-8 h-14 w-14 rounded-full bg-copper-300/18 blur-2xl" />
+                <div className="pointer-events-none absolute -top-6 right-10 h-16 w-16 rounded-full bg-sky-300/18 blur-2xl" />
 
-                <div className="absolute left-6 top-10 rounded-2xl border border-navy-200 bg-white/75 px-4 py-2.5 text-sm text-navy-800 shadow-xl backdrop-blur-sm">
-                  Spending
-                </div>
-                <div className="absolute right-6 top-16 rounded-2xl border border-navy-200 bg-white/75 px-4 py-2.5 text-sm text-navy-800 shadow-xl backdrop-blur-sm">
-                  Debt
-                </div>
-                <div className="absolute left-8 bottom-9 rounded-2xl border border-navy-200 bg-white/75 px-4 py-2.5 text-sm text-navy-800 shadow-xl backdrop-blur-sm">
-                  Saving
-                </div>
-                <div className="absolute right-8 bottom-14 rounded-2xl border border-navy-200 bg-white/75 px-4 py-2.5 text-sm text-navy-800 shadow-xl backdrop-blur-sm">
-                  Investing
+                <div className="relative overflow-hidden rounded-[30px] border border-white/70 bg-[#ddebfa]">
+                  <img
+                    src={heroIllustration}
+                    alt="Financial planning workspace illustration with planner, calculator, and chart"
+                    className="block h-auto w-full"
+                  />
                 </div>
               </div>
             </div>
