@@ -39,6 +39,9 @@ export type FoundationArticle = {
   sections: ArticleSection[];
   takeaways: string[];
   relatedArticles: string[];
+  source?: 'system' | 'custom';
+  customHtml?: string;
+  createdAt?: string;
 };
 
 export type BuildingBlockMeta = {
@@ -607,14 +610,184 @@ export const ARTICLE_ALIASES: Record<string, string> = {
 
 export const ARTICLE_CATEGORIES = ['All', ...BUILDING_BLOCKS.map((block) => block.name)];
 
-export function getArticleById(id: string | undefined) {
-  if (!id) return undefined;
-  const resolvedId = ARTICLE_ALIASES[id] ?? id;
-  return ARTICLES.find((article) => article.id === resolvedId);
+export const CUSTOM_ARTICLES_STORAGE_KEY = 'awf_custom_articles_v1';
+export const ARTICLE_ADMIN_EMAIL = 'jacksonpcr@gmail.com';
+
+export type CustomArticleDraft = {
+  title: string;
+  excerpt: string;
+  pillar: BuildingBlockKey;
+  readTime: string;
+  customHtml: string;
+  imageLabel?: string;
+};
+
+export function isArticleAdminEmail(email: unknown) {
+  return String(email ?? '').trim().toLowerCase() === ARTICLE_ADMIN_EMAIL;
 }
 
-export function getRelatedArticles(article: FoundationArticle) {
+export function slugifyArticleTitle(title: string) {
+  const base = title
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 72);
+
+  return base || `article-${Date.now()}`;
+}
+
+function normalizeCustomArticle(value: unknown): FoundationArticle | null {
+  if (!value || typeof value !== 'object') return null;
+  const article = value as Partial<FoundationArticle>;
+
+  if (!article.id || !article.title || !article.excerpt || !article.pillar || !article.customHtml) {
+    return null;
+  }
+
+  if (!BUILDING_BLOCK_META[article.pillar]) return null;
+
+  const meta = BUILDING_BLOCK_META[article.pillar];
+
+  return {
+    id: String(article.id),
+    title: String(article.title),
+    excerpt: String(article.excerpt),
+    category: meta.name,
+    pillar: article.pillar,
+    readTime: article.readTime || '8 min read',
+    heroTitle: article.heroTitle || String(article.title),
+    heroSubtitle:
+      article.heroSubtitle ||
+      `A practical guide for strengthening the ${meta.name} block in your financial foundation.`,
+    imageLabel: article.imageLabel || `${meta.name} Guide`,
+    chart:
+      article.chart || {
+        title: `${meta.name} in practice`,
+        subtitle: 'Use this as a simple planning lens while reading the article.',
+        items: [
+          { label: 'Clarity', value: 45, helper: 'Understand the current situation' },
+          { label: 'Structure', value: 68, helper: 'Create a repeatable system' },
+          { label: 'Momentum', value: 84, helper: 'Turn the idea into action' },
+        ],
+      },
+    sections:
+      article.sections && article.sections.length
+        ? article.sections
+        : [
+            {
+              heading: 'Article Notes',
+              body: ['This article was created in the A Wealthy Foundation article editor.'],
+            },
+          ],
+    takeaways:
+      article.takeaways && article.takeaways.length
+        ? article.takeaways
+        : [
+            `This article strengthens the ${meta.name} building block.`,
+            'The best article should lead to one clear next step.',
+            'Review this topic again as your foundation changes.',
+          ],
+    relatedArticles: Array.isArray(article.relatedArticles) ? article.relatedArticles : [],
+    source: 'custom',
+    customHtml: String(article.customHtml),
+    createdAt: article.createdAt || new Date().toISOString(),
+  };
+}
+
+export function loadCustomArticles(): FoundationArticle[] {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    const raw = window.localStorage.getItem(CUSTOM_ARTICLES_STORAGE_KEY);
+    if (!raw) return [];
+
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .map(normalizeCustomArticle)
+      .filter(Boolean) as FoundationArticle[];
+  } catch (error) {
+    console.error('Unable to load custom articles:', error);
+    return [];
+  }
+}
+
+export function getAllArticles() {
+  const customArticles = loadCustomArticles();
+  const customIds = new Set(customArticles.map((article) => article.id));
+  return [...customArticles, ...ARTICLES.filter((article) => !customIds.has(article.id))];
+}
+
+export function saveCustomArticle(draft: CustomArticleDraft): FoundationArticle {
+  if (typeof window === 'undefined') {
+    throw new Error('Custom articles can only be saved in the browser.');
+  }
+
+  const existing = loadCustomArticles();
+  const baseSlug = slugifyArticleTitle(draft.title);
+  const existingIds = new Set([...existing.map((article) => article.id), ...ARTICLES.map((article) => article.id)]);
+  let id = baseSlug;
+  let suffix = 2;
+
+  while (existingIds.has(id)) {
+    id = `${baseSlug}-${suffix}`;
+    suffix += 1;
+  }
+
+  const meta = BUILDING_BLOCK_META[draft.pillar];
+  const plainText = draft.customHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const firstSentence = plainText.split(/[.!?]\s+/)[0] || draft.excerpt;
+
+  const article: FoundationArticle = {
+    id,
+    title: draft.title.trim(),
+    excerpt: draft.excerpt.trim(),
+    category: meta.name,
+    pillar: draft.pillar,
+    readTime: draft.readTime || '8 min read',
+    heroTitle: draft.title.trim(),
+    heroSubtitle: firstSentence,
+    imageLabel: draft.imageLabel?.trim() || `${meta.name} Guide`,
+    chart: {
+      title: `${meta.name} action path`,
+      subtitle: 'A simple visual model for turning the article into a next step.',
+      items: [
+        { label: 'Understand', value: 42, helper: 'Name the issue clearly' },
+        { label: 'Structure', value: 66, helper: 'Create a simple system' },
+        { label: 'Act', value: 88, helper: 'Choose the next move' },
+      ],
+    },
+    sections: [
+      {
+        heading: 'Article Notes',
+        body: ['This article was created in the A Wealthy Foundation article editor.'],
+      },
+    ],
+    takeaways: [
+      `This guide strengthens the ${meta.name} building block.`,
+      'The most useful financial content should lead to one clear next action.',
+      'Revisit the topic as your Foundation Score and dashboard change.',
+    ],
+    relatedArticles: [],
+    source: 'custom',
+    customHtml: draft.customHtml,
+    createdAt: new Date().toISOString(),
+  };
+
+  window.localStorage.setItem(CUSTOM_ARTICLES_STORAGE_KEY, JSON.stringify([article, ...existing]));
+  return article;
+}
+
+export function getArticleById(id: string | undefined, articleSource: FoundationArticle[] = getAllArticles()) {
+  if (!id) return undefined;
+  const resolvedId = ARTICLE_ALIASES[id] ?? id;
+  return articleSource.find((article) => article.id === resolvedId);
+}
+
+export function getRelatedArticles(article: FoundationArticle, articleSource: FoundationArticle[] = getAllArticles()) {
   return article.relatedArticles
-    .map((relatedId) => getArticleById(relatedId))
+    .map((relatedId) => getArticleById(relatedId, articleSource))
     .filter(Boolean) as FoundationArticle[];
 }

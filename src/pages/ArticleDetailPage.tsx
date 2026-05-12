@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { ElementType } from 'react';
 import {
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react';
 import {
   BUILDING_BLOCK_META,
+  getAllArticles,
   getArticleById,
   getRelatedArticles,
   type BuildingBlockKey,
@@ -115,7 +117,8 @@ export default function ArticleDetailPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { isAuthenticated } = useAppStore();
-  const article = getArticleById(id);
+  const articles = useMemo(() => getAllArticles(), []);
+  const article = getArticleById(id, articles);
 
   if (!article) {
     return (
@@ -138,7 +141,7 @@ export default function ArticleDetailPage() {
 
   const meta = BUILDING_BLOCK_META[article.pillar];
   const Icon = BLOCK_ICONS[article.pillar] || BookOpen;
-  const relatedArticles = getRelatedArticles(article);
+  const relatedArticles = getRelatedArticles(article, articles);
 
   return (
     <main className="min-h-screen overflow-hidden bg-slate-50 text-navy-900">
@@ -202,34 +205,41 @@ export default function ArticleDetailPage() {
               <p className="mt-3 text-sm leading-7 text-navy-100/82">{article.heroSubtitle}</p>
             </div>
 
-            <div className="space-y-9">
-              {article.sections.map((section) => (
-                <section key={section.heading}>
-                  <h2 className="text-2xl font-bold tracking-tight text-navy-900">{section.heading}</h2>
-                  <div className="mt-4 space-y-4">
-                    {section.body.map((paragraph) => (
-                      <p key={paragraph} className="text-base leading-8 text-slate-700">
-                        {paragraph}
-                      </p>
-                    ))}
-                  </div>
-
-                  {section.bullets && (
-                    <div className={`mt-5 rounded-2xl border ${meta.border} bg-gradient-to-br ${meta.gradient} p-5`}>
-                      <p className="mb-3 text-sm font-bold uppercase tracking-[0.16em] text-navy-700">Action points</p>
-                      <ul className="space-y-3">
-                        {section.bullets.map((bullet) => (
-                          <li key={bullet} className="flex gap-3 text-sm leading-6 text-navy-700">
-                            <CheckCircle2 className={`mt-0.5 h-5 w-5 shrink-0 ${meta.text}`} />
-                            <span>{bullet}</span>
-                          </li>
-                        ))}
-                      </ul>
+            {article.customHtml ? (
+              <div
+                className="article-content space-y-5 text-base leading-8 text-slate-700 [&_h1]:text-3xl [&_h1]:font-bold [&_h1]:text-navy-900 [&_h2]:mt-8 [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-navy-900 [&_h3]:mt-7 [&_h3]:text-xl [&_h3]:font-bold [&_h3]:text-navy-900 [&_p]:leading-8 [&_ul]:ml-6 [&_ul]:list-disc [&_ol]:ml-6 [&_ol]:list-decimal [&_li]:mb-2 [&_img]:my-6 [&_img]:rounded-2xl [&_img]:shadow-lg"
+                dangerouslySetInnerHTML={{ __html: article.customHtml }}
+              />
+            ) : (
+              <div className="space-y-9">
+                {article.sections.map((section) => (
+                  <section key={section.heading}>
+                    <h2 className="text-2xl font-bold tracking-tight text-navy-900">{section.heading}</h2>
+                    <div className="mt-4 space-y-4">
+                      {section.body.map((paragraph) => (
+                        <p key={paragraph} className="text-base leading-8 text-slate-700">
+                          {paragraph}
+                        </p>
+                      ))}
                     </div>
-                  )}
-                </section>
-              ))}
-            </div>
+
+                    {section.bullets && (
+                      <div className={`mt-5 rounded-2xl border ${meta.border} bg-gradient-to-br ${meta.gradient} p-5`}>
+                        <p className="mb-3 text-sm font-bold uppercase tracking-[0.16em] text-navy-700">Action points</p>
+                        <ul className="space-y-3">
+                          {section.bullets.map((bullet) => (
+                            <li key={bullet} className="flex gap-3 text-sm leading-6 text-navy-700">
+                              <CheckCircle2 className={`mt-0.5 h-5 w-5 shrink-0 ${meta.text}`} />
+                              <span>{bullet}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </section>
+                ))}
+              </div>
+            )}
           </div>
 
           <aside className="space-y-5 lg:sticky lg:top-28">

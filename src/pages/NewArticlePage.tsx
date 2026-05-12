@@ -17,8 +17,11 @@ import {
 import {
   BUILDING_BLOCKS,
   BUILDING_BLOCK_META,
+  isArticleAdminEmail,
+  saveCustomArticle,
   type BuildingBlockKey,
 } from '../data/foundationArticles';
+import { useAppStore } from '../store/appStore';
 
 const BLOCK_ICONS: Record<BuildingBlockKey, ElementType> = {
   vision: Lightbulb,
@@ -167,27 +170,71 @@ function RichTextEditor({ value, onChange }: { value: string; onChange: (value: 
 
 export default function NewArticlePage() {
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useAppStore();
+  const userEmail = String((user as any)?.email ?? '').toLowerCase();
+  const canManageArticles = isAuthenticated && isArticleAdminEmail(userEmail);
   const [title, setTitle] = useState('');
   const [excerpt, setExcerpt] = useState('');
   const [selectedBlock, setSelectedBlock] = useState<BuildingBlockKey | null>(null);
   const [readTime, setReadTime] = useState('8 min read');
+  const [imageLabel, setImageLabel] = useState('');
   const [content, setContent] = useState('');
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
+    if (!canManageArticles) {
+      alert('Only the site owner can publish articles from this editor.');
+      return;
+    }
+
     if (!title || !excerpt || !selectedBlock || !content) {
       alert('Please fill in all required fields');
       return;
     }
 
     setSaving(true);
-    await new Promise((resolve) => window.setTimeout(resolve, 1000));
-    alert('Article saved successfully. In production, this would be saved to the database.');
-    setSaving(false);
-    navigate('/articles');
+
+    try {
+      const article = saveCustomArticle({
+        title,
+        excerpt,
+        pillar: selectedBlock,
+        readTime,
+        imageLabel,
+        customHtml: content,
+      });
+
+      navigate(`/articles/${article.id}`);
+    } catch (error) {
+      console.error('Article save failed:', error);
+      alert(error instanceof Error ? error.message : 'Unable to save article.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const estimatedMinutes = Math.max(1, Math.ceil(content.replace(/<[^>]*>/g, '').split(/\s+/).filter(Boolean).length / 200));
+
+  if (!canManageArticles) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 px-6 text-navy-900">
+        <div className="max-w-lg rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <BookOpen className="mx-auto mb-4 h-10 w-10 text-copper-600" />
+          <h1 className="text-2xl font-bold">Article editor is private</h1>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            Sign in with the site owner account to create and publish articles.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate(isAuthenticated ? '/articles' : '/login?redirect=/articles/new')}
+            className="mt-6 inline-flex items-center justify-center rounded-xl bg-copper-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-copper-700"
+          >
+            {isAuthenticated ? 'Back to Articles' : 'Sign In'}
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-8 text-navy-900 sm:px-6 lg:px-8">
@@ -200,7 +247,10 @@ export default function NewArticlePage() {
             </div>
             <h1 className="text-3xl font-bold tracking-tight text-navy-900">Create New Article</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-              Draft new content around the 7 Building Blocks. The public article pages now use the shared site header, so this editor stays focused on writing.
+              Draft new content around the 7 Building Blocks. Published articles are formatted with the same colorful article template.
+            </p>
+            <p className="mt-2 max-w-2xl text-xs leading-5 text-slate-500">
+              Current version saves custom articles in this browser. To make articles public for every visitor, add a Supabase articles table later.
             </p>
           </div>
           <button
@@ -285,6 +335,18 @@ export default function NewArticlePage() {
                 <span>Current draft estimate: {estimatedMinutes} min read</span>
               </div>
             </div>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-navy-900">Visual Label</label>
+            <input
+              type="text"
+              value={imageLabel}
+              onChange={(event) => setImageLabel(event.target.value)}
+              placeholder="Example: Cash Flow Map, Growth Path, Decision Filter"
+              className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-navy-900 outline-none transition focus:border-copper-400 focus:ring-4 focus:ring-copper-100"
+            />
+            <p className="mt-2 text-xs text-slate-500">This appears inside the colorful article artwork panel.</p>
           </div>
 
           <div>

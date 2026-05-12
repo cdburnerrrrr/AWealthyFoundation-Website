@@ -11,14 +11,16 @@ import {
   Lightbulb,
   PiggyBank,
   Shield,
+  Plus,
   Sparkles,
   TrendingUp,
   Wallet,
 } from 'lucide-react';
 import {
   ARTICLE_CATEGORIES,
-  ARTICLES,
   BUILDING_BLOCK_META,
+  getAllArticles,
+  isArticleAdminEmail,
   type BuildingBlockKey,
   type FoundationArticle,
 } from '../data/foundationArticles';
@@ -116,14 +118,22 @@ function ArticleCard({ article, featured = false }: { article: FoundationArticle
 
 export default function ArticlesPage() {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAppStore();
+  const { isAuthenticated, user } = useAppStore();
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const articles = useMemo(() => getAllArticles(), []);
+  const userEmail = String((user as any)?.email ?? '').toLowerCase();
+  const canCreateArticles = isArticleAdminEmail(userEmail);
 
-  const featuredArticle = ARTICLES[0];
+  const featuredArticle = articles[0];
   const filteredArticles = useMemo(() => {
-    const source = selectedCategory === 'All' ? ARTICLES : ARTICLES.filter((article) => article.category === selectedCategory);
-    return source.filter((article) => article.id !== featuredArticle.id);
-  }, [featuredArticle.id, selectedCategory]);
+    const source = selectedCategory === 'All'
+      ? articles
+      : articles.filter((article) => article.category === selectedCategory);
+
+    return selectedCategory === 'All' && featuredArticle
+      ? source.filter((article) => article.id !== featuredArticle.id)
+      : source;
+  }, [articles, featuredArticle, selectedCategory]);
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#d8ecf8] text-navy-900">
@@ -164,11 +174,21 @@ export default function ArticlesPage() {
                 >
                   Explore Foundation Tools
                 </button>
+                {canCreateArticles && (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/articles/new')}
+                    className="inline-flex items-center gap-2 rounded-xl border border-copper-300 bg-white/80 px-5 py-3 text-sm font-bold text-copper-700 transition hover:bg-copper-50"
+                  >
+                    <Plus className="h-4 w-4" />
+                    New Article
+                  </button>
+                )}
               </div>
             </div>
 
             <div className="rounded-[32px] border border-white/60 bg-white/60 p-3 shadow-2xl shadow-navy-900/10 backdrop-blur-sm">
-              <ArticleCard article={featuredArticle} featured />
+              {featuredArticle && <ArticleCard article={featuredArticle} featured />}
             </div>
           </div>
         </div>
@@ -208,9 +228,6 @@ export default function ArticlesPage() {
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-copper-700">Article Library</p>
               <h2 className="mt-2 text-3xl font-bold tracking-tight text-navy-900">Read by Building Block</h2>
             </div>
-            <p className="max-w-xl text-sm leading-6 text-navy-600">
-              No fictional authors, no dated filler. Each guide is organized around one part of the A Wealthy Foundation framework.
-            </p>
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -222,7 +239,7 @@ export default function ArticlesPage() {
           {filteredArticles.length === 0 && (
             <div className="rounded-3xl border border-slate-200 bg-white/75 p-12 text-center shadow-sm">
               <BarChart3 className="mx-auto mb-4 h-10 w-10 text-copper-600" />
-              <p className="text-slate-600">No articles found in this category yet.</p>
+              <p className="text-slate-600">No articles found in this category yet. Use New Article to create one.</p>
             </div>
           )}
         </div>
