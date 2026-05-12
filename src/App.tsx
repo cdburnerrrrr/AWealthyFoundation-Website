@@ -33,6 +33,7 @@ import EmergencyFundTargetPage from './pages/EmergencyFundTargetPage';
 import SavingsRunwayPage from './pages/SavingsRunwayPage';
 import GrowthPathBuilderPage from './pages/GrowthPathBuilderPage';
 import EmployerMatchMaximizerPage from './pages/EmployerMatchMaximizerPage';
+import ReportDashboardPreviewPage from './pages/ReportDashboardPreviewPage';
 import InvestmentPriorityFinderPage from './pages/InvestmentPriorityFinderPage';
 
 
@@ -191,6 +192,7 @@ function App() {
           <Route path="/foundation-tools/my-freedom-date" element={<MyFreedomDatePage />} />
           <Route path="/foundation-tools/growth-path-builder" element={<GrowthPathBuilderPage />} />
           <Route path="/foundation-tools/employer-match-maximizer" element={<EmployerMatchMaximizerPage />} />
+          <Route path="/premium/report-preview" element={<ReportDashboardPreviewPage />} />
           <Route path="/foundation-tools/investment-priority-finder" element={<InvestmentPriorityFinderPage />} />
           <Route path="/tools/emergency-fund-target" element={<EmergencyFundTargetPage />} />
           <Route path="/results/snapshot" element={<SnapshotResultsPage />} />

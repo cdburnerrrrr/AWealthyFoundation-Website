@@ -296,11 +296,10 @@ export default function PremiumPage() {
             <div className="mt-6 flex flex-wrap gap-3">
               <button
                 type="button"
-                onClick={() => handleSelectPlan('foundation-assessment')}
-                disabled={loading !== null}
-                className="inline-flex items-center gap-2 rounded-xl bg-copper-600 px-5 py-3 font-semibold text-white shadow-lg shadow-copper-600/20 transition hover:bg-copper-700 disabled:opacity-70"
+                onClick={() => navigate('/premium/report-preview')}
+                className="inline-flex items-center gap-2 rounded-xl bg-copper-600 px-5 py-3 font-semibold text-white shadow-lg shadow-copper-600/20 transition hover:bg-copper-700"
               >
-                Unlock the $29 report
+                Preview report + dashboard
                 <ArrowRight className="h-4 w-4" />
               </button>
               <button
@@ -308,7 +307,7 @@ export default function PremiumPage() {
                 onClick={() => navigate('/pricing')}
                 className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-5 py-3 font-semibold text-white transition hover:bg-white/15"
               >
-                Review checkout options
+                Unlock the $29 report
               </button>
             </div>
           </div>
@@ -365,6 +364,24 @@ export default function PremiumPage() {
             <p className="mt-3 text-sm leading-7 text-slate-600 sm:text-base">
               The full report is designed to connect your score, your weakest constraint, your numbers, and your next move so the result feels useful after the assessment is done.
             </p>
+          </div>
+
+          <div className="mb-6 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => navigate('/premium/report-preview')}
+              className="inline-flex items-center gap-2 rounded-xl bg-navy-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-navy-800"
+            >
+              Preview the sample report
+              <ArrowRight className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/pricing')}
+              className="inline-flex items-center gap-2 rounded-xl border border-copper-300 bg-white px-5 py-3 text-sm font-semibold text-copper-700 transition hover:bg-copper-50"
+            >
+              Go to checkout
+            </button>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -457,10 +474,10 @@ export default function PremiumPage() {
             </button>
             <button
               type="button"
-              onClick={() => navigate('/pricing')}
+              onClick={() => navigate('/premium/report-preview')}
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/10 px-6 py-3 font-semibold text-white transition hover:bg-white/15"
             >
-              Review checkout options
+              Preview report + dashboard
             </button>
           </div>
         </div>
