@@ -1,291 +1,465 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Home, Menu, X, ArrowRight, CheckCircle, Shield, TrendingUp, FileText, Calendar, User
+import {
+  ArrowRight,
+  BarChart3,
+  Calendar,
+  CheckCircle2,
+  Crown,
+  Download,
+  Eye,
+  FileText,
+  Gauge,
+  PiggyBank,
+  Shield,
+  Sparkles,
+  Target,
+  TrendingUp,
+  Zap,
 } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
+import { startCheckout } from '../lib/stripe';
 
-const NAV_ITEMS = [
-  { label: 'The Building Blocks', href: '/building-blocks', isRoute: true },
-  { label: 'Financial Pillars', href: '/financial-pillars', isRoute: true },
-  { label: 'Foundation Score', href: '/foundation-score', isRoute: true },
-  { label: 'Premium', href: '/premium', isRoute: true },
-  { label: 'Articles', href: '/articles', isRoute: true },
-  { label: 'Newsletter', href: '/newsletter', isRoute: true },
+type TierId = 'free-snapshot' | 'foundation-assessment' | 'foundation-roadmap';
+
+type PlanCard = {
+  id: TierId;
+  name: string;
+  price: string;
+  eyebrow: string;
+  description: string;
+  features: string[];
+  buttonLabel: string;
+  highlight?: boolean;
+  dark?: boolean;
+  badge?: string;
+};
+
+const PLANS: PlanCard[] = [
+  {
+    id: 'free-snapshot',
+    name: 'Free Snapshot',
+    price: '$0',
+    eyebrow: 'Quick preview',
+    description:
+      'A short starting point that shows your overall direction and where your foundation may need attention first.',
+    features: [
+      'Free Snapshot assessment',
+      'Foundation Score preview on a 0 to 100 scale',
+      'High-level Building Block snapshot',
+      'Basic next-step direction',
+    ],
+    buttonLabel: 'Start Free',
+  },
+  {
+    id: 'foundation-assessment',
+    name: 'Foundation Assessment Plan',
+    price: '$29',
+    eyebrow: 'Full report',
+    description:
+      'Unlock the full Foundation Report, dashboard access, PDF export, and a clear 90-day action plan.',
+    features: [
+      'Comprehensive assessment with grouped follow-up questions',
+      'Full Foundation Score on a 0 to 100 scale',
+      '7 Building Block and Pillar score breakdown',
+      'Executive summary, strengths, gaps, and priority opportunities',
+      'Personalized 90-day action plan',
+      'Dashboard access with progress tracking and key metrics',
+      'Downloadable PDF report',
+    ],
+    buttonLabel: 'Unlock Full Report',
+    highlight: true,
+    badge: 'Most Popular',
+  },
+  {
+    id: 'foundation-roadmap',
+    name: 'Foundation Roadmap Plan',
+    price: '$79',
+    eyebrow: 'Guided implementation',
+    description:
+      'Everything in the Foundation Assessment Plan, plus a stronger implementation layer for the next 12 months.',
+    features: [
+      'Everything in Foundation Assessment',
+      '12-month guided roadmap',
+      'Workbook-style planning prompts',
+      'Monthly check-in structure',
+      'Priority ladder based on your weakest constraint',
+      'Provider recommendations tailored to your gaps',
+      'Premium guidance workspace',
+    ],
+    buttonLabel: 'Unlock Roadmap',
+    dark: true,
+    badge: 'Best Value',
+  },
 ];
+
+const REPORT_FEATURES = [
+  {
+    icon: Gauge,
+    title: 'Foundation Score, 0 to 100',
+    body:
+      'See where your full financial foundation stands without borrowing language from credit scores.',
+  },
+  {
+    icon: FileText,
+    title: 'Full Foundation Report',
+    body:
+      'Get the executive summary, score breakdown, strengths, gaps, and recommended next move in one place.',
+  },
+  {
+    icon: Target,
+    title: '90-day action plan',
+    body:
+      'Turn the report into a short, practical next-step plan instead of a long list of vague suggestions.',
+  },
+  {
+    icon: Download,
+    title: 'PDF export',
+    body:
+      'Save or print the full report so you can revisit it when you review progress.',
+  },
+];
+
+const DASHBOARD_FEATURES = [
+  {
+    icon: BarChart3,
+    title: 'Control panel numbers',
+    body:
+      'Track score, net worth, fixed cost load, debt pressure, savings, and investing metrics after the report is generated.',
+  },
+  {
+    icon: Sparkles,
+    title: 'Best Next Move',
+    body:
+      'Keep the dashboard focused on the action most likely to improve the rest of your foundation.',
+  },
+  {
+    icon: TrendingUp,
+    title: 'What-if simulator',
+    body:
+      'See how more income, lower fixed costs, or faster debt payoff could change your monthly breathing room.',
+  },
+];
+
+function PlanCard({ plan, onSelect, loading }: { plan: PlanCard; onSelect: (id: TierId) => void; loading: TierId | null }) {
+  const isLoading = loading === plan.id;
+
+  if (plan.dark) {
+    return (
+      <div className="relative rounded-3xl border border-navy-700 bg-navy-900 p-6 text-white shadow-xl shadow-navy-900/20">
+        {plan.badge && (
+          <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-copper-500 px-4 py-1 text-xs font-bold uppercase tracking-[0.14em] text-white shadow-lg">
+            {plan.badge}
+          </div>
+        )}
+        <div className="mb-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-copper-300">{plan.eyebrow}</p>
+          <h3 className="mt-3 text-2xl font-bold tracking-tight">{plan.name}</h3>
+          <p className="mt-3 text-sm leading-6 text-navy-200">{plan.description}</p>
+          <div className="mt-5 flex items-baseline gap-2">
+            <span className="text-4xl font-bold text-copper-300">{plan.price}</span>
+            <span className="text-sm text-navy-300">one-time</span>
+          </div>
+        </div>
+
+        <ul className="mb-6 space-y-3">
+          {plan.features.map((feature) => (
+            <li key={feature} className="flex items-start gap-3 text-sm leading-6 text-navy-100">
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-copper-300" />
+              <span>{feature}</span>
+            </li>
+          ))}
+        </ul>
+
+        <button
+          type="button"
+          onClick={() => onSelect(plan.id)}
+          disabled={loading !== null}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-copper-500 px-4 py-3 font-semibold text-white transition hover:bg-copper-600 disabled:opacity-70"
+        >
+          {isLoading ? 'Processing...' : plan.buttonLabel}
+          {!isLoading && <ArrowRight className="h-4 w-4" />}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`relative rounded-3xl border bg-white p-6 shadow-sm transition ${
+        plan.highlight
+          ? 'border-copper-400 shadow-xl shadow-copper-500/10 ring-2 ring-copper-200/60'
+          : 'border-slate-200'
+      }`}
+    >
+      {plan.badge && (
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-copper-500 px-4 py-1 text-xs font-bold uppercase tracking-[0.14em] text-white shadow-lg">
+          {plan.badge}
+        </div>
+      )}
+      <div className="mb-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-copper-700">{plan.eyebrow}</p>
+        <h3 className="mt-3 text-2xl font-bold tracking-tight text-navy-900">{plan.name}</h3>
+        <p className="mt-3 text-sm leading-6 text-slate-600">{plan.description}</p>
+        <div className="mt-5 flex items-baseline gap-2">
+          <span className={`text-4xl font-bold ${plan.highlight ? 'text-copper-600' : 'text-navy-900'}`}>{plan.price}</span>
+          <span className="text-sm text-slate-500">{plan.id === 'free-snapshot' ? 'free' : 'one-time'}</span>
+        </div>
+      </div>
+
+      <ul className="mb-6 space-y-3">
+        {plan.features.map((feature) => (
+          <li key={feature} className="flex items-start gap-3 text-sm leading-6 text-slate-700">
+            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-copper-500" />
+            <span>{feature}</span>
+          </li>
+        ))}
+      </ul>
+
+      <button
+        type="button"
+        onClick={() => onSelect(plan.id)}
+        disabled={loading !== null}
+        className={`inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 font-semibold transition disabled:opacity-70 ${
+          plan.highlight
+            ? 'bg-copper-600 text-white hover:bg-copper-700'
+            : 'border-2 border-copper-600 text-copper-700 hover:bg-copper-50'
+        }`}
+      >
+        {isLoading ? 'Processing...' : plan.buttonLabel}
+        {!isLoading && <ArrowRight className="h-4 w-4" />}
+      </button>
+    </div>
+  );
+}
+
+function FeatureCard({ icon: Icon, title, body }: { icon: React.ElementType; title: string; body: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-copper-50 text-copper-700">
+        <Icon className="h-5 w-5" />
+      </div>
+      <h3 className="text-base font-bold text-navy-900">{title}</h3>
+      <p className="mt-2 text-sm leading-6 text-slate-600">{body}</p>
+    </div>
+  );
+}
 
 export default function PremiumPage() {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAppStore();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, isAuthenticated } = useAppStore();
+  const [loading, setLoading] = useState<TierId | null>(null);
+
+  const handleSelectPlan = async (tierId: TierId) => {
+    if (tierId === 'free-snapshot') {
+      navigate(isAuthenticated ? '/assessment/snapshot' : '/login?redirect=/assessment/snapshot');
+      return;
+    }
+
+    if (!user) {
+      navigate('/login?redirect=/pricing');
+      return;
+    }
+
+    try {
+      setLoading(tierId);
+      await startCheckout(tierId === 'foundation-roadmap' ? 'premium' : 'standard');
+    } catch (error) {
+      console.error('Checkout failed:', error);
+      alert(error instanceof Error ? error.message : 'Unable to start checkout.');
+    } finally {
+      setLoading(null);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 lg:px-6">
-          <div className="flex items-center justify-between h-16">
-            <button onClick={() => navigate('/')} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-              <Home className="w-10 h-10 text-copper-600" />
-              <div>
-                <h1 className="text-xl font-serif font-bold text-navy-900">A Wealthy Foundation</h1>
-                <p className="text-xs text-copper-600">Design the life you want. Build the financial foundation to support it.</p>
-              </div>
-            </button>
-            <nav className="hidden lg:flex items-center space-x-4">
-              {NAV_ITEMS.map((item) => (
-                item.isRoute ? (
-                  <button key={item.label} onClick={() => navigate(item.href)} className="text-sm font-medium text-navy-700 hover:text-copper-600">
-                    {item.label}
-                  </button>
-                ) : (
-                  <a key={item.label} href={item.href} className="text-sm font-medium text-navy-700 hover:text-copper-600">
-                    {item.label}
-                  </a>
-                )
-              ))}
-            </nav>
-            {isAuthenticated ? (
-              <button 
-                onClick={() => navigate('/my-foundation')}
-                className="flex items-center gap-1.5 px-4 py-1.5 bg-copper-600 text-white text-sm font-semibold rounded hover:bg-copper-700 transition-colors"
-              >
-                <User className="w-4 h-4" />
-                Dashboard
-              </button>
-            ) : (
-              <button 
-                onClick={() => navigate('/login')}
-                className="flex items-center gap-1.5 px-4 py-1.5 bg-navy-900 text-white text-sm font-semibold rounded hover:bg-navy-800 transition-colors"
-              >
-                <User className="w-4 h-4" />
-                Login
-              </button>
-            )}
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="lg:hidden p-1 text-navy-700">
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-          </div>
-          {mobileMenuOpen && (
-            <div className="lg:hidden py-2 border-t border-gray-100">
-              <nav className="flex flex-wrap gap-x-4 gap-y-1 items-center">
-                {NAV_ITEMS.map((item) => (
-                  item.isRoute ? (
-                    <button key={item.label} onClick={() => { setMobileMenuOpen(false); navigate(item.href); }} className="text-sm font-medium text-navy-700 hover:text-copper-600">
-                      {item.label}
-                    </button>
-                  ) : (
-                    <a key={item.label} href={item.href} onClick={() => setMobileMenuOpen(false)} className="text-sm font-medium text-navy-700 hover:text-copper-600">
-                      {item.label}
-                    </a>
-                  )
-                ))}
-              </nav>
-            </div>
-          )}
+    <main className="min-h-screen bg-slate-50 text-navy-900">
+      <section className="relative overflow-hidden bg-gradient-to-br from-navy-900 via-[#183b5e] to-navy-800 px-4 py-10 text-white sm:px-6 lg:px-8 lg:py-12">
+        <div className="pointer-events-none absolute inset-0 opacity-[0.10]">
+          <div className="h-full w-full bg-[linear-gradient(to_right,#ffffff30_1px,transparent_1px),linear-gradient(to_bottom,#ffffff22_1px,transparent_1px)] bg-[size:32px_32px]" />
         </div>
-      </header>
+        <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-copper-400/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-28 right-0 h-80 w-80 rounded-full bg-sky-300/10 blur-3xl" />
 
-      {/* Main Content */}
-      <main className="flex-1">
-        {/* Hero */}
-        <section className="bg-gradient-to-br from-navy-900 to-navy-800 text-white py-16 lg:py-20">
-          <div className="max-w-4xl mx-auto px-4 lg:px-6 text-center">
-            <h1 className="text-3xl lg:text-5xl font-serif font-bold mb-4">Choose Your Path to Financial Strength</h1>
-            <p className="text-xl text-navy-200 mb-8">
-              Three assessment levels designed to help you understand and improve your financial foundation.
+        <div className="relative mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+          <div>
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-copper-300/25 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-copper-100">
+              <Crown className="h-4 w-4" />
+              Premium Plans
+            </div>
+            <h1 className="max-w-3xl text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
+              Turn your Foundation Score into a clear plan for what to do next.
+            </h1>
+            <p className="mt-4 max-w-2xl text-base leading-7 text-navy-100 sm:text-lg">
+              Start with a free Snapshot, unlock the full Foundation Report for deeper analysis, or choose the Roadmap Plan for guided implementation over the next 12 months.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => handleSelectPlan('foundation-assessment')}
+                disabled={loading !== null}
+                className="inline-flex items-center gap-2 rounded-xl bg-copper-600 px-5 py-3 font-semibold text-white shadow-lg shadow-copper-600/20 transition hover:bg-copper-700 disabled:opacity-70"
+              >
+                See the $29 report
+                <ArrowRight className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/pricing')}
+                className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-5 py-3 font-semibold text-white transition hover:bg-white/15"
+              >
+                Compare plans
+              </button>
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-white/10 bg-white/[0.08] p-5 shadow-2xl shadow-navy-950/30 backdrop-blur-sm">
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="rounded-2xl border border-white/10 bg-white/[0.08] p-4">
+                <div className="text-sm text-white/70">Score System</div>
+                <div className="mt-2 text-3xl font-bold text-copper-200">0 to 100</div>
+                <p className="mt-2 text-xs leading-5 text-white/60">Built for your financial foundation, not a credit score range.</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.08] p-4">
+                <div className="text-sm text-white/70">Included</div>
+                <div className="mt-2 text-xl font-bold text-white">7 areas</div>
+                <p className="mt-2 text-xs leading-5 text-white/60">Income, Spending, Saving, Investing, Debt, Protection, and Vision.</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.08] p-4">
+                <div className="text-sm text-white/70">Action Layer</div>
+                <div className="mt-2 text-xl font-bold text-white">90 days</div>
+                <p className="mt-2 text-xs leading-5 text-white/60">A practical starting plan before the Roadmap adds the 12-month layer.</p>
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-copper-300/20 bg-copper-300/10 p-4 text-sm leading-6 text-copper-50">
+              The goal is not another generic score. The goal is knowing which part of your financial house deserves attention first.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="relative z-10 -mt-6 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto grid max-w-6xl gap-5 lg:grid-cols-3">
+          {PLANS.map((plan) => (
+            <PlanCard key={plan.id} plan={plan} onSelect={handleSelectPlan} loading={loading} />
+          ))}
+        </div>
+      </section>
+
+      <section className="px-4 py-14 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-8 max-w-3xl">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-copper-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-copper-700">
+              <FileText className="h-4 w-4" />
+              What the paid report unlocks
+            </div>
+            <h2 className="text-3xl font-bold tracking-tight text-navy-900">
+              The $29 plan is no longer just more questions. It is the full review.
+            </h2>
+            <p className="mt-3 text-sm leading-7 text-slate-600 sm:text-base">
+              The full report is designed to connect your score, your weakest constraint, your numbers, and your next move so the result feels useful after the assessment is done.
             </p>
           </div>
-        </section>
 
-        {/* Plans */}
-        <section className="py-12 lg:py-16 -mt-8">
-          <div className="max-w-5xl mx-auto px-4 lg:px-6">
-            <div className="grid lg:grid-cols-3 gap-6">
-              {/* Free */}
-              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-                <div className="text-center mb-6">
-                  <h3 className="text-lg font-bold text-navy-900 mb-2">Free Snapshot</h3>
-                  <div className="text-3xl font-bold text-navy-900">$0</div>
-                  <p className="text-sm text-gray-500 mt-1">5-minute quick check</p>
-                </div>
-                <ul className="space-y-3 mb-6">
-                  <li className="flex items-start gap-2 text-sm">
-                    <CheckCircle className="w-5 h-5 text-copper-500 flex-shrink-0 mt-0.5" />
-                    <span>Quick 10-question assessment</span>
-                  </li>
-                  <li className="flex items-start gap-2 text-sm">
-                    <CheckCircle className="w-5 h-5 text-copper-500 flex-shrink-0 mt-0.5" />
-                    <span>Your Foundation Score (300-850)</span>
-                  </li>
-                  <li className="flex items-start gap-2 text-sm">
-                    <CheckCircle className="w-5 h-5 text-copper-500 flex-shrink-0 mt-0.5" />
-                    <span>Basic category breakdown</span>
-                  </li>
-                </ul>
-                <button onClick={() => navigate('/login')} className="w-full py-3 border-2 border-copper-600 text-copper-600 font-semibold rounded-lg hover:bg-copper-50 transition-colors">
-                  Start Free
-                </button>
-              </div>
-
-              {/* Foundation Assessment */}
-              <div className="bg-white rounded-xl shadow-xl border-2 border-copper-500 p-6 relative">
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-copper-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                  MOST POPULAR
-                </div>
-                <div className="text-center mb-6">
-                  <h3 className="text-lg font-bold text-navy-900 mb-2">Foundation Assessment</h3>
-                  <div className="text-3xl font-bold text-copper-600">$29</div>
-                  <p className="text-sm text-gray-500 mt-1">One-time payment</p>
-                </div>
-                <ul className="space-y-3 mb-6">
-                  <li className="flex items-start gap-2 text-sm">
-                    <CheckCircle className="w-5 h-5 text-copper-500 flex-shrink-0 mt-0.5" />
-                    <span>Comprehensive 50-question assessment</span>
-                  </li>
-                  <li className="flex items-start gap-2 text-sm">
-                    <CheckCircle className="w-5 h-5 text-copper-500 flex-shrink-0 mt-0.5" />
-                    <span>Detailed Foundation Score analysis</span>
-                  </li>
-                  <li className="flex items-start gap-2 text-sm">
-                    <CheckCircle className="w-5 h-5 text-copper-500 flex-shrink-0 mt-0.5" />
-                    <span>7 Pillar breakdown with scores</span>
-                  </li>
-                  <li className="flex items-start gap-2 text-sm">
-                    <CheckCircle className="w-5 h-5 text-copper-500 flex-shrink-0 mt-0.5" />
-                    <span>Key strengths identified</span>
-                  </li>
-                  <li className="flex items-start gap-2 text-sm">
-                    <CheckCircle className="w-5 h-5 text-copper-500 flex-shrink-0 mt-0.5" />
-                    <span>Gaps & improvement areas</span>
-                  </li>
-                  <li className="flex items-start gap-2 text-sm">
-                    <CheckCircle className="w-5 h-5 text-copper-500 flex-shrink-0 mt-0.5" />
-                    <span>Personalized recommendations</span>
-                  </li>
-                </ul>
-                <button onClick={() => navigate('/login')} className="w-full py-3 bg-copper-600 text-white font-semibold rounded-lg hover:bg-copper-700 transition-colors">
-                  Get Started
-                </button>
-              </div>
-
-              {/* Foundation Roadmap */}
-              <div className="bg-navy-900 rounded-xl shadow-lg border border-navy-700 p-6 text-white">
-                <div className="text-center mb-6">
-                  <h3 className="text-lg font-bold mb-2">Foundation Roadmap</h3>
-                  <div className="text-3xl font-bold text-copper-400">$79</div>
-                  <p className="text-sm text-navy-300 mt-1">One-time payment</p>
-                </div>
-                <ul className="space-y-3 mb-6 text-navy-200">
-                  <li className="flex items-start gap-2 text-sm">
-                    <CheckCircle className="w-5 h-5 text-copper-400 flex-shrink-0 mt-0.5" />
-                    <span>Everything in Foundation Assessment</span>
-                  </li>
-                  <li className="flex items-start gap-2 text-sm">
-                    <CheckCircle className="w-5 h-5 text-copper-400 flex-shrink-0 mt-0.5" />
-                    <span>Custom 12-month action blueprint</span>
-                  </li>
-                  <li className="flex items-start gap-2 text-sm">
-                    <CheckCircle className="w-5 h-5 text-copper-400 flex-shrink-0 mt-0.5" />
-                    <span>Provider recommendations</span>
-                  </li>
-                  <li className="flex items-start gap-2 text-sm">
-                    <CheckCircle className="w-5 h-5 text-copper-400 flex-shrink-0 mt-0.5" />
-                    <span>Downloadable PDF report</span>
-                  </li>
-                  <li className="flex items-start gap-2 text-sm">
-                    <CheckCircle className="w-5 h-5 text-copper-400 flex-shrink-0 mt-0.5" />
-                    <span>Priority support</span>
-                  </li>
-                </ul>
-                <button onClick={() => navigate('/login')} className="w-full py-3 bg-copper-500 text-white font-semibold rounded-lg hover:bg-copper-600 transition-colors">
-                  Get Started
-                </button>
-              </div>
-            </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {REPORT_FEATURES.map((feature) => (
+              <FeatureCard key={feature.title} {...feature} />
+            ))}
           </div>
-        </section>
-
-        {/* Which One Is Right For You */}
-        <section className="py-12 lg:py-16 bg-gray-50">
-          <div className="max-w-4xl mx-auto px-4 lg:px-6">
-            <div className="text-center mb-10">
-              <h2 className="text-2xl lg:text-3xl font-serif font-bold text-navy-900 mb-3">Which Assessment is Right for You?</h2>
-            </div>
-
-            <div className="space-y-4">
-              <div className="bg-white rounded-xl p-5 border border-gray-200">
-                <div className="flex items-start gap-3">
-                  <Shield className="w-6 h-6 text-copper-600 flex-shrink-0 mt-1" />
-                  <div>
-                    <h3 className="font-bold text-navy-900">Free Snapshot - If you're just curious</h3>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Perfect if you want a quick check-in on your financial health. Get a high-level view of where you stand in about 5 minutes.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl p-5 border-2 border-copper-300">
-                <div className="flex items-start gap-3">
-                  <FileText className="w-6 h-6 text-copper-600 flex-shrink-0 mt-1" />
-                  <div>
-                    <h3 className="font-bold text-navy-900">Foundation Assessment ($29) - If you're serious about improving</h3>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Ideal if you want a detailed understanding of all 7 pillars of your financial foundation. Get specific recommendations on where to focus your efforts.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl p-5 border border-gray-200">
-                <div className="flex items-start gap-3">
-                  <Calendar className="w-6 h-6 text-copper-600 flex-shrink-0 mt-1" />
-                  <div>
-                    <h3 className="font-bold text-navy-900">Foundation Roadmap ($79) - If you want a clear path forward</h3>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Best if you want a complete action plan with specific steps, timelines, and resources. Includes a printable PDF and ongoing guidance.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section className="py-12 lg:py-16 bg-navy-900 text-white">
-          <div className="max-w-2xl mx-auto px-4 lg:px-6 text-center">
-            <h2 className="text-2xl lg:text-3xl font-serif font-bold mb-4">Ready to Strengthen Your Foundation?</h2>
-            <p className="text-navy-300 mb-8">
-              Start with the free assessment and upgrade when you're ready for more detailed insights.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button onClick={() => navigate('/login')} className="inline-flex items-center gap-3 px-8 py-4 bg-copper-600 text-white text-lg font-bold rounded-xl hover:bg-copper-700 transition-all shadow-lg shadow-copper-600/30">
-                Start Free Assessment <ArrowRight className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      {/* Footer */}
-      <footer className="bg-navy-900 text-white py-8">
-        <div className="max-w-7xl mx-auto px-4 lg:px-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <h3 className="font-serif font-bold text-lg">A Wealthy Foundation</h3>
-              <p className="text-navy-400 text-sm">Design the life you want. Build the financial foundation to support it.</p>
-            </div>
-            <div className="flex gap-6 text-sm text-navy-300">
-              <button onClick={() => navigate('/articles')} className="hover:text-copper-400">Articles</button>
-              <a href="#pillars" className="hover:text-copper-400">Building Blocks</a>
-              <a href="#premium" className="hover:text-copper-400">Premium</a>
-            </div>
-          </div>
-          <p className="text-navy-500 text-xs text-center mt-6">© {new Date().getFullYear()} A Wealthy Foundation</p>
         </div>
-      </footer>
-    </div>
+      </section>
+
+      <section className="bg-white px-4 py-14 sm:px-6 lg:px-8">
+        <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+          <div>
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">
+              <Eye className="h-4 w-4" />
+              Dashboard value
+            </div>
+            <h2 className="text-3xl font-bold tracking-tight text-navy-900">
+              After the report, the dashboard keeps the work visible.
+            </h2>
+            <p className="mt-3 text-sm leading-7 text-slate-600 sm:text-base">
+              The dashboard is the control panel: current numbers, one current move, momentum, and scenario modeling that shows how small changes affect the outcome.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            {DASHBOARD_FEATURES.map((feature) => (
+              <FeatureCard key={feature.title} {...feature} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="px-4 py-14 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-8 text-center">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-copper-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-copper-700">
+              <Shield className="h-4 w-4" />
+              Which plan fits?
+            </div>
+            <h2 className="text-3xl font-bold tracking-tight text-navy-900">Choose based on how much guidance you want.</h2>
+          </div>
+
+          <div className="grid gap-5 lg:grid-cols-3">
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+              <PiggyBank className="mb-4 h-8 w-8 text-copper-600" />
+              <h3 className="text-xl font-bold text-navy-900">Free Snapshot</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Best if you are curious and want a fast signal before deciding whether to go deeper.
+              </p>
+            </div>
+
+            <div className="rounded-3xl border-2 border-copper-300 bg-white p-6 shadow-lg shadow-copper-500/10">
+              <FileText className="mb-4 h-8 w-8 text-copper-600" />
+              <h3 className="text-xl font-bold text-navy-900">Foundation Assessment Plan</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Best if you want the full financial review, score breakdown, dashboard, PDF, and 90-day plan.
+              </p>
+            </div>
+
+            <div className="rounded-3xl border border-navy-700 bg-navy-900 p-6 text-white shadow-xl shadow-navy-900/20">
+              <Calendar className="mb-4 h-8 w-8 text-copper-300" />
+              <h3 className="text-xl font-bold">Foundation Roadmap Plan</h3>
+              <p className="mt-2 text-sm leading-6 text-navy-200">
+                Best if you want the report plus a structured 12-month implementation path and premium guidance workspace.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-navy-900 px-4 py-12 text-white sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-3xl text-center">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-copper-300/25 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-copper-100">
+            <Zap className="h-4 w-4" />
+            Ready when you are
+          </div>
+          <h2 className="text-3xl font-bold tracking-tight">Start with the Snapshot, then unlock the level of guidance you need.</h2>
+          <p className="mt-4 text-sm leading-7 text-navy-200 sm:text-base">
+            You do not need to fix everything at once. The right first step is identifying the part of the foundation that creates the biggest lift.
+          </p>
+          <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
+            <button
+              type="button"
+              onClick={() => handleSelectPlan('free-snapshot')}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-copper-600 px-6 py-3 font-semibold text-white transition hover:bg-copper-700"
+            >
+              Start Free Snapshot
+              <ArrowRight className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/pricing')}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/10 px-6 py-3 font-semibold text-white transition hover:bg-white/15"
+            >
+              Compare paid plans
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }
