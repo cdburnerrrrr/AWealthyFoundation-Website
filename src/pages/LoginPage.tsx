@@ -99,17 +99,13 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-copper-300/25 bg-white shadow-xl shadow-copper-500/10">
+          <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-3xl border border-copper-300/25 bg-white shadow-xl shadow-copper-500/10">
             <img
               src={logoImage}
               alt="A Wealthy Foundation"
-              className="h-11 w-auto"
+              className="h-20 w-auto"
             />
           </div>
-
-          <p className="mb-2 text-sm font-semibold uppercase tracking-[0.18em] text-copper-200/90">
-            A Wealthy Foundation
-          </p>
 
           <h1 className="text-2xl font-semibold tracking-tight text-white">
             {mode === 'signIn' ? 'Welcome back' : 'Start your foundation'}
