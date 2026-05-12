@@ -23,8 +23,12 @@ export default function UserMenu() {
   const foundationScore = useMemo(() => {
     if (!currentAssessment) return null;
 
-    return currentAssessment?.foundationScore ?? null;
-    
+    return (
+      currentAssessment.foundationScore ??
+      currentAssessment.score ??
+      currentAssessment.foundation_score ??
+      null
+    );
   }, [currentAssessment]);
 
   useEffect(() => {
@@ -68,7 +72,7 @@ export default function UserMenu() {
       <button
         type="button"
         onClick={() => navigate('/login')}
-        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-amber-300 hover:text-amber-700"
+        className="inline-flex items-center gap-2 rounded-full border border-copper-200 bg-white px-3 py-2 text-sm font-semibold text-copper-700 shadow-sm transition hover:border-copper-300 hover:bg-copper-50"
       >
         <User size={18} />
         <span>Sign In</span>
@@ -81,26 +85,23 @@ export default function UserMenu() {
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-amber-300 hover:text-amber-700"
+        className="inline-flex h-10 items-center gap-1.5 rounded-full border border-copper-200 bg-copper-50 px-1.5 text-copper-700 shadow-sm transition hover:border-copper-300 hover:bg-copper-100"
+        aria-label="Open account menu"
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100">
-          <User size={18} />
+        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-copper-600 text-white shadow-sm shadow-copper-600/20">
+          <User size={17} />
         </span>
 
-        <span className="hidden max-w-[180px] truncate sm:block">
-          {user?.email || 'Account'}
-        </span>
-
-        <ChevronDown size={16} className={`transition ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown size={16} className={`mr-1 transition ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
         <div className="absolute right-0 z-50 mt-2 w-72 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
           <div className="border-b border-slate-100 px-4 py-4">
             <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-700">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-copper-50 text-copper-700 ring-1 ring-copper-200">
                 <User size={18} />
               </div>
 
@@ -113,11 +114,11 @@ export default function UserMenu() {
             </div>
 
             {foundationScore !== null && foundationScore !== undefined && (
-              <div className="mt-4 rounded-xl bg-amber-50 px-3 py-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">
+              <div className="mt-4 rounded-xl bg-copper-50 px-3 py-3 ring-1 ring-copper-100">
+                <p className="text-xs font-semibold uppercase tracking-wide text-copper-800">
                   Foundation Score
                 </p>
-                <p className="mt-1 text-2xl font-bold text-amber-700">
+                <p className="mt-1 text-2xl font-bold text-copper-700">
                   {foundationScore}
                 </p>
               </div>
@@ -131,7 +132,7 @@ export default function UserMenu() {
                 navigate('/my-foundation');
                 setOpen(false);
               }}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50"
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-slate-700 transition hover:bg-copper-50 hover:text-copper-700"
             >
               <User size={16} />
               <span>Dashboard</span>
@@ -143,10 +144,10 @@ export default function UserMenu() {
                 navigate('/premium');
                 setOpen(false);
               }}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50"
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-slate-700 transition hover:bg-copper-50 hover:text-copper-700"
             >
               <Star size={16} />
-              <span>Upgrade to Premium</span>
+              <span>Premium Plans</span>
             </button>
 
             <button
@@ -158,7 +159,7 @@ export default function UserMenu() {
               className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50"
             >
               <Lock size={16} />
-              <span>Account & Sign In</span>
+              <span>Account</span>
             </button>
 
             <button

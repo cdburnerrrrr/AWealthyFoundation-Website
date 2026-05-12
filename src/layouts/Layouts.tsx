@@ -1,12 +1,14 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
+import { useAppStore } from '../store/appStore';
 import UserMenu from '../components/UserMenu';
 import logoDesktop from '../assets/awf_logo_desktop.svg';
 import logoMobile from '../assets/awf_logo_mobile.svg';
 
 export default function Layout() {
   const location = useLocation();
+  const { isAuthenticated } = useAppStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinkClass = (path: string) =>
@@ -72,7 +74,27 @@ export default function Layout() {
               </nav>
             </div>
 
-            <div className="hidden md:flex shrink-0 items-center">
+            <div className="hidden shrink-0 items-center gap-3 md:flex">
+              {isAuthenticated && (
+                <Link
+                  to="/my-foundation"
+                  className={`relative text-sm font-medium transition-all duration-200 ${
+                    location.pathname === '/my-foundation'
+                      ? 'text-copper-600'
+                      : 'text-navy-700 hover:text-copper-600'
+                  } group`}
+                  onClick={closeMenu}
+                >
+                  <span className="relative">
+                    Dashboard
+                    <span
+                      className={`absolute left-0 -bottom-1 h-[2px] w-full origin-left scale-x-0 bg-copper-600 transition-transform duration-200 group-hover:scale-x-100 ${
+                        location.pathname === '/my-foundation' ? 'scale-x-100' : ''
+                      }`}
+                    />
+                  </span>
+                </Link>
+              )}
               <UserMenu />
             </div>
 
@@ -89,6 +111,19 @@ export default function Layout() {
           {mobileMenuOpen && (
             <div className="border-t border-slate-200 py-4 md:hidden">
               <nav className="flex flex-col gap-1">
+                {isAuthenticated && (
+                  <Link
+                    to="/my-foundation"
+                    className={`rounded-xl px-3 py-3 text-sm font-medium transition ${
+                      location.pathname === '/my-foundation'
+                        ? 'bg-amber-50 text-copper-600'
+                        : 'text-navy-700 hover:bg-slate-50 hover:text-copper-600'
+                    }`}
+                    onClick={closeMenu}
+                  >
+                    Dashboard
+                  </Link>
+                )}
                 {navLinks.map((link) => (
                   <Link
                     key={link.to}
