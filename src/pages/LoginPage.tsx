@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import logoImage from '../assets/awf_logo_mobile.svg';
+import logoImage from '../assets/awf_logo_desktop.svg';
 
 type Mode = 'signIn' | 'signUp';
 
@@ -99,12 +99,14 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-3xl border border-copper-300/25 bg-white shadow-xl shadow-copper-500/10">
-            <img
-              src={logoImage}
-              alt="A Wealthy Foundation"
-              className="h-20 w-auto"
-            />
+          <div className="mb-6 flex justify-center">
+            <div className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-3 shadow-xl shadow-copper-500/10 ring-1 ring-white/20">
+              <img
+                src={logoImage}
+                alt="A Wealthy Foundation"
+                className="h-14 w-auto sm:h-16"
+              />
+            </div>
           </div>
 
           <h1 className="text-2xl font-semibold tracking-tight text-white">
