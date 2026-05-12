@@ -9,6 +9,7 @@ import {
   Wallet,
   Shield,
   Landmark,
+  Compass,
 } from 'lucide-react';
 
 type TabKey = 'spending' | 'debt' | 'saving' | 'investing';
@@ -281,6 +282,15 @@ const categoryMeta: Record<
           'Estimate whether you are capturing the full workplace match and how much employer money may be getting left on the table.',
         bestFor: 'finding the easiest investing win before adding complexity',
         icon: <Wallet size={22} />,
+        badge: 'Live',
+      },
+      {
+        to: '/foundation-tools/investment-priority-finder',
+        title: 'Investment Priority Finder',
+        description:
+          'Decide where the next investment dollar should probably go: cash cushion, debt payoff, employer match, HSA, IRA, or brokerage.',
+        bestFor: 'choosing the next investing move in the right order',
+        icon: <Compass size={22} />,
         badge: 'Live',
       },
     ],
