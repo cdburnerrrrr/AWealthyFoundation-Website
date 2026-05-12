@@ -11,7 +11,6 @@ import {
   Lightbulb,
   PiggyBank,
   Shield,
-  Plus,
   Sparkles,
   TrendingUp,
   Wallet,
@@ -20,7 +19,6 @@ import {
   ARTICLE_CATEGORIES,
   BUILDING_BLOCK_META,
   getAllArticles,
-  isArticleAdminEmail,
   type BuildingBlockKey,
   type FoundationArticle,
 } from '../data/foundationArticles';
@@ -118,11 +116,9 @@ function ArticleCard({ article, featured = false }: { article: FoundationArticle
 
 export default function ArticlesPage() {
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAppStore();
+  const { isAuthenticated } = useAppStore();
   const [selectedCategory, setSelectedCategory] = useState('All');
   const articles = useMemo(() => getAllArticles(), []);
-  const userEmail = String((user as any)?.email ?? '').toLowerCase();
-  const canCreateArticles = isArticleAdminEmail(userEmail);
 
   const featuredArticle = articles[0];
   const filteredArticles = useMemo(() => {
@@ -174,16 +170,6 @@ export default function ArticlesPage() {
                 >
                   Explore Foundation Tools
                 </button>
-                {canCreateArticles && (
-                  <button
-                    type="button"
-                    onClick={() => navigate('/articles/new')}
-                    className="inline-flex items-center gap-2 rounded-xl border border-copper-300 bg-white/80 px-5 py-3 text-sm font-bold text-copper-700 transition hover:bg-copper-50"
-                  >
-                    <Plus className="h-4 w-4" />
-                    New Article
-                  </button>
-                )}
               </div>
             </div>
 
@@ -239,7 +225,7 @@ export default function ArticlesPage() {
           {filteredArticles.length === 0 && (
             <div className="rounded-3xl border border-slate-200 bg-white/75 p-12 text-center shadow-sm">
               <BarChart3 className="mx-auto mb-4 h-10 w-10 text-copper-600" />
-              <p className="text-slate-600">No articles found in this category yet. Use New Article to create one.</p>
+              <p className="text-slate-600">No articles found in this category yet.</p>
             </div>
           )}
         </div>
