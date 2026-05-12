@@ -100,11 +100,11 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <div className="mb-4 flex justify-center">
-            <div className="flex h-[76px] w-[300px] items-center justify-center rounded-2xl bg-white px-4 py-2 shadow-xl shadow-copper-500/10 ring-1 ring-white/20 sm:h-[82px] sm:w-[340px]">
+            <div className="flex h-[72px] w-[300px] items-center justify-center rounded-2xl bg-white px-4 py-2 shadow-xl shadow-copper-500/10 ring-1 ring-white/20 sm:h-[78px] sm:w-[340px]">
               <img
                 src={logoImage}
                 alt="A Wealthy Foundation"
-                className="mx-auto block h-12 w-auto translate-x-10 sm:h-14 sm:translate-x-12"
+                className="mx-auto block h-16 w-auto sm:h-[68px]"
               />
             </div>
           </div>
