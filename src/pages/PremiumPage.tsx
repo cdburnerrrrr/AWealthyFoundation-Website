@@ -300,7 +300,7 @@ export default function PremiumPage() {
                 disabled={loading !== null}
                 className="inline-flex items-center gap-2 rounded-xl bg-copper-600 px-5 py-3 font-semibold text-white shadow-lg shadow-copper-600/20 transition hover:bg-copper-700 disabled:opacity-70"
               >
-                See the $29 report
+                Unlock the $29 report
                 <ArrowRight className="h-4 w-4" />
               </button>
               <button
@@ -308,7 +308,7 @@ export default function PremiumPage() {
                 onClick={() => navigate('/pricing')}
                 className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-5 py-3 font-semibold text-white transition hover:bg-white/15"
               >
-                Compare plans
+                Review checkout options
               </button>
             </div>
           </div>
@@ -344,6 +344,11 @@ export default function PremiumPage() {
           {PLANS.map((plan) => (
             <PlanCard key={plan.id} plan={plan} onSelect={handleSelectPlan} loading={loading} />
           ))}
+        </div>
+
+        <div className="mx-auto mt-5 flex max-w-4xl flex-col items-center justify-center gap-2 rounded-2xl border border-copper-200 bg-white px-5 py-4 text-center text-sm leading-6 text-slate-600 shadow-sm sm:flex-row sm:text-left">
+          <Shield className="h-5 w-5 shrink-0 text-copper-600" />
+          <span>30-day money-back guarantee. If the paid report or roadmap is not helpful, ask for a full refund.</span>
         </div>
       </section>
 
@@ -455,7 +460,7 @@ export default function PremiumPage() {
               onClick={() => navigate('/pricing')}
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/10 px-6 py-3 font-semibold text-white transition hover:bg-white/15"
             >
-              Compare paid plans
+              Review checkout options
             </button>
           </div>
         </div>
