@@ -275,14 +275,13 @@ const categoryMeta: Record<
         badge: 'Live',
       },
       {
-        to: '#',
+        to: '/foundation-tools/employer-match-maximizer',
         title: 'Employer Match Maximizer',
         description:
-          'Estimate whether you are capturing the full workplace match and how much free money may be getting left on the table.',
+          'Estimate whether you are capturing the full workplace match and how much employer money may be getting left on the table.',
         bestFor: 'finding the easiest investing win before adding complexity',
         icon: <Wallet size={22} />,
-        badge: 'Coming Soon',
-        disabled: true,
+        badge: 'Live',
       },
     ],
   },
