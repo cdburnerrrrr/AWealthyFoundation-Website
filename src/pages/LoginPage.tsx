@@ -99,12 +99,12 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="mb-6 flex justify-center">
+          <div className="mb-4 flex justify-center">
             <div className="flex h-[76px] w-[300px] items-center justify-center rounded-2xl bg-white px-4 py-2 shadow-xl shadow-copper-500/10 ring-1 ring-white/20 sm:h-[82px] sm:w-[340px]">
               <img
                 src={logoImage}
                 alt="A Wealthy Foundation"
-                className="mx-auto block h-12 w-auto translate-x-6 sm:h-14 sm:translate-x-7"
+                className="mx-auto block h-12 w-auto translate-x-10 sm:h-14 sm:translate-x-12"
               />
             </div>
           </div>
