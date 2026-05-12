@@ -32,6 +32,7 @@ import {
   COMPREHENSIVE_INVESTING_ROOT_KEYS,
   DETAILED_OBJECT_FIELD_GROUPS,
   DETAILED_OBJECT_INLINE_ROOT_KEYS,
+  DETAILED_QUESTION_COPY_OVERRIDES,
   getAssessmentSectionKey,
   getDetailedQuestions,
   getSnapshotQuestions,
@@ -216,7 +217,7 @@ function getQuestionDisplayText(question: Question | undefined, responses: Recor
     return 'Do you own any real estate besides your primary home?';
   }
 
-  return question.question;
+  return DETAILED_QUESTION_COPY_OVERRIDES[question.key]?.question ?? question.question;
 }
 
 function getQuestionDisplayHelper(question: Question | undefined, responses: Record<string, any>) {
@@ -230,7 +231,7 @@ function getQuestionDisplayHelper(question: Question | undefined, responses: Rec
     return 'Your primary home was already captured in the housing question. Only include rental property, land, second homes, or other property here.';
   }
 
-  return question.helperText;
+  return DETAILED_QUESTION_COPY_OVERRIDES[question.key]?.helperText ?? question.helperText;
 }
 
 

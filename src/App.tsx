@@ -31,6 +31,7 @@ import MyFreedomDatePage from './pages/MyFreedomDatePage';
 import Layout from './layouts/Layouts';
 import EmergencyFundTargetPage from './pages/EmergencyFundTargetPage';
 import SavingsRunwayPage from './pages/SavingsRunwayPage';
+import GrowthPathBuilderPage from './pages/GrowthPathBuilderPage';
 
 
 function App() {
@@ -186,6 +187,7 @@ function App() {
           <Route path="/foundation-tools/monthly-margin-planner" element={<MonthlyMarginPlannerPage />} />
           <Route path="/foundation-tools/debt-pressure-check" element={<DebtPressureCheckPage />} />
           <Route path="/foundation-tools/my-freedom-date" element={<MyFreedomDatePage />} />
+          <Route path="/foundation-tools/growth-path-builder" element={<GrowthPathBuilderPage />} />
           <Route path="/tools/emergency-fund-target" element={<EmergencyFundTargetPage />} />
           <Route path="/results/snapshot" element={<SnapshotResultsPage />} />
           <Route path="/tools/savings-runway" element={<SavingsRunwayPage />} />

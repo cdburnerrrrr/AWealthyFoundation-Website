@@ -266,21 +266,20 @@ const categoryMeta: Record<
     heroGlow: 'bg-sky-300/14',
     tools: [
       {
-        to: '#',
-        title: 'Compound Growth Builder',
+        to: '/foundation-tools/growth-path-builder',
+        title: 'Growth Path Builder',
         description:
-          'See how small steady investing can build real momentum over time and where more time makes the biggest difference.',
-        bestFor: 'visualizing growth from steady contributions',
+          'Project how consistent investing could grow over time, or work backward from a future goal to estimate the monthly amount needed.',
+        bestFor: 'turning long-term investing into a clear monthly path',
         icon: <TrendingUp size={22} />,
-        badge: 'Coming Soon',
-        disabled: true,
+        badge: 'Live',
       },
       {
         to: '#',
-        title: 'Future Value Goal Planner',
+        title: 'Employer Match Maximizer',
         description:
-          'Start with the future amount you want and work backward to estimate the monthly contribution needed to get there.',
-        bestFor: 'turning a long-term goal into a monthly target',
+          'Estimate whether you are capturing the full workplace match and how much free money may be getting left on the table.',
+        bestFor: 'finding the easiest investing win before adding complexity',
         icon: <Wallet size={22} />,
         badge: 'Coming Soon',
         disabled: true,

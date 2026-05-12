@@ -528,6 +528,15 @@ export const DETAILED_OBJECT_FIELD_GROUPS: Record<string, Record<string, Assessm
 export const SNAPSHOT_OBJECT_INLINE_ROOT_KEYS = new Set(Object.keys(SNAPSHOT_OBJECT_FIELD_GROUPS));
 export const DETAILED_OBJECT_INLINE_ROOT_KEYS = new Set(Object.keys(DETAILED_OBJECT_FIELD_GROUPS));
 
+
+export const DETAILED_QUESTION_COPY_OVERRIDES: Record<string, { question?: string; helperText?: string }> = {
+  protectionCoverage: {
+    question: 'Let’s add a little detail to your core insurance protections.',
+    helperText:
+      'Review or select the protections you have in place. If you came from Snapshot, your earlier selections should already be checked. We’ll ask for quality or adequacy details only under the items you select.',
+  },
+};
+
 export const COMPREHENSIVE_INVESTING_ROOT_KEYS = [
   'investmentAccounts',
   'additionalAssetTypes',
