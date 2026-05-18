@@ -41,7 +41,7 @@ export default function LandingPage() {
       });
 
       setNewsletterStatus('success');
-      setNewsletterMessage('You’re subscribed! Check your inbox for the welcome email.');
+      setNewsletterMessage('Almost there! Check your inbox and click the confirmation link to finish subscribing.');
       setEmail('');
       setName('');
     } catch (error) {
@@ -325,9 +325,18 @@ export default function LandingPage() {
   Newsletter
 </div>
                 <div className="max-w-2xl">
-                <h4 className="text-xl font-bold text-copper-600 mb-2">
-  Join The Foundation Report
-</h4>
+                <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <h4 className="text-xl font-bold text-copper-600">
+                    Join The Foundation Report
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/newsletter')}
+                    className="inline-flex items-center gap-1 text-sm font-semibold text-navy-600 hover:text-copper-700"
+                  >
+                    Learn more <ArrowRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
                   <p className="text-navy-600 mb-4 leading-7">
                     Get practical insights on saving, debt, investing, and building a stronger
                     financial foundation — one clear email at a time.
@@ -396,9 +405,18 @@ export default function LandingPage() {
                     )}
                   </form>
 
-                  <p className="text-xs text-navy-400 mt-3">
-                    Free weekly insights. Unsubscribe anytime.
-                  </p>
+                  <div className="mt-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+                    <p className="text-xs text-navy-400">
+                      Free weekly insights. Unsubscribe anytime.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => navigate('/newsletter')}
+                      className="text-left text-xs font-semibold text-copper-600 hover:text-copper-700"
+                    >
+                      Preview the newsletter page →
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
