@@ -11,6 +11,7 @@ import {
   Shield,
   Landmark,
   Compass,
+  Car,
 } from 'lucide-react';
 
 type TabKey = 'spending' | 'debt' | 'saving' | 'investing';
@@ -267,6 +268,15 @@ const categoryMeta: Record<
     drafting: 'border-navy-700/42',
     heroGlow: 'bg-sky-300/14',
     tools: [
+      {
+        to: '/foundation-tools/car-payment-opportunity-cost',
+        title: 'Car Payment Opportunity Cost Calculator',
+        description:
+          'See what your car payment is really costing now, then project what that same payment could become if redirected toward margin, investing, or freedom.',
+        bestFor: 'turning an old car payment into present breathing room and future growth',
+        icon: <Car size={22} />,
+        badge: 'Book Tool',
+      },
       {
         to: '/foundation-tools/growth-path-builder',
         title: 'Growth Path Builder',
