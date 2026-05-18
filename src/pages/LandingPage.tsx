@@ -4,15 +4,55 @@ import HouseLayout from '../components/HouseLayout';
 import { ArrowRight, CheckCircle, Clock } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
 import { startCheckout } from '../lib/stripe';
+import { subscribeToNewsletter } from '../lib/newsletter';
 
 export default function LandingPage() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAppStore();
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
+  const [newsletterStatus, setNewsletterStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [newsletterMessage, setNewsletterMessage] = useState('');
 
   const handleGetStarted = () => {
     navigate('/assessment/snapshot');
+  };
+
+  const handleNewsletterSubscribe = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const cleanEmail = email.trim();
+    const cleanName = name.trim();
+
+    if (!cleanEmail) {
+      setNewsletterStatus('error');
+      setNewsletterMessage('Please enter your email address.');
+      return;
+    }
+
+    try {
+      setNewsletterStatus('loading');
+      setNewsletterMessage('');
+
+      await subscribeToNewsletter({
+        email: cleanEmail,
+        name: cleanName,
+        source: 'landing_page_home',
+      });
+
+      setNewsletterStatus('success');
+      setNewsletterMessage('You’re subscribed! Check your inbox for the welcome email.');
+      setEmail('');
+      setName('');
+    } catch (error) {
+      console.error('Newsletter signup failed:', error);
+      setNewsletterStatus('error');
+      setNewsletterMessage(
+        error instanceof Error
+          ? error.message
+          : 'Something went wrong. Please try again.'
+      );
+    }
   };
 
   return (
@@ -315,25 +355,46 @@ export default function LandingPage() {
   </div>
 </div>
 
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr,1fr,auto]">
-                    <input
-                      type="text"
-                      placeholder="Name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded text-sm focus:outline-none focus:border-copper-500"
-                    />
-                    <input
-                      type="email"
-                      placeholder="Email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded text-sm focus:outline-none focus:border-copper-500"
-                    />
-                    <button className="px-5 py-2.5 bg-navy-900 text-white text-sm font-medium rounded hover:bg-navy-800 transition-colors whitespace-nowrap">
-                      Subscribe
-                    </button>
-                  </div>
+                  <form onSubmit={handleNewsletterSubscribe} className="space-y-3">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr,1fr,auto]">
+                      <input
+                        type="text"
+                        placeholder="Name"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        autoComplete="given-name"
+                        disabled={newsletterStatus === 'loading'}
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded text-sm focus:outline-none focus:border-copper-500 disabled:bg-gray-50 disabled:text-gray-400"
+                      />
+                      <input
+                        type="email"
+                        placeholder="Email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        autoComplete="email"
+                        required
+                        disabled={newsletterStatus === 'loading'}
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded text-sm focus:outline-none focus:border-copper-500 disabled:bg-gray-50 disabled:text-gray-400"
+                      />
+                      <button
+                        type="submit"
+                        disabled={newsletterStatus === 'loading'}
+                        className="px-5 py-2.5 bg-navy-900 text-white text-sm font-medium rounded hover:bg-navy-800 transition-colors whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-70"
+                      >
+                        {newsletterStatus === 'loading' ? 'Subscribing...' : 'Subscribe'}
+                      </button>
+                    </div>
+
+                    {newsletterMessage && (
+                      <p
+                        className={`text-sm ${
+                          newsletterStatus === 'success' ? 'text-copper-700' : 'text-red-600'
+                        }`}
+                      >
+                        {newsletterMessage}
+                      </p>
+                    )}
+                  </form>
 
                   <p className="text-xs text-navy-400 mt-3">
                     Free weekly insights. Unsubscribe anytime.

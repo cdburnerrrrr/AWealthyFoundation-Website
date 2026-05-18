@@ -1,19 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { 
-  Mail, CheckCircle, ArrowRight, Menu, X, Home, User,
-  TrendingUp, Shield, PiggyBank, CreditCard, TreeDeciduous, DollarSign, Wallet
+  Mail, CheckCircle, ArrowRight,
+  TrendingUp, Shield, PiggyBank, TreeDeciduous
 } from 'lucide-react';
-import { useAppStore } from '../store/appStore';
-
-const NAV_ITEMS = [
-  { label: 'The Building Blocks', href: '/building-blocks', isRoute: true },
-  { label: 'Financial Pillars', href: '/financial-pillars', isRoute: true },
-  { label: 'Foundation Score', href: '/foundation-score', isRoute: true },
-  { label: 'Premium', href: '/premium', isRoute: true },
-  { label: 'Articles', href: '/articles', isRoute: true },
-  { label: 'Newsletter', href: '/newsletter', isRoute: true },
-];
+import { subscribeToNewsletter } from '../lib/newsletter';
 
 const BENEFITS = [
   { icon: TrendingUp, title: 'Actionable Strategies', description: 'Practical tips you can implement immediately to strengthen your financial foundation.' },
@@ -23,17 +13,45 @@ const BENEFITS = [
 ];
 
 export default function NewsletterPage() {
-  const navigate = useNavigate();
-  const { isAuthenticated } = useAppStore();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (name && email) {
+
+    const cleanEmail = email.trim();
+    const cleanName = name.trim();
+
+    if (!cleanEmail) {
+      setErrorMessage('Please enter your email address.');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setErrorMessage('');
+
+      await subscribeToNewsletter({
+        email: cleanEmail,
+        name: cleanName,
+        source: 'newsletter_page',
+      });
+
       setSubscribed(true);
+      setEmail('');
+      setName('');
+    } catch (error) {
+      console.error('Newsletter signup failed:', error);
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : 'Something went wrong. Please try again.'
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -58,14 +76,15 @@ export default function NewsletterPage() {
             </p>
             
             {!subscribed ? (
-              <form onSubmit={handleSubscribe} className="max-w-md mx-auto">
+              <form id="subscribe" onSubmit={handleSubscribe} className="max-w-md mx-auto">
                 <div className="flex flex-col sm:flex-row gap-3">
                   <input 
                     type="text" 
                     placeholder="Your first name" 
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    required
+                    autoComplete="given-name"
+                    disabled={isSubmitting}
                     className="flex-1 px-4 py-3 rounded-lg text-navy-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-copper-500"
                   />
                   <input 
@@ -74,15 +93,22 @@ export default function NewsletterPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    autoComplete="email"
+                    disabled={isSubmitting}
                     className="flex-1 px-4 py-3 rounded-lg text-navy-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-copper-500"
                   />
                 </div>
                 <button 
                   type="submit"
-                  className="mt-4 w-full sm:w-auto px-8 py-3 bg-copper-600 text-white text-lg font-bold rounded-lg hover:bg-copper-700 transition-colors inline-flex items-center justify-center gap-2"
+                  disabled={isSubmitting}
+                  className="mt-4 w-full sm:w-auto px-8 py-3 bg-copper-600 text-white text-lg font-bold rounded-lg hover:bg-copper-700 transition-colors inline-flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  Subscribe Free <ArrowRight className="w-5 h-5" />
+                  {isSubmitting ? 'Subscribing...' : 'Subscribe Free'}
+                  {!isSubmitting && <ArrowRight className="w-5 h-5" />}
                 </button>
+                {errorMessage && (
+                  <p className="text-red-200 text-sm mt-3">{errorMessage}</p>
+                )}
                 <p className="text-navy-400 text-sm mt-3">No spam. Unsubscribe anytime.</p>
               </form>
             ) : (
