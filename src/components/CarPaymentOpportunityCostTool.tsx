@@ -2,10 +2,14 @@ import { useMemo, useState, type ReactNode } from 'react';
 import {
   ArrowRight,
   Calculator,
+  CalendarDays,
   Car,
   CheckCircle2,
+  ChevronDown,
   Clock3,
   Gauge,
+  Info,
+  Lightbulb,
   PiggyBank,
   RefreshCw,
   ShieldAlert,
@@ -47,6 +51,27 @@ type RedirectOptionProps = {
 function toNumber(value: string): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function addMonths(date: Date, months: number) {
+  const nextDate = new Date(date);
+  nextDate.setMonth(nextDate.getMonth() + Math.max(0, Math.round(months)));
+  return nextDate;
+}
+
+function formatMonthYear(date: Date) {
+  return new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(date);
+}
+
+function formatTimeObligation(months: number) {
+  const safeMonths = Math.max(0, Math.round(months));
+
+  if (safeMonths === 0) return '0 months';
+  if (safeMonths < 12) return `${safeMonths} more ${safeMonths === 1 ? 'month' : 'months'}`;
+
+  const years = safeMonths / 12;
+  const formattedYears = Number.isInteger(years) ? String(years) : years.toFixed(1);
+  return `${formattedYears} more ${years === 1 ? 'year' : 'years'}`;
 }
 
 function NumberField({ label, value, onChange, prefix, suffix, helper }: NumberFieldProps) {
@@ -137,6 +162,8 @@ export default function CarPaymentOpportunityCostTool() {
     customRedirectAmount: 500,
   });
 
+  const [explanationOpen, setExplanationOpen] = useState(false);
+
   const result = useMemo(() => calculateCarPaymentOpportunity(inputs), [inputs]);
 
   const update = <Key extends keyof CarPaymentOpportunityInputs>(key: Key, value: CarPaymentOpportunityInputs[Key]) => {
@@ -145,6 +172,8 @@ export default function CarPaymentOpportunityCostTool() {
 
   const equityTone = result.equityStatus.tone === 'underwater' ? 'warning' : result.equityStatus.tone === 'positive' ? 'growth' : 'default';
   const yearsToRetirement = result.monthsToRetirement / 12;
+  const timeObligationLabel = formatTimeObligation(inputs.monthsLeft);
+  const freedomDateLabel = formatMonthYear(addMonths(new Date(), inputs.monthsLeft));
 
   return (
     <div className="space-y-5">
@@ -238,9 +267,9 @@ export default function CarPaymentOpportunityCostTool() {
           tone="warning"
         />
         <MetricCard
-          label="Income committed"
-          value={result.yearsCommittedLabel}
-          helper="How long this payment keeps part of your income spoken for."
+          label="Time obligation remaining"
+          value={timeObligationLabel}
+          helper="The calendar time this payment keeps part of your future income spoken for."
           icon={<Clock3 size={16} />}
         />
         <MetricCard
@@ -250,6 +279,116 @@ export default function CarPaymentOpportunityCostTool() {
           icon={<ShieldAlert size={16} />}
           tone={equityTone}
         />
+      </section>
+
+      <section className="grid gap-3 lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="rounded-2xl bg-[#0f3a5a] p-4 text-white shadow-lg shadow-[#0f3a5a]/14">
+          <div className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.16em] text-white/66">
+            <CalendarDays size={16} />
+            Freedom date
+          </div>
+          <p className="text-xl font-semibold leading-snug">
+            Eliminating this payment could free up {formatCarPaymentCurrency(inputs.monthlyPayment)}/month by {freedomDateLabel}.
+          </p>
+          <p className="mt-2 text-sm leading-6 text-white/72">
+            That is the point where the same cash flow can stop serving the old obligation and start creating margin, investing progress, or freedom.
+          </p>
+        </div>
+
+        <div className="rounded-2xl bg-white/82 p-4 ring-1 ring-[#2b5676]/12">
+          <div className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.16em] text-[#6f8aa3]">
+            <Lightbulb size={16} />
+            Normal vs. intentional
+          </div>
+          <p className="text-sm leading-6 text-[#5a7690]">
+            Most people only evaluate whether they can afford the monthly payment. Few stop to calculate what the same cash flow could become over time. This tool is meant to make that tradeoff visible before the next obligation replaces the old one.
+          </p>
+        </div>
+      </section>
+
+      <section className="relative overflow-hidden rounded-[24px] border border-[#2b5676]/12 bg-white/72 p-4 ring-1 ring-white/40">
+        <div className="pointer-events-none absolute inset-0 opacity-[0.10]">
+          <div className="h-full w-full bg-[linear-gradient(to_right,#0f3a5a22_1px,transparent_1px),linear-gradient(to_bottom,#ffffff26_1px,transparent_1px)] bg-[size:22px_22px]" />
+        </div>
+
+        <div className="relative z-10">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-[#b8742a]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#8a5a24]">
+                <ArrowRight size={15} />
+                Compare paths
+              </div>
+              <h3 className="text-lg font-semibold text-[#0f2a44]">Compare against your current path</h3>
+              <p className="mt-1 max-w-3xl text-sm leading-6 text-[#6f8aa3]">
+                This is not about judging the car. It is about seeing the two futures this same cash flow can create.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-3 lg:grid-cols-2">
+            <div className="rounded-2xl bg-white/82 p-4 ring-1 ring-[#2b5676]/12">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6f8aa3]">Current path</p>
+                  <h4 className="mt-1 text-base font-semibold text-[#0f2a44]">If the payment pattern continues</h4>
+                </div>
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#2b5676]/8 text-[#5a7690]">
+                  <Clock3 size={17} />
+                </span>
+              </div>
+
+              <div className="grid gap-2">
+                <div className="rounded-xl bg-white/76 p-3 ring-1 ring-[#2b5676]/10">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-[#6f8aa3]">Total future payments</p>
+                  <p className="mt-1 text-xl font-semibold text-[#0f2a44]">{formatCarPaymentCurrency(result.totalRemainingPayments)}</p>
+                </div>
+                <div className="rounded-xl bg-white/76 p-3 ring-1 ring-[#2b5676]/10">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-[#6f8aa3]">Estimated years spent in this cycle</p>
+                  <p className="mt-1 text-xl font-semibold text-[#0f2a44]">{timeObligationLabel}</p>
+                </div>
+                <div className="rounded-xl bg-white/76 p-3 ring-1 ring-[#2b5676]/10">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-[#6f8aa3]">Payment-cycle risk</p>
+                  <p className="mt-1 text-sm leading-6 text-[#5a7690]">Another payment can quietly replace this one when it ends.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-[#0f3a5a] p-4 text-white shadow-lg shadow-[#0f3a5a]/14">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/58">Redirected path</p>
+                  <h4 className="mt-1 text-base font-semibold text-white">If the payment gets reclaimed</h4>
+                </div>
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/12 text-white">
+                  <TrendingUp size={17} />
+                </span>
+              </div>
+
+              <div className="grid gap-2">
+                <div className="rounded-xl bg-white/10 p-3 ring-1 ring-white/10">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-white/58">Margin created</p>
+                  <p className="mt-1 text-xl font-semibold text-white">{formatCarPaymentCurrency(inputs.monthlyPayment)}/month</p>
+                  <p className="mt-1 text-xs leading-5 text-white/62">Available after {freedomDateLabel} if the payment is not replaced.</p>
+                </div>
+                <div className="rounded-xl bg-white/10 p-3 ring-1 ring-white/10">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-white/58">Investment potential</p>
+                  <p className="mt-1 text-xl font-semibold text-white">{formatCarPaymentCurrency(result.selectedFuture.futureValue)}</p>
+                  <p className="mt-1 text-xs leading-5 text-white/62">Based on the selected redirect scenario.</p>
+                </div>
+                <div className="rounded-xl bg-white/10 p-3 ring-1 ring-white/10">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-white/58">Earlier flexibility</p>
+                  <p className="mt-1 text-sm leading-6 text-white/72">More breathing room, more optionality, and more freedom to choose the next move on purpose.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-3 rounded-2xl bg-[#b8742a]/10 p-4 text-[#6d4318] ring-1 ring-[#b8742a]/16">
+            <p className="text-sm leading-6">
+              The real decision is not just whether the payment fits today. It is whether this cash flow keeps getting recycled into obligations — or eventually gets redirected toward margin, investing, and freedom.
+            </p>
+          </div>
+        </div>
       </section>
 
       <section className="space-y-3">
@@ -388,6 +527,36 @@ export default function CarPaymentOpportunityCostTool() {
               The goal is not extreme deprivation. The real opportunity is turning one old obligation into two forms of progress: more present margin and more future freedom.
             </p>
           </div>
+
+          <section className="rounded-2xl bg-white/82 ring-1 ring-[#2b5676]/12">
+            <button
+              type="button"
+              onClick={() => setExplanationOpen((value) => !value)}
+              className="flex w-full items-center justify-between gap-4 px-4 py-3.5 text-left"
+            >
+              <div className="flex items-center gap-2 text-sm font-semibold text-[#0f2a44]">
+                <Info size={16} />
+                Opportunity cost over 30 years
+              </div>
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/86 text-[#5a7690] ring-1 ring-[#2b5676]/10">
+                <ChevronDown size={18} className={`transition-transform ${explanationOpen ? 'rotate-180' : ''}`} />
+              </span>
+            </button>
+
+            {explanationOpen && (
+              <div className="border-t border-[#2b5676]/10 px-4 pb-4 pt-3 text-sm leading-6 text-[#5a7690]">
+                <p>
+                  This number is not saying the car itself costs that exact amount today. It shows what the old monthly payment could become if it were redirected and left to compound.
+                </p>
+                <p className="mt-3">
+                  The model uses your selected monthly redirect amount, your expected return, and the years between your current age and retirement age. The default example is a 30-year view: age 35 to 65.
+                </p>
+                <p className="mt-3">
+                  The reason the result can look so large is that recurring payments create recurring investment contributions, and those contributions can earn growth on top of growth over time. It is an opportunity-cost lens, not a guarantee.
+                </p>
+              </div>
+            )}
+          </section>
 
           <div className="rounded-2xl bg-[#b8742a]/10 p-4 text-[#6d4318] ring-1 ring-[#b8742a]/16">
             <div className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.16em] opacity-80">
