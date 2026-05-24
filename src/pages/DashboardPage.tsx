@@ -2170,17 +2170,17 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     latestAssessmentType === "detailed" || latestAssessmentType === "premium";
   const currentAssessmentType =
     rawAssessment?.assessmentType ?? assessment?.assessmentType;
+  const currentPaidType =
+    currentAssessmentType === "detailed" || currentAssessmentType === "premium";
+  const hasPaidPlan = currentPlan === "standard" || currentPlan === "premium";
+  const hasCompletedFullAssessment = latestPaidType || currentPaidType;
+  const needsFullAssessment = hasPaidPlan && !hasCompletedFullAssessment;
   const canViewPremium =
     currentPlan === "premium" ||
     latestAssessmentType === "premium" ||
     currentAssessmentType === "premium";
-  const canViewFullReport =
-    currentPlan === "standard" ||
-    currentPlan === "premium" ||
-    latestPaidType ||
-    currentAssessmentType === "detailed" ||
-    currentAssessmentType === "premium";
-  const canExportPdf = entitlements.canDownloadPdf || latestPaidType;
+  const canViewFullReport = hasCompletedFullAssessment;
+  const canExportPdf = entitlements.canDownloadPdf && hasCompletedFullAssessment;
 
   const pillarScores = (assessment?.pillarScores ??
     assessment?.pillars ??
@@ -2784,6 +2784,15 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const totalAssets = assetRows.reduce((sum, row) => sum + row.value, 0);
   const welcomeName = user?.name || user?.email?.split("@")?.[0] || "there";
 
+  const handleContinueFullAssessment = (source = "dashboard") => {
+    void track(
+      "continue_full_assessment_clicked",
+      { source, currentPlan, latestAssessmentType },
+      "assessment",
+    );
+    navigate("/assessment/comprehensive?mode=continue");
+  };
+
   const handleViewLatestReport = (targetHash = "") => {
     void track(
       targetHash === "#90-day-plan"
@@ -2794,6 +2803,11 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
     );
 
     const suffix = targetHash || "";
+
+    if (needsFullAssessment) {
+      handleContinueFullAssessment(targetHash === "#90-day-plan" ? "dashboard_90_day_plan" : "dashboard_view_report");
+      return;
+    }
 
     if (latestAssessmentType === "free") {
       navigate(`/results/snapshot${suffix}`);
@@ -2813,7 +2827,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
       return;
     }
 
-    navigate("/assessment/snapshot");
+    navigate(hasPaidPlan ? "/assessment/comprehensive?mode=continue" : "/assessment/snapshot");
   };
 
   const handleOpenFullNinetyDayPlan = () => {
@@ -2905,6 +2919,11 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   };
 
   async function handlePrintPDF() {
+    if (needsFullAssessment) {
+      handleContinueFullAssessment("dashboard_pdf_export");
+      return;
+    }
+
     if (!canExportPdf) {
       void trackLockedFeature("pdf_export", "dashboard_header");
       void trackUpgradeClick("standard", "pdf_export", "dashboard_header");
@@ -3050,9 +3069,28 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
               data-pdf-ignore="true"
               className="mb-4 rounded-2xl border border-emerald-300/20 bg-emerald-300/10 px-5 py-4 text-emerald-100 shadow-sm"
             >
-              You’re all set — {PLAN_FEATURES[currentPlan].name} is now
-              unlocked. Your dashboard and report now reflect your upgraded
-              access.
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="font-semibold">
+                    You’re all set — {PLAN_FEATURES[currentPlan].name} is now unlocked.
+                  </p>
+                  <p className="mt-1 text-sm text-emerald-100/78">
+                    {needsFullAssessment
+                      ? "Finish the full assessment next to generate your complete report, refined score, dashboard, and action plan."
+                      : "Your dashboard and report now reflect your upgraded access."}
+                  </p>
+                </div>
+                {needsFullAssessment && (
+                  <button
+                    type="button"
+                    onClick={() => handleContinueFullAssessment("checkout_success_banner")}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-300 px-4 py-2 text-sm font-bold text-[#06172b] transition hover:bg-emerald-200"
+                  >
+                    Continue Full Assessment
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
@@ -3066,9 +3104,11 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                 Good morning, {welcomeName}
               </h1>
               <p className="mt-0.5 text-sm text-slate-400">
-                {showAssessment
-                  ? "Your financial foundation at a glance."
-                  : "Start your assessment to build your dashboard."}
+                {needsFullAssessment
+                  ? "Your paid plan is unlocked. Finish the full assessment to generate the complete report."
+                  : showAssessment
+                    ? "Your financial foundation at a glance."
+                    : "Start your assessment to build your dashboard."}
               </p>
             </div>
 
@@ -3077,10 +3117,10 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
               className="hidden items-center gap-3 md:flex"
             >
               <button
-                onClick={() => handleViewLatestReport()}
+                onClick={() => needsFullAssessment ? handleContinueFullAssessment("dashboard_header") : handleViewLatestReport()}
                 className="rounded-2xl border border-cyan-300/20 bg-cyan-300/8 px-4 py-2 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/12"
               >
-                View Report
+                {needsFullAssessment ? "Continue Assessment" : "View Report"}
               </button>
               <button
                 onClick={handlePrintPDF}
@@ -3105,18 +3145,60 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
               <Shield className="mx-auto mb-4 h-12 w-12 text-cyan-300" />
               <h2 className="text-2xl font-bold">No assessment yet</h2>
               <p className="mx-auto mt-2 max-w-xl text-slate-400">
-                Complete your first assessment to unlock your Foundation Score,
-                financial picture, and action plan.
+                {hasPaidPlan
+                  ? "Your paid plan is unlocked. Complete the full assessment to generate your Foundation Score, financial picture, and action plan."
+                  : "Complete your first assessment to unlock your Foundation Score, financial picture, and action plan."}
               </p>
               <button
-                onClick={() => navigate("/assessment/snapshot")}
+                onClick={() => hasPaidPlan ? handleContinueFullAssessment("empty_dashboard") : navigate("/assessment/snapshot")}
                 className="mt-6 rounded-2xl bg-cyan-300 px-5 py-3 font-bold text-[#06172b]"
               >
-                Start Snapshot
+                {hasPaidPlan ? "Start Full Assessment" : "Start Snapshot"}
               </button>
             </DashboardPanel>
           ) : (
             <>
+              {needsFullAssessment && (
+                <section data-pdf-ignore="true" className="mb-6">
+                  <DashboardPanel className="overflow-hidden border-copper-300/25 bg-copper-400/10 p-5 md:p-6">
+                    <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                      <div className="max-w-3xl">
+                        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-copper-300/30 bg-copper-300/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-copper-100">
+                          <FileText className="h-4 w-4" />
+                          Full assessment unlocked
+                        </div>
+                        <h2 className="text-2xl font-bold text-white">
+                          Finish the full assessment to generate your complete report.
+                        </h2>
+                        <p className="mt-2 text-sm leading-6 text-slate-300">
+                          Your Snapshot is saved and your {PLAN_FEATURES[currentPlan].name} is active. The next step is the deeper question set so your refined score, full breakdown, PDF, and 90-Day Plan are based on the complete financial picture.
+                        </p>
+                        <p className="mt-3 text-sm font-semibold text-copper-100">
+                          You will not repeat the Snapshot questions you already answered.
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 flex-col gap-3 sm:flex-row lg:flex-col">
+                        <button
+                          type="button"
+                          onClick={() => handleContinueFullAssessment("dashboard_full_assessment_panel")}
+                          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-copper-500 px-5 py-3 font-bold text-white shadow-lg shadow-copper-900/20 transition hover:bg-copper-600"
+                        >
+                          Continue Full Assessment
+                          <ArrowRight className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => navigate("/results/snapshot")}
+                          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/10"
+                        >
+                          Review Snapshot
+                        </button>
+                      </div>
+                    </div>
+                  </DashboardPanel>
+                </section>
+              )}
+
               <section className="mb-6">
                 <DashboardPanel className="p-5">
                   <div className="grid gap-4 lg:grid-cols-4">
