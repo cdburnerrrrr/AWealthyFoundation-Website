@@ -307,7 +307,7 @@ export default function PremiumPage() {
                 onClick={() => navigate('/pricing')}
                 className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-5 py-3 font-semibold text-white transition hover:bg-white/15"
               >
-                Unlock the $29 report
+                Choose Your Plan
               </button>
             </div>
           </div>
@@ -359,7 +359,7 @@ export default function PremiumPage() {
               What the paid report unlocks
             </div>
             <h2 className="text-3xl font-bold tracking-tight text-navy-900">
-              The $29 plan is no longer just more questions. It is the full review.
+              The full assessment is no longer just more questions. It is the full review.
             </h2>
             <p className="mt-3 text-sm leading-7 text-slate-600 sm:text-base">
               The full report is designed to connect your score, your weakest constraint, your numbers, and your next move so the result feels useful after the assessment is done.
@@ -380,7 +380,7 @@ export default function PremiumPage() {
               onClick={() => navigate('/pricing')}
               className="inline-flex items-center gap-2 rounded-xl border border-copper-300 bg-white px-5 py-3 text-sm font-semibold text-copper-700 transition hover:bg-copper-50"
             >
-              Go to checkout
+              Choose Your Plan
             </button>
           </div>
 

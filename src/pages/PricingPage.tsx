@@ -237,10 +237,10 @@ export default function PricingPage() {
             </div>
 
             <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Choose the paid plan you want to unlock.
+              Choose the plan you want to unlock.
             </h1>
             <p className="mt-4 text-sm leading-7 text-navy-200 sm:text-base">
-              This page is intentionally simple. Pick the report level, then continue to secure Stripe checkout.
+              Pick the level of guidance you want, then continue to secure Stripe checkout.
             </p>
 
             <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.08] p-4">

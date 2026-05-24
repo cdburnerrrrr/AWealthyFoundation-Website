@@ -346,7 +346,7 @@ export default function SnapshotResultsPage() {
             <p className="text-navy-200 leading-7 mb-5">
               {hasPaidAccess
                 ? 'You’ve finished the Snapshot. Continue with a deeper set of questions to refine your score and unlock your complete financial breakdown.'
-                : 'Before checkout, see a generic sample of the $29 report and dashboard so you know exactly what the full experience unlocks.'}
+                : 'Before checkout, see a generic sample of the paid report and dashboard so you know what the full experience can unlock.'}
             </p>
 
             <div className="rounded-2xl bg-white/8 border border-white/10 px-4 py-3 mb-5">
@@ -403,7 +403,7 @@ export default function SnapshotResultsPage() {
                   onClick={handleUnlockFullReport}
                   className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/10 px-5 py-3 font-semibold text-white transition hover:bg-white/15"
                 >
-                  Unlock My Full Report — $29
+                  Unlock Your Full Assessment
                 </button>
               </div>
             )}
@@ -552,7 +552,7 @@ export default function SnapshotResultsPage() {
                       onClick={handleUnlockFullReport}
                       className="inline-flex items-center justify-center gap-2 px-5 py-2 text-sm font-semibold text-copper-700 transition hover:text-copper-800"
                     >
-                      Unlock for $29
+                      Choose Your Plan
                     </button>
                   ) : (
                     <p className="mt-2 text-xs text-navy-500">
