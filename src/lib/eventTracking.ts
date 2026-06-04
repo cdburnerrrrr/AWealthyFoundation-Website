@@ -13,7 +13,11 @@ export type TrackEventInput = {
 };
 
 const SESSION_STORAGE_KEY = 'awf_session_id';
-const TRACKING_ENABLED = false;
+const MAX_PROPERTY_DEPTH = 4;
+const MAX_STRING_LENGTH = 500;
+const MAX_ARRAY_ITEMS = 25;
+const SENSITIVE_KEY_PATTERN =
+  /(password|passcode|token|secret|key|email|name|phone|address|ssn|social|income|salary|balance|debt|asset|mortgage|rent|payment|answer|responses)/i;
 
 function getSessionId(): string {
   if (typeof window === 'undefined') return 'server';
@@ -30,14 +34,59 @@ function getSessionId(): string {
   return created;
 }
 
+function sanitizeValue(value: unknown, depth = 0): unknown {
+  if (value == null) return value;
+
+  if (typeof value === 'string') {
+    return value.length > MAX_STRING_LENGTH
+      ? `${value.slice(0, MAX_STRING_LENGTH)}…`
+      : value;
+  }
+
+  if (typeof value === 'number' || typeof value === 'boolean') return value;
+
+  if (value instanceof Date) return value.toISOString();
+
+  if (Array.isArray(value)) {
+    if (depth >= MAX_PROPERTY_DEPTH) return '[array]';
+    return value.slice(0, MAX_ARRAY_ITEMS).map((item) => sanitizeValue(item, depth + 1));
+  }
+
+  if (typeof value === 'object') {
+    if (depth >= MAX_PROPERTY_DEPTH) return '[object]';
+
+    const output: Record<string, unknown> = {};
+
+    for (const [key, nestedValue] of Object.entries(value as Record<string, unknown>)) {
+      if (SENSITIVE_KEY_PATTERN.test(key)) continue;
+      output[key] = sanitizeValue(nestedValue, depth + 1);
+    }
+
+    return output;
+  }
+
+  return String(value);
+}
+
 function safeProps(input?: Record<string, unknown>): Record<string, unknown> {
   if (!input) return {};
 
   try {
-    return JSON.parse(JSON.stringify(input));
+    const sanitized = sanitizeValue(input);
+    return sanitized && typeof sanitized === 'object' && !Array.isArray(sanitized)
+      ? (sanitized as Record<string, unknown>)
+      : {};
   } catch {
     return {};
   }
+}
+
+function getPagePath(pagePath?: string): string | null {
+  if (pagePath) return pagePath;
+
+  if (typeof window === 'undefined') return null;
+
+  return window.location.pathname + window.location.search;
 }
 
 export async function trackEvent({
@@ -49,44 +98,29 @@ export async function trackEvent({
   assessmentId,
   properties,
 }: TrackEventInput): Promise<void> {
+  const cleanEventName = eventName.trim();
+  if (!cleanEventName) return;
+
   const payload = {
     user_id: userId ?? null,
     session_id: getSessionId(),
-    event_name: eventName,
+    event_name: cleanEventName,
     event_category: eventCategory ?? null,
-    page_path:
-      pagePath ??
-      (typeof window !== 'undefined'
-        ? window.location.pathname + window.location.search
-        : null),
+    page_path: getPagePath(pagePath),
     plan: plan ?? 'free',
     assessment_id: assessmentId ?? null,
     properties: safeProps(properties),
   };
 
-  // TEMP SAFETY MODE:
-  // Tracking is disabled until analytics_events exists and Supabase insert rules are ready.
-  // This prevents auth-token lock contention and console spam during login / hydration.
-  if (!TRACKING_ENABLED) {
-    if (typeof window !== 'undefined') {
-      const key = '__awf_tracking_disabled_logged__';
-      if (!(window as any)[key]) {
-        console.info('A Wealthy Foundation tracking is temporarily disabled.');
-        (window as any)[key] = true;
-      }
-    }
-    return;
-  }
-
   try {
-    if (!payload.user_id) return;
-
     const { error } = await supabase.from('analytics_events').insert(payload);
 
-    if (error) {
+    if (error && import.meta.env.DEV) {
       console.warn('trackEvent skipped:', error.message);
     }
   } catch (error) {
-    console.warn('trackEvent skipped:', error);
+    if (import.meta.env.DEV) {
+      console.warn('trackEvent skipped:', error);
+    }
   }
 }

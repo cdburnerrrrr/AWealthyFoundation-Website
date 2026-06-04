@@ -1,14 +1,15 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
 import UserMenu from '../components/UserMenu';
+import { trackEvent, type PlanTier } from '../lib/eventTracking';
 import logoDesktop from '../assets/awf_logo_desktop.svg';
 import logoMobile from '../assets/awf_logo_mobile.svg';
 
 export default function Layout() {
   const location = useLocation();
-  const { isAuthenticated } = useAppStore();
+  const { isAuthenticated, user, userPlan, currentAssessment } = useAppStore() as any;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinkClass = (path: string) =>
@@ -29,6 +30,33 @@ export default function Layout() {
     { to: '/newsletter', label: 'Newsletter' },
     { to: '/foundation-tools', label: 'Foundation Tools' },
   ];
+
+  useEffect(() => {
+    const resolvedPlan: PlanTier =
+      userPlan === 'standard' || userPlan === 'premium' ? userPlan : 'free';
+
+    void trackEvent({
+      eventName: 'page_viewed',
+      eventCategory: 'navigation',
+      pagePath: location.pathname + location.search,
+      plan: resolvedPlan,
+      userId: user?.userId ?? user?.id ?? null,
+      assessmentId:
+        currentAssessment?.id != null ? String(currentAssessment.id) : null,
+      properties: {
+        route: location.pathname,
+        authenticated: Boolean(isAuthenticated),
+      },
+    });
+  }, [
+    location.pathname,
+    location.search,
+    isAuthenticated,
+    user?.userId,
+    user?.id,
+    userPlan,
+    currentAssessment?.id,
+  ]);
 
   return (
     <div className="min-h-screen bg-white">
