@@ -40,6 +40,7 @@ import WorkbookPage from './pages/WorkbookPage';
 import SupportPage from './pages/SupportPage';
 import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 
 function App() {
@@ -210,6 +211,8 @@ function App() {
           <Route path="/tools/savings-runway" element={<SavingsRunwayPage />} />
           <Route path="/pricing" element={<PricingPage />} />
 
+
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           <Route
             path="/login"

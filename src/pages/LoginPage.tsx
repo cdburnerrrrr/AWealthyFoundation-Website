@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import logoImage from '../assets/awf_logo_desktop.svg';
 
-type Mode = 'signIn' | 'signUp';
+type Mode = 'signIn' | 'signUp' | 'forgotPassword';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -31,6 +31,17 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
+      if (mode === 'forgotPassword') {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+
+        if (error) throw error;
+
+        setMessage('Check your email for a password reset link.');
+        return;
+      }
+
       if (mode === 'signIn') {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -89,11 +100,13 @@ export default function LoginPage() {
   }
 
   const eyebrowText =
-    mode === 'signIn'
-      ? message
-        ? 'Confirm your email, then sign in to access your dashboard.'
-        : 'Sign in to access your dashboard.'
-      : 'Create your account to start building your foundation.';
+    mode === 'forgotPassword'
+      ? 'Enter your email and we’ll send you a secure password reset link.'
+      : mode === 'signIn'
+        ? message
+          ? 'Confirm your email, then sign in to access your dashboard.'
+          : 'Sign in to access your dashboard.'
+        : 'Create your account to start building your foundation.';
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
@@ -110,7 +123,7 @@ export default function LoginPage() {
           </div>
 
           <h1 className="text-2xl font-semibold tracking-tight text-white">
-            {mode === 'signIn' ? 'Welcome back' : 'Start your foundation'}
+            {mode === 'forgotPassword' ? 'Reset your password' : mode === 'signIn' ? 'Welcome back' : 'Start your foundation'}
           </h1>
 
           <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-slate-300">
@@ -121,11 +134,13 @@ export default function LoginPage() {
         </div>
 
         <div className="rounded-2xl bg-white p-6 shadow-xl ring-1 ring-white/10">
-          <div className="mb-6 flex rounded-xl bg-slate-100 p-1">
+          {mode !== 'forgotPassword' && (
+            <div className="mb-6 flex rounded-xl bg-slate-100 p-1">
             <button
               type="button"
               onClick={() => {
                 setMode('signIn');
+                setPassword('');
                 setError(null);
                 setMessage(null);
               }}
@@ -142,6 +157,7 @@ export default function LoginPage() {
               type="button"
               onClick={() => {
                 setMode('signUp');
+                setPassword('');
                 setError(null);
                 setMessage(null);
               }}
@@ -153,7 +169,8 @@ export default function LoginPage() {
             >
               Create Account
             </button>
-          </div>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'signUp' && (
@@ -168,6 +185,7 @@ export default function LoginPage() {
                   required
                   className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-copper-500 focus:ring-2 focus:ring-copper-200"
                   placeholder="Your name"
+                  autoComplete="name"
                 />
               </div>
             )}
@@ -183,22 +201,26 @@ export default function LoginPage() {
                 required
                 className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-copper-500 focus:ring-2 focus:ring-copper-200"
                 placeholder="you@example.com"
+                autoComplete="email"
               />
             </div>
 
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
-                Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-copper-500 focus:ring-2 focus:ring-copper-200"
-                placeholder="••••••••"
-              />
-            </div>
+            {mode !== 'forgotPassword' && (
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete={mode === 'signIn' ? 'current-password' : 'new-password'}
+                  className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-copper-500 focus:ring-2 focus:ring-copper-200"
+                  placeholder="••••••••"
+                />
+              </div>
+            )}
 
             {message && (
               <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
@@ -218,13 +240,47 @@ export default function LoginPage() {
               className="w-full rounded-xl bg-copper-600 px-4 py-3 font-semibold text-white transition hover:bg-copper-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading
-                ? mode === 'signIn'
-                  ? 'Signing In...'
-                  : 'Creating Account...'
-                : mode === 'signIn'
-                  ? 'Sign In'
-                  : 'Create Account'}
+                ? mode === 'forgotPassword'
+                  ? 'Sending Reset Link...'
+                  : mode === 'signIn'
+                    ? 'Signing In...'
+                    : 'Creating Account...'
+                : mode === 'forgotPassword'
+                  ? 'Send Reset Link'
+                  : mode === 'signIn'
+                    ? 'Sign In'
+                    : 'Create Account'}
             </button>
+
+            {mode === 'signIn' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('forgotPassword');
+                  setPassword('');
+                  setError(null);
+                  setMessage(null);
+                }}
+                className="w-full text-center text-sm font-medium text-slate-500 transition-colors hover:text-copper-700"
+              >
+                Forgot your password?
+              </button>
+            )}
+
+            {mode === 'forgotPassword' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('signIn');
+                  setPassword('');
+                  setError(null);
+                  setMessage(null);
+                }}
+                className="w-full text-center text-sm font-medium text-slate-500 transition-colors hover:text-copper-700"
+              >
+                Back to sign in
+              </button>
+            )}
           </form>
         </div>
 
