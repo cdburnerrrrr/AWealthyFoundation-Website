@@ -36,6 +36,7 @@ import EmployerMatchMaximizerPage from './pages/EmployerMatchMaximizerPage';
 import ReportDashboardPreviewPage from './pages/ReportDashboardPreviewPage';
 import InvestmentPriorityFinderPage from './pages/InvestmentPriorityFinderPage';
 import CarPaymentOpportunityCostPage from './pages/CarPaymentOpportunityCostPage';
+import WorkbookPage from './pages/WorkbookPage';
 
 
 function App() {
@@ -183,6 +184,8 @@ function App() {
           <Route path="/foundation-score" element={<FoundationScorePage />} />
           <Route path="/premium" element={<PremiumPage />} />
           <Route path="/newsletter" element={<NewsletterPage />} />
+          <Route path="/workbook" element={<WorkbookPage />} />
+          <Route path="/free-workbook" element={<WorkbookPage />} />
           <Route path="/articles" element={<ArticlesPage />} />
           <Route path="/articles/new" element={<NewArticlePage />} />
           <Route path="/articles/:id" element={<ArticleDetailPage />} />

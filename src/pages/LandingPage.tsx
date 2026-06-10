@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HouseLayout from '../components/HouseLayout';
-import { ArrowRight, CheckCircle, Clock } from 'lucide-react';
+import { ArrowRight, CheckCircle, Clock, Download } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
 import { startCheckout } from '../lib/stripe';
 import { subscribeToNewsletter } from '../lib/newsletter';
@@ -115,6 +115,43 @@ export default function LandingPage() {
 
         {/* Copper Divider */}
         <div className="w-full h-0.5 bg-gradient-to-r from-transparent via-copper-500/30 to-copper-500/30 via-[60%] to-transparent"></div>
+
+
+
+        {/* Workbook Download Section */}
+        <section className="bg-gradient-to-br from-navy-900 via-navy-800 to-slate-900 py-8 text-white lg:py-10">
+          <div className="mx-auto grid max-w-7xl gap-6 px-4 lg:grid-cols-[1.2fr,0.8fr] lg:items-center lg:px-6">
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-copper-300">
+                Read the book?
+              </p>
+              <h3 className="font-serif text-2xl font-bold sm:text-3xl">
+                Download the free companion workbook.
+              </h3>
+              <p className="mt-3 max-w-3xl text-sm leading-7 text-navy-200 sm:text-base">
+                The Wealthy Foundation Workbook gives readers a practical place to reflect, write down real numbers,
+                review the seven building blocks, and choose the next right move.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row lg:justify-end">
+              <button
+                onClick={() => navigate('/workbook')}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-copper-500 px-5 text-sm font-semibold text-white transition hover:bg-copper-600"
+              >
+                Get the Workbook
+                <Download className="h-4 w-4" />
+              </button>
+              <a
+                href="/downloads/The-Wealthy-Foundation-Workbook.pdf"
+                download
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-white/25 px-5 text-sm font-semibold text-white transition hover:bg-white/10"
+              >
+                Download PDF
+              </a>
+            </div>
+          </div>
+        </section>
 
         {/* Offer Cards */}
         <section id="offers" className="py-5 lg:py-6 bg-white">
