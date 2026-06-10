@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Mail } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
 import UserMenu from '../components/UserMenu';
 import logoDesktop from '../assets/awf_logo_desktop.svg';
@@ -153,6 +153,29 @@ export default function Layout() {
       <main>
         <Outlet />
       </main>
+
+      <footer className="border-t border-slate-200 bg-slate-50">
+        <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 text-sm text-slate-600 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+          <div>
+            <p className="font-semibold text-navy-900">A Wealthy Foundation</p>
+            <p className="mt-1 max-w-2xl leading-6">
+              Educational personal finance resources for building stability, direction, and freedom. Not financial, investment, tax, legal, insurance, or accounting advice.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-3 font-medium">
+            <Link to="/support" className="inline-flex items-center gap-1 text-navy-700 transition hover:text-copper-600">
+              <Mail size={14} /> Support
+            </Link>
+            <Link to="/privacy" className="text-navy-700 transition hover:text-copper-600">
+              Privacy
+            </Link>
+            <Link to="/terms" className="text-navy-700 transition hover:text-copper-600">
+              Terms
+            </Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -37,6 +37,9 @@ import ReportDashboardPreviewPage from './pages/ReportDashboardPreviewPage';
 import InvestmentPriorityFinderPage from './pages/InvestmentPriorityFinderPage';
 import CarPaymentOpportunityCostPage from './pages/CarPaymentOpportunityCostPage';
 import WorkbookPage from './pages/WorkbookPage';
+import SupportPage from './pages/SupportPage';
+import PrivacyPage from './pages/PrivacyPage';
+import TermsPage from './pages/TermsPage';
 
 
 function App() {
@@ -186,6 +189,9 @@ function App() {
           <Route path="/newsletter" element={<NewsletterPage />} />
           <Route path="/workbook" element={<WorkbookPage />} />
           <Route path="/free-workbook" element={<WorkbookPage />} />
+          <Route path="/support" element={<SupportPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
           <Route path="/articles" element={<ArticlesPage />} />
           <Route path="/articles/new" element={<NewArticlePage />} />
           <Route path="/articles/:id" element={<ArticleDetailPage />} />
