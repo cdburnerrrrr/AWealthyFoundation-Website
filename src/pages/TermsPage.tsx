@@ -40,13 +40,13 @@ const sections = [
 
 export default function TermsPage() {
   return (
-    <div className="bg-slate-50 text-navy-900">
-      <section className="border-b border-slate-200 bg-white px-6 py-16">
+    <div className="w-full overflow-x-hidden bg-slate-50 text-navy-900">
+      <section className="border-b border-slate-200 bg-white px-4 py-12 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-4xl">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-copper-200 bg-copper-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-copper-700">
+          <div className="mb-5 inline-flex max-w-full items-center gap-2 rounded-full border border-copper-200 bg-copper-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-copper-700">
             <FileText size={15} /> Terms of Service
           </div>
-          <h1 className="font-serif text-4xl font-bold leading-tight text-navy-950 sm:text-5xl">Terms of Service</h1>
+          <h1 className="font-serif text-3xl font-bold leading-tight text-navy-950 sm:text-5xl">Terms of Service</h1>
           <p className="mt-5 text-lg leading-8 text-slate-700">
             These terms explain the basic rules for using A Wealthy Foundation, including the website, assessment, reports, dashboard, tools, workbook downloads, and related resources.
           </p>
@@ -54,9 +54,9 @@ export default function TermsPage() {
         </div>
       </section>
 
-      <section className="px-6 py-14">
+      <section className="px-4 py-10 sm:px-6 sm:py-14">
         <div className="mx-auto max-w-4xl space-y-6">
-          <div className="rounded-3xl border border-copper-200 bg-copper-50 p-6">
+          <div className="min-w-0 rounded-3xl border border-copper-200 bg-copper-50 p-5 sm:p-6">
             <div className="flex gap-3">
               <div className="mt-1 rounded-2xl bg-white p-3 text-copper-700 shadow-sm">
                 <ShieldAlert size={22} />
@@ -71,17 +71,17 @@ export default function TermsPage() {
           </div>
 
           {sections.map((section) => (
-            <section key={section.title} className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
+            <section key={section.title} className="min-w-0 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
               <h2 className="font-serif text-2xl font-bold text-navy-950">{section.title}</h2>
-              <p className="mt-4 leading-7 text-slate-700">{section.body}</p>
+              <p className="mt-4 break-words leading-7 text-slate-700">{section.body}</p>
             </section>
           ))}
 
-          <section className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
+          <section className="min-w-0 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
             <h2 className="font-serif text-2xl font-bold text-navy-950">Contact and support</h2>
-            <p className="mt-4 leading-7 text-slate-700">
+            <p className="mt-4 break-words leading-7 text-slate-700">
               Questions about your account, access, purchase, or these terms can be sent to{' '}
-              <a href={`mailto:${SUPPORT_EMAIL}`} className="font-bold text-copper-700 hover:text-copper-800">
+              <a href={`mailto:${SUPPORT_EMAIL}`} className="break-all font-bold text-copper-700 hover:text-copper-800">
                 {SUPPORT_EMAIL}
               </a>
               .
