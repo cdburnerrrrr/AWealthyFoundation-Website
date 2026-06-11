@@ -28,6 +28,7 @@ import {
   Target,
   TrendingUp,
   Users,
+  X,
   Zap,
 } from "lucide-react";
 
@@ -673,6 +674,98 @@ const PILLAR_ICONS: Record<string, React.ElementType> = {
   vision: Eye,
 };
 
+type HouseBlockKey = "income" | "spending" | "saving" | "investing" | "debt" | "protection" | "vision";
+
+type HouseBlockDetail = {
+  title: string;
+  shortPurpose: string;
+  affects: string[];
+  improvesWhen: string[];
+  hurtsWhen: string[];
+  nextMove: string;
+  relatedLabel: string;
+  relatedPath: string;
+};
+
+const HOUSE_BLOCK_DETAILS: Record<HouseBlockKey, HouseBlockDetail> = {
+  income: {
+    title: "Income",
+    shortPurpose: "Income measures how much fuel your foundation has to work with each month.",
+    affects: ["monthly income", "job stability", "side income", "income growth potential"],
+    improvesWhen: ["take-home pay rises", "income becomes more predictable", "new skills or overtime create more margin"],
+    hurtsWhen: ["income is unstable", "raises do not keep up with fixed costs", "one income source carries the whole plan"],
+    nextMove: "Look for one realistic way to increase monthly margin without adding chaos: overtime, a raise conversation, a skill upgrade, or a small income project.",
+    relatedLabel: "Open Monthly Margin Planner",
+    relatedPath: "/foundation-tools/monthly-margin-planner",
+  },
+  spending: {
+    title: "Spending",
+    shortPurpose: "Spending measures how much of your income is already committed before you can choose what to do with it.",
+    affects: ["fixed cost load", "housing pressure", "utilities", "subscriptions", "day-to-day spending patterns"],
+    improvesWhen: ["fixed costs get lighter", "spending becomes intentional", "monthly decisions match long-term priorities"],
+    hurtsWhen: ["housing, vehicles, or lifestyle costs crowd out margin", "small leaks become normal", "spending decisions are reactive"],
+    nextMove: "Review your fixed bills first. One structural cost improvement can matter more than trying to micromanage every coffee or grocery trip.",
+    relatedLabel: "Open Fixed Cost Load Tool",
+    relatedPath: "/foundation-tools/fixed-cost-load",
+  },
+  saving: {
+    title: "Saving",
+    shortPurpose: "Saving measures your cushion — the money that keeps normal problems from becoming emergencies.",
+    affects: ["emergency fund months", "cash reserves", "saving consistency", "ability to absorb surprise expenses"],
+    improvesWhen: ["saving is automated", "cash reserves grow", "you can cover setbacks without debt"],
+    hurtsWhen: ["the emergency fund is thin", "saving only happens when money is left over", "surprise expenses keep resetting progress"],
+    nextMove: "Choose a fixed monthly savings amount and automate it if possible. The first target is one month of core expenses, then build from there.",
+    relatedLabel: "Open Emergency Fund Target",
+    relatedPath: "/tools/emergency-fund-target",
+  },
+  investing: {
+    title: "Investing",
+    shortPurpose: "Investing measures whether your future is getting funded, not just your present life.",
+    affects: ["401(k) or retirement contributions", "employer match", "investment consistency", "time horizon", "account mix"],
+    improvesWhen: ["you capture the employer match", "contributions become automatic", "investing decisions follow a simple priority order"],
+    hurtsWhen: ["investing is delayed indefinitely", "money goes into risky assets without a plan", "short-term pressure stops long-term progress"],
+    nextMove: "Start with the next obvious dollar: capture employer match if available, then use a simple investing priority ladder before chasing complicated strategies.",
+    relatedLabel: "Open Investment Priority Finder",
+    relatedPath: "/foundation-tools/investment-priority-finder",
+  },
+  debt: {
+    title: "Debt Pressure",
+    shortPurpose: "Debt measures how much of your current income is still paying for past decisions.",
+    affects: ["monthly debt payments", "consumer debt balances", "interest rates", "vehicle loans", "debt-to-income pressure"],
+    improvesWhen: ["high-interest balances fall", "minimum payments shrink", "extra margin is used intentionally"],
+    hurtsWhen: ["minimum payments consume margin", "new debt replaces old debt", "car or credit card payments become normal"],
+    nextMove: "List the debts, pick a payoff order, and decide what extra monthly amount can attack the first balance without breaking the rest of the foundation.",
+    relatedLabel: "Open My Freedom Date",
+    relatedPath: "/foundation-tools/my-freedom-date",
+  },
+  protection: {
+    title: "Protection",
+    shortPurpose: "Protection measures whether one bad event could undo years of progress.",
+    affects: ["insurance coverage", "emergency documents", "beneficiaries", "estate basics", "risk gaps"],
+    improvesWhen: ["coverage matches the household", "beneficiaries are current", "basic documents are in place"],
+    hurtsWhen: ["coverage is unknown", "family responsibilities grow but protection does not", "beneficiary and estate details are outdated"],
+    nextMove: "Do a simple protection review: insurance, beneficiaries, emergency documents, and anything that would create stress if something happened tomorrow.",
+    relatedLabel: "Review Protection Articles",
+    relatedPath: "/articles",
+  },
+  vision: {
+    title: "Vision",
+    shortPurpose: "Vision measures whether your money has a direction beyond just getting through the month.",
+    affects: ["clear goals", "time horizon", "major decisions", "freedom date", "confidence in the next move"],
+    improvesWhen: ["goals are written down", "major choices match priorities", "the next right move is clear"],
+    hurtsWhen: ["money decisions are disconnected", "short-term pressure drives long-term choices", "there is no clear target"],
+    nextMove: "Write down the life you are trying to support, then choose one financial move that points in that direction this month.",
+    relatedLabel: "Open Foundation Tools",
+    relatedPath: "/foundation-tools",
+  },
+};
+
+function getHouseBlockStatus(score: number) {
+  if (score >= 70) return { label: "Strong", className: "border-emerald-300/25 bg-emerald-300/10 text-emerald-200" };
+  if (score >= 40) return { label: "Building", className: "border-amber-300/25 bg-amber-300/10 text-amber-100" };
+  return { label: "Needs work", className: "border-red-300/30 bg-red-400/10 text-red-200" };
+}
+
 function safeArray<T>(value: T[] | undefined | null): T[] {
   return Array.isArray(value) ? value : [];
 }
@@ -1032,23 +1125,6 @@ function getWeeklyMomentum(progressRows: PlanProgressRow[]) {
     completedThisWeek,
     totalCompleted,
   };
-}
-
-function getDashboardLocalDateKey(date = new Date()): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}
-
-function isDashboardDateToday(dateString?: string | null): boolean {
-  if (!dateString) return false;
-
-  const date = new Date(dateString);
-  if (Number.isNaN(date.getTime())) return false;
-
-  return getDashboardLocalDateKey(date) === getDashboardLocalDateKey();
 }
 
 async function loadLatestPlanActivity(
@@ -1569,8 +1645,12 @@ function getHouseBlockTone(score: number) {
 
 function DashboardHouseVisual({
   pillarScores,
+  selectedBlockKey,
+  onSelectBlock,
 }: {
   pillarScores: Record<string, number>;
+  selectedBlockKey?: string | null;
+  onSelectBlock?: (key: HouseBlockKey) => void;
 }) {
   const getScore = (key: string) =>
     Math.max(0, Math.min(100, Number(pillarScores[key] ?? 0)));
@@ -1641,7 +1721,7 @@ function DashboardHouseVisual({
   ];
 
   return (
-    <div className="relative h-[360px] overflow-hidden rounded-[2rem] border border-cyan-300/10 bg-[radial-gradient(circle_at_50%_42%,rgba(18,199,255,.18),transparent_46%),linear-gradient(180deg,rgba(8,26,47,.96),rgba(5,16,31,.96))] p-6">
+    <div className="relative h-[360px] overflow-hidden rounded-[2rem] border border-cyan-300/10 bg-[radial-gradient(circle_at_50%_42%,rgba(18,199,255,.18),transparent_46%),linear-gradient(180deg,rgba(8,26,47,.96),rgba(5,16,31,.96))] p-6 transition-all duration-500">
       <div className="absolute inset-0 bg-[linear-gradient(rgba(18,199,255,.08)_1px,transparent_1px),linear-gradient(90deg,rgba(18,199,255,.08)_1px,transparent_1px)] bg-[size:42px_42px] opacity-30" />
       <svg
         viewBox="0 0 520 300"
@@ -1698,8 +1778,40 @@ function DashboardHouseVisual({
         {blocks.map((block) => {
           const score = getScore(block.key);
           const tone = getHouseBlockTone(score);
+          const isSelected = selectedBlockKey === block.key;
+          const needsAttention = score < 40;
           return (
-            <g key={block.key}>
+            <g
+              key={block.key}
+              role="button"
+              tabIndex={0}
+              aria-label={`${block.label} score ${score}. Open block details.`}
+              onClick={() => onSelectBlock?.(block.key as HouseBlockKey)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onSelectBlock?.(block.key as HouseBlockKey);
+                }
+              }}
+              className="cursor-pointer outline-none transition-opacity hover:opacity-95 focus:opacity-95"
+              style={{ transformOrigin: `${block.x + block.w / 2}px ${block.y + block.h / 2}px` }}
+            >
+              {needsAttention ? (
+                <rect
+                  x={block.x - 5}
+                  y={block.y - 5}
+                  width={block.w + 10}
+                  height={block.h + 10}
+                  rx="12"
+                  fill="none"
+                  stroke={tone.color}
+                  strokeWidth="2"
+                  strokeOpacity="0.18"
+                >
+                  <animate attributeName="stroke-opacity" values="0.14;0.8;0.14" dur="1.7s" repeatCount="indefinite" />
+                  <animate attributeName="stroke-width" values="1.5;4;1.5" dur="1.7s" repeatCount="indefinite" />
+                </rect>
+              ) : null}
               <rect
                 x={block.x}
                 y={block.y}
@@ -1707,23 +1819,10 @@ function DashboardHouseVisual({
                 height={block.h}
                 rx="8"
                 fill={tone.fill}
-                stroke={tone.color}
-                strokeWidth="2"
-                style={{ filter: `drop-shadow(0 0 ${score < 40 ? 10 : 5}px ${tone.glow})` }}
+                stroke={isSelected ? "#ffffff" : tone.color}
+                strokeWidth={isSelected ? "3" : "2"}
+                style={{ filter: `drop-shadow(0 0 ${needsAttention || isSelected ? 12 : 5}px ${tone.glow})` }}
               />
-              {score < 40 ? (
-                <rect
-                  x={block.x - 2}
-                  y={block.y - 2}
-                  width={block.w + 4}
-                  height={block.h + 4}
-                  rx="10"
-                  fill="none"
-                  stroke={tone.color}
-                  strokeOpacity="0.32"
-                  strokeWidth="2"
-                />
-              ) : null}
               <rect
                 x={block.x}
                 y={block.y + block.h - 6}
@@ -1739,6 +1838,7 @@ function DashboardHouseVisual({
                 fill="rgba(226,232,240,.92)"
                 fontSize={block.key === "vision" ? "11" : "12"}
                 fontWeight="700"
+                pointerEvents="none"
               >
                 {block.label}
               </text>
@@ -1749,6 +1849,7 @@ function DashboardHouseVisual({
                 fontSize={block.key === "vision" ? "11" : "13"}
                 fontWeight="800"
                 textAnchor="end"
+                pointerEvents="none"
               >
                 {score}
               </text>
@@ -1775,6 +1876,110 @@ function DashboardHouseVisual({
         </text>
       </svg>
     </div>
+  );
+}
+
+
+function HouseBlockDetailPanel({
+  blockKey,
+  score,
+  onClose,
+  onNavigate,
+}: {
+  blockKey: HouseBlockKey;
+  score: number;
+  onClose: () => void;
+  onNavigate: (path: string) => void;
+}) {
+  const detail = HOUSE_BLOCK_DETAILS[blockKey];
+  const status = getHouseBlockStatus(score);
+  const Icon = PILLAR_ICONS[blockKey] || Target;
+
+  return (
+    <DashboardPanel className="animate-in fade-in slide-in-from-right-4 duration-300 p-5 md:p-6">
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-cyan-300/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200">
+            <Icon className="h-3.5 w-3.5" />
+            Block Detail
+          </div>
+          <h3 className="text-2xl font-bold text-white">{detail.title}</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-300">{detail.shortPurpose}</p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close block detail"
+          className="rounded-full border border-white/10 bg-white/[0.04] p-2 text-slate-300 transition hover:bg-white/10 hover:text-white"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="mb-4 grid grid-cols-[auto_1fr] gap-3 rounded-2xl border border-white/10 bg-white/[0.05] p-4">
+        <div className="text-3xl font-bold text-white">{score}</div>
+        <div>
+          <div className="text-xs uppercase tracking-[0.16em] text-slate-400">Current score</div>
+          <div className={`mt-1 inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${status.className}`}>
+            {status.label}
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-4 text-sm leading-6 text-slate-300">
+        <div>
+          <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">What affects this block</div>
+          <div className="flex flex-wrap gap-2">
+            {detail.affects.map((item) => (
+              <span key={item} className="rounded-full border border-cyan-300/15 bg-cyan-300/[0.08] px-3 py-1 text-xs text-cyan-100">
+                {item}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.06] p-4">
+            <div className="mb-2 font-semibold text-emerald-100">Improves when</div>
+            <ul className="space-y-2 text-slate-300">
+              {detail.improvesWhen.map((item) => (
+                <li key={item} className="flex gap-2"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-300" />{item}</li>
+              ))}
+            </ul>
+          </div>
+          <div className="rounded-2xl border border-red-300/15 bg-red-300/[0.06] p-4">
+            <div className="mb-2 font-semibold text-red-100">Gets weaker when</div>
+            <ul className="space-y-2 text-slate-300">
+              {detail.hurtsWhen.map((item) => (
+                <li key={item} className="flex gap-2"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-red-300" />{item}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-copper-300/20 bg-copper-400/[0.08] p-4">
+          <div className="mb-1 text-xs font-semibold uppercase tracking-[0.16em] text-copper-100">Next right move</div>
+          <p className="text-slate-200">{detail.nextMove}</p>
+        </div>
+      </div>
+
+      <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+        <button
+          type="button"
+          onClick={() => onNavigate(detail.relatedPath)}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-copper-500 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-copper-400"
+        >
+          {detail.relatedLabel} <ArrowRight className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => onNavigate("/results")}
+          className="inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-300/20 px-4 py-3 text-sm font-semibold text-cyan-200 transition hover:bg-cyan-300/10"
+        >
+          View Full Report
+        </button>
+      </div>
+    </DashboardPanel>
   );
 }
 
@@ -1933,10 +2138,12 @@ function DashboardMomentumPanel({
   actions,
   nextActionOverride,
   lastActivityLabel,
+  onNextMove,
 }: {
   actions: DashboardMomentumAction[];
   nextActionOverride?: DashboardMomentumAction | null;
   lastActivityLabel?: string | null;
+  onNextMove?: () => void;
 }) {
   const weeklyActions = actions.filter(
     (action) =>
@@ -2085,7 +2292,6 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
   const navigate = useNavigate();
   const printRef = useRef<HTMLDivElement>(null);
-  const actionMomentumRef = useRef<HTMLDivElement>(null);
   const [searchParams] = useSearchParams();
 
   const { user, currentAssessment, assessmentHistory, refreshProfile } =
@@ -2105,6 +2311,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const [activeDetail, setActiveDetail] = useState<
     "financial" | "netWorth" | "assetAllocation" | null
   >(null);
+  const [activeHouseBlock, setActiveHouseBlock] = useState<HouseBlockKey | null>(null);
   const [freedomDateScenario, setFreedomDateScenario] =
     useState<FreedomDateScenario | null>(null);
   const [freedomPlanUpdatedAt, setFreedomPlanUpdatedAt] = useState<
@@ -2702,24 +2909,10 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const isDashboardDebtUnderPressure =
     (snapshot?.fixedCostLoad ?? 0) >= 70 ||
     (snapshot?.debtToIncomeRatio ?? 0) >= 60;
-  const todayCompletedPlanAction =
-    dashboardTodayActions.find((action) => {
-      const progressRow = planProgressRows.find(
-        (row) => row.action_id === action.id,
-      );
-
-      return (
-        Boolean(completedPlanActions[action.id]) &&
-        isDashboardDateToday(progressRow?.completed_at)
-      );
-    }) ?? null;
-
   const nextDashboardPlanAction =
-    todayCompletedPlanAction ??
     dashboardTodayActions.find((action) => !completedPlanActions[action.id]) ??
     dashboardTodayActions[0] ??
     null;
-  const hasCompletedTodaysMove = Boolean(todayCompletedPlanAction);
   const nextDashboardMomentumAction = nextDashboardPlanAction
     ? momentumActions.find((action) => action.id === nextDashboardPlanAction.id) ?? {
         id: nextDashboardPlanAction.id,
@@ -2866,11 +3059,12 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
 
   const handleCompleteCurrentMove = () => {
-    if (!nextDashboardPlanAction || hasCompletedTodaysMove) return;
+    if (!nextDashboardPlanAction) return;
 
+    const nextCompletedState = !completedPlanActions[nextDashboardPlanAction.id];
     const updatedProgress = {
       ...completedPlanActions,
-      [nextDashboardPlanAction.id]: true,
+      [nextDashboardPlanAction.id]: nextCompletedState,
     };
 
     setCompletedPlanActions(updatedProgress);
@@ -2893,29 +3087,24 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
         ...existing,
         {
           action_id: nextDashboardPlanAction.id,
-          completed: true,
-          completed_at: now,
+          completed: nextCompletedState,
+          completed_at: nextCompletedState ? now : null,
           updated_at: now,
         },
       ];
     });
 
-    window.setTimeout(() => {
-      actionMomentumRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-    }, 120);
-
     void savePlanActionProgress(
       (user as any)?.id,
       planProgressAssessmentId,
       nextDashboardPlanAction.id,
-      true,
+      nextCompletedState,
     );
 
     void track(
-      "dashboard_today_move_completed",
+      nextCompletedState
+        ? "dashboard_today_move_completed"
+        : "dashboard_today_move_reopened",
       {
         source: "dashboard_today_move",
         actionId: nextDashboardPlanAction.id,
@@ -3054,7 +3243,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
               </div>
               <button
                 onClick={handleRetakeAssessment}
-                className="mt-3 w-full rounded-xl border border-cyan-300/20 bg-cyan-300/8 px-3 py-2 text-xs font-bold text-cyan-200"
+                className="mt-3 w-full rounded-xl border border-cyan-300/20 bg-cyan-300/[0.08] px-3 py-2 text-xs font-bold text-cyan-200"
               >
                 Retake Assessment
               </button>
@@ -3130,7 +3319,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
           <header className="mb-4 flex items-center justify-between gap-4">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/15 bg-cyan-300/8 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200">
+              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/15 bg-cyan-300/[0.08] px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200">
                 <Sparkles className="h-3.5 w-3.5" />
                 Dashboard
               </div>
@@ -3152,7 +3341,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
             >
               <button
                 onClick={() => needsFullAssessment ? handleContinueFullAssessment("dashboard_header") : handleViewLatestReport()}
-                className="rounded-2xl border border-cyan-300/20 bg-cyan-300/8 px-4 py-2 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/12"
+                className="rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.08] px-4 py-2 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/12"
               >
                 {needsFullAssessment ? "Continue Assessment" : "View Report"}
               </button>
@@ -3397,14 +3586,6 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                           <p className="mt-2 text-sm leading-6 text-slate-400">
                             {dashboardWhyThisMatters}
                           </p>
-                          <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                              Today’s action
-                            </div>
-                            <div className="mt-1 text-sm font-semibold leading-6 text-white">
-                              {nextDashboardPlanAction.label}
-                            </div>
-                          </div>
                           <p className="mt-2 text-sm font-semibold leading-6 text-copper-200/90">
                             Most people never do this step. It’s where real progress starts.
                           </p>
@@ -3413,15 +3594,27 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                         <div className="flex shrink-0 flex-col gap-2 sm:flex-row lg:flex-col">
                           <button
                             type="button"
+                            onClick={() =>
+                              document
+                                .getElementById("today-plan-action")
+                                ?.scrollIntoView({ behavior: "smooth", block: "center" })
+                            }
+                            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#d6a14f] px-5 py-3 text-sm font-bold text-[#06172b] hover:bg-[#e0b462]"
+                          >
+                            Start Today’s Move <ArrowRight className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
                             onClick={handleCompleteCurrentMove}
-                            disabled={hasCompletedTodaysMove}
                             className={`inline-flex items-center justify-center gap-2 rounded-2xl border px-5 py-3 text-sm font-bold transition ${
-                              hasCompletedTodaysMove
-                                ? "cursor-default border-emerald-300/35 bg-emerald-300/10 text-emerald-200"
-                                : "border-cyan-300/25 bg-cyan-300/8 text-cyan-200 hover:bg-cyan-300/12"
+                              completedPlanActions[nextDashboardPlanAction.id]
+                                ? "border-emerald-300/35 bg-emerald-300/10 text-emerald-200"
+                                : "border-cyan-300/25 bg-cyan-300/[0.08] text-cyan-200 hover:bg-cyan-300/12"
                             }`}
                           >
-                            {hasCompletedTodaysMove ? "Completed Today" : "Mark as Done"}
+                            {completedPlanActions[nextDashboardPlanAction.id]
+                              ? "Nice — want your next move?"
+                              : "Mark as Done"}
                           </button>
                         </div>
                       </div>
@@ -3586,15 +3779,52 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                       View Details <ArrowRight className="h-4 w-4" />
                     </button>
                   </div>
-                  <div className="grid gap-5 lg:grid-cols-[1.45fr_.8fr]">
-                    <DashboardHouseVisual pillarScores={pillarScores} />
-                    <div id="action-momentum" ref={actionMomentumRef}>
+                  <div
+                    className={`grid gap-5 transition-all duration-500 ${
+                      activeHouseBlock ? "lg:grid-cols-[1.05fr_.95fr]" : "lg:grid-cols-[1.45fr_.8fr]"
+                    }`}
+                  >
+                    <div
+                      className={`transition-transform duration-500 ${
+                        activeHouseBlock ? "lg:-translate-x-2" : ""
+                      }`}
+                    >
+                      <DashboardHouseVisual
+                        pillarScores={pillarScores}
+                        selectedBlockKey={activeHouseBlock}
+                        onSelectBlock={(blockKey) => {
+                          setActiveHouseBlock(blockKey);
+                          void track(
+                            "dashboard_house_block_selected",
+                            {
+                              block: blockKey,
+                              score: Math.round(Number(pillarScores[blockKey] ?? 0)),
+                            },
+                            "dashboard",
+                          );
+                        }}
+                      />
+                    </div>
+
+                    {activeHouseBlock ? (
+                      <HouseBlockDetailPanel
+                        blockKey={activeHouseBlock}
+                        score={Math.round(Number(pillarScores[activeHouseBlock] ?? 0))}
+                        onClose={() => setActiveHouseBlock(null)}
+                        onNavigate={(path) => navigate(path)}
+                      />
+                    ) : (
                       <DashboardMomentumPanel
                         actions={momentumActions}
                         nextActionOverride={nextDashboardMomentumAction}
                         lastActivityLabel={lastPlanActivityLabel}
+                        onNextMove={() => {
+                          document
+                            .getElementById("today-plan-action")
+                            ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                        }}
                       />
-                    </div>
+                    )}
                   </div>
                 </DashboardPanel>
               </section>
@@ -3619,7 +3849,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                       <button
                         type="button"
                         onClick={() => setWhatIf({ income: 0, housing: 0, debt: 0 })}
-                        className="inline-flex shrink-0 items-center justify-center rounded-2xl border border-cyan-300/25 bg-cyan-300/8 px-4 py-2 text-sm font-bold text-cyan-200 hover:bg-cyan-300/12"
+                        className="inline-flex shrink-0 items-center justify-center rounded-2xl border border-cyan-300/25 bg-cyan-300/[0.08] px-4 py-2 text-sm font-bold text-cyan-200 hover:bg-cyan-300/12"
                       >
                         Reset scenario
                       </button>
@@ -3749,7 +3979,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                           </label>
                         </div>
 
-                        <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/8 p-4">
+                        <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.08] p-4">
                           <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
                             <span>Breathing room progress</span>
                             <span>{formatCurrency(scenarioResult.adjustedMargin)}</span>
@@ -3776,7 +4006,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                           </div>
                         </div>
 
-                        <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/8 p-4">
+                        <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.08] p-4">
                           <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                             <div>
                               <div className="text-sm font-semibold uppercase tracking-[0.16em] text-cyan-200">
@@ -3808,7 +4038,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                       </div>
 
                       <div className="grid gap-3">
-                        <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/8 p-4">
+                        <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.08] p-4">
                           <div className="text-sm font-semibold uppercase tracking-wide text-slate-300">
                             Monthly Breathing Room
                           </div>
@@ -3964,7 +4194,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
                     <button
                       onClick={handleOpenFullNinetyDayPlan}
-                      className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl border border-cyan-300/35 bg-cyan-300/8 px-4 py-3 text-sm font-bold text-cyan-200 shadow-[0_0_28px_rgba(34,211,238,.12)] hover:bg-cyan-300/12"
+                      className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl border border-cyan-300/35 bg-cyan-300/[0.08] px-4 py-3 text-sm font-bold text-cyan-200 shadow-[0_0_28px_rgba(34,211,238,.12)] hover:bg-cyan-300/12"
                     >
                       View full plan in report <ArrowRight className="h-4 w-4" />
                     </button>
@@ -4024,7 +4254,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                             </span>
                           </div>
                         ))}
-                        <div className="rounded-xl border border-cyan-300/15 bg-cyan-300/8 px-4 py-3 text-cyan-100">
+                        <div className="rounded-xl border border-cyan-300/15 bg-cyan-300/[0.08] px-4 py-3 text-cyan-100">
                           Fixed cost load:{" "}
                           {formatPercent(snapshot.fixedCostLoad)} of take-home
                           pay.
@@ -4093,7 +4323,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                             </div>
                           );
                         })}
-                        <div className="flex justify-between rounded-xl border border-cyan-300/15 bg-cyan-300/8 px-4 py-3">
+                        <div className="flex justify-between rounded-xl border border-cyan-300/15 bg-cyan-300/[0.08] px-4 py-3">
                           <span className="font-semibold text-cyan-100">
                             Total shown assets
                           </span>
