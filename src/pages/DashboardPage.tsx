@@ -1909,10 +1909,11 @@ function HouseBlockDetailPanel({
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close block detail"
-          className="rounded-full border border-white/10 bg-white/[0.04] p-2 text-slate-300 transition hover:bg-white/10 hover:text-white"
+          aria-label="Close block detail and return to Action Momentum"
+          title="Close and return to Action Momentum"
+          className="rounded-full border border-red-300/40 bg-red-500/15 p-2.5 text-red-100 shadow-[0_0_18px_rgba(248,113,113,0.22)] transition hover:border-red-200/70 hover:bg-red-500/25 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-300/60"
         >
-          <X className="h-4 w-4" />
+          <X className="h-5 w-5" />
         </button>
       </div>
 
