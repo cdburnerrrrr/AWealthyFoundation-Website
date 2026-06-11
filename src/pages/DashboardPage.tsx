@@ -1009,6 +1009,23 @@ function getDashboardNextMove(
   return "Choose one next step and make progress this week.";
 }
 
+function getDashboardLocalDateKey(date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function isDashboardDateToday(dateString?: string | null): boolean {
+  if (!dateString) return false;
+
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return false;
+
+  return getDashboardLocalDateKey(date) === getDashboardLocalDateKey();
+}
+
 function makePlanActionId(phaseIndex: number, itemIndex: number, item: string) {
   const slug = item
     .toLowerCase()
@@ -2293,6 +2310,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
   const navigate = useNavigate();
   const printRef = useRef<HTMLDivElement>(null);
+  const actionMomentumRef = useRef<HTMLDivElement>(null);
   const [searchParams] = useSearchParams();
 
   const { user, currentAssessment, assessmentHistory, refreshProfile } =
@@ -2910,10 +2928,24 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const isDashboardDebtUnderPressure =
     (snapshot?.fixedCostLoad ?? 0) >= 70 ||
     (snapshot?.debtToIncomeRatio ?? 0) >= 60;
+  const todayCompletedPlanAction =
+    dashboardTodayActions.find((action) => {
+      const progressRow = planProgressRows.find(
+        (row) => row.action_id === action.id,
+      );
+
+      return (
+        Boolean(completedPlanActions[action.id]) &&
+        isDashboardDateToday(progressRow?.completed_at)
+      );
+    }) ?? null;
+
   const nextDashboardPlanAction =
+    todayCompletedPlanAction ??
     dashboardTodayActions.find((action) => !completedPlanActions[action.id]) ??
     dashboardTodayActions[0] ??
     null;
+  const hasCompletedTodaysMove = Boolean(todayCompletedPlanAction);
   const nextDashboardMomentumAction = nextDashboardPlanAction
     ? momentumActions.find((action) => action.id === nextDashboardPlanAction.id) ?? {
         id: nextDashboardPlanAction.id,
@@ -3060,12 +3092,11 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
 
   const handleCompleteCurrentMove = () => {
-    if (!nextDashboardPlanAction) return;
+    if (!nextDashboardPlanAction || hasCompletedTodaysMove) return;
 
-    const nextCompletedState = !completedPlanActions[nextDashboardPlanAction.id];
     const updatedProgress = {
       ...completedPlanActions,
-      [nextDashboardPlanAction.id]: nextCompletedState,
+      [nextDashboardPlanAction.id]: true,
     };
 
     setCompletedPlanActions(updatedProgress);
@@ -3088,24 +3119,29 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
         ...existing,
         {
           action_id: nextDashboardPlanAction.id,
-          completed: nextCompletedState,
-          completed_at: nextCompletedState ? now : null,
+          completed: true,
+          completed_at: now,
           updated_at: now,
         },
       ];
     });
 
+    window.setTimeout(() => {
+      actionMomentumRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 120);
+
     void savePlanActionProgress(
       (user as any)?.id,
       planProgressAssessmentId,
       nextDashboardPlanAction.id,
-      nextCompletedState,
+      true,
     );
 
     void track(
-      nextCompletedState
-        ? "dashboard_today_move_completed"
-        : "dashboard_today_move_reopened",
+      "dashboard_today_move_completed",
       {
         source: "dashboard_today_move",
         actionId: nextDashboardPlanAction.id,
@@ -3595,27 +3631,15 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                         <div className="flex shrink-0 flex-col gap-2 sm:flex-row lg:flex-col">
                           <button
                             type="button"
-                            onClick={() =>
-                              document
-                                .getElementById("today-plan-action")
-                                ?.scrollIntoView({ behavior: "smooth", block: "center" })
-                            }
-                            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#d6a14f] px-5 py-3 text-sm font-bold text-[#06172b] hover:bg-[#e0b462]"
-                          >
-                            Start Today’s Move <ArrowRight className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
                             onClick={handleCompleteCurrentMove}
+                            disabled={hasCompletedTodaysMove}
                             className={`inline-flex items-center justify-center gap-2 rounded-2xl border px-5 py-3 text-sm font-bold transition ${
-                              completedPlanActions[nextDashboardPlanAction.id]
-                                ? "border-emerald-300/35 bg-emerald-300/10 text-emerald-200"
-                                : "border-cyan-300/25 bg-cyan-300/[0.08] text-cyan-200 hover:bg-cyan-300/12"
+                              hasCompletedTodaysMove
+                                ? "cursor-default border-emerald-300/35 bg-emerald-300/10 text-emerald-200"
+                                : "border-cyan-300/25 bg-cyan-300/8 text-cyan-200 hover:bg-cyan-300/12"
                             }`}
                           >
-                            {completedPlanActions[nextDashboardPlanAction.id]
-                              ? "Nice — want your next move?"
-                              : "Mark as Done"}
+                            {hasCompletedTodaysMove ? "Completed Today" : "Mark as Done"}
                           </button>
                         </div>
                       </div>
@@ -3815,16 +3839,13 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                         onNavigate={(path) => navigate(path)}
                       />
                     ) : (
-                      <DashboardMomentumPanel
-                        actions={momentumActions}
-                        nextActionOverride={nextDashboardMomentumAction}
-                        lastActivityLabel={lastPlanActivityLabel}
-                        onNextMove={() => {
-                          document
-                            .getElementById("today-plan-action")
-                            ?.scrollIntoView({ behavior: "smooth", block: "center" });
-                        }}
-                      />
+                      <div id="action-momentum" ref={actionMomentumRef}>
+                        <DashboardMomentumPanel
+                          actions={momentumActions}
+                          nextActionOverride={nextDashboardMomentumAction}
+                          lastActivityLabel={lastPlanActivityLabel}
+                        />
+                      </div>
                     )}
                   </div>
                 </DashboardPanel>
