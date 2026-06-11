@@ -2940,11 +2940,13 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
       );
     }) ?? null;
 
+  const nextIncompleteDashboardPlanAction =
+    dashboardTodayActions.find((action) => !completedPlanActions[action.id]) ?? null;
+  const allDashboardPlanActionsCompleted =
+    dashboardTodayActions.length > 0 &&
+    dashboardTodayActions.every((action) => completedPlanActions[action.id]);
   const nextDashboardPlanAction =
-    todayCompletedPlanAction ??
-    dashboardTodayActions.find((action) => !completedPlanActions[action.id]) ??
-    dashboardTodayActions[0] ??
-    null;
+    todayCompletedPlanAction ?? nextIncompleteDashboardPlanAction;
   const hasCompletedTodaysMove = Boolean(todayCompletedPlanAction);
   const nextDashboardMomentumAction = nextDashboardPlanAction
     ? momentumActions.find((action) => action.id === nextDashboardPlanAction.id) ?? {
@@ -3600,7 +3602,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                     </button>
                   </div>
 
-                  {nextDashboardPlanAction && (
+                  {(nextDashboardPlanAction || allDashboardPlanActionsCompleted) && (
                     <div className="mt-5 rounded-2xl border border-copper-300/25 bg-gradient-to-r from-copper-400/14 via-cyan-300/8 to-transparent p-5 shadow-[0_0_32px_rgba(214,161,79,.08)]">
                       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                         <div className="max-w-3xl">
@@ -3612,6 +3614,9 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                               className={`rounded-full border px-3 py-1 text-xs font-bold ${todayMovePriority.className}`}
                             >
                               {todayMovePriority.label}
+                            </span>
+                            <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-semibold text-slate-300">
+                              1 small action per day
                             </span>
                           </div>
                           <div className="mt-2 text-lg font-bold leading-6 text-white">
@@ -3632,35 +3637,102 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                           <button
                             type="button"
                             onClick={handleCompleteCurrentMove}
-                            disabled={hasCompletedTodaysMove}
+                            disabled={hasCompletedTodaysMove || allDashboardPlanActionsCompleted}
                             className={`inline-flex items-center justify-center gap-2 rounded-2xl border px-5 py-3 text-sm font-bold transition ${
-                              hasCompletedTodaysMove
-                                ? "cursor-default border-emerald-300/35 bg-emerald-300/10 text-emerald-200"
-                                : "border-cyan-300/25 bg-cyan-300/8 text-cyan-200 hover:bg-cyan-300/12"
+                              allDashboardPlanActionsCompleted
+                                ? "cursor-default border-emerald-300/35 bg-emerald-300/12 text-emerald-100"
+                                : hasCompletedTodaysMove
+                                  ? "cursor-default border-emerald-300/35 bg-emerald-300/10 text-emerald-200"
+                                  : "border-cyan-300/25 bg-cyan-300/8 text-cyan-200 hover:bg-cyan-300/12"
                             }`}
                           >
-                            {hasCompletedTodaysMove ? "Completed Today" : "Mark as Done"}
+                            {allDashboardPlanActionsCompleted
+                              ? "Move Sequence Complete"
+                              : hasCompletedTodaysMove
+                                ? "Completed Today"
+                                : "Mark Today’s Action Done"}
                           </button>
                         </div>
                       </div>
 
+                      <div className={`mt-4 rounded-2xl border p-4 ${
+                        allDashboardPlanActionsCompleted
+                          ? "border-emerald-300/25 bg-emerald-300/10"
+                          : hasCompletedTodaysMove
+                            ? "border-emerald-300/25 bg-emerald-300/10"
+                            : "border-copper-300/25 bg-copper-300/10"
+                      }`}>
+                        <div className={`text-xs font-semibold uppercase tracking-[0.16em] ${
+                          allDashboardPlanActionsCompleted || hasCompletedTodaysMove
+                            ? "text-emerald-200"
+                            : "text-copper-200"
+                        }`}>
+                          {allDashboardPlanActionsCompleted
+                            ? "This 3-step move is complete"
+                            : hasCompletedTodaysMove
+                              ? "Done today"
+                              : "Today’s action"}
+                        </div>
+                        <div className="mt-2 text-sm font-semibold leading-6 text-white">
+                          {allDashboardPlanActionsCompleted
+                            ? "All three actions are done. Your Action Momentum is complete for this move."
+                            : nextDashboardPlanAction?.label}
+                        </div>
+                        {!allDashboardPlanActionsCompleted && (
+                          <p className="mt-1 text-xs leading-5 text-slate-400">
+                            The cards below are a 3-step sequence. Complete one small action today, then come back tomorrow for the next unfinished action.
+                          </p>
+                        )}
+                      </div>
+
                       {dashboardTodayActions.length > 0 && (
                         <div className="mt-4 grid gap-3 md:grid-cols-3">
-                          {dashboardTodayActions.map((action) => (
-                            <div
-                              key={action.id}
-                              className={`rounded-xl border p-3 text-sm leading-5 ${
-                                completedPlanActions[action.id]
-                                  ? "border-emerald-300/25 bg-emerald-300/10 text-emerald-100"
-                                  : "border-white/10 bg-white/[0.04] text-slate-300"
-                              }`}
-                            >
-                              <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                Action
+                          {dashboardTodayActions.map((action, actionIndex) => {
+                            const isCompleted = Boolean(completedPlanActions[action.id]);
+                            const isActive = nextDashboardPlanAction?.id === action.id;
+                            const isCompletedToday = todayCompletedPlanAction?.id === action.id;
+
+                            return (
+                              <div
+                                key={action.id}
+                                className={`rounded-xl border p-3 text-sm leading-5 transition ${
+                                  isCompleted
+                                    ? "border-emerald-300/25 bg-emerald-300/10 text-emerald-100"
+                                    : isActive
+                                      ? "border-copper-300/45 bg-copper-300/12 text-copper-50 shadow-[0_0_22px_rgba(214,161,79,.10)]"
+                                      : "border-white/10 bg-white/[0.04] text-slate-300"
+                                }`}
+                              >
+                                <div className="mb-1 flex flex-wrap items-center gap-2">
+                                  <span className={`text-xs font-semibold uppercase tracking-wide ${
+                                    isCompleted
+                                      ? "text-emerald-200/80"
+                                      : isActive
+                                        ? "text-copper-200"
+                                        : "text-slate-500"
+                                  }`}>
+                                    Day {actionIndex + 1}
+                                  </span>
+                                  {isCompletedToday && (
+                                    <span className="rounded-full bg-emerald-300/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-200">
+                                      Done today
+                                    </span>
+                                  )}
+                                  {!isCompleted && isActive && !hasCompletedTodaysMove && (
+                                    <span className="rounded-full bg-copper-300/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-copper-100">
+                                      Today
+                                    </span>
+                                  )}
+                                  {isCompleted && !isCompletedToday && (
+                                    <span className="rounded-full bg-emerald-300/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-200/80">
+                                      Done
+                                    </span>
+                                  )}
+                                </div>
+                                {action.label}
                               </div>
-                              {action.label}
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                     </div>
