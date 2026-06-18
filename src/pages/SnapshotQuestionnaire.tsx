@@ -322,13 +322,13 @@ function TrustBlock() {
             Private by design.
           </h3>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            This is not a request to share your finances with me. Your answers are
-            used by the site to calculate your score and show your results. They are
-            not posted, shared, sold, or personally reviewed by me.
+            Your assessment information is used to calculate your score and show your
+            results inside A Wealthy Foundation. It is not posted publicly, sold to
+            third parties, or used for sales calls or advisor outreach.
           </p>
           <p className="mt-2 text-sm font-medium text-slate-800">
-            No credit card is required for the free Snapshot, and you will not receive
-            calls or outreach as a result of this assessment.
+            No credit card is required for the free Snapshot, and completing the
+            assessment will not trigger sales calls or advisor outreach.
           </p>
         </div>
       </div>
@@ -340,7 +340,7 @@ function TrustInline() {
   return (
     <div className="mt-6 flex items-center justify-center gap-2 text-xs text-slate-500">
       <Lock className="h-3.5 w-3.5" />
-      <span>Private by design • Never sold • No outreach</span>
+      <span>Private by design • Never sold • No sales outreach</span>
     </div>
   );
 }

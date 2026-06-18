@@ -109,7 +109,8 @@ export default function LandingPage() {
                       </p>
                       <p className="mt-1 text-sm leading-6 text-emerald-900">
                         Your answers are used only to calculate your Foundation Snapshot.
-                        They are not posted, shared, sold, or personally reviewed by me.
+                        They are not posted publicly, sold to third parties, or used for
+                        sales calls or advisor outreach.
                       </p>
                     </div>
                   </div>
@@ -206,7 +207,7 @@ export default function LandingPage() {
                 Start Free. Go Deeper When You’re Ready.
               </h3>
               <p className="text-navy-600 mt-2 max-w-3xl mx-auto leading-7">
-                Begin with a quick, private snapshot. Your answers are used to calculate your score and show your results — not to share your financial details with anyone.
+                Begin with a quick, private snapshot. Your answers are used to calculate your score and show your results — not for sales calls, advisor outreach, or public sharing.
               </p>
             </div>
 

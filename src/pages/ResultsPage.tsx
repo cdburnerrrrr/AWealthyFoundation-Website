@@ -3295,7 +3295,7 @@ export default function ResultsPage() {
                   back later without retaking the questions.
                 </p>
                 <p className="mt-2 text-xs font-medium text-emerald-900">
-                  Your answers stay private and are used only to power your own dashboard.
+                  Your assessment information is used to power your own dashboard and saved results. It is not posted publicly, sold to third parties, or used for sales calls or advisor outreach.
                 </p>
               </div>
 
