@@ -22,13 +22,9 @@ export default function Layout() {
 
   const navLinks = [
     { to: '/building-blocks', label: 'Building Blocks' },
-    { to: '/financial-pillars', label: 'Financial Pillars' },
-    { to: '/foundation-score', label: 'Foundation Score' },
     { to: '/workbook', label: 'Workbook' },
-    { to: '/premium', label: 'Premium' },
     { to: '/articles', label: 'Articles' },
-    { to: '/newsletter', label: 'Newsletter' },
-    { to: '/foundation-tools', label: 'Foundation Tools' },
+    { to: '/premium', label: 'Premium' },
   ];
 
   return (

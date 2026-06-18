@@ -173,8 +173,8 @@ export default function LandingPage() {
                 </div>
 
                 <p className="text-sm text-navy-600 mb-3 flex-grow">
-                  Take the free Foundation Snapshot to get your score, identify your biggest
-                  opportunities, and see where to focus first. Your answers stay private.
+                  Take the free Foundation Snapshot to get your score, identify your top focus areas,
+                  and see where to focus first. Your answers stay private.
                 </p>
 
                 <ul className="space-y-1 mb-4 text-sm text-navy-700">
@@ -184,7 +184,7 @@ export default function LandingPage() {
                   </li>
                   <li className="flex items-center gap-1.5">
                     <CheckCircle className="w-3.5 h-3.5 text-copper-500" />
-                    Biggest opportunities
+                    Top focus areas
                   </li>
                   <li className="flex items-center gap-1.5">
                     <CheckCircle className="w-3.5 h-3.5 text-copper-500" />
@@ -201,12 +201,16 @@ export default function LandingPage() {
                 >
                   Take the Free Snapshot
                 </button>
+
+                <p className="mt-2 text-center text-xs text-navy-500">
+                  Takes about 5 minutes. No credit card required.
+                </p>
               </div>
 
               {/* Full Report */}
               <div className="bg-white rounded-lg border-2 border-copper-300 p-4 sm:p-5 shadow-sm hover:shadow-md transition-all h-full flex flex-col">
                 <div className="mb-3">
-                  <h3 className="text-lg font-bold text-navy-900">Full Report</h3>
+                  <h3 className="text-lg font-bold text-navy-900">Foundation Assessment Plan</h3>
                   <span className="text-2xl font-bold text-copper-600">$29</span>
                 </div>
 
@@ -243,7 +247,7 @@ export default function LandingPage() {
                   }}
                   className="w-full h-10 border border-copper-500 text-copper-600 text-sm font-semibold rounded hover:bg-copper-50 transition-colors"
                 >
-                  Unlock Full Report
+                  Get My Full Report
                 </button>
               </div>
 
@@ -254,7 +258,7 @@ export default function LandingPage() {
                 </div>
 
                 <div className="mb-3">
-                  <h3 className="text-lg font-bold">Premium Guidance</h3>
+                  <h3 className="text-lg font-bold">Foundation Roadmap Plan</h3>
                   <span className="text-2xl font-bold text-copper-400">$79</span>
                 </div>
 
@@ -266,7 +270,7 @@ export default function LandingPage() {
                 <ul className="space-y-1 mb-4 text-sm text-navy-200">
                   <li className="flex items-center gap-1.5">
                     <CheckCircle className="w-3.5 h-3.5 text-copper-400" />
-                    Everything in Full Report
+                    Everything in Assessment Plan
                   </li>
                   <li className="flex items-center gap-1.5">
                     <CheckCircle className="w-3.5 h-3.5 text-copper-400" />
@@ -289,9 +293,9 @@ export default function LandingPage() {
                       ? startCheckout('premium')
                       : navigate('/login?redirect=/pricing');
                   }}
-                  className="w-full h-10 bg-copper-500 text-white text-sm font-semibold rounded hover:bg-copper-600 transition-colors"
+                  className="w-full min-h-10 bg-copper-500 px-3 py-2 text-white text-sm font-semibold rounded hover:bg-copper-600 transition-colors"
                 >
-                  Get Premium Guidance
+                  Build My 12-Month Roadmap
                 </button>
               </div>
             </div>
