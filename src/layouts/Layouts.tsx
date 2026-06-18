@@ -22,6 +22,8 @@ export default function Layout() {
 
   const navLinks = [
     { to: '/building-blocks', label: 'Building Blocks' },
+    { to: '/foundation-score', label: 'Foundation Score' },
+    { to: '/foundation-tools', label: 'Tools' },
     { to: '/workbook', label: 'Workbook' },
     { to: '/articles', label: 'Articles' },
     { to: '/premium', label: 'Premium' },
