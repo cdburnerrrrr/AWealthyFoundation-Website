@@ -38,6 +38,16 @@ import {
 import { useAppStore } from '../store/appStore';
 import CarPaymentActivity from '../components/activities/CarPaymentActivity';
 
+function trackAwfEvent(eventName: string, parameters: Record<string, unknown> = {}) {
+  if (typeof window === 'undefined') return;
+
+  (window as any).gtag?.('event', eventName, {
+    event_category: 'A Wealthy Foundation',
+    ...parameters,
+  });
+}
+
+
 type ResponseValue = string | string[] | number | null;
 type ActivityKey = 'carPaymentOpportunityReview';
 
@@ -309,15 +319,16 @@ function TrustBlock() {
 
         <div>
           <h3 className="text-base font-semibold text-slate-900">
-            Your data stays private.
+            Private by design.
           </h3>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Your assessment information is stored securely, used only to generate
-            your experience inside A Wealthy Foundation, and is never sold to
-            outside advisors or marketers.
+            This is not a request to share your finances with me. Your answers are
+            used by the site to calculate your score and show your results. They are
+            not posted, shared, sold, or personally reviewed by me.
           </p>
           <p className="mt-2 text-sm font-medium text-slate-800">
-            You will not receive calls or outreach as a result of this assessment.
+            No credit card is required for the free Snapshot, and you will not receive
+            calls or outreach as a result of this assessment.
           </p>
         </div>
       </div>
@@ -329,7 +340,7 @@ function TrustInline() {
   return (
     <div className="mt-6 flex items-center justify-center gap-2 text-xs text-slate-500">
       <Lock className="h-3.5 w-3.5" />
-      <span>Private • Never sold • No outreach</span>
+      <span>Private by design • Never sold • No outreach</span>
     </div>
   );
 }
@@ -437,19 +448,23 @@ function IntroCard({ onStart }: IntroCardProps) {
   return (
     <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 md:p-10">
       <div className="inline-flex rounded-full bg-copper-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-copper-700">
-        Quick Financial Snapshot
+        Free Foundation Snapshot
       </div>
 
       <div className="mt-5 grid gap-8 lg:grid-cols-[1.25fr_0.95fr] lg:items-start">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-navy-900">
-            Snapshot Assessment
+            Get Your Free Foundation Snapshot
           </h1>
 
           <p className="mt-4 text-gray-600 leading-7 max-w-2xl">
             This quick review gives you an early read on the strength of your financial
             foundation. We’ll focus on the core signals first so you can see what looks
             strong, what may need attention, and where to focus next.
+          </p>
+
+          <p className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium leading-6 text-emerald-900">
+            Estimates are fine. You do not need exact numbers to get started.
           </p>
 
           <div className="mt-6 rounded-2xl border border-copper-100 bg-copper-50/40 p-4">
@@ -471,7 +486,7 @@ function IntroCard({ onStart }: IntroCardProps) {
               <li>Takes about 5 minutes</li>
               <li>Most answers can be estimates</li>
               <li>You do not need every number in front of you</li>
-              <li>You’ll get a real score, not just a teaser</li>
+              <li>You’ll get a real score and a clear next step</li>
             </ul>
           </div>
 
@@ -496,7 +511,7 @@ function IntroCard({ onStart }: IntroCardProps) {
         onClick={onStart}
         className="mt-6 inline-flex items-center justify-center gap-2 rounded-2xl bg-copper-600 px-6 py-3 text-white font-bold hover:bg-copper-700 transition"
       >
-        Start My Snapshot
+        Start the Free Snapshot
         <ArrowRight className="h-4 w-4" />
       </button>
     </div>
@@ -1031,6 +1046,10 @@ export default function SnapshotQuestionnaire() {
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  useEffect(() => {
+    trackAwfEvent('snapshot_intro_viewed', { source: 'snapshot_questionnaire' });
+  }, []);
+
   const renderableQuestions = useMemo(
     () => getRenderableQuestions(visibleQuestions),
     [visibleQuestions]
@@ -1063,6 +1082,11 @@ export default function SnapshotQuestionnaire() {
   }, [currentStep, renderableQuestions.length]);
 
   const updateResponses = (key: string, value: ResponseValue) => {
+    trackAwfEvent('snapshot_question_answered', {
+      question_key: key,
+      step: currentStep + 1,
+    });
+
     const updated = { ...responses, [key]: value };
     const filtered = getSnapshotQuestions(updated) as Question[];
 
@@ -1251,6 +1275,11 @@ export default function SnapshotQuestionnaire() {
         });
       }
 
+      trackAwfEvent('snapshot_completed', {
+        score: report.foundationScore,
+        authenticated: isAuthenticated,
+      });
+
       navigate('/results/snapshot');
     } catch (error) {
       console.error('Error submitting snapshot assessment:', error);
@@ -1264,7 +1293,7 @@ export default function SnapshotQuestionnaire() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 max-w-lg w-full text-center">
-          <h1 className="text-2xl font-bold text-navy-900 mb-3">Snapshot Assessment</h1>
+          <h1 className="text-2xl font-bold text-navy-900 mb-3">Foundation Snapshot</h1>
           <p className="text-gray-600 mb-6">
             We could not load the snapshot questions right now. Please go back and try again.
           </p>
@@ -1330,7 +1359,10 @@ export default function SnapshotQuestionnaire() {
       <main className="flex-1 py-8">
         <div className={`${mode === 'intro' ? 'max-w-5xl' : 'max-w-2xl'} mx-auto px-4`}>
           {mode === 'intro' ? (
-            <IntroCard onStart={() => setMode('transition')} />
+            <IntroCard onStart={() => {
+              trackAwfEvent('snapshot_start_clicked', { source: 'snapshot_intro' });
+              setMode('transition');
+            }} />
           ) : mode === 'transition' ? (
             <TransitionCard
               sectionKey={currentSectionKey}

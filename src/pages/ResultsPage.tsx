@@ -27,6 +27,16 @@ import {
 import { useAppStore } from "../store/appStore";
 import { useUserPlan } from "../hooks/useUserPlan";
 import { supabase } from "../lib/supabase";
+
+function trackAwfEvent(eventName: string, parameters: Record<string, unknown> = {}) {
+  if (typeof window === "undefined") return;
+
+  (window as any).gtag?.("event", eventName, {
+    event_category: "A Wealthy Foundation",
+    ...parameters,
+  });
+}
+
 import {
   PILLAR_LABELS,
   getScoreBand,
@@ -2855,6 +2865,16 @@ export default function ResultsPage() {
     (historyResult as any)?.assessmentType ??
     "free";
 
+  useEffect(() => {
+    if (!result) return;
+
+    trackAwfEvent('results_viewed', {
+      assessment_type: currentAssessmentType,
+      score: result.foundationScore,
+      authenticated: Boolean(user?.id),
+    });
+  }, [currentAssessmentType, result, user?.id]);
+
   const derivedTier =
     (currentAssessment as any)?.reportTier ||
     (latestHistoryRecord as any)?.reportTier ||
@@ -2959,6 +2979,11 @@ export default function ResultsPage() {
   };
 
   const handlePdfClick = async () => {
+    trackAwfEvent('pdf_export_clicked', {
+      report_tier: reportTier,
+      allowed: features.allowFullPdfExport,
+    });
+
     if (!features.allowFullPdfExport) {
       setShowPdfUpgradeModal(true);
       return;
@@ -3029,10 +3054,13 @@ export default function ResultsPage() {
             Complete an assessment first so we can build your Foundation Report.
           </p>
           <button
-            onClick={() => navigate("/assessment/comprehensive")}
+            onClick={() => {
+              trackAwfEvent('snapshot_start_clicked', { source: 'no_results_page' });
+              navigate("/assessment/snapshot");
+            }}
             className="px-6 py-3 bg-copper-600 text-white rounded-xl font-bold hover:bg-copper-700"
           >
-            Take Assessment
+            Take the Free Snapshot
           </button>
         </div>
       </div>
@@ -3040,6 +3068,7 @@ export default function ResultsPage() {
   }
 
   const score = result?.foundationScore ?? 0;
+  const isGuestSnapshot = !user?.id && currentAssessmentType === "free";
 
   if (shouldGateFullReport) {
     return (
@@ -3050,7 +3079,10 @@ export default function ResultsPage() {
         >
           <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
             <button
-              onClick={() => navigate("/")}
+              onClick={() => {
+              trackAwfEvent('results_back_home_clicked', { assessment_type: currentAssessmentType });
+              navigate("/");
+            }}
               className="inline-flex items-center gap-2 text-navy-900 font-semibold hover:text-copper-700"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -3069,8 +3101,14 @@ export default function ResultsPage() {
 
         <main className="max-w-6xl mx-auto px-4 py-8 md:py-10">
           <LockedResultsPreview
-            onUpgrade={() => navigate("/pricing")}
-            onDashboard={() => navigate("/my-foundation")}
+            onUpgrade={() => {
+              trackAwfEvent('upgrade_clicked', { source: 'locked_results_preview' });
+              navigate("/pricing");
+            }}
+            onDashboard={() => {
+              trackAwfEvent('dashboard_clicked_from_results', { source: 'locked_results_preview' });
+              navigate("/my-foundation");
+            }}
           />
         </main>
       </div>
@@ -3215,7 +3253,13 @@ export default function ResultsPage() {
               )}
 
               <button
-                onClick={() => navigate("/my-foundation")}
+                onClick={() => {
+                  trackAwfEvent('dashboard_clicked_from_results', {
+                    assessment_type: currentAssessmentType,
+                    authenticated: Boolean(user?.id),
+                  });
+                  navigate("/my-foundation");
+                }}
                 className="inline-flex items-center gap-2 rounded-xl bg-copper-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-copper-700"
               >
                 Go to Dashboard
@@ -3231,6 +3275,47 @@ export default function ResultsPage() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-8 md:py-10">
+        {isGuestSnapshot ? (
+          <section
+            data-pdf-ignore="true"
+            className="mb-6 rounded-3xl border border-emerald-200 bg-emerald-50 p-5 md:p-6 shadow-sm"
+          >
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="max-w-3xl">
+                <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-emerald-800">
+                  <Shield className="h-4 w-4" />
+                  Private Snapshot
+                </div>
+                <h2 className="mt-3 text-xl font-bold text-navy-900">
+                  Want to save this result?
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-emerald-950">
+                  You can view this Snapshot now, but it is not saved to an account yet.
+                  Create a private account to keep your score, track progress, and come
+                  back later without retaking the questions.
+                </p>
+                <p className="mt-2 text-xs font-medium text-emerald-900">
+                  Your answers stay private and are used only to power your own dashboard.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  trackAwfEvent('save_snapshot_clicked', {
+                    source: 'results_guest_snapshot_card',
+                  });
+                  navigate("/my-foundation");
+                }}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-copper-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-copper-700"
+              >
+                Save My Snapshot
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          </section>
+        ) : null}
+
         <div id="report-pdf-root" ref={reportRef}>
           <div
             data-pdf-only="true"

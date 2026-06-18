@@ -1,10 +1,20 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HouseLayout from '../components/HouseLayout';
-import { ArrowRight, CheckCircle, Clock, Download } from 'lucide-react';
+import { ArrowRight, CheckCircle, Clock, Download, Lock } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
 import { startCheckout } from '../lib/stripe';
 import { subscribeToNewsletter } from '../lib/newsletter';
+
+function trackAwfEvent(eventName: string, parameters: Record<string, unknown> = {}) {
+  if (typeof window === 'undefined') return;
+
+  (window as any).gtag?.('event', eventName, {
+    event_category: 'A Wealthy Foundation',
+    ...parameters,
+  });
+}
+
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -15,6 +25,7 @@ export default function LandingPage() {
   const [newsletterMessage, setNewsletterMessage] = useState('');
 
   const handleGetStarted = () => {
+    trackAwfEvent('snapshot_start_clicked', { source: 'landing_hero' });
     navigate('/assessment/snapshot');
   };
 
@@ -82,26 +93,46 @@ export default function LandingPage() {
                   and see exactly what to strengthen next.
                 </p>
 
-                <p className="text-sm text-navy-500 mb-5 max-w-lg mx-auto lg:mx-0 leading-6">
-                  Start with a free assessment and get a clearer picture of what is strong, what
-                  needs attention, and where to focus first.
+                <p className="text-sm text-navy-500 mb-4 max-w-lg mx-auto lg:mx-0 leading-6">
+                  Start with the free Foundation Snapshot and get a clearer picture of what
+                  is strong, what needs attention, and where to focus first.
                 </p>
+
+                <div className="mb-5 max-w-xl rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-left shadow-sm mx-auto lg:mx-0">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 rounded-full bg-white p-2 text-emerald-700">
+                      <Lock className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-emerald-950">
+                        Private by design
+                      </p>
+                      <p className="mt-1 text-sm leading-6 text-emerald-900">
+                        Your answers are used only to calculate your Foundation Snapshot.
+                        They are not posted, shared, sold, or personally reviewed by me.
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
                 <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 mb-4">
                   <button
                     onClick={handleGetStarted}
                     className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-copper-600 px-5 text-sm font-semibold text-white transition hover:bg-copper-700 shadow-md"
                   >
-                    Take the FREE Test <ArrowRight className="w-5 h-5" />
+                    Take the Free Foundation Snapshot <ArrowRight className="w-5 h-5" />
                   </button>
                 </div>
 
-                <p className="text-sm text-navy-500 flex items-center justify-center lg:justify-start gap-5 mt-1">
+                <p className="text-sm text-navy-500 flex flex-wrap items-center justify-center lg:justify-start gap-5 mt-1">
                   <span className="flex items-center gap-1">
-                    <Clock className="w-4 h-4" /> 5 Minutes
+                    <Clock className="w-4 h-4" /> About 5 minutes
                   </span>
                   <span className="flex items-center gap-1">
                     <CheckCircle className="w-4 h-4" /> Free
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Lock className="w-4 h-4" /> No credit card
                   </span>
                 </p>
               </div>
@@ -136,7 +167,10 @@ export default function LandingPage() {
 
             <div className="flex flex-col gap-3 sm:flex-row lg:justify-end">
               <button
-                onClick={() => navigate('/workbook')}
+                onClick={() => {
+                  trackAwfEvent('workbook_page_clicked', { source: 'landing_workbook_section' });
+                  navigate('/workbook');
+                }}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-copper-500 px-5 text-sm font-semibold text-white transition hover:bg-copper-600"
               >
                 Get the Workbook
@@ -145,10 +179,21 @@ export default function LandingPage() {
               <a
                 href="/downloads/The-Wealthy-Foundation-Workbook.pdf"
                 download
+                onClick={() => trackAwfEvent('workbook_pdf_download_clicked', { source: 'landing_workbook_section' })}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-white/25 px-5 text-sm font-semibold text-white transition hover:bg-white/10"
               >
                 Download PDF
               </a>
+              <button
+                onClick={() => {
+                  trackAwfEvent('snapshot_start_clicked', { source: 'landing_workbook_section' });
+                  navigate('/assessment/snapshot');
+                }}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-white px-5 text-sm font-semibold text-navy-900 transition hover:bg-navy-50"
+              >
+                Take Snapshot First
+                <ArrowRight className="h-4 w-4" />
+              </button>
             </div>
           </div>
         </section>
@@ -161,8 +206,8 @@ export default function LandingPage() {
                 Start Free. Go Deeper When You’re Ready.
               </h3>
               <p className="text-navy-600 mt-2 max-w-3xl mx-auto leading-7">
-  Begin with a quick snapshot, then unlock deeper insight and guidance when you want the full picture.
-</p>
+                Begin with a quick, private snapshot. Your answers are used to calculate your score and show your results — not to share your financial details with anyone.
+              </p>
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -174,8 +219,8 @@ export default function LandingPage() {
                 </div>
 
                 <p className="text-sm text-navy-600 mb-3 flex-grow">
-                  Take the free assessment to get your Foundation Score, identify your biggest
-                  opportunities, and see where to focus first.
+                  Take the free Foundation Snapshot to get your score, identify your biggest
+                  opportunities, and see where to focus first. Your answers stay private.
                 </p>
 
                 <ul className="space-y-1 mb-4 text-sm text-navy-700">
@@ -189,15 +234,18 @@ export default function LandingPage() {
                   </li>
                   <li className="flex items-center gap-1.5">
                     <CheckCircle className="w-3.5 h-3.5 text-copper-500" />
-                    Teaser insights
+                    Private results
                   </li>
                 </ul>
 
                 <button
-                  onClick={() => navigate('/assessment/snapshot')}
+                  onClick={() => {
+                    trackAwfEvent('snapshot_start_clicked', { source: 'landing_offer_card' });
+                    navigate('/assessment/snapshot');
+                  }}
                   className="w-full h-10 bg-copper-600 text-white text-sm font-semibold rounded hover:bg-copper-700 transition-colors"
                 >
-                  Take the Free Test
+                  Take the Free Snapshot
                 </button>
               </div>
 
@@ -233,11 +281,12 @@ export default function LandingPage() {
                 </ul>
 
                 <button
-                  onClick={() =>
+                  onClick={() => {
+                    trackAwfEvent('upgrade_clicked', { plan: 'standard', source: 'landing_offer_card' });
                     isAuthenticated
                       ? startCheckout('standard')
-                      : navigate('/login?redirect=/pricing')
-                  }
+                      : navigate('/login?redirect=/pricing');
+                  }}
                   className="w-full h-10 border border-copper-500 text-copper-600 text-sm font-semibold rounded hover:bg-copper-50 transition-colors"
                 >
                   Unlock Full Report
@@ -280,11 +329,12 @@ export default function LandingPage() {
                 </ul>
 
                 <button
-                  onClick={() =>
+                  onClick={() => {
+                    trackAwfEvent('upgrade_clicked', { plan: 'premium', source: 'landing_offer_card' });
                     isAuthenticated
                       ? startCheckout('premium')
-                      : navigate('/login?redirect=/pricing')
-                  }
+                      : navigate('/login?redirect=/pricing');
+                  }}
                   className="w-full h-10 bg-copper-500 text-white text-sm font-semibold rounded hover:bg-copper-600 transition-colors"
                 >
                   Get Premium Guidance

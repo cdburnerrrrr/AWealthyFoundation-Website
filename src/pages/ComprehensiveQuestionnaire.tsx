@@ -46,6 +46,16 @@ import { generateV2Report } from '../services/assessmentEngine';
 import CarPaymentActivity from '../components/activities/CarPaymentActivity';
 import IncomeProtectionActivity from '../components/activities/IncomeProtectionActivity';
 
+function trackAwfEvent(eventName: string, parameters: Record<string, unknown> = {}) {
+  if (typeof window === 'undefined') return;
+
+  (window as any).gtag?.('event', eventName, {
+    event_category: 'A Wealthy Foundation',
+    ...parameters,
+  });
+}
+
+
 type ResponseValue = string | string[] | number | null;
 type ActivityKey =
   | 'fixedCostPressureReview'
@@ -663,15 +673,16 @@ function TrustBlock() {
 
         <div>
           <h3 className="text-base font-semibold text-slate-900">
-            Your data stays private.
+            Private by design.
           </h3>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Your assessment information is stored securely, used only to generate
-            your experience inside A Wealthy Foundation, and is never sold to
-            outside advisors or marketers.
+            This is not a request to share your finances with me. Your answers are
+            used by the site to calculate your score and show your results. They are
+            not posted, shared, sold, or personally reviewed by me.
           </p>
           <p className="mt-2 text-sm font-medium text-slate-800">
-            You will not receive calls or outreach as a result of this assessment.
+            No credit card is required for the free Snapshot, and you will not receive
+            calls or outreach as a result of this assessment.
           </p>
         </div>
       </div>
@@ -683,7 +694,7 @@ function TrustInline() {
   return (
     <div className="mt-6 flex items-center justify-center gap-2 text-xs text-slate-500">
       <Lock className="h-3.5 w-3.5" />
-      <span>Private • Never sold • No outreach</span>
+      <span>Private by design • Never sold • No outreach</span>
     </div>
   );
 }
@@ -849,7 +860,7 @@ function IntroCard({ onStart, isContinueMode = false }: IntroCardProps) {
         onClick={onStart}
         className="mt-6 inline-flex items-center justify-center gap-2 rounded-2xl bg-copper-600 px-6 py-3 text-white font-bold hover:bg-copper-700 transition"
       >
-        {isContinueMode ? 'Continue Where I Left Off' : 'Start My Full Assessment'}
+        {isContinueMode ? 'Continue Where I Left Off' : 'Start the Full Assessment'}
         <ArrowRight className="h-4 w-4" />
       </button>
     </div>
@@ -1635,7 +1646,7 @@ export default function ComprehensiveQuestionnaire() {
         blocked: true,
         title: 'Unlock your full assessment',
         body:
-          'Your free Snapshot is complete. Upgrade to run and update your Foundation Score anytime over the next year.',
+          'Your free Snapshot is complete. Upgrade to unlock the full 7-block breakdown, your 90-Day Plan, dashboard tracking, and PDF report.',
       };
     }
 
@@ -1680,6 +1691,14 @@ export default function ComprehensiveQuestionnaire() {
     isContinueMode ? getContinueModeQuestions(initialResponses) : keepInvestingRootQuestionsVisible(getDetailedQuestions(initialResponses), initialResponses)
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    trackAwfEvent('full_assessment_intro_viewed', {
+      mode: isContinueMode ? 'continue' : 'full',
+      plan,
+      blocked: gateState.blocked,
+    });
+  }, [gateState.blocked, isContinueMode, plan]);
 
   const renderableQuestions = useMemo(
     () => keepInvestingRootQuestionsVisible(getRenderableQuestions(visibleQuestions), responses),
@@ -1741,6 +1760,12 @@ export default function ComprehensiveQuestionnaire() {
   }, [currentStep, renderableQuestions.length]);
 
   const updateResponses = (key: string, value: ResponseValue) => {
+    trackAwfEvent('full_assessment_question_answered', {
+      question_key: key,
+      step: currentStep + 1,
+      mode: isContinueMode ? 'continue' : 'full',
+    });
+
     const updated = { ...responses, [key]: value };
     const filtered = isContinueMode ? getContinueModeQuestions(updated) : keepInvestingRootQuestionsVisible(getDetailedQuestions(updated), updated);
 
@@ -1935,6 +1960,10 @@ export default function ComprehensiveQuestionnaire() {
       }
 
       setSnapshotAnswers(null);
+      trackAwfEvent('full_assessment_completed', {
+        score: report.foundationScore,
+        mode: isContinueMode ? 'continue' : 'full',
+      });
       navigate('/results');
     } catch (error) {
       console.error('Error submitting assessment:', error);
@@ -1960,7 +1989,10 @@ export default function ComprehensiveQuestionnaire() {
             <div className="mt-6 flex flex-wrap gap-3">
               <button
                 type="button"
-                onClick={() => navigate('/pricing')}
+                onClick={() => {
+                  trackAwfEvent('full_assessment_upgrade_clicked', { source: 'comprehensive_gate' });
+                  navigate('/pricing');
+                }}
                 className="inline-flex items-center justify-center gap-2 rounded-2xl bg-copper-600 px-6 py-3 text-white font-bold hover:bg-copper-700 transition"
               >
                 {plan === 'free' ? 'View Plans' : 'Renew Access'}
@@ -2025,6 +2057,9 @@ export default function ComprehensiveQuestionnaire() {
             <IntroCard
               isContinueMode={isContinueMode}
               onStart={() => {
+                trackAwfEvent('full_assessment_start_clicked', {
+                  mode: isContinueMode ? 'continue' : 'full',
+                });
                 setMode('transition');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
