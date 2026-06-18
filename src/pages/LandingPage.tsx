@@ -303,7 +303,7 @@ export default function LandingPage() {
           <div className="mx-auto grid max-w-7xl gap-6 px-4 lg:grid-cols-[1.2fr,0.8fr] lg:items-center lg:px-6">
             <div>
               <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-copper-300">
-                Read the book?
+                Download the free companion workbook.
               </p>
               <h3 className="font-serif text-2xl font-bold sm:text-3xl">
                 Download the free companion workbook.
