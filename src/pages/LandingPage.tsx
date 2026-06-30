@@ -75,27 +75,17 @@ export default function LandingPage() {
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:items-center">
               <div className="text-center lg:text-left order-1 lg:order-1">
                 <p className="text-sm font-semibold text-copper-600 tracking-widest uppercase mb-2">
-                  A Simple Framework for Building Wealth
+                  A Complete Financial Wellness Assessment
                 </p>
 
-                <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-bold text-navy-900 leading-tight">
-                  Design the Life You Want.
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold text-navy-900 leading-tight mb-4">
+                  How Are You Really Doing Financially?
                 </h1>
 
-                <h2 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-bold text-copper-600 leading-tight mt-1 mb-4">
-                  Build the Financial House to Support It.
-                </h2>
-
                 <p className="text-sm sm:text-lg text-navy-600 mb-4 max-w-xl mx-auto lg:mx-0 leading-7">
-                  A Wealthy Foundation helps you understand how your financial life is really
-                  working — from income and debt to saving, protection, investing, and long-term
-                  direction. Build your house one block at a time, discover your Foundation Score,
-                  and see exactly what to strengthen next.
-                </p>
-
-                <p className="text-sm text-navy-500 mb-4 max-w-lg mx-auto lg:mx-0 leading-6">
-                  Start with the free Foundation Snapshot and get a clearer picture of what
-                  is strong, what needs attention, and where to focus first.
+                  The Foundation Score looks at all seven areas of your financial life—not just
+                  your credit score or net worth—to show where you stand today, what may be holding
+                  you back, and what to improve next.
                 </p>
 
                 <div className="mb-5 max-w-xl rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-left shadow-sm mx-auto lg:mx-0">
@@ -136,10 +126,22 @@ export default function LandingPage() {
                     <Lock className="w-4 h-4" /> No credit card
                   </span>
                 </p>
+
+                <div className="mt-6 border-t border-slate-200 pt-4 max-w-xl mx-auto lg:mx-0">
+                  <p className="text-base sm:text-lg font-serif font-semibold text-navy-900">
+                    Build the Life You Want.
+                    <span className="block text-copper-600">
+                      Build the Financial House to Support It.
+                    </span>
+                  </p>
+                </div>
               </div>
 
-              <div className="order-2 lg:order-2 flex justify-center lg:justify-end mt-2 lg:mt-0">
+              <div className="order-2 lg:order-2 flex flex-col items-center justify-center lg:items-end lg:justify-end mt-2 lg:mt-0">
                 <HouseLayout className="lg:mr-2" />
+                <p className="mt-3 text-center text-sm font-medium text-navy-600 lg:mr-2">
+                  Your financial life is built on seven key areas.
+                </p>
               </div>
             </div>
           </div>
