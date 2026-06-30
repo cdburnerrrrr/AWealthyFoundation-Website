@@ -75,7 +75,7 @@ export default function LandingPage() {
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:items-center">
               <div className="text-center lg:text-left order-1 lg:order-1">
                 <p className="text-sm font-semibold text-copper-600 tracking-widest uppercase mb-2">
-                  A Complete Financial Wellness Assessment
+                  Your Complete Financial Wellness Assessment
                 </p>
 
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold text-navy-900 leading-tight mb-4">
@@ -127,20 +127,15 @@ export default function LandingPage() {
                   </span>
                 </p>
 
-                <div className="mt-6 border-t border-slate-200 pt-4 max-w-xl mx-auto lg:mx-0">
-                  <p className="text-base sm:text-lg font-serif font-semibold text-navy-900">
-                    Build the Life You Want.
-                    <span className="block text-copper-600">
-                      Build the Financial House to Support It.
-                    </span>
-                  </p>
-                </div>
               </div>
 
               <div className="order-2 lg:order-2 flex flex-col items-center justify-center lg:items-end lg:justify-end mt-2 lg:mt-0">
                 <HouseLayout className="lg:mr-2" />
-                <p className="mt-3 text-center text-sm font-medium text-navy-600 lg:mr-2">
-                  Your financial life is built on seven key areas.
+                <p className="mt-3 text-center text-base sm:text-lg font-serif font-semibold text-navy-900 lg:mr-2">
+                  Build the Life You Want.
+                  <span className="block text-copper-600">
+                    Build the Financial House to Support It.
+                  </span>
                 </p>
               </div>
             </div>
