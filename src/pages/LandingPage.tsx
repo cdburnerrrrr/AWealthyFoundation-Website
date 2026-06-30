@@ -129,9 +129,9 @@ export default function LandingPage() {
 
               </div>
 
-              <div className="order-2 lg:order-2 flex flex-col items-center justify-center lg:items-end lg:justify-end mt-2 lg:mt-0">
-                <HouseLayout className="lg:mr-2" />
-                <p className="mt-3 text-center text-base sm:text-lg font-serif font-semibold text-navy-900 lg:mr-2">
+              <div className="order-2 lg:order-2 flex flex-col items-center justify-center mt-2 lg:mt-0">
+                <HouseLayout />
+                <p className="mt-3 w-full text-center text-base sm:text-lg font-serif font-semibold text-navy-900">
                   Build the Life You Want.
                   <span className="block text-copper-600">
                     Build the Financial House to Support It.
