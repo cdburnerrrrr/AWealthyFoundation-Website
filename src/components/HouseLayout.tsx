@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   ArrowUpRight,
   CreditCard,
@@ -8,16 +8,16 @@ import {
   Shield,
   Wallet,
   X,
-} from 'lucide-react';
+} from "lucide-react";
 
 type BlockId =
-  | 'income'
-  | 'debt'
-  | 'spending'
-  | 'saving'
-  | 'protection'
-  | 'investing'
-  | 'vision';
+  | "income"
+  | "debt"
+  | "spending"
+  | "saving"
+  | "protection"
+  | "investing"
+  | "vision";
 
 type BlockData = {
   id: BlockId;
@@ -32,88 +32,98 @@ type HouseLayoutProps = {
   className?: string;
 };
 
+const GLOW_ORDER: BlockId[] = [
+  "vision",
+  "investing",
+  "saving",
+  "debt",
+  "income",
+  "spending",
+  "protection",
+];
+
 const BLOCKS: Record<BlockId, BlockData> = {
   income: {
-    id: 'income',
-    label: 'Income',
-    principle: 'Increase your earning power',
+    id: "income",
+    label: "Income",
+    principle: "Increase your earning power",
     description:
-      'Income is the engine of your financial life. Strong income creates options, supports stability, and gives every other part of the house room to grow.',
-    primaryPillar: 'Clarity',
-    supports: ['Control', 'Growth'],
+      "Income is the engine of your financial life. Strong income creates options, supports stability, and gives every other part of the house room to grow.",
+    primaryPillar: "Clarity",
+    supports: ["Control", "Growth"],
   },
   debt: {
-    id: 'debt',
-    label: 'Debt',
-    principle: 'Manage and eliminate drag',
+    id: "debt",
+    label: "Debt",
+    principle: "Manage and eliminate drag",
     description:
-      'Debt affects cash flow, stress, and flexibility. Getting debt under control strengthens the foundation and helps you make progress with less friction.',
-    primaryPillar: 'Efficiency',
-    supports: ['Control', 'Security'],
+      "Debt affects cash flow, stress, and flexibility. Getting debt under control strengthens the foundation and helps you make progress with less friction.",
+    primaryPillar: "Efficiency",
+    supports: ["Control", "Security"],
   },
   spending: {
-    id: 'spending',
-    label: 'Spending',
-    principle: 'Live within your means',
+    id: "spending",
+    label: "Spending",
+    principle: "Live within your means",
     description:
-      'Spending habits determine whether money is your servant or your master. Mindful spending aligned with your values prevents lifestyle creep and creates space for what truly matters.',
-    primaryPillar: 'Control',
-    supports: ['Consistency', 'Efficiency'],
+      "Spending habits determine whether money is your servant or your master. Mindful spending aligned with your values prevents lifestyle creep and creates space for what truly matters.",
+    primaryPillar: "Control",
+    supports: ["Consistency", "Efficiency"],
   },
   saving: {
-    id: 'saving',
-    label: 'Saving',
-    principle: 'Build financial margin',
+    id: "saving",
+    label: "Saving",
+    principle: "Build financial margin",
     description:
-      'Saving creates breathing room. It helps absorb shocks, reduces stress, and gives you the margin needed to make stronger long-term decisions.',
-    primaryPillar: 'Consistency',
-    supports: ['Security', 'Control'],
+      "Saving creates breathing room. It helps absorb shocks, reduces stress, and gives you the margin needed to make stronger long-term decisions.",
+    primaryPillar: "Consistency",
+    supports: ["Security", "Control"],
   },
   protection: {
-    id: 'protection',
-    label: 'Protection',
-    principle: 'Prepare for the unexpected',
+    id: "protection",
+    label: "Protection",
+    principle: "Prepare for the unexpected",
     description:
-      'Protection keeps one setback from undoing years of progress. Insurance, safeguards, and contingency planning help preserve what you are building.',
-    primaryPillar: 'Security',
-    supports: ['Consistency'],
+      "Protection keeps one setback from undoing years of progress. Insurance, safeguards, and contingency planning help preserve what you are building.",
+    primaryPillar: "Security",
+    supports: ["Consistency"],
   },
   investing: {
-    id: 'investing',
-    label: 'Investing',
-    principle: 'Put your money to work',
+    id: "investing",
+    label: "Investing",
+    principle: "Put your money to work",
     description:
-      'Investing turns today’s margin into tomorrow’s freedom. It is how a stable financial life begins to grow beyond just paying bills and covering needs.',
-    primaryPillar: 'Growth',
-    supports: ['Purpose', 'Clarity'],
+      "Investing turns today’s margin into tomorrow’s freedom. It is how a stable financial life begins to grow beyond just paying bills and covering needs.",
+    primaryPillar: "Growth",
+    supports: ["Purpose", "Clarity"],
   },
   vision: {
-    id: 'vision',
-    label: 'Vision',
-    principle: 'Know what you are building toward',
+    id: "vision",
+    label: "Vision",
+    principle: "Know what you are building toward",
     description:
-      'Vision gives the whole system direction. It connects money to meaning, helping you decide what matters most and making sure your financial life supports the life you actually want.',
-    primaryPillar: 'Purpose',
-    supports: ['Clarity'],
+      "Vision gives the whole system direction. It connects money to meaning, helping you decide what matters most and making sure your financial life supports the life you actually want.",
+    primaryPillar: "Purpose",
+    supports: ["Clarity"],
   },
 };
 
 function getIcon(id: BlockId) {
-  const cls = 'h-7 w-7 md:h-8 md:w-8';
+  const cls = "h-7 w-7 md:h-8 md:w-8";
   switch (id) {
-    case 'income':
+    case "income":
       return <Wallet className={cls} strokeWidth={1.75} />;
-    case 'debt':
+    case "debt":
       return <CreditCard className={cls} strokeWidth={1.75} />;
-    case 'spending':
+    case "spending":
       return <CreditCard className={cls} strokeWidth={1.75} />;
-    case 'saving':
+    case "saving":
       return <PiggyBank className={cls} strokeWidth={1.75} />;
-    case 'protection':
+    case "protection":
       return <Shield className={cls} strokeWidth={1.75} />;
-    case 'investing':
+    case "investing":
       return <ArrowUpRight className={cls} strokeWidth={1.75} />;
-    case 'vision':
+    case "vision":
       return <Lightbulb className={cls} strokeWidth={1.75} />;
     default:
       return <Wallet className={cls} strokeWidth={1.75} />;
@@ -137,11 +147,18 @@ const rowVariants = {
 type BlockTileProps = {
   block: BlockData;
   selected: boolean;
+  highlighted: boolean;
   onClick: (id: BlockId) => void;
   foundation?: boolean;
 };
 
-function BlockTile({ block, selected, onClick, foundation = false }: BlockTileProps) {
+function BlockTile({
+  block,
+  selected,
+  highlighted,
+  onClick,
+  foundation = false,
+}: BlockTileProps) {
   return (
     <button
       type="button"
@@ -151,15 +168,17 @@ function BlockTile({ block, selected, onClick, foundation = false }: BlockTilePr
     >
       <div
         className={[
-          'relative overflow-hidden rounded-xl border bg-[#f7f4ee]',
-          'transition-all duration-300',
+          "relative overflow-hidden rounded-xl border bg-[#f7f4ee]",
+          "transition-all duration-300",
           foundation
-            ? 'min-h-[108px] md:min-h-[122px] border-[#27466b]/22 shadow-[0_8px_20px_rgba(15,42,68,0.08),inset_0_1px_0_rgba(255,255,255,0.88)]'
-            : 'min-h-[92px] md:min-h-[100px] border-[#27466b]/18 shadow-[0_6px_16px_rgba(15,42,68,0.06),inset_0_1px_0_rgba(255,255,255,0.85)]',
+            ? "min-h-[108px] md:min-h-[122px] border-[#27466b]/22 shadow-[0_8px_20px_rgba(15,42,68,0.08),inset_0_1px_0_rgba(255,255,255,0.88)]"
+            : "min-h-[92px] md:min-h-[100px] border-[#27466b]/18 shadow-[0_6px_16px_rgba(15,42,68,0.06),inset_0_1px_0_rgba(255,255,255,0.85)]",
           selected
-            ? 'border-[#b87333]/70 shadow-[0_12px_26px_rgba(15,42,68,0.11),0_0_0_1px_rgba(184,115,51,0.2)]'
-            : 'group-hover:-translate-y-0.5 group-hover:shadow-[0_10px_22px_rgba(15,42,68,0.1)]',
-        ].join(' ')}
+            ? "border-[#b87333]/70 shadow-[0_12px_26px_rgba(15,42,68,0.11),0_0_0_1px_rgba(184,115,51,0.2)]"
+            : highlighted
+              ? "border-[#d4a15c]/80 -translate-y-0.5 shadow-[0_12px_28px_rgba(184,115,51,0.22),0_0_0_2px_rgba(212,161,92,0.34),0_0_24px_rgba(212,161,92,0.42)]"
+              : "group-hover:-translate-y-0.5 group-hover:shadow-[0_10px_22px_rgba(15,42,68,0.1)]",
+        ].join(" ")}
       >
         <div className="absolute inset-[6px] rounded-[14px] border border-[#27466b]/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.56)_0%,rgba(255,255,255,0.16)_100%)] shadow-[inset_0_1px_2px_rgba(255,255,255,0.72),inset_0_-8px_16px_rgba(39,70,107,0.04)]" />
 
@@ -168,7 +187,9 @@ function BlockTile({ block, selected, onClick, foundation = false }: BlockTilePr
         )}
 
         <div className="relative z-10 flex h-full flex-col items-center justify-center px-4 py-4 text-center">
-          <div className="mb-2 text-[#1f3b5b] opacity-95">{getIcon(block.id)}</div>
+          <div className="mb-2 text-[#1f3b5b] opacity-95">
+            {getIcon(block.id)}
+          </div>
           <div className="text-[0.7rem] md:text-[0.74rem] font-semibold uppercase tracking-[0.18em] text-[#18314f]">
             {block.label}
           </div>
@@ -181,10 +202,12 @@ function BlockTile({ block, selected, onClick, foundation = false }: BlockTilePr
 function RoofTile({
   block,
   selected,
+  highlighted,
   onClick,
 }: {
   block: BlockData;
   selected: boolean;
+  highlighted: boolean;
   onClick: (id: BlockId) => void;
 }) {
   return (
@@ -197,17 +220,19 @@ function RoofTile({
       <div className="relative h-[112px] md:h-[136px]">
         <div
           className={[
-            'absolute inset-0 overflow-hidden border bg-[#f3efe7]',
-            'shadow-[0_8px_18px_rgba(15,42,68,0.07),inset_0_1px_0_rgba(255,255,255,0.82)] transition-all duration-300',
+            "absolute inset-0 overflow-hidden border bg-[#f3efe7]",
+            "shadow-[0_8px_18px_rgba(15,42,68,0.07),inset_0_1px_0_rgba(255,255,255,0.82)] transition-all duration-300",
             selected
-              ? 'border-[#b87333]/70 shadow-[0_12px_26px_rgba(15,42,68,0.11),0_0_0_1px_rgba(184,115,51,0.2)]'
-              : 'border-[#27466b]/22 group-hover:-translate-y-0.5 group-hover:shadow-[0_10px_22px_rgba(15,42,68,0.1)]',
-          ].join(' ')}
-          style={{ clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)' }}
+              ? "border-[#b87333]/70 shadow-[0_12px_26px_rgba(15,42,68,0.11),0_0_0_1px_rgba(184,115,51,0.2)]"
+              : highlighted
+                ? "border-[#d4a15c]/80 -translate-y-0.5 shadow-[0_12px_28px_rgba(184,115,51,0.22),0_0_0_2px_rgba(212,161,92,0.34),0_0_26px_rgba(212,161,92,0.44)]"
+                : "border-[#27466b]/22 group-hover:-translate-y-0.5 group-hover:shadow-[0_10px_22px_rgba(15,42,68,0.1)]",
+          ].join(" ")}
+          style={{ clipPath: "polygon(50% 0%, 100% 100%, 0% 100%)" }}
         >
           <div
             className="absolute inset-[8px] border border-[#27466b]/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.46)_0%,rgba(255,255,255,0.12)_100%)] shadow-[inset_0_1px_2px_rgba(255,255,255,0.66),inset_0_-10px_18px_rgba(39,70,107,0.04)]"
-            style={{ clipPath: 'polygon(50% 2%, 98% 100%, 2% 100%)' }}
+            style={{ clipPath: "polygon(50% 2%, 98% 100%, 2% 100%)" }}
           />
         </div>
 
@@ -220,7 +245,7 @@ function RoofTile({
 
         <div
           className="pointer-events-none absolute inset-x-[7%] top-[5px] h-[5px] rounded-full bg-[linear-gradient(90deg,rgba(184,115,51,0.7),rgba(212,161,92,0.98),rgba(184,115,51,0.7))]"
-          style={{ clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)' }}
+          style={{ clipPath: "polygon(50% 0%, 100% 100%, 0% 100%)" }}
         />
       </div>
     </button>
@@ -298,7 +323,7 @@ function BlockModal({
                         Also Supports
                       </div>
                       <div className="mt-2 text-base text-[#46617e]">
-                        {block.supports.join(' • ')}
+                        {block.supports.join(" • ")}
                       </div>
                     </div>
                   )}
@@ -312,20 +337,50 @@ function BlockModal({
   );
 }
 
-export default function HouseLayout({ className = '' }: HouseLayoutProps) {
+export default function HouseLayout({ className = "" }: HouseLayoutProps) {
   const [selectedId, setSelectedId] = useState<BlockId | null>(null);
+  const [glowIndex, setGlowIndex] = useState(0);
+  const [isGlowPaused, setIsGlowPaused] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
 
   const selectedBlock = useMemo(
     () => (selectedId ? BLOCKS[selectedId] : null),
-    [selectedId]
+    [selectedId],
   );
+
+  const highlightedId =
+    !prefersReducedMotion && !isGlowPaused && !selectedId
+      ? GLOW_ORDER[glowIndex]
+      : null;
+
+  useEffect(() => {
+    if (prefersReducedMotion || isGlowPaused || selectedId) return;
+
+    const timer = window.setInterval(() => {
+      setGlowIndex((current) => (current + 1) % GLOW_ORDER.length);
+    }, 1200);
+
+    return () => window.clearInterval(timer);
+  }, [isGlowPaused, prefersReducedMotion, selectedId]);
 
   const openBlock = (id: BlockId) => setSelectedId(id);
   const closeModal = () => setSelectedId(null);
 
   return (
     <>
-      <div className={`mx-auto w-full max-w-[360px] md:max-w-[450px] ${className}`}>
+      <div
+        className={`mx-auto w-full max-w-[360px] md:max-w-[450px] ${className}`}
+        onPointerEnter={() => setIsGlowPaused(true)}
+        onPointerLeave={() => setIsGlowPaused(false)}
+        onFocusCapture={() => setIsGlowPaused(true)}
+        onBlurCapture={(event) => {
+          if (
+            !event.currentTarget.contains(event.relatedTarget as Node | null)
+          ) {
+            setIsGlowPaused(false);
+          }
+        }}
+      >
         <div className="rounded-[30px] bg-[linear-gradient(180deg,rgba(247,244,238,0.95)_0%,rgba(239,244,249,0.98)_100%)] px-3 py-4 md:px-4 md:py-5 shadow-[0_18px_40px_rgba(15,42,68,0.06)]">
           <motion.div initial="hidden" animate="show" className="mx-auto">
             <motion.div
@@ -335,7 +390,8 @@ export default function HouseLayout({ className = '' }: HouseLayoutProps) {
             >
               <RoofTile
                 block={BLOCKS.vision}
-                selected={selectedId === 'vision'}
+                selected={selectedId === "vision"}
+                highlighted={highlightedId === "vision"}
                 onClick={openBlock}
               />
             </motion.div>
@@ -347,12 +403,14 @@ export default function HouseLayout({ className = '' }: HouseLayoutProps) {
             >
               <BlockTile
                 block={BLOCKS.protection}
-                selected={selectedId === 'protection'}
+                selected={selectedId === "protection"}
+                highlighted={highlightedId === "protection"}
                 onClick={openBlock}
               />
               <BlockTile
                 block={BLOCKS.investing}
-                selected={selectedId === 'investing'}
+                selected={selectedId === "investing"}
+                highlighted={highlightedId === "investing"}
                 onClick={openBlock}
               />
             </motion.div>
@@ -364,12 +422,14 @@ export default function HouseLayout({ className = '' }: HouseLayoutProps) {
             >
               <BlockTile
                 block={BLOCKS.spending}
-                selected={selectedId === 'spending'}
+                selected={selectedId === "spending"}
+                highlighted={highlightedId === "spending"}
                 onClick={openBlock}
               />
               <BlockTile
                 block={BLOCKS.saving}
-                selected={selectedId === 'saving'}
+                selected={selectedId === "saving"}
+                highlighted={highlightedId === "saving"}
                 onClick={openBlock}
               />
             </motion.div>
@@ -381,13 +441,15 @@ export default function HouseLayout({ className = '' }: HouseLayoutProps) {
             >
               <BlockTile
                 block={BLOCKS.income}
-                selected={selectedId === 'income'}
+                selected={selectedId === "income"}
+                highlighted={highlightedId === "income"}
                 onClick={openBlock}
                 foundation
               />
               <BlockTile
                 block={BLOCKS.debt}
-                selected={selectedId === 'debt'}
+                selected={selectedId === "debt"}
+                highlighted={highlightedId === "debt"}
                 onClick={openBlock}
                 foundation
               />
