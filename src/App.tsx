@@ -8,6 +8,7 @@ import SnapshotResultsPage from './pages/SnapshotResultsPage';
 
 // Pages
 import LandingPage from './pages/LandingPage';
+import StartPage from './pages/StartPage';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import SnapshotQuestionnaire from './pages/SnapshotQuestionnaire';
@@ -193,6 +194,7 @@ function App() {
       <Routes>
         <Route element={<Layout />}>
         <Route path="/" element={<LandingPage />} />
+          <Route path="/start" element={<StartPage />} />
 
           <Route path="/building-blocks" element={<BuildingBlocksPage />} />
           <Route path="/financial-pillars" element={<FinancialPillarsPage />} />

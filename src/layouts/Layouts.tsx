@@ -10,6 +10,7 @@ export default function Layout() {
   const location = useLocation();
   const { isAuthenticated } = useAppStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const isStartPage = location.pathname === '/start';
 
   const navLinkClass = (path: string) =>
     `relative text-sm font-medium transition-all duration-200 ${
@@ -51,6 +52,7 @@ export default function Layout() {
   </picture>
 </Link>
 
+{!isStartPage && (
 <nav className="hidden md:flex items-center gap-3 lg:gap-5 xl:gap-6">
                 {navLinks.map((link) => (
                   <Link
@@ -72,32 +74,57 @@ export default function Layout() {
                 </Link>
                 ))}
               </nav>
+)}
             </div>
 
             <div className="hidden shrink-0 items-center gap-3 md:flex">
-              {isAuthenticated && (
-                <Link
-                  to="/my-foundation"
-                  className={`relative text-sm font-medium transition-all duration-200 ${
-                    location.pathname === '/my-foundation'
-                      ? 'text-copper-600'
-                      : 'text-navy-700 hover:text-copper-600'
-                  } group`}
-                  onClick={closeMenu}
-                >
-                  <span className="relative">
-                    Dashboard
-                    <span
-                      className={`absolute left-0 -bottom-1 h-[2px] w-full origin-left scale-x-0 bg-copper-600 transition-transform duration-200 group-hover:scale-x-100 ${
-                        location.pathname === '/my-foundation' ? 'scale-x-100' : ''
-                      }`}
-                    />
-                  </span>
-                </Link>
+              {isStartPage ? (
+                isAuthenticated ? (
+                  <>
+                    <Link
+                      to="/my-foundation"
+                      className="text-sm font-medium text-navy-700 transition hover:text-copper-600"
+                    >
+                      Dashboard
+                    </Link>
+                    <UserMenu />
+                  </>
+                ) : (
+                  <Link
+                    to="/login"
+                    className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-navy-700 transition hover:border-copper-400 hover:text-copper-600"
+                  >
+                    Sign In
+                  </Link>
+                )
+              ) : (
+                <>
+                  {isAuthenticated && (
+                    <Link
+                      to="/my-foundation"
+                      className={`relative text-sm font-medium transition-all duration-200 ${
+                        location.pathname === '/my-foundation'
+                          ? 'text-copper-600'
+                          : 'text-navy-700 hover:text-copper-600'
+                      } group`}
+                      onClick={closeMenu}
+                    >
+                      <span className="relative">
+                        Dashboard
+                        <span
+                          className={`absolute left-0 -bottom-1 h-[2px] w-full origin-left scale-x-0 bg-copper-600 transition-transform duration-200 group-hover:scale-x-100 ${
+                            location.pathname === '/my-foundation' ? 'scale-x-100' : ''
+                          }`}
+                        />
+                      </span>
+                    </Link>
+                  )}
+                  <UserMenu />
+                </>
               )}
-              <UserMenu />
             </div>
 
+            {!isStartPage ? (
             <button
               type="button"
               aria-label="Toggle menu"
@@ -106,9 +133,23 @@ export default function Layout() {
             >
               {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
+            ) : (
+              <div className="md:hidden">
+                {isAuthenticated ? (
+                  <UserMenu />
+                ) : (
+                  <Link
+                    to="/login"
+                    className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-navy-700"
+                  >
+                    Sign In
+                  </Link>
+                )}
+              </div>
+            )}
           </div>
 
-          {mobileMenuOpen && (
+          {!isStartPage && mobileMenuOpen && (
             <div className="border-t border-slate-200 py-4 md:hidden">
               <nav className="flex flex-col gap-1">
                 {isAuthenticated && (
