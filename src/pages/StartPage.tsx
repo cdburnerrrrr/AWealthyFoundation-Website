@@ -9,7 +9,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from 'lucide-react';
-import FoundationPuzzle from '../components/FoundationPuzzle';
+import HouseLayout from '../components/HouseLayout';
 
 function trackAwfEvent(eventName: string, parameters: Record<string, unknown> = {}) {
   if (typeof window === 'undefined') return;
@@ -41,23 +41,29 @@ export default function StartPage() {
   return (
     <div className="min-h-screen bg-white text-navy-900">
       <section className="overflow-hidden bg-[radial-gradient(circle_at_top_right,rgba(184,115,51,0.10),transparent_34%),linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)]">
-        <div className="mx-auto grid max-w-7xl gap-10 px-4 pb-14 pt-10 sm:px-6 sm:pb-16 sm:pt-14 lg:grid-cols-[0.92fr,1.08fr] lg:items-center lg:px-8 lg:pb-20 lg:pt-16">
+        <div className="mx-auto grid max-w-7xl gap-10 px-4 pb-14 pt-10 sm:px-6 sm:pb-16 sm:pt-14 lg:grid-cols-[1.05fr,0.95fr] lg:items-center lg:px-8 lg:pb-20 lg:pt-16">
           <div className="text-center lg:text-left">
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.24em] text-copper-600 sm:text-sm">
-              You already know one score
+              A clearer first step with your money
             </p>
 
-            <h1 className="font-serif text-4xl font-bold leading-[1.08] text-navy-900 sm:text-5xl lg:text-[3.55rem]">
-              Your Credit Score Is Only One Piece of the Story.
-              <span className="mt-3 block text-copper-600">
-                Discover Your Foundation Score.
+            <h1 className="font-serif text-4xl font-bold leading-[1.08] text-navy-900 sm:text-5xl lg:text-6xl">
+              You Work Hard.
+              <span className="mt-2 block text-copper-600">
+                Why Does It Still Feel So Difficult to Get Ahead?
               </span>
             </h1>
 
             <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-navy-600 sm:text-lg lg:mx-0">
-              Your credit score tells lenders how you manage debt. The free Foundation
-              Snapshot looks at the seven connected areas of your financial life to show
-              where you stand, what may be holding you back, and what to work on next.
+              Most financial tools look at one number at a time—your budget, debt,
+              credit score, retirement balance, or net worth. But your financial life
+              is not one number.
+            </p>
+
+            <p className="mx-auto mt-4 max-w-2xl text-base leading-8 text-navy-700 sm:text-lg lg:mx-0">
+              The free Foundation Snapshot looks at seven connected areas of your
+              financial life to show what is working, where pressure may be building,
+              and what to work on next.
             </p>
 
             <div className="mt-7 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start">
@@ -66,7 +72,7 @@ export default function StartPage() {
                 onClick={() => startSnapshot('start_hero')}
                 className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-copper-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-copper-600/20 transition hover:-translate-y-0.5 hover:bg-copper-700 sm:w-auto"
               >
-                Discover My Foundation Score
+                Take the Free Foundation Snapshot
                 <ArrowRight className="h-5 w-5" />
               </button>
             </div>
@@ -91,16 +97,23 @@ export default function StartPage() {
                 <div>
                   <p className="text-sm font-semibold text-emerald-950">Private by design</p>
                   <p className="mt-1 text-sm leading-6 text-emerald-900">
-                    No bank connection. No sales call. No investment pitch. Your answers
-                    are used only to calculate your results.
+                    No bank connection, no sales call, and no investment pitch. Your
+                    answers are used to calculate your results—not sold or used for
+                    advisor outreach.
                   </p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center justify-center">
-            <FoundationPuzzle />
+          <div className="flex flex-col items-center justify-center">
+            <HouseLayout />
+            <p className="mt-4 text-center font-serif text-lg font-semibold text-navy-900 sm:text-xl">
+              Your financial life is built on seven connected areas.
+            </p>
+            <p className="mt-1 text-center text-sm text-navy-500">
+              Tap any block to see why it matters.
+            </p>
           </div>
         </div>
       </section>
@@ -109,10 +122,10 @@ export default function StartPage() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-copper-600">
-              What your credit score leaves out
+              One number cannot tell the whole story
             </p>
             <h2 className="mt-3 font-serif text-3xl font-bold text-navy-900 sm:text-4xl">
-              A strong credit score does not always mean a strong financial foundation.
+              Your credit score measures how you handle debt—not how well your financial life is working.
             </h2>
             <p className="mt-5 text-base leading-8 text-navy-600 sm:text-lg">
               You can have a strong credit score and still feel squeezed every month.
@@ -239,7 +252,7 @@ export default function StartPage() {
             onClick={() => startSnapshot('start_final_cta')}
             className="mt-7 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-copper-600 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-copper-600/20 transition hover:-translate-y-0.5 hover:bg-copper-700"
           >
-            Discover My Foundation Score
+            Take the Free Foundation Snapshot
             <ArrowRight className="h-5 w-5" />
           </button>
           <p className="mt-4 text-sm text-navy-500">
